@@ -146,6 +146,19 @@ class Environment:
             'flood_risk': self.flood_risk
         }
 
+        # # 全体の利得（例として単純に合計）
+        # total_reward = rewards['Agriculture'] + rewards['Environment'] + rewards['PublicWorks']
+
+        # # 調整された報酬関数
+        # alpha = 0.1  # 全体の利得を考慮する重み
+        # adjusted_rewards = {
+        #     'Agriculture': rewards['Agriculture'] + alpha * total_reward,
+        #     'Environment': rewards['Environment'] + alpha * total_reward,
+        #     'PublicWorks': rewards['PublicWorks'] + alpha * total_reward
+        # }
+
+        # # 次の状態と調整された報酬を返す
+        # return next_state, adjusted_rewards, done, env_info
         return next_state, rewards, done, env_info
 
 # 分散的シミュレーションの定義
