@@ -22,7 +22,7 @@ precip_uncertainty = 50 # st.sidebar.slider('降水量不確実性幅（標準�
 municipal_demand_trend = 0.0 # st.sidebar.slider('都市需要成長トレンド（年あたり）', 0.0, 0.1, 0.01, 0.01)
 municipal_demand_uncertainty = 0.01 # st.sidebar.slider('都市需要成長不確実性幅（標準偏差）', 0.0, 0.05, 0.005, 0.001)
 
-# 意思決定変数（5年ごとに調整可能）
+# 意思決定変数
 irrigation_amount = st.sidebar.slider('灌漑水量', 0, 100, 50, 1)
 release_amount = st.sidebar.slider('放流水量', 0, 100, 20, 1)
 levee_construction_cost = st.sidebar.slider('堤防工事費', 0, 100, 50, 1)
@@ -78,6 +78,8 @@ if simulate_button:
             # 不確実性を伴う気温と降水量
             temp = prev_temp + temp_trend + np.random.normal(0, temp_uncertainty)
             precip = prev_precip + precip_trend + np.random.normal(0, precip_uncertainty)
+            summer_days = max(0, (temp - 30) * 5)
+            extreme_rain = np.random.choice([0, 1, 2], p=[0.9, 0.075, 0.025])  # ランダムに発生
 
             # 都市需要の成長率（トレンドと不確実性）
             municipal_demand_growth = municipal_demand_trend + np.random.normal(0, municipal_demand_uncertainty)
@@ -92,14 +94,12 @@ if simulate_button:
                 heat_resistance = min(1.0, heat_resistance + agricultural_rnd_cost / 100)
 
             # 作物収量の計算
-            summer_days = max(0, (temp - 30) * 5)
             current_crop_yield = irrigation_amount - (summer_days * (1 - heat_resistance))
 
             # 生態系レベルの計算
             ecosystem_level = 100 if (precip + release_amount) >= ecosystem_threshold else max(0, 100 - 5)
 
             # 極端降水回数と洪水被害額の計算
-            extreme_rain = np.random.choice([0, 1, 2], p=[0.9, 0.075, 0.025])  # ランダムに発生
             current_flood_damage = extreme_rain * (1 - levee_level) * 100000
 
             # リストに結果を追加
