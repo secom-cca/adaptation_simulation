@@ -338,7 +338,7 @@ if reset_simulation:
     st.session_state['decision_vars'] = []
     st.session_state['scenario_name'] = ''
     # st.session_state['scenarios'] = {}  # この行を削除
-    st.experimental_rerun()
+    st.rerun()
 
 # シナリオの比較
 if st.session_state['scenarios']:

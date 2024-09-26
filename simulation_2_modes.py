@@ -505,7 +505,7 @@ elif simulation_mode == '逐次意思決定シミュレーションモード':
             'RnD_investment_years': 0
         }
         st.session_state['decision_vars_seq'] = []
-        st.experimental_rerun()
+        st.rerun()
     
     # シナリオの比較
     if st.session_state['scenarios']:

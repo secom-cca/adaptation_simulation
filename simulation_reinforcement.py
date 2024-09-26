@@ -1,12 +1,23 @@
+import os
+import sys
+import argparse
 import numpy as np
 import random
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from itertools import product
+import pickle  # データを保存するため
 
 # 再現性のためのシード設定
 random.seed(42)
 np.random.seed(42)
+
+# コマンドライン引数でシナリオ名を取得
+def parse_args():
+    parser = argparse.ArgumentParser(description='Run the simulation with a specified scenario name.')
+    parser.add_argument('--scenario', type=str, default='default', help='Scenario name for the simulation results.')
+    args = parser.parse_args()
+    return args
 
 # エージェント（部局）の定義
 class Agent:
@@ -73,7 +84,7 @@ class CentralizedAgent:
 
 # 環境の定義
 class Environment:
-    def __init__(self):
+    def __init__(self, mechanism_design=False, alpha=0.1):
         # 初期状態変数
         self.available_water = 100.0
         self.ecosystem_level = 100.0
@@ -84,6 +95,10 @@ class Environment:
         # トレンド
         self.temp_trend = 0.03
         self.precip_trend = -0.2
+
+        # メカニズムデザインの適用フラグとパラメータ
+        self.mechanism_design = mechanism_design
+        self.alpha = alpha  # 全体の利得を考慮する重み
 
     def reset(self):
         self.available_water = 100.0
@@ -132,6 +147,14 @@ class Environment:
             'PublicWorks': -self.flood_risk * 1000  # 洪水リスクの最小化
         }
 
+        # メカニズムデザインの適用
+        if self.mechanism_design:
+            total_reward = sum(rewards.values())
+            adjusted_rewards = {}
+            for key in rewards:
+                adjusted_rewards[key] = rewards[key] + self.alpha * total_reward
+            rewards = adjusted_rewards
+
         # 次の状態の取得
         next_state = self.get_state()
 
@@ -146,24 +169,11 @@ class Environment:
             'flood_risk': self.flood_risk
         }
 
-        # # 全体の利得（例として単純に合計）
-        # total_reward = rewards['Agriculture'] + rewards['Environment'] + rewards['PublicWorks']
-
-        # # 調整された報酬関数
-        # alpha = 0.1  # 全体の利得を考慮する重み
-        # adjusted_rewards = {
-        #     'Agriculture': rewards['Agriculture'] + alpha * total_reward,
-        #     'Environment': rewards['Environment'] + alpha * total_reward,
-        #     'PublicWorks': rewards['PublicWorks'] + alpha * total_reward
-        # }
-
-        # # 次の状態と調整された報酬を返す
-        # return next_state, adjusted_rewards, done, env_info
         return next_state, rewards, done, env_info
 
-# 分散的シミュレーションの定義
-def simulate():
-    # エージェントの定義
+# シャープレイ値を用いた協力シミュレーションの定義
+def simulate_shapley():
+    # エージェントの定義（協力）
     agriculture_agent = Agent('Agriculture', actions=[0, 5, 10, 15, 20])
     environment_agent = Agent('Environment', actions=[0, 5, 10, 15, 20])
     public_works_agent = Agent('PublicWorks', actions=[0, 1, 2, 3, 4])
@@ -181,6 +191,87 @@ def simulate():
 
     # 環境の初期化
     env = Environment()
+
+    # 累積報酬の保存
+    cumulative_rewards = {agent.name: [] for agent in agents}
+
+    # アクションと環境状態の保存
+    actions_record = {agent.name: [] for agent in agents}
+    env_states = []
+
+    # シミュレーションパラメータ
+    episodes = 100
+
+    # シャープレイ値の計算（ここでは簡略化）
+    # 実際には全ての可能な連合を考慮する必要がありますが、例として均等配分とします
+    shapley_values = {agent.name: 1 / len(agents) for agent in agents}
+
+    for episode in range(episodes):
+        state = env.reset()
+        done = False
+
+        # 各エージェントのエピソードごとの累積報酬を初期化
+        episode_rewards = {agent.name: 0 for agent in agents}
+        episode_actions = {agent.name: [] for agent in agents}
+        episode_env_states = []
+
+        while not done:
+            # エージェントがアクションを選択（協力的に最適化されたアクションを選択する仮定）
+            # ここでは中央集権的エージェントと同じ行動を取ると仮定
+            actions_space = {
+                'Agriculture_Irrigation': agriculture_agent.actions,
+                'Environment_Release': environment_agent.actions,
+                'PublicWorks_Levee': public_works_agent.actions,
+                'Agriculture_RnD': agriculture_rnd_agent.actions
+            }
+            centralized_agent = CentralizedAgent(actions_space)
+            actions = centralized_agent.choose_action(state)
+
+            # 環境のステップ
+            next_state, rewards, done, env_info = env.step(actions)
+
+            # 各エージェントの報酬をシャープレイ値に基づいて分配
+            total_reward = sum(rewards.values())
+            for agent in agents:
+                agent_reward = shapley_values[agent.name] * total_reward
+                agent.update_q_value(state, actions[agent_action_keys[agent.name]], agent_reward, next_state)
+                episode_rewards[agent.name] += agent_reward
+                episode_actions[agent.name].append(actions[agent_action_keys[agent.name]])
+
+            # 環境状態の保存
+            episode_env_states.append(env_info)
+
+            state = next_state
+
+        # エピソード終了後、累積報酬を保存
+        for agent in agents:
+            cumulative_rewards[agent.name].append(episode_rewards[agent.name])
+            actions_record[agent.name].append(episode_actions[agent.name])
+
+        env_states.append(episode_env_states)
+
+    return cumulative_rewards, actions_record, env_states
+
+# 分散的シミュレーションの定義
+def simulate(mechanism_design=False, alpha=0.1):
+    # エージェントの定義
+    agriculture_agent = Agent('Agriculture', actions=[0, 5, 10, 15, 20])
+    environment_agent = Agent('Environment', actions=[0, 5, 10, 15, 20])
+    public_works_agent = Agent('PublicWorks', actions=[0, 1, 2, 3, 4])
+    agriculture_rnd_agent = Agent('Agriculture_RnD', actions=[0, 1, 2, 3, 4])
+
+    agents = [agriculture_agent, environment_agent, public_works_agent, agriculture_rnd_agent]
+
+    # エージェント名とアクションキーのマッピング
+    agent_action_keys = {
+        'Agriculture': 'Agriculture_Irrigation',
+        'Environment': 'Environment_Release',
+        'PublicWorks': 'PublicWorks_Levee',
+        'Agriculture_RnD': 'Agriculture_RnD'
+    }
+
+    # 環境の初期化
+    env = Environment(mechanism_design=mechanism_design, alpha=alpha)
 
     # 累積報酬の保存
     cumulative_rewards = {agent.name: [] for agent in agents}
@@ -275,7 +366,7 @@ def simulate_centralized():
             next_state, rewards, done, env_info = env.step(actions)
 
             # 統合された報酬の定義（例：全ての報酬の合計）
-            combined_reward = rewards['Agriculture'] + rewards['Environment'] + rewards['PublicWorks']
+            combined_reward = sum(rewards.values())
 
             # Q値の更新
             centralized_agent.update_q_value(state, actions, combined_reward, next_state)
@@ -298,11 +389,25 @@ def simulate_centralized():
 
 # 両方のシミュレーションを実行し、結果を比較
 def main():
+    args = parse_args()
+    scenario_name = args.scenario
+
+    # 結果を保存するフォルダの作成
+    result_dir = os.path.join('result', scenario_name)
+    if not os.path.exists(result_dir):
+        os.makedirs(result_dir)
+
     # 分散的シミュレーションの実行
     cumulative_rewards_decentralized, actions_record_decentralized, env_states_decentralized = simulate()
 
     # 中央集権的シミュレーションの実行
     cumulative_reward_centralized, actions_record_centralized, env_states_centralized = simulate_centralized()
+
+    # メカニズムデザインを適用した分散的シミュレーションの実行
+    cumulative_rewards_mechanism, actions_record_mechanism, env_states_mechanism = simulate(mechanism_design=True, alpha=0.1)
+
+    # シャープレイ値を用いた協力シミュレーションの実行
+    cumulative_rewards_shapley, actions_record_shapley, env_states_shapley = simulate_shapley()
 
     # 結果の比較プロット
 
@@ -311,15 +416,22 @@ def main():
     for agent_name, rewards in cumulative_rewards_decentralized.items():
         plt.plot(rewards, label=f'Decentralized - {agent_name}')
     plt.plot(cumulative_reward_centralized, label='Centralized Agent', linewidth=3, color='black')
+    for agent_name, rewards in cumulative_rewards_mechanism.items():
+        plt.plot(rewards, label=f'Mechanism Design - {agent_name}', linestyle='--')
+    for agent_name, rewards in cumulative_rewards_shapley.items():
+        plt.plot(rewards, label=f'Shapley - {agent_name}', linestyle=':')
     plt.xlabel('Episode')
     plt.ylabel('Cumulative Reward')
-    plt.title('Cumulative Reward')
+    plt.title('Comparison of Cumulative Rewards')
     plt.legend()
-    plt.show()
+    plt.savefig(os.path.join(result_dir, 'cumulative_rewards.png'))
+    plt.close()
 
     # 平均的なアクションの比較（最後のエピソードを使用）
     last_episode_actions_dec = {agent: actions_record_decentralized[agent][-1] for agent in actions_record_decentralized}
     last_episode_actions_cen = actions_record_centralized[-1]
+    last_episode_actions_mech = {agent: actions_record_mechanism[agent][-1] for agent in actions_record_mechanism}
+    last_episode_actions_shapley = {agent: actions_record_shapley[agent][-1] for agent in actions_record_shapley}
 
     # アクションの推移をプロット
     plt.figure(figsize=(12, 6))
@@ -328,11 +440,16 @@ def main():
     for key in ['Agriculture_Irrigation', 'Environment_Release', 'PublicWorks_Levee', 'Agriculture_RnD']:
         actions = [a[key] for a in last_episode_actions_cen]
         plt.plot(actions, label=f'Centralized - {key}', linestyle='--')
+    for agent in last_episode_actions_mech:
+        plt.plot(last_episode_actions_mech[agent], label=f'Mechanism Design - {agent}', linestyle=':')
+    for agent in last_episode_actions_shapley:
+        plt.plot(last_episode_actions_shapley[agent], label=f'Shapley - {agent}', linestyle='-.')
     plt.xlabel('Timestep')
     plt.ylabel('Action Value')
-    plt.title('Action Comparison (last episode)')
+    plt.title('Action Comparison (Last Episode)')
     plt.legend()
-    plt.show()
+    plt.savefig(os.path.join(result_dir, 'action_comparison.png'))
+    plt.close()
 
     # 環境状態の推移をプロット
     env_metrics = ['crop_yield', 'ecosystem_level', 'flood_risk']
@@ -344,11 +461,47 @@ def main():
         # 中央集権的シミュレーション
         values_cen = [state[metric] for state in env_states_centralized[-1]]
         plt.plot(values_cen, label='Centralized', linestyle='--')
+        # メカニズムデザイン
+        values_mech = [state[metric] for state in env_states_mechanism[-1]]
+        plt.plot(values_mech, label='Mechanism Design', linestyle=':')
+        # シャープレイ値
+        values_shapley = [state[metric] for state in env_states_shapley[-1]]
+        plt.plot(values_shapley, label='Shapley', linestyle='-.')
         plt.xlabel('Timestep')
         plt.ylabel(metric)
-        plt.title(f'{metric} Transition')
+        plt.title(f'Transition of {metric}')
         plt.legend()
-        plt.show()
+        plt.savefig(os.path.join(result_dir, f'{metric}_transition.png'))
+        plt.close()
+
+    # データの保存
+    with open(os.path.join(result_dir, 'data_decentralized.pkl'), 'wb') as f:
+        pickle.dump({
+            'cumulative_rewards': cumulative_rewards_decentralized,
+            'actions_record': actions_record_decentralized,
+            'env_states': env_states_decentralized
+        }, f)
+
+    with open(os.path.join(result_dir, 'data_centralized.pkl'), 'wb') as f:
+        pickle.dump({
+            'cumulative_reward': cumulative_reward_centralized,
+            'actions_record': actions_record_centralized,
+            'env_states': env_states_centralized
+        }, f)
+
+    with open(os.path.join(result_dir, 'data_mechanism_design.pkl'), 'wb') as f:
+        pickle.dump({
+            'cumulative_rewards': cumulative_rewards_mechanism,
+            'actions_record': actions_record_mechanism,
+            'env_states': env_states_mechanism
+        }, f)
+
+    with open(os.path.join(result_dir, 'data_shapley.pkl'), 'wb') as f:
+        pickle.dump({
+            'cumulative_rewards': cumulative_rewards_shapley,
+            'actions_record': actions_record_shapley,
+            'env_states': env_states_shapley
+        }, f)
 
 if __name__ == "__main__":
     main()
