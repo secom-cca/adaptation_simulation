@@ -10,6 +10,9 @@ end_year = 2100
 total_years = end_year - start_year + 1
 years = np.arange(start_year, end_year + 1)
 
+image_path = "causal_loop_diagram.png"  # 画像ファイルのパスを指定
+st.image(image_path, caption='シミュレーションのイメージ', use_column_width=True)
+
 # シミュレーションモードの選択
 simulation_mode = st.sidebar.selectbox('シミュレーションモードを選択', ['モンテカルロシミュレーションモード', '逐次意思決定シミュレーションモード'])
 
@@ -46,6 +49,7 @@ levee_investment_threshold = 1.0
 RnD_investment_threshold = 1.0
 levee_investment_required_years = 5
 RnD_investment_required_years = 5
+max_available_water = 5000.0  # 例: 最大の利用可能水量 [m**3]
 
 # セッション状態の初期化
 if 'scenarios' not in st.session_state:
@@ -54,12 +58,13 @@ if 'scenarios' not in st.session_state:
 # モンテカルロシミュレーションモードの場合
 if simulation_mode == 'モンテカルロシミュレーションモード':
     # 意思決定変数（5年おきに意思決定）
+    # 本来はその決め方をシミュレーションしたい
     st.sidebar.title('意思決定変数（5年ごと）')
     decision_years = np.arange(start_year, end_year + 1, 5)
     decision_df = pd.DataFrame({
         'Year': decision_years,
-        '灌漑水量 (Irrigation Water Amount)': [20.0]*len(decision_years),
-        '放流水量 (Released Water Amount)': [10.0]*len(decision_years),
+        '灌漑水量 (Irrigation Water Amount)': [100.0]*len(decision_years),
+        '放流水量 (Released Water Amount)': [100.0]*len(decision_years),
         '堤防工事費 (Levee Construction Cost)': [5.0]*len(decision_years),
         '農業研究開発費 (Agricultural R&D Cost)': [5.0]*len(decision_years)
     })
@@ -79,7 +84,7 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
             prev_temp = 15.0
             prev_precip = 1000.0
             prev_municipal_demand = 100.0
-            prev_available_water = 100.0
+            prev_available_water = 1000.0 # [m**3]
             prev_crop_yield = 100.0
             prev_levee_level = 0.5
             prev_high_temp_tolerance_level = 0.0
@@ -117,8 +122,8 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
                     agricultural_RnD_cost = decision_vars['農業研究開発費 (Agricultural R&D Cost)'].values[0]
                 else:
                     # デフォルト値を使用
-                    irrigation_water_amount = 20.0
-                    released_water_amount = 10.0
+                    irrigation_water_amount = 200.0
+                    released_water_amount = 100.0
                     levee_construction_cost = 5.0
                     agricultural_RnD_cost = 5.0
     
@@ -143,7 +148,8 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
     
                 # 利用可能水量の計算
                 current_available_water = prev_available_water + precip - current_municipal_demand - irrigation_water_amount - released_water_amount
-    
+                current_available_water = min(current_available_water, max_available_water)
+
                 # 作物収量の計算
                 crop_yield_irrigation_component = max_potential_yield * (irrigation_water_amount / optimal_irrigation_amount)
                 crop_yield_irrigation_component = min(crop_yield_irrigation_component, max_potential_yield)
@@ -238,12 +244,12 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
     if scenario_name in st.session_state['scenarios']:
         df_results = st.session_state['scenarios'][scenario_name]
         st.subheader('シミュレーション結果')
-    
-        # グラフの作成
-        fig = go.Figure()
+
+        # グラフの作成 - Temperature
+        fig_temp = go.Figure()
         for sim in df_results['Simulation'].unique():
             df_sim = df_results[df_results['Simulation'] == sim]
-            fig.add_trace(go.Scatter(
+            fig_temp.add_trace(go.Scatter(
                 x=df_sim['Year'],
                 y=df_sim['Temperature (℃)'],
                 mode='lines',
@@ -252,13 +258,93 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
                 opacity=0.2,
                 showlegend=False
             ))
-        fig.update_layout(
+        fig_temp.update_layout(
             title='Temperature Over Time (All Simulations)',
             xaxis_title='Year',
             yaxis_title='Temperature (℃)'
         )
-        st.plotly_chart(fig)
-    
+        st.plotly_chart(fig_temp)
+
+        # グラフの作成 - Precipitation
+        fig_precip = go.Figure()
+        for sim in df_results['Simulation'].unique():
+            df_sim = df_results[df_results['Simulation'] == sim]
+            fig_precip.add_trace(go.Scatter(
+                x=df_sim['Year'],
+                y=df_sim['Precipitation (mm)'],
+                mode='lines',
+                name=f'Sim {sim} Precipitation',
+                line=dict(width=1),
+                opacity=0.2,
+                showlegend=False
+            ))
+        fig_precip.update_layout(
+            title='Precipitation Over Time (All Simulations)',
+            xaxis_title='Year',
+            yaxis_title='Precipitation (mm)'
+        )
+        st.plotly_chart(fig_precip)
+
+        # グラフの作成 - Available Water
+        fig_water = go.Figure()
+        for sim in df_results['Simulation'].unique():
+            df_sim = df_results[df_results['Simulation'] == sim]
+            fig_water.add_trace(go.Scatter(
+                x=df_sim['Year'],
+                y=df_sim['Available Water'],
+                mode='lines',
+                name=f'Sim {sim} Available Water',
+                line=dict(width=1),
+                opacity=0.2,
+                showlegend=False
+            ))
+        fig_water.update_layout(
+            title='Available Water Over Time (All Simulations)',
+            xaxis_title='Year',
+            yaxis_title='Available Water'
+        )
+        st.plotly_chart(fig_water)
+
+        # グラフの作成 - Flood Damage
+        fig_flood = go.Figure()
+        for sim in df_results['Simulation'].unique():
+            df_sim = df_results[df_results['Simulation'] == sim]
+            fig_flood.add_trace(go.Scatter(
+                x=df_sim['Year'],
+                y=df_sim['Flood Damage'],
+                mode='lines',
+                name=f'Sim {sim} Flood Damage',
+                line=dict(width=1),
+                opacity=0.2,
+                showlegend=False
+            ))
+        fig_flood.update_layout(
+            title='Flood Damage Over Time (All Simulations)',
+            xaxis_title='Year',
+            yaxis_title='Flood Damage'
+        )
+        st.plotly_chart(fig_flood)
+
+        # グラフの作成 - Crop Yield
+        fig_crop = go.Figure()
+        for sim in df_results['Simulation'].unique():
+            df_sim = df_results[df_results['Simulation'] == sim]
+            fig_crop.add_trace(go.Scatter(
+                x=df_sim['Year'],
+                y=df_sim['Crop Yield'],
+                mode='lines',
+                name=f'Sim {sim} Crop Yield',
+                line=dict(width=1),
+                opacity=0.2,
+                showlegend=False
+            ))
+        fig_crop.update_layout(
+            title='Crop Yield Over Time (All Simulations)',
+            xaxis_title='Year',
+            yaxis_title='Crop Yield'
+        )
+        st.plotly_chart(fig_crop)
+
     # シナリオの比較と散布図
     if st.session_state['scenarios']:
         st.subheader('シナリオ比較')
@@ -464,20 +550,80 @@ elif simulation_mode == '逐次意思決定シミュレーションモード':
         df_results_seq = pd.DataFrame(st.session_state['simulation_results_seq'])
         st.subheader('シミュレーション結果')
     
-        # グラフの作成
-        fig_seq = go.Figure()
-        fig_seq.add_trace(go.Scatter(
+        # グラフの作成 - Temperature
+        fig_seq_temp = go.Figure()
+        fig_seq_temp.add_trace(go.Scatter(
             x=df_results_seq['Year'],
             y=df_results_seq['Temperature (℃)'],
             mode='lines',
             name='Temperature (℃)'
         ))
-        fig_seq.update_layout(
+        fig_seq_temp.update_layout(
             title='Temperature Over Time',
             xaxis_title='Year',
             yaxis_title='Temperature (℃)'
         )
-        st.plotly_chart(fig_seq)
+        st.plotly_chart(fig_seq_temp)
+
+        # グラフの作成 - Precipitation
+        fig_seq_precip = go.Figure()
+        fig_seq_precip.add_trace(go.Scatter(
+            x=df_results_seq['Year'],
+            y=df_results_seq['Precipitation (mm)'],
+            mode='lines',
+            name='Precipitation (mm)'
+        ))
+        fig_seq_precip.update_layout(
+            title='Precipitation Over Time',
+            xaxis_title='Year',
+            yaxis_title='Precipitation (mm)'
+        )
+        st.plotly_chart(fig_seq_precip)
+
+        # グラフの作成 - Available Water
+        fig_seq_water = go.Figure()
+        fig_seq_water.add_trace(go.Scatter(
+            x=df_results_seq['Year'],
+            y=df_results_seq['Available Water'],
+            mode='lines',
+            name='Available Water'
+        ))
+        fig_seq_water.update_layout(
+            title='Available Water Over Time',
+            xaxis_title='Year',
+            yaxis_title='Available Water'
+        )
+        st.plotly_chart(fig_seq_water)
+
+        # グラフの作成 - Crop Yield
+        fig_seq_crop = go.Figure()
+        fig_seq_crop.add_trace(go.Scatter(
+            x=df_results_seq['Year'],
+            y=df_results_seq['Crop Yield'],
+            mode='lines',
+            name='Crop Yield'
+        ))
+        fig_seq_crop.update_layout(
+            title='Crop Yield Over Time',
+            xaxis_title='Year',
+            yaxis_title='Crop Yield'
+        )
+        st.plotly_chart(fig_seq_crop)
+
+        # グラフの作成 - Flood Damage
+        fig_seq_flood = go.Figure()
+        fig_seq_flood.add_trace(go.Scatter(
+            x=df_results_seq['Year'],
+            y=df_results_seq['Flood Damage'],
+            mode='lines',
+            name='Flood Damage'
+        ))
+        fig_seq_flood.update_layout(
+            title='Flood Damage Over Time',
+            xaxis_title='Year',
+            yaxis_title='Flood Damage'
+        )
+        st.plotly_chart(fig_seq_flood)
     
     # シナリオの保存とリセット
     st.sidebar.title('シナリオ管理')
