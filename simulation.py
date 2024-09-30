@@ -23,21 +23,24 @@ scenario_name = st.sidebar.text_input('シナリオ名を入力', value='シナ�
 st.sidebar.title('シミュレーション設定')
 
 # トレンドの傾きと不確実性幅
-temp_trend = st.sidebar.slider('気温トレンド（年あたりの上昇率）', 0.0, 0.1, 0.03, 0.01)
-temp_uncertainty = st.sidebar.slider('気温不確実性幅（標準偏差）', 0.0, 1.0, 0.5, 0.1)
-precip_trend = st.sidebar.slider('降水量トレンド（年あたりの変動率）', -10.0, 10.0, -0.2, 0.1)
-precip_uncertainty = st.sidebar.slider('降水量不確実性幅（標準偏差）', 0.0, 100.0, 50.0, 10.0)
-extreme_precip_freq_trend = st.sidebar.slider('極端降水頻度トレンド（年あたりの増加率）', 0.0, 0.05, 0.01, 0.01)
-extreme_precip_freq_uncertainty = st.sidebar.slider('極端降水頻度不確実性幅（標準偏差）', 0.0, 0.1, 0.02, 0.01)
-municipal_demand_trend = st.sidebar.slider('都市水需要成長トレンド（年あたり）', 0.0, 0.1, 0.01, 0.01)
-municipal_demand_uncertainty = st.sidebar.slider('都市水需要成長不確実性幅（標準偏差）', 0.0, 0.05, 0.005, 0.001)
+temp_trend = 0.1 # st.sidebar.slider('気温トレンド（年あたりの上昇率）', 0.0, 0.1, 0.03, 0.01)
+temp_uncertainty = 1.0 # st.sidebar.slider('気温不確実性幅（標準偏差）', 0.0, 1.0, 0.5, 0.1)
+precip_trend = 0 # st.sidebar.slider('降水量トレンド（年あたりの変動率）', -10.0, 10.0, -0.2, 0.1)
+base_precip_uncertainty = 50 # st.sidebar.slider('降水量不確実性幅（標準偏差）', 0.0, 100.0, 50.0, 10.0)
+precip_uncertainty_trend = 5 
+base_extreme_precip_freq = 0.1 # st.sidebar.slider('極端降水頻度トレンド（年あたりの増加率）', 0.0, 0.05, 0.01, 0.01)
+extreme_precip_freq_trend = 0.05 # st.sidebar.slider('極端降水頻度トレンド（年あたりの増加率）', 0.0, 0.05, 0.01, 0.01)
+extreme_precip_freq_uncertainty = 0.1 # st.sidebar.slider('極端降水頻度不確実性幅（標準偏差）', 0.0, 0.1, 0.02, 0.01)
+municipal_demand_trend = 0 # st.sidebar.slider('都市水需要成長トレンド（年あたり）', 0.0, 0.1, 0.01, 0.01)
+municipal_demand_uncertainty = 0.05 #st.sidebar.slider('都市水需要成長不確実性幅（標準偏差）', 0.0, 0.05, 0.005, 0.001)
 
 # その他パラメータ
 initial_hot_days = 30.0
 base_temp = 15.0
+base_precip = 1000
 temp_to_hot_days_coeff = 2.0
 hot_days_uncertainty = 2.0
-initial_extreme_precip_freq = 0.1
+# initial_extreme_precip_freq = 0.1
 ecosystem_threshold = 800.0  # 閾値
 temp_coefficient = 1.0
 max_potential_yield = 100.0
@@ -49,7 +52,8 @@ levee_investment_threshold = 1.0
 RnD_investment_threshold = 1.0
 levee_investment_required_years = 5
 RnD_investment_required_years = 5
-max_available_water = 5000.0  # 例: 最大の利用可能水量 [m**3]
+max_available_water = 2000.0  # 例: 最大の利用可能水量 [m**3]
+evapotranspiration_amount = 600
 
 # セッション状態の初期化
 if 'scenarios' not in st.session_state:
@@ -62,11 +66,11 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
     st.sidebar.title('意思決定変数（5年ごと）')
     decision_years = np.arange(start_year, end_year + 1, 5)
     decision_df = pd.DataFrame({
-        'Year': decision_years,
+        'Year': decision_years.astype(str),
         '灌漑水量 (Irrigation Water Amount)': [100.0]*len(decision_years),
         '放流水量 (Released Water Amount)': [100.0]*len(decision_years),
-        '堤防工事費 (Levee Construction Cost)': [5.0]*len(decision_years),
-        '農業研究開発費 (Agricultural R&D Cost)': [5.0]*len(decision_years)
+        '堤防工事費 (Levee Construction Cost)': [0.0]*len(decision_years),
+        '農業研究開発費 (Agricultural R&D Cost)': [3.0]*len(decision_years)
     })
     decision_df = st.sidebar.data_editor(decision_df, use_container_width=True)
     
@@ -124,19 +128,20 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
                     # デフォルト値を使用
                     irrigation_water_amount = 200.0
                     released_water_amount = 100.0
-                    levee_construction_cost = 5.0
-                    agricultural_RnD_cost = 5.0
+                    levee_construction_cost = 2.0
+                    agricultural_RnD_cost = 3.0
     
                 # 気温のトレンドと不確実性
-                temp = prev_temp + temp_trend + np.random.normal(0, temp_uncertainty)
-                precip = prev_precip + precip_trend + np.random.normal(0, precip_uncertainty)
+                temp = base_temp + temp_trend * (year - start_year) + np.random.normal(0, temp_uncertainty)
+                precip_uncertainty = base_precip_uncertainty + precip_uncertainty_trend * (year - start_year)
+                precip = max(0, base_precip + precip_trend * (year - start_year) + np.random.normal(0, precip_uncertainty))
     
                 # 真夏日日数の計算
                 hot_days = initial_hot_days + (temp - base_temp) * temp_to_hot_days_coeff + np.random.normal(0, hot_days_uncertainty)
                 hot_days = max(hot_days, 0)  # 真夏日日数は0以上
     
                 # 極端降水頻度の計算
-                extreme_precip_freq = prev_extreme_precip_freq + extreme_precip_freq_trend + np.random.normal(0, extreme_precip_freq_uncertainty)
+                extreme_precip_freq = base_extreme_precip_freq + extreme_precip_freq_trend * (year - start_year) # + np.random.normal(0, extreme_precip_freq_uncertainty)
                 extreme_precip_freq = max(extreme_precip_freq, 0.0)
     
                 # 極端降水回数の計算
@@ -147,7 +152,7 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
                 current_municipal_demand = prev_municipal_demand * (1 + municipal_demand_growth)
     
                 # 利用可能水量の計算
-                current_available_water = prev_available_water + precip - current_municipal_demand - irrigation_water_amount - released_water_amount
+                current_available_water = max(0, prev_available_water + precip - evapotranspiration_amount - current_municipal_demand - irrigation_water_amount - released_water_amount)
                 current_available_water = min(current_available_water, max_available_water)
 
                 # 作物収量の計算
@@ -405,16 +410,17 @@ elif simulation_mode == '逐次意思決定シミュレーションモード':
     st.sidebar.title('意思決定変数（次の5年間）')
     irrigation_water_amount = st.sidebar.number_input('灌漑水量', min_value=0.0, value=20.0, step=1.0)
     released_water_amount = st.sidebar.number_input('放流水量', min_value=0.0, value=10.0, step=1.0)
-    levee_construction_cost = st.sidebar.number_input('堤防工事費', min_value=0.0, value=5.0, step=1.0)
-    agricultural_RnD_cost = st.sidebar.number_input('農業研究開発費', min_value=0.0, value=5.0, step=1.0)
+    levee_construction_cost = st.sidebar.number_input('堤防工事費', min_value=0.0, value=2.0, step=1.0)
+    agricultural_RnD_cost = st.sidebar.number_input('農業研究開発費', min_value=0.0, value=3.0, step=1.0)
     
-    # 意思決定変数をセッション状態に保存
-    st.session_state['decision_vars_seq'].append({
-        'irrigation_water_amount': irrigation_water_amount,
-        'released_water_amount': released_water_amount,
-        'levee_construction_cost': levee_construction_cost,
-        'agricultural_RnD_cost': agricultural_RnD_cost
-    })
+    # 意思決定変数をセッション状態に保存（5年ごと）
+    if st.session_state['current_year_index_seq'] % 5 == 0:
+        st.session_state['decision_vars_seq'].append({
+            'irrigation_water_amount': irrigation_water_amount,
+            'released_water_amount': released_water_amount,
+            'levee_construction_cost': levee_construction_cost,
+            'agricultural_RnD_cost': agricultural_RnD_cost
+        })
     
     # シミュレーションの実行（次の5年間）
     simulate_button_seq = st.sidebar.button('次の5年へ')
@@ -435,43 +441,37 @@ elif simulation_mode == '逐次意思決定シミュレーションモード':
         # 各年の結果を格納
         simulation_results = []
         
-        for i, year in enumerate(sim_years):
+        for year in sim_years:
             # 現在の意思決定変数を取得
             decision_vars = st.session_state['decision_vars_seq'][-1]
             irrigation_water_amount = decision_vars['irrigation_water_amount']
             released_water_amount = decision_vars['released_water_amount']
             levee_construction_cost = decision_vars['levee_construction_cost']
             agricultural_RnD_cost = decision_vars['agricultural_RnD_cost']
-            
-            # 不確実性パラメータを固定値に設定（毎年同じ）
-            temp_random = 0
-            precip_random = 0
-            hot_days_random = 0
-            extreme_precip_freq_random = 0
-            municipal_demand_random = 0
     
             # 気温のトレンドと不確実性
-            temp = prev_values['temp'] + temp_trend + temp_random
-            precip = prev_values['precip'] + precip_trend + precip_random
-    
+            temp = base_temp + temp_trend * (year - start_year) + np.random.normal(0, temp_uncertainty)
+            precip_uncertainty = base_precip_uncertainty + precip_uncertainty_trend * (year - start_year)
+            precip = max(0, base_precip + precip_trend * (year - start_year) + np.random.normal(0, precip_uncertainty))
+
             # 真夏日日数の計算
-            hot_days = initial_hot_days + (temp - base_temp) * temp_to_hot_days_coeff + hot_days_random
-            hot_days = max(hot_days, 0)  # 真夏日日数は0以上
-    
+            hot_days = max(0, initial_hot_days + (temp - base_temp) * temp_to_hot_days_coeff + np.random.normal(0, hot_days_uncertainty))
+
             # 極端降水頻度の計算
-            extreme_precip_freq = prev_values['extreme_precip_freq'] + extreme_precip_freq_trend + extreme_precip_freq_random
-            extreme_precip_freq = max(extreme_precip_freq, 0.0)
-    
+            extreme_precip_freq = max(0.0, base_extreme_precip_freq + extreme_precip_freq_trend * (year - start_year)) # + np.random.normal(0, extreme_precip_freq_uncertainty))
+
             # 極端降水回数の計算
-            extreme_precip_events = int(extreme_precip_freq)
+            extreme_precip_events = np.random.poisson(extreme_precip_freq)
     
             # 都市水需要の成長率（トレンドと不確実性）
-            municipal_demand_growth = municipal_demand_trend + municipal_demand_random
+            municipal_demand_growth = municipal_demand_trend + np.random.normal(0, municipal_demand_uncertainty)
             current_municipal_demand = prev_values['municipal_demand'] * (1 + municipal_demand_growth)
-    
+
+
             # 利用可能水量の計算
-            current_available_water = prev_values['available_water'] + precip - current_municipal_demand - irrigation_water_amount - released_water_amount
-    
+            current_available_water = max(0, prev_values['available_water'] + precip - evapotranspiration_amount - current_municipal_demand - irrigation_water_amount - released_water_amount)
+            current_available_water = min(current_available_water, max_available_water)
+
             # 作物収量の計算
             crop_yield_irrigation_component = max_potential_yield * (irrigation_water_amount / optimal_irrigation_amount)
             crop_yield_irrigation_component = min(crop_yield_irrigation_component, max_potential_yield)
