@@ -200,8 +200,8 @@ elif simulation_mode == '逐次意思決定シミュレーションモード':
 
     # 意思決定変数の入力（現在の期間用）
     st.sidebar.title('意思決定変数（次の5年間）')
-    irrigation_water_amount = st.sidebar.number_input('灌漑水量', min_value=0.0, value=20.0, step=1.0)
-    released_water_amount = st.sidebar.number_input('放流水量', min_value=0.0, value=10.0, step=1.0)
+    irrigation_water_amount = st.sidebar.number_input('灌漑水量', min_value=0.0, value=100.0, step=1.0)
+    released_water_amount = st.sidebar.number_input('放流水量', min_value=0.0, value=100.0, step=1.0)
     levee_construction_cost = st.sidebar.number_input('堤防工事費', min_value=0.0, value=2.0, step=1.0)
     agricultural_RnD_cost = st.sidebar.number_input('農業研究開発費', min_value=0.0, value=3.0, step=1.0)
 
