@@ -8,6 +8,8 @@ from collections import defaultdict
 from itertools import product
 import pickle  # データを保存するため
 
+from simulation import simulate_year
+
 # 再現性のためのシード設定
 random.seed(42)
 np.random.seed(42)
@@ -91,6 +93,11 @@ class Environment:
         self.flood_risk = 0.1
         self.crop_yield = 100.0
         self.year = 2020
+        self.municipal_demand = 100
+        self.levee_investment_years = 0
+        self.levee_level = 0
+        self.high_temp_torelance_level = 0
+        self.RnD_investment_years = 0
 
         # トレンド
         self.temp_trend = 0.03
@@ -119,32 +126,79 @@ class Environment:
         levee_investment = actions['PublicWorks_Levee']
         rnd_investment = actions['Agriculture_RnD']
 
-        # 利用可能水量の更新
-        self.available_water += self.precip_trend - irrigation_water - released_water
+        # 意思決定変数を辞書にまとめる
+        decision_vars = {
+            'irrigation_water_amount': irrigation_water,
+            'released_water_amount': released_water,
+            'levee_construction_cost': levee_investment,
+            'agricultural_RnD_cost': rnd_investment
+        }
 
-        # 生態系レベルの更新
-        if released_water < 10:
-            self.ecosystem_level -= 1
-        else:
-            self.ecosystem_level += 0.5
-        self.ecosystem_level = max(0, min(self.ecosystem_level, 100))
+        # 現在の状態を辞書にまとめる
+        prev_values = {
+            'municipal_demand': self.municipal_demand,
+            'available_water': self.available_water,
+            'levee_level': self.levee_level,
+            'high_temp_tolerance_level': self.high_temp_torelance_level,
+            'ecosystem_level': self.ecosystem_level,
+            'levee_investment_years': self.levee_investment_years,
+            'RnD_investment_years': self.RnD_investment_years
+        }
 
-        # 洪水リスクの更新
-        self.flood_risk += self.temp_trend - levee_investment * 0.05
-        self.flood_risk = max(0, min(self.flood_risk, 1))
+        # パラメータ設定
+        params = {
+            'start_year': 2020,
+            'base_temp': 15.0,
+            'temp_trend': self.temp_trend,
+            'temp_uncertainty': 0.5,
+            'base_precip': 1000.0,
+            'precip_trend': self.precip_trend,
+            'base_precip_uncertainty': 100.0,
+            'precip_uncertainty_trend': 5.0,
+            'initial_hot_days': 10.0,
+            'temp_to_hot_days_coeff': 1.5,
+            'hot_days_uncertainty': 3.0,
+            'base_extreme_precip_freq': 0.1,
+            'extreme_precip_freq_trend': 0.01,
+            'municipal_demand_trend': 0.02,
+            'municipal_demand_uncertainty': 0.005,
+            'temp_coefficient': 0.1,
+            'max_potential_yield': 100.0,
+            'optimal_irrigation_amount': 50.0,
+            'flood_damage_coefficient': 1000,
+            'levee_level_increment': 0.05,
+            'high_temp_tolerance_increment': 0.02,
+            'levee_investment_threshold': 5.0,
+            'RnD_investment_threshold': 5.0,
+            'levee_investment_required_years': 3,
+            'RnD_investment_required_years': 2,
+            'max_available_water': 200.0,
+            'evapotranspiration_amount': 50.0,
+            'ecosystem_threshold': 50.0
+        }
 
-        # 作物収量の更新
-        self.crop_yield += irrigation_water * 0.5 + rnd_investment * 2 - self.temp_trend * 5
-        self.crop_yield = max(0, self.crop_yield)
+        # simulate_year関数を使って次の年の結果を計算
+        current_values, outputs = simulate_year(self.year, prev_values, decision_vars, params)
 
-        # 年の更新
+        # 状態の更新
+        self.available_water = current_values['available_water']
+        self.ecosystem_level = current_values['ecosystem_level']
+        self.flood_risk = outputs['Flood Damage']
+        self.crop_yield = current_values['crop_yield']
+
+        self.municipal_demand = current_values['municipal_demand']
+        self.levee_investment_years = current_values['levee_investment_years']
+        self.levee_level = current_values['levee_level']
+        self.high_temp_torelance_level = current_values['high_temp_tolerance_level']
+        self.RnD_investment_years = current_values['RnD_investment_years']
+
         self.year += 1
 
         # 各エージェントの報酬の計算
         rewards = {
             'Agriculture': self.crop_yield,  # 作物収量の最大化
             'Environment': self.ecosystem_level,  # 生態系レベルの最大化
-            'PublicWorks': -self.flood_risk * 1000  # 洪水リスクの最小化
+            'PublicWorks': -self.flood_risk + self.levee_level  # 洪水リスクの最小化
         }
 
         # メカニズムデザインの適用
@@ -170,6 +224,7 @@ class Environment:
         }
 
         return next_state, rewards, done, env_info
+
 
 # シャープレイ値を用いた協力シミュレーションの定義
 def simulate_shapley():
