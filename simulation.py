@@ -52,6 +52,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     max_available_water = params['max_available_water']
     evapotranspiration_amount = params['evapotranspiration_amount']
     ecosystem_threshold = params['ecosystem_threshold']
+    crop_rnd_max_tolerance = 0.5
 
     # 気温の計算
     temp = base_temp + temp_trend * (year - start_year) + np.random.normal(0, temp_uncertainty)
@@ -84,7 +85,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     crop_yield_irrigation_component = min(crop_yield_irrigation_component, max_potential_yield)
     temp_impact = hot_days * temp_coefficient * (1 - prev_high_temp_tolerance_level)
     current_crop_yield = crop_yield_irrigation_component - temp_impact
-    current_crop_yield = max(current_crop_yield, 0)  # 作物収量は0以上
+    # current_crop_yield = max(current_crop_yield, 0)  # 作物収量は0以上
 
     # 堤防レベルの更新
     if levee_construction_cost >= levee_investment_threshold:
@@ -99,8 +100,9 @@ def simulate_year(year, prev_values, decision_vars, params):
     if agricultural_RnD_cost >= RnD_investment_threshold:
         RnD_investment_years += 1
         if RnD_investment_years >= RnD_investment_required_years:
-            prev_high_temp_tolerance_level = min(prev_high_temp_tolerance_level + high_temp_tolerance_increment, 1.0)
+            prev_high_temp_tolerance_level = min(prev_high_temp_tolerance_level + high_temp_tolerance_increment, crop_rnd_max_tolerance)
             RnD_investment_years = 0
+            crop_rnd_max_tolerance += 0.1
     else:
         RnD_investment_years = 0
 
@@ -147,7 +149,8 @@ def simulate_year(year, prev_values, decision_vars, params):
         'extreme_precip_freq': extreme_precip_freq,
         'ecosystem_level': prev_ecosystem_level,
         'levee_investment_years': levee_investment_years,
-        'RnD_investment_years': RnD_investment_years
+        'RnD_investment_years': RnD_investment_years,
+        'crop_rnd_max_tolerance' : crop_rnd_max_tolerance
     }
 
     return current_values, outputs
