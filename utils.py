@@ -93,18 +93,18 @@ def compare_scenarios_yearly(scenarios_data, variables, x_axis_label='X軸', y_a
         x_axis = st.selectbox(x_axis_label, variables, index=0)
         y_axis = st.selectbox(y_axis_label, variables, index=1)
 
-        # シナリオごとの5年おきの値をプロット
+        # シナリオごとの10年おきの値をプロット
         fig_scatter_seq = go.Figure()
         for scenario in selected_scenarios:
             df_scenario = scenarios_data[scenario].copy()
-            # 5年ごとのデータを取得
-            df_scenario_5yrs = df_scenario[df_scenario['Year'] % 5 == 0]
+            # 10年ごとのデータを取得
+            df_scenario_10yrs = df_scenario[df_scenario['Year'] % 10 == 0]
             fig_scatter_seq.add_trace(go.Scatter(
-                x=df_scenario_5yrs[x_axis],
-                y=df_scenario_5yrs[y_axis],
+                x=df_scenario_10yrs[x_axis],
+                y=df_scenario_10yrs[y_axis],
                 mode='lines+markers',
                 name=scenario,
-                text=df_scenario_5yrs['Year'].astype(str),  # Year情報をポイントに追加
+                text=df_scenario_10yrs['Year'].astype(str),  # Year情報をポイントに追加
                 hovertemplate='<b>Year: %{text}</b><br>' +  # カーソルを合わせた際に表示される
                               f'{x_axis}: %{{x}}<br>{y_axis}: %{{y}}<extra></extra>'
             ))

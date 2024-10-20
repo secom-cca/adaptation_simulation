@@ -61,8 +61,8 @@ if 'scenarios' not in st.session_state:
     st.session_state['scenarios'] = {}
 
 if simulation_mode == 'モンテカルロシミュレーションモード':
-    st.sidebar.title('意思決定変数（5年ごと）')
-    decision_years = np.arange(start_year, end_year + 1, 5)
+    st.sidebar.title('意思決定変数（10年ごと）')
+    decision_years = np.arange(start_year, end_year + 1, 10)
     decision_df = pd.DataFrame({
         'Year': decision_years.astype(int),
         '灌漑水量 (Irrigation Water Amount)': [100.0]*len(decision_years),
@@ -199,14 +199,14 @@ elif simulation_mode == '逐次意思決定シミュレーションモード':
         st.session_state['decision_vars_seq'] = []
 
     # 意思決定変数の入力（現在の期間用）
-    st.sidebar.title('意思決定変数（次の5年間）')
+    st.sidebar.title('意思決定変数（次の10年間）')
     irrigation_water_amount = st.sidebar.number_input('灌漑水量', min_value=0.0, value=100.0, step=1.0)
     released_water_amount = st.sidebar.number_input('放流水量', min_value=0.0, value=100.0, step=1.0)
     levee_construction_cost = st.sidebar.number_input('堤防工事費', min_value=0.0, value=2.0, step=1.0)
     agricultural_RnD_cost = st.sidebar.number_input('農業研究開発費', min_value=0.0, value=3.0, step=1.0)
 
-    # 意思決定変数をセッション状態に保存（5年ごと）
-    if st.session_state['current_year_index_seq'] % 5 == 0:
+    # 意思決定変数をセッション状態に保存（10年ごと）
+    if st.session_state['current_year_index_seq'] % 10 == 0:
         st.session_state['decision_vars_seq'].append({
             'irrigation_water_amount': irrigation_water_amount,
             'released_water_amount': released_water_amount,
@@ -214,12 +214,12 @@ elif simulation_mode == '逐次意思決定シミュレーションモード':
             'agricultural_RnD_cost': agricultural_RnD_cost
         })
 
-    # シミュレーションの実行（次の5年間）
-    simulate_button_seq = st.sidebar.button('次の5年へ')
+    # シミュレーションの実行（次の10年間）
+    simulate_button_seq = st.sidebar.button('次の10年へ')
 
     if simulate_button_seq:
         current_year_index = st.session_state['current_year_index_seq']
-        next_year_index = min(current_year_index + 5, total_years)
+        next_year_index = min(current_year_index + 10, total_years)
         sim_years = years[current_year_index:next_year_index]
 
         prev_values = st.session_state['prev_values_seq']

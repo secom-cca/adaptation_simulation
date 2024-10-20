@@ -163,11 +163,11 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
         # 意思決定変数を取得
         if isinstance(decision_vars_list, list):
             # 逐次意思決定モードの場合
-            decision_vars_idx = idx // 5
+            decision_vars_idx = idx // 10
             decision_vars = decision_vars_list[min(decision_vars_idx, len(decision_vars_list)-1)]
         else:
             # モンテカルロモードの場合
-            decision_year = (year - params['start_year']) // 5 * 5 + params['start_year']
+            decision_year = (year - params['start_year']) // 10 * 10 + params['start_year']
             decision_vars_raw = decision_vars_list.loc[decision_year].to_dict()
             # キーをマッピング
             key_mapping = {
