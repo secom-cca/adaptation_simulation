@@ -51,7 +51,7 @@ image_path = "causal_loop_diagram.png"  # 画像ファイルのパスを指定
 st.image(image_path, caption='シミュレーションのイメージ', use_column_width=True)
 
 # シミュレーションモードの選択
-simulation_mode = st.sidebar.selectbox('シミュレーションモードを選択', ['モンテカルロシミュレーションモード', '逐次意思決定シミュレーションモード'])
+simulation_mode = st.sidebar.selectbox('シミュレーションモードを選択', ['意思決定シミュレーションモード', 'モンテカルロシミュレーションモード'])
 
 # シナリオ名の入力
 scenario_name = st.sidebar.text_input('シナリオ名を入力', value='シナリオ1')
@@ -177,7 +177,7 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
         variables=['Flood Damage', 'Crop Yield', 'Ecosystem Level', 'Municipal Cost']
     )
 
-elif simulation_mode == '逐次意思決定シミュレーションモード':
+elif simulation_mode == '意思決定シミュレーションモード':
     # セッション状態の初期化
     if 'current_year_index_seq' not in st.session_state:
         st.session_state['current_year_index_seq'] = 0
