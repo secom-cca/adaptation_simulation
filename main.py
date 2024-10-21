@@ -6,7 +6,7 @@ from simulation import simulate_simulation
 from utils import create_line_chart, compare_scenarios, compare_scenarios_yearly
 
 # シミュレーションのパラメータ
-start_year = 2020
+start_year = 2021
 end_year = 2100
 total_years = end_year - start_year + 1
 years = np.arange(start_year, end_year + 1)
@@ -206,7 +206,7 @@ elif simulation_mode == '意思決定シミュレーションモード':
     agricultural_RnD_cost = st.sidebar.number_input('農業研究開発費', min_value=0.0, value=3.0, step=1.0)
 
     # 意思決定変数をセッション状態に保存（10年ごと）
-    if st.session_state['current_year_index_seq'] % 10 == 0:
+    if st.session_state['current_year_index_seq'] % 10 == 0 or st.session_state['current_year_index_seq'] == start_year:
         st.session_state['decision_vars_seq'].append({
             'irrigation_water_amount': irrigation_water_amount,
             'released_water_amount': released_water_amount,
@@ -341,7 +341,7 @@ elif simulation_mode == '意思決定シミュレーションモード':
 
 # データのエクスポート機能
 st.subheader('データのエクスポート')
-export_format = st.selectbox('ファイル形式を選択', ['CSV', 'Excel'])
+# export_format = st.selectbox('ファイル形式を選択', ['CSV', 'Excel'])
 export_button = st.button('データをダウンロード')
 
 if export_button:
@@ -353,15 +353,15 @@ if export_button:
         st.warning('エクスポートするデータがありません。')
 
     if not export_df.empty:
-        if export_format == 'CSV':
-            csv = export_df.to_csv(index=False).encode('utf-8')
-            st.download_button(label='CSVファイルをダウンロード', data=csv, file_name='simulation_results.csv', mime='text/csv')
+        # if export_format == 'CSV':
+        csv = export_df.to_csv(index=False).encode('utf-8')
+        st.download_button(label='CSVファイルをダウンロード', data=csv, file_name='simulation_results.csv', mime='text/csv')
 
-        elif export_format == 'Excel':
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                export_df.to_excel(writer, index=False, sheet_name='Simulation Results')
-                writer.save()
-                processed_data = output.getvalue()
+        # elif export_format == 'Excel':
+        #     output = BytesIO()
+        #     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        #         export_df.to_excel(writer, index=False, sheet_name='Simulation Results')
+        #         writer.save()
+        #         processed_data = output.getvalue()
 
-            st.download_button(label='Excelファイルをダウンロード', data=processed_data, file_name='simulation_results.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        #     st.download_button(label='Excelファイルをダウンロード', data=processed_data, file_name='simulation_results.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
