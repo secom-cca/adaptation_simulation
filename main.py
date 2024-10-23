@@ -6,7 +6,7 @@ from simulation import simulate_simulation
 from utils import create_line_chart, compare_scenarios, compare_scenarios_yearly
 
 # シミュレーションのパラメータ
-start_year = 2021
+start_year = 2020
 end_year = 2100
 total_years = end_year - start_year + 1
 years = np.arange(start_year, end_year + 1)
@@ -178,6 +178,7 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
     )
 
 elif simulation_mode == '意思決定シミュレーションモード':
+    np.random.seed(255)
     # セッション状態の初期化
     if 'current_year_index_seq' not in st.session_state:
         st.session_state['current_year_index_seq'] = 0
@@ -200,13 +201,13 @@ elif simulation_mode == '意思決定シミュレーションモード':
 
     # 意思決定変数の入力（現在の期間用）
     st.sidebar.title('意思決定変数（次の10年間）')
-    irrigation_water_amount = st.sidebar.number_input('灌漑水量', min_value=0.0, value=100.0, step=1.0)
-    released_water_amount = st.sidebar.number_input('放流水量', min_value=0.0, value=100.0, step=1.0)
-    levee_construction_cost = st.sidebar.number_input('堤防工事費', min_value=0.0, value=2.0, step=1.0)
-    agricultural_RnD_cost = st.sidebar.number_input('農業研究開発費', min_value=0.0, value=3.0, step=1.0)
+    irrigation_water_amount = st.sidebar.slider('灌漑水量', min_value=0, max_value=200, value=100, step=10)
+    released_water_amount = st.sidebar.slider('放流水量', min_value=0, max_value=200, value=100, step=10)
+    levee_construction_cost = st.sidebar.slider('堤防工事費', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
+    agricultural_RnD_cost = st.sidebar.slider('農業研究開発費', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
 
     # 意思決定変数をセッション状態に保存（10年ごと）
-    if st.session_state['current_year_index_seq'] % 10 == 0 or st.session_state['current_year_index_seq'] == start_year:
+    if st.session_state['current_year_index_seq'] % 10 == 0:
         st.session_state['decision_vars_seq'].append({
             'irrigation_water_amount': irrigation_water_amount,
             'released_water_amount': released_water_amount,
@@ -305,10 +306,11 @@ elif simulation_mode == '意思決定シミュレーションモード':
             y_title='Flood Damage'
         )
 
-    # シナリオの保存とリセット
+    # # シナリオの保存とリセット
     st.sidebar.title('シナリオ管理')
     save_scenario_seq = st.sidebar.button('シナリオを保存')
     if save_scenario_seq:
+    # if st.session_state['current_year_index_seq'] >= total_years:
         st.session_state['scenarios'][scenario_name] = df_results_seq.copy()
         st.success(f'シナリオ「{scenario_name}」を保存しました。')
 

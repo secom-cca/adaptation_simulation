@@ -117,10 +117,10 @@ def compare_scenarios(scenarios_data, variables, x_axis_label='X軸', y_axis_lab
 
 def compare_scenarios_yearly(scenarios_data, variables, x_axis_label='X軸', y_axis_label='Y軸'):
     st.subheader('シナリオ比較')
-    selected_scenarios = st.multiselect('比較するシナリオを選択', list(scenarios_data.keys()))
+    selected_scenarios = st.multiselect('比較するシナリオを選択してください', list(scenarios_data.keys()))
+    # selected_scenarios = list(scenarios_data.keys())
     if selected_scenarios:
         # 軸の選択
-        st.write('散布図の軸を選択してください。')
         x_axis = st.selectbox(x_axis_label, variables, index=0)
         y_axis = st.selectbox(y_axis_label, variables, index=1)
 
