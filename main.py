@@ -201,10 +201,11 @@ elif simulation_mode == '意思決定シミュレーションモード':
 
     # 意思決定変数の入力（現在の期間用）
     st.sidebar.title('意思決定変数（次の10年間）')
-    irrigation_water_amount = st.sidebar.slider('灌漑水量', min_value=0, max_value=200, value=100, step=10)
-    released_water_amount = st.sidebar.slider('放流水量', min_value=0, max_value=200, value=100, step=10)
-    levee_construction_cost = st.sidebar.slider('堤防工事費', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
-    agricultural_RnD_cost = st.sidebar.slider('農業研究開発費', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
+    st.sidebar.write('今後10年間の政策を考えてみましょう')
+    irrigation_water_amount = st.sidebar.slider('灌漑水量：増やすと収量が多くなります', min_value=0, max_value=200, value=100, step=10)
+    released_water_amount = st.sidebar.slider('放流水量：増やすと洪水リスクが小さくなります', min_value=0, max_value=200, value=100, step=10)
+    levee_construction_cost = st.sidebar.slider('堤防工事費：増やすと洪水リスクが小さくなります', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
+    agricultural_RnD_cost = st.sidebar.slider('農業研究開発費：増やすと高温に強い品種ができます', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
 
     # 意思決定変数をセッション状態に保存（10年ごと）
     if st.session_state['current_year_index_seq'] % 10 == 0:
@@ -306,14 +307,17 @@ elif simulation_mode == '意思決定シミュレーションモード':
             y_title='Flood Damage'
         )
 
+    if st.session_state['current_year_index_seq'] >= total_years:
+        st.sidebar.write('2100年までのシミュレーションが完了しました！「シナリオを保存」して結果を見てみましょう')
+
     # # シナリオの保存とリセット
     st.sidebar.title('シナリオ管理')
     save_scenario_seq = st.sidebar.button('シナリオを保存')
     if save_scenario_seq:
-    # if st.session_state['current_year_index_seq'] >= total_years:
         st.session_state['scenarios'][scenario_name] = df_results_seq.copy()
         st.success(f'シナリオ「{scenario_name}」を保存しました。')
 
+    st.sidebar.write('一通り結果を確認したら，リセットして別のシナリオを作りましょう')
     reset_simulation_seq = st.sidebar.button('シミュレーションをリセット')
     if reset_simulation_seq:
         st.session_state['current_year_index_seq'] = 0
