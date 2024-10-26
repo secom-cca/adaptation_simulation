@@ -348,10 +348,10 @@ elif simulation_mode == '意思決定シミュレーションモード':
 # シナリオの指標を集計
 def calculate_scenario_indicators(scenario_data):
     indicators = {
-        '合計収量': scenario_data['Crop Yield'].sum(),
-        '合計洪水ダメージ': scenario_data['Flood Damage'].sum(),
-        '2100年時点の生態系': scenario_data.loc[scenario_data['Year'] == 2100, 'Ecosystem Level'].values[0],
-        '合計Budget': scenario_data['Municipal Cost'].sum()
+        '収量': scenario_data['Crop Yield'].sum(),
+        '洪水被害': scenario_data['Flood Damage'].sum(),
+        '生態系': scenario_data.loc[scenario_data['Year'] == 2100, 'Ecosystem Level'].values[0],
+        '予算': scenario_data['Municipal Cost'].sum()
     }
     return indicators
 
@@ -361,10 +361,10 @@ if st.session_state['scenarios']:
 
     # DataFrameに変換し、指標を基に順位づけ
     df_indicators = pd.DataFrame(scenario_indicators).T
-    df_indicators['合計収量順位'] = df_indicators['合計収量'].rank(ascending=False)
-    df_indicators['合計洪水ダメージ順位'] = df_indicators['合計洪水ダメージ'].rank(ascending=True)
-    df_indicators['生態系レベル順位'] = df_indicators['2100年時点の生態系'].rank(ascending=False)
-    df_indicators['合計Budget順位'] = df_indicators['合計Budget'].rank(ascending=True)
+    df_indicators['収量順位'] = df_indicators['収量'].rank(ascending=False)
+    df_indicators['洪水被害順位'] = df_indicators['洪水被害'].rank(ascending=True)
+    df_indicators['生態系順位'] = df_indicators['生態系'].rank(ascending=False)
+    df_indicators['予算順位'] = df_indicators['予算'].rank(ascending=True)
 
     # 結果の表示
     st.subheader('シナリオごとの指標と順位')
