@@ -314,8 +314,11 @@ elif simulation_mode == '意思決定シミュレーションモード':
     st.sidebar.title('シナリオ管理')
     save_scenario_seq = st.sidebar.button('シナリオを保存')
     if save_scenario_seq:
-        st.session_state['scenarios'][scenario_name] = df_results_seq.copy()
-        st.success(f'シナリオ「{scenario_name}」を保存しました。')
+        if st.session_state['current_year_index_seq'] < total_years:
+            st.sidebar.warning(f'最終年度までシミュレーションを回してから保存してください')
+        else:
+            st.session_state['scenarios'][scenario_name] = df_results_seq.copy()
+            st.success(f'シナリオ「{scenario_name}」を保存しました。')
 
     st.sidebar.write('一通り結果を確認したら，リセットして別のシナリオを作りましょう')
     reset_simulation_seq = st.sidebar.button('シミュレーションをリセット')
@@ -350,7 +353,7 @@ def calculate_scenario_indicators(scenario_data):
     indicators = {
         '収量': scenario_data['Crop Yield'].sum(),
         '洪水被害': scenario_data['Flood Damage'].sum(),
-        '生態系': scenario_data.loc[scenario_data['Year'] == 2100, 'Ecosystem Level'].values[0],
+        '生態系': scenario_data.loc[scenario_data['Year'] == end_year, 'Ecosystem Level'].values[0],
         '予算': scenario_data['Municipal Cost'].sum()
     }
     return indicators
