@@ -163,8 +163,8 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
         # 意思決定変数を取得
         if isinstance(decision_vars_list, list):
             # 逐次意思決定モードの場合
-            decision_vars_idx = idx // 10
-            decision_vars = decision_vars_list[min(decision_vars_idx, len(decision_vars_list)-1)]
+            # decision_vars_idx = idx // 10
+            decision_vars = decision_vars_list[len(decision_vars_list)-1] #[min(decision_vars_idx, len(decision_vars_list)-1)]
         else:
             # モンテカルロモードの場合
             decision_year = (year - params['start_year']) // 10 * 10 + params['start_year']
@@ -177,7 +177,6 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
                 '農業研究開発費 (Agricultural R&D Cost)': 'agricultural_RnD_cost'
             }
             decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
-
 
         prev_values, outputs = simulate_year(year, prev_values, decision_vars, params)
         results.append(outputs)

@@ -6,7 +6,7 @@ from simulation import simulate_simulation
 from utils import create_line_chart, compare_scenarios, compare_scenarios_yearly
 
 # シミュレーションのパラメータ
-start_year = 2020
+start_year = 2021
 end_year = 2100
 total_years = end_year - start_year + 1
 years = np.arange(start_year, end_year + 1)
@@ -344,6 +344,31 @@ elif simulation_mode == '意思決定シミュレーションモード':
         scenarios_data=st.session_state['scenarios'],
         variables=['Flood Damage', 'Crop Yield', 'Ecosystem Level', 'Municipal Cost']
     )
+
+# シナリオの指標を集計
+def calculate_scenario_indicators(scenario_data):
+    indicators = {
+        '合計収量': scenario_data['Crop Yield'].sum(),
+        '合計洪水ダメージ': scenario_data['Flood Damage'].sum(),
+        '2100年時点の生態系': scenario_data.loc[scenario_data['Year'] == 2100, 'Ecosystem Level'].values[0],
+        '合計Budget': scenario_data['Municipal Cost'].sum()
+    }
+    return indicators
+
+# シナリオごとに集計
+if st.session_state['scenarios']:
+    scenario_indicators = {name: calculate_scenario_indicators(data) for name, data in st.session_state['scenarios'].items()}
+
+    # DataFrameに変換し、指標を基に順位づけ
+    df_indicators = pd.DataFrame(scenario_indicators).T
+    df_indicators['合計収量順位'] = df_indicators['合計収量'].rank(ascending=False)
+    df_indicators['合計洪水ダメージ順位'] = df_indicators['合計洪水ダメージ'].rank(ascending=True)
+    df_indicators['生態系レベル順位'] = df_indicators['2100年時点の生態系'].rank(ascending=False)
+    df_indicators['合計Budget順位'] = df_indicators['合計Budget'].rank(ascending=True)
+
+    # 結果の表示
+    st.subheader('シナリオごとの指標と順位')
+    st.write(df_indicators)
 
 # データのエクスポート機能
 st.subheader('データのエクスポート')
