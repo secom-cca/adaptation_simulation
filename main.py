@@ -17,7 +17,7 @@ params = {
     'end_year': end_year,
     'total_years': total_years,
     'years': years,
-    'temp_trend': 0.1,
+    'temp_trend': 0.04,
     'temp_uncertainty': 1.0,
     'precip_trend': 0,
     'base_precip_uncertainty': 50,
