@@ -2,24 +2,6 @@
 
 This simulation program is a tool designed to analyze future scenarios by adjusting decision variables while considering trends and uncertainties in climate change and urban water demand. It utilizes Streamlit to provide an interactive user interface.
 
-## Features
-
-- **Simulation Mode Selection**:
-  - **Monte Carlo Simulation Mode**: Executes numerous simulations at once, considering uncertainties. Decision variables for every 5 years are pre-set, and results can be analyzed using scatter plots and other visualizations.
-  - **Sequential Decision Simulation Mode**: Eliminates uncertainties and allows you to adjust decision variables every 5 years while reviewing the results. You can compare results across different scenarios.
-
-- **Adjustment of Decision Variables**:
-  - **Monte Carlo Simulation Mode**: Set decision variables for every 5 years collectively using a DataFrame.
-  - **Sequential Decision Simulation Mode**: Input decision variables for the next 5 years, adjusting them as you review the results.
-
-- **Setting Trends and Uncertainties**: Adjust trends and uncertainty ranges for temperature, precipitation, extreme precipitation frequency, and urban water demand.
-
-- **Visualization of Simulation Results**: Use graphs and scatter plots to visually inspect the results.
-
-- **Scenario Saving and Comparison**: Save multiple scenarios and compare them based on selected variables.
-
-- **Data Export**: Download simulation results in CSV or Excel format.
-
 ## How to Use
 
 ### 1. Select Simulation Mode
@@ -56,7 +38,7 @@ Input a name for saving the scenario. For example: `Scenario 1`
 
 - Simulation results will be displayed in graphs.
 - In Monte Carlo Simulation Mode, results from each simulation are overlaid to visualize variability.
-- In Sequential Decision Simulation Mode, results from a single simulation are displayed.
+- In Sequential Decision-Making Mode, results from a single simulation are displayed.
 
 ### 6. Save Scenario
 
