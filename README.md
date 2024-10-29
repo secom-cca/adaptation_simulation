@@ -27,59 +27,50 @@ This simulation program is a tool designed to analyze future scenarios by adjust
 From the sidebar, choose one of the following under "Select Simulation Mode":
 
 - **Monte Carlo Simulation Mode**
-- **Sequential Decision Simulation Mode**
+- **Sequential Decision-Making Mode**
 
 ### 2. Enter Scenario Name
 
 Input a name for saving the scenario. For example: `Scenario 1`
 
-### 3. Set Trend and Uncertainty Parameters
-
-- Temperature trend and uncertainty range
-- Precipitation trend and uncertainty range
-- Extreme precipitation frequency trend and uncertainty range
-- Urban water demand growth trend and uncertainty range
-
-Adjust these values using the sliders provided.
-
-### 4. Set Decision Variables
+### 3. Set Decision Variables
 
 #### For Monte Carlo Simulation Mode
 
-- In "Decision Variables (Every 5 Years)", set the following variables for each 5-year period using the DataFrame:
+- In "Decision Variables (Every 10 yrs)", set the following variables for each 10-year period using the DataFrame:
   - Irrigation Water Amount
   - Released Water Amount
   - Levee Construction Cost
   - Agricultural R&D Cost
 
-#### For Sequential Decision Simulation Mode
+#### For Sequential Decision-Making Mode
 
-- Input the decision variables for the next 5 years using the sidebar.
+- Input the decision variables for the next 10 years using the sidebar.
 
-### 5. Run the Simulation
+### 4. Run the Simulation
 
 - **Monte Carlo Simulation Mode**: Click the "Start Simulation" button.
-- **Sequential Decision Simulation Mode**: Click the "Next 5 Years" button. Review the results and adjust decision variables as needed.
+- **Sequential Decision-Making Mode**: Click the "Next" button. Review the results and adjust decision variables as needed.
 
-### 6. Review Results
+### 5. Review Results
 
 - Simulation results will be displayed in graphs.
 - In Monte Carlo Simulation Mode, results from each simulation are overlaid to visualize variability.
 - In Sequential Decision Simulation Mode, results from a single simulation are displayed.
 
-### 7. Save Scenario
+### 6. Save Scenario
 
 - When satisfied with the results, click the "Save Scenario" button to save the scenario.
 
-### 8. Compare Scenarios
+### 7. Compare Scenarios
 
 - In the "Scenario Comparison" section, select the scenarios you wish to compare.
 - Choose variables for the X and Y axes of the scatter plot and compare the scenarios.
 
-### 9. Export Data
+### 8. Export Data
 
-- In the "Data Export" section, select the file format (CSV or Excel).
-- Click the "Download Data" button to download the simulation results.
+- In the "Data Export" section, select the file format.
+- Click the "Download" button to download the simulation results.
 
 ## Notes
 
@@ -108,10 +99,17 @@ pip install streamlit numpy pandas plotly
 2. In the directory where you saved the script, run the following command:
 
 ```bash
-streamlit run simulation_montecarlo.py
+streamlit run main.py
 ```
 
 3. If the browser doesn't open automatically, enter the local host URL displayed in the command line (e.g., `http://localhost:8501`) into your browser to access the application.
+
+4. Or you can use poetry:
+
+```bash
+poetry install
+poetry run streamlit run main.py
+```
 
 ## License
 
