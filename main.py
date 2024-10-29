@@ -48,20 +48,20 @@ params = {
 }
 
 image_path = "causal_loop_diagram.png"  # 画像ファイルのパスを指定
-st.image(image_path, caption='シミュレーションのイメージ', use_column_width=True)
+st.image(image_path, caption='Simulator Overview', use_column_width=True)
 
 # シミュレーションモードの選択
-simulation_mode = st.sidebar.selectbox('シミュレーションモードを選択', ['意思決定シミュレーションモード', 'モンテカルロシミュレーションモード'])
+simulation_mode = st.sidebar.selectbox('Select Simulation Mode / シミュレーションモードを選択', ['Sequential Decision-Making Mode', 'Monte Carlo Simulation Mode'])
 
 # シナリオ名の入力
-scenario_name = st.sidebar.text_input('シナリオ名を入力', value='シナリオ1')
+scenario_name = st.sidebar.text_input('Input scenario name / シナリオ名を入力', value='シナリオ1')
 
 # セッション状態の初期化
 if 'scenarios' not in st.session_state:
     st.session_state['scenarios'] = {}
 
-if simulation_mode == 'モンテカルロシミュレーションモード':
-    st.sidebar.title('意思決定変数（10年ごと）')
+if simulation_mode == 'Monte Carlo Simulation Mode':
+    st.sidebar.title('Decision-Making Variables (every 10 yrs) / 意思決定変数（10年ごと）')
     decision_years = np.arange(start_year, end_year + 1, 10)
     decision_df = pd.DataFrame({
         'Year': decision_years.astype(int),
@@ -74,9 +74,9 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
     decision_df.set_index('Year', inplace=True)
 
     # モンテカルロシミュレーションの設定
-    num_simulations = st.sidebar.slider('モンテカルロシミュレーションの回数', 10, 500, 100, 10)
+    num_simulations = st.sidebar.slider('Number of simulations / モンテカルロシミュレーションの回数', 10, 500, 100, 10)
 
-    simulate_button = st.sidebar.button('シミュレーション開始')
+    simulate_button = st.sidebar.button('Run / シミュレーション開始')
 
     if simulate_button:
         simulation_results = []
@@ -109,12 +109,12 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
         # シミュレーション結果を保存
         df_results = pd.concat(simulation_results, ignore_index=True)
         st.session_state['scenarios'][scenario_name] = df_results.copy()
-        st.success(f'シナリオ「{scenario_name}」のシミュレーションが完了しました。')
+        st.success(f'Successfully done scenario "{scenario_name}" / シナリオ「{scenario_name}」のシミュレーションが完了しました。')
 
     # シミュレーション結果の表示
     if scenario_name in st.session_state['scenarios']:
         df_results = st.session_state['scenarios'][scenario_name]
-        st.subheader('シミュレーション結果')
+        st.subheader('Simulation results / シミュレーション結果')
 
         # グラフの作成 - Temperature
         create_line_chart(
@@ -177,7 +177,7 @@ if simulation_mode == 'モンテカルロシミュレーションモード':
         variables=['Flood Damage', 'Crop Yield', 'Ecosystem Level', 'Municipal Cost']
     )
 
-elif simulation_mode == '意思決定シミュレーションモード':
+elif simulation_mode == 'Sequential Decision-Making Mode':
     np.random.seed(255)
     # セッション状態の初期化
     if 'current_year_index_seq' not in st.session_state:
@@ -200,12 +200,12 @@ elif simulation_mode == '意思決定シミュレーションモード':
         st.session_state['decision_vars_seq'] = []
 
     # 意思決定変数の入力（現在の期間用）
-    st.sidebar.title('意思決定変数（次の10年間）')
-    st.sidebar.write('今後10年間の政策を考えてみましょう')
-    irrigation_water_amount = st.sidebar.slider('灌漑水量：増やすと収量が多くなります', min_value=0, max_value=200, value=100, step=10)
-    released_water_amount = st.sidebar.slider('放流水量：増やすと洪水リスクが小さくなります', min_value=0, max_value=200, value=100, step=10)
-    levee_construction_cost = st.sidebar.slider('堤防工事費：増やすと洪水リスクが小さくなります', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
-    agricultural_RnD_cost = st.sidebar.slider('農業研究開発費：増やすと高温に強い品種ができます', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
+    st.sidebar.title('Decision Making for the next 10 yrs / 意思決定変数（次の10年間）')
+    # st.sidebar.write('今後10年間の政策を考えてみましょう')
+    irrigation_water_amount = st.sidebar.slider('Irrigation Water Amount / 灌漑水量：増やすと収量が多くなります', min_value=0, max_value=200, value=100, step=10)
+    released_water_amount = st.sidebar.slider('Released Water Amount / 放流水量：増やすと洪水リスクが小さくなります', min_value=0, max_value=200, value=100, step=10)
+    levee_construction_cost = st.sidebar.slider('Levee Construction Investment / 堤防工事費：増やすと洪水リスクが小さくなります', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
+    agricultural_RnD_cost = st.sidebar.slider('Agricultural R&D Investment / 農業研究開発費：増やすと高温に強い品種ができます', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
 
     # 意思決定変数をセッション状態に保存（10年ごと）
     if st.session_state['current_year_index_seq'] % 10 == 0:
@@ -217,7 +217,7 @@ elif simulation_mode == '意思決定シミュレーションモード':
         })
 
     # シミュレーションの実行（次の10年間）
-    simulate_button_seq = st.sidebar.button('次の10年へ')
+    simulate_button_seq = st.sidebar.button('Next / 次の10年へ')
 
     if simulate_button_seq:
         current_year_index = st.session_state['current_year_index_seq']
@@ -255,7 +255,7 @@ elif simulation_mode == '意思決定シミュレーションモード':
     # シミュレーション結果の表示
     if st.session_state['simulation_results_seq']:
         df_results_seq = pd.DataFrame(st.session_state['simulation_results_seq'])
-        st.subheader('シミュレーション結果')
+        st.subheader('Simulation results / シミュレーション結果')
 
         # グラフの作成 - Temperature
         create_line_chart(
@@ -308,20 +308,20 @@ elif simulation_mode == '意思決定シミュレーションモード':
         )
 
     if st.session_state['current_year_index_seq'] >= total_years:
-        st.sidebar.write('2100年までのシミュレーションが完了しました！「シナリオを保存」して結果を見てみましょう')
+        st.sidebar.write('Simulation done! Click Save and check the results. / シミュレーションが完了しました！「シナリオを保存」して結果を見てみましょう')
 
     # # シナリオの保存とリセット
-    st.sidebar.title('シナリオ管理')
-    save_scenario_seq = st.sidebar.button('シナリオを保存')
+    st.sidebar.title('Scenario Management / シナリオ管理')
+    save_scenario_seq = st.sidebar.button('Save / シナリオを保存')
     if save_scenario_seq:
         if st.session_state['current_year_index_seq'] < total_years:
-            st.sidebar.warning(f'最終年度までシミュレーションを回してから保存してください')
+            st.sidebar.warning(f'Please run the simulation till the final year / 最終年度までシミュレーションを回してから保存してください')
         else:
             st.session_state['scenarios'][scenario_name] = df_results_seq.copy()
-            st.success(f'シナリオ「{scenario_name}」を保存しました。')
+            st.success(f'Successfully saved scenario "{scenario_name}" / シナリオ「{scenario_name}」を保存しました。')
 
-    st.sidebar.write('一通り結果を確認したら，リセットして別のシナリオを作りましょう')
-    reset_simulation_seq = st.sidebar.button('シミュレーションをリセット')
+    st.sidebar.write('After checking the results, reset and try a different scenario / 一通り結果を確認したら，リセットして別のシナリオを作りましょう')
+    reset_simulation_seq = st.sidebar.button('Reset / シミュレーションをリセット')
     if reset_simulation_seq:
         st.session_state['current_year_index_seq'] = 0
         st.session_state['simulation_results_seq'] = []
@@ -370,13 +370,13 @@ if st.session_state['scenarios']:
     df_indicators['予算順位'] = df_indicators['予算'].rank(ascending=True)
 
     # 結果の表示
-    st.subheader('シナリオごとの指標と順位')
+    st.subheader('Metrics and Rankings / シナリオごとの指標と順位')
     st.write(df_indicators)
 
 # データのエクスポート機能
-st.subheader('データのエクスポート')
+st.subheader('Export / データのエクスポート')
 # export_format = st.selectbox('ファイル形式を選択', ['CSV', 'Excel'])
-export_button = st.button('データをダウンロード')
+export_button = st.button('Download / データをダウンロード')
 
 if export_button:
     if st.session_state['scenarios']:
@@ -384,12 +384,12 @@ if export_button:
         export_df = pd.concat([df for df in st.session_state['scenarios'].values()])
     else:
         export_df = pd.DataFrame()
-        st.warning('エクスポートするデータがありません。')
+        st.warning('No data to export')
 
     if not export_df.empty:
         # if export_format == 'CSV':
         csv = export_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label='CSVファイルをダウンロード', data=csv, file_name='simulation_results.csv', mime='text/csv')
+        st.download_button(label='Download CSV', data=csv, file_name='simulation_results.csv', mime='text/csv')
 
         # elif export_format == 'Excel':
         #     output = BytesIO()
