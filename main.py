@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from io import BytesIO
-from simulation import simulate_simulation
-from utils import create_line_chart, compare_scenarios, compare_scenarios_yearly
+from scr.simulation import simulate_simulation
+from scr.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly
 
 # シミュレーションのパラメータ
 start_year = 2021

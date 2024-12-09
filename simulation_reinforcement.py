@@ -8,7 +8,7 @@ from collections import defaultdict
 from itertools import product
 import pickle  # データを保存するため
 
-from simulation import simulate_year
+from scr.simulation import simulate_year
 
 # 再現性のためのシード設定
 random.seed(42)
@@ -198,7 +198,7 @@ class Environment:
         rewards = {
             'Agriculture': self.crop_yield,  # 作物収量の最大化
             'Environment': self.ecosystem_level,  # 生態系レベルの最大化
-            'PublicWorks': -self.flood_risk + self.levee_level  # 洪水リスクの最小化
+            'PublicWorks': -self.flood_risk # + self.levee_level  # 洪水リスクの最小化
         }
 
         # メカニズムデザインの適用
