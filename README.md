@@ -81,7 +81,7 @@ pip install streamlit numpy pandas plotly
 2. In the directory where you saved the script, run the following command:
 
 ```bash
-streamlit run main_streamlit.py
+streamlit run main.py
 ```
 
 3. If the browser doesn't open automatically, enter the local host URL displayed in the command line (e.g., `http://localhost:8501`) into your browser to access the application.
@@ -90,7 +90,7 @@ streamlit run main_streamlit.py
 
 ```bash
 poetry install
-poetry run streamlit run main_streamlit.py
+poetry run streamlit run main.py
 ```
 
 ## License
