@@ -48,7 +48,7 @@ params = {
 }
 
 image_path = "causal_loop_diagram.png"  # 画像ファイルのパスを指定
-st.image(image_path, caption='Simulator Overview', use_column_width=True)
+st.image(image_path, caption='Simulator Overview', use_container_width=True)
 
 # シミュレーションモードの選択
 simulation_mode = st.sidebar.selectbox('Select Simulation Mode / シミュレーションモードを選択', ['Sequential Decision-Making Mode', 'Monte Carlo Simulation Mode'])
