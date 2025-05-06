@@ -170,13 +170,16 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
             decision_year = (year - params['start_year']) // 10 * 10 + params['start_year']
             decision_vars_raw = decision_vars_list.loc[decision_year].to_dict()
             # キーをマッピング
-            key_mapping = {
-                '灌漑水量 (Irrigation Water Amount)': 'irrigation_water_amount',
-                '放流水量 (Released Water Amount)': 'released_water_amount',
-                '堤防工事費 (Levee Construction Cost)': 'levee_construction_cost',
-                '農業研究開発費 (Agricultural R&D Cost)': 'agricultural_RnD_cost'
-            }
-            decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
+            if '灌漑水量 (Irrigation Water Amount)' in decision_vars_raw:
+                key_mapping = {
+                    '灌漑水量 (Irrigation Water Amount)': 'irrigation_water_amount',
+                    '放流水量 (Released Water Amount)': 'released_water_amount',
+                    '堤防工事費 (Levee Construction Cost)': 'levee_construction_cost',
+                    '農業研究開発費 (Agricultural R&D Cost)': 'agricultural_RnD_cost'
+                }
+                decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
+            else:
+                decision_vars = decision_vars_raw
 
         prev_values, outputs = simulate_year(year, prev_values, decision_vars, params)
         results.append(outputs)

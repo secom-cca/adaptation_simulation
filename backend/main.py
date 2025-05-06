@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
+from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 import pandas as pd
 
@@ -10,14 +11,21 @@ from scr.simulation import simulate_simulation
 from scr.utils import compare_scenarios, compare_scenarios_yearly
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],            
+    allow_credentials=True,
+    allow_methods=["*"],              
+    allow_headers=["*"],              
+)
 
 # ======================
 # 1) グローバルに保持するパラメータとデータ
 # ======================
 # Streamlit 版でハードコーディングしていたパラメータをそのまま辞書に定義
-start_year = 2021
+start_year = 2000
 end_year = 2100
-years = np.arange(start_year, end_year + 1)
+years = np.arange(start_year, start_year + 1)
 total_years = len(years)
 
 DEFAULT_PARAMS = {
@@ -71,6 +79,20 @@ class DecisionVar(BaseModel):
     levee_construction_cost: float
     agricultural_RnD_cost: float
 
+class CurrentValues(BaseModel):
+    temp: float
+    precip: float
+    municipal_demand: float
+    available_water: float
+    crop_yield: float
+    levee_level: float
+    high_temp_tolerance_level: float
+    hot_days: float
+    extreme_precip_freq: float
+    ecosystem_level: float
+    levee_investment_years: int
+    RnD_investment_years: int
+
 
 class SimulationRequest(BaseModel):
     """シミュレーション実行時にフロントエンドから送られる想定パラメータ."""
@@ -78,7 +100,7 @@ class SimulationRequest(BaseModel):
     mode: str  # "Monte Carlo Simulation Mode" or "Sequential Decision-Making Mode"
     decision_vars: List[DecisionVar] = []   # Monte Carlo のときは 10年ごとの意思決定、Sequential でも可
     num_simulations: int = 100             # Monte Carlo シミュレーション回数
-    current_year_index_seq: Optional[int] = 0  # Sequentialモードの現在年インデックスなど
+    current_year_index_seq: CurrentValues  # Sequentialモードの現在年インデックスなど
     # 必要に応じて追加フィールドを定義
 
 
@@ -145,49 +167,19 @@ def run_simulation(req: SimulationRequest):
     if req.decision_vars:
         df_decisions = pd.DataFrame([dv.dict() for dv in req.decision_vars])
         df_decisions.set_index("year", inplace=True)
+        DEFAULT_PARAMS['start_year'] = req.decision_vars[0].year
+        DEFAULT_PARAMS['end_year'] = end_year
+        DEFAULT_PARAMS['years'] = np.arange(req.decision_vars[0].year, req.decision_vars[0].year + 1)
+        DEFAULT_PARAMS['total_years'] = len(years)
     else:
         # デフォルト (10年おき100,100,0,3) など、必要に応じて決める
         df_decisions = pd.DataFrame()
 
-    # シミュレーション結果を格納するための変数
-    all_results_df = pd.DataFrame()
-
-    if mode == "Monte Carlo Simulation Mode":
-        simulation_results = []
-
-        for sim in range(req.num_simulations):
-            # 初期値: Streamlit コードのロジックをそのまま踏襲
-            initial_values = {
-                'temp': 15.0,
-                'precip': 1000.0,
-                'municipal_demand': 100.0,
-                'available_water': 1000.0,
-                'crop_yield': 100.0,
-                'levee_level': 0.5,
-                'high_temp_tolerance_level': 0.0,
-                'hot_days': 30.0,
-                'extreme_precip_freq': 0.1,
-                'ecosystem_level': 100.0,
-                'levee_investment_years': 0,
-                'RnD_investment_years': 0
-            }
-            # 実行
-            sim_result = simulate_simulation(
-                years=DEFAULT_PARAMS['years'],
-                initial_values=initial_values,
-                decision_df=df_decisions,
-                params=DEFAULT_PARAMS
-            )
-            df_sim = pd.DataFrame(sim_result)
-            df_sim["Simulation"] = sim
-            simulation_results.append(df_sim)
-
-        all_results_df = pd.concat(simulation_results, ignore_index=True)
-
-    elif mode == "Sequential Decision-Making Mode":
-        # Streamlit 版では「10年ごとに意思決定 & 次へ進む」という操作を対話的にやっていた
-        # ここでは一括で全期間を計算するサンプル実装にする
-        # （本当に段階的なシミュレーションを行いたい場合は、フロントから毎回 current_year_index_seq 等を送って繰り返し呼ぶ仕組みが必要）
+    if req.current_year_index_seq:
+        current_values = req.current_year_index_seq.dict()
+        print('フロントエンドからcurrent valuesを受け取りました：' + str(current_values))
+    else:
+        # 初期値: Streamlit コードのロジックをそのまま踏襲
         current_values = {
             'temp': 15.0,
             'precip': 1000.0,
@@ -202,12 +194,39 @@ def run_simulation(req: SimulationRequest):
             'levee_investment_years': 0,
             'RnD_investment_years': 0
         }
+        print('フロントエンドからcurrent valuesを受け取れませんでした')
+
+    # シミュレーション結果を格納するための変数
+    all_results_df = pd.DataFrame()
+
+    if mode == "Monte Carlo Simulation Mode":
+        simulation_results = []
+
+        for sim in range(req.num_simulations):
+            # 初期値: Streamlit コードのロジックをそのまま踏襲
+            # 実行
+            sim_result = simulate_simulation(
+                years=DEFAULT_PARAMS['years'],
+                initial_values=current_values,
+                decision_vars_list=df_decisions,
+                params=DEFAULT_PARAMS
+            )
+            df_sim = pd.DataFrame(sim_result)
+            df_sim["Simulation"] = sim
+            simulation_results.append(df_sim)
+
+        all_results_df = pd.concat(simulation_results, ignore_index=True)
+
+    elif mode == "Sequential Decision-Making Mode":
+        # Streamlit 版では「10年ごとに意思決定 & 次へ進む」という操作を対話的にやっていた
+        # ここでは一括で全期間を計算するサンプル実装にする
+        # （本当に段階的なシミュレーションを行いたい場合は、フロントから毎回 current_year_index_seq 等を送って繰り返し呼ぶ仕組みが必要）
 
         # まとめて全期間を計算
         seq_result = simulate_simulation(
             years=DEFAULT_PARAMS['years'],
             initial_values=current_values,
-            decision_df=df_decisions,
+            decision_vars_list=df_decisions,
             params=DEFAULT_PARAMS
         )
         all_results_df = pd.DataFrame(seq_result)
@@ -219,6 +238,7 @@ def run_simulation(req: SimulationRequest):
     scenarios_data[scenario_name] = all_results_df.copy()
 
     # JSON で返せるように変換
+    print('バックエンドの計算結果：' + str(all_results_df.to_dict))
     response = SimulationResponse(
         scenario_name=scenario_name,
         data=all_results_df.to_dict(orient="records")
