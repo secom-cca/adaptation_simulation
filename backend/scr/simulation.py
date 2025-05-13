@@ -15,6 +15,12 @@ def simulate_year(year, prev_values, decision_vars, params):
     prev_urban_level = prev_values.get('urban_level', 100.0)
     prev_resident_burden = prev_values.get('resident_burden', 0.0)
     prev_biodiversity_level = prev_values.get('biodiversity_level', prev_ecosystem_level)
+    # --- 初期化（ストックと履歴） ---
+    prev_forest_area = prev_values.get('forest_area', 100.0)  # 初期森林面積 [ha]
+    forest_area_history = prev_values.get('forest_area_history', {})  # 年次履歴
+    # --- 初期化（累積投資の初期化、必要に応じて） ---
+    levee_investment_total = prev_values.get('levee_investment_total', 0.0)
+    RnD_investment_total = prev_values.get('RnD_investment_total', 0.0)
 
     # --- 意思決定変数を展開 ---
     # モンテカルロモードでは mapping された internal keys が来る前提
@@ -53,12 +59,35 @@ def simulate_year(year, prev_values, decision_vars, params):
     high_temp_tolerance_increment = params['high_temp_tolerance_increment']
     levee_investment_threshold    = params['levee_investment_threshold']
     RnD_investment_threshold      = params['RnD_investment_threshold']
-    levee_investment_required_years= params['levee_investment_required_years']
+    levee_investment_required_years = params['levee_investment_required_years']
     RnD_investment_required_years = params['RnD_investment_required_years']
     max_available_water           = params['max_available_water']
     evapotranspiration_amount     = params['evapotranspiration_amount']
     ecosystem_threshold           = params['ecosystem_threshold']
+    cost_per_1000trees            = 2310000
+    cost_per_migration            = 3000000
     crop_rnd_max_tolerance        = 0.5
+    forest_degradation_rate       = 0.01  # 年1%自然減少
+
+    # --- ストック更新：森林面積（植林 - 自然減衰） 1000本 = 1ha ---
+    current_forest_area = max(prev_forest_area + planting_trees_amount - prev_forest_area * forest_degradation_rate, 0)
+    forest_area_history[year] = current_forest_area
+
+    # --- forest_area の遅延効果（20〜40年前の森林） ---
+    flood_reduction = 0
+    biodiversity_boost = 0
+    water_retention_boost = 0
+    for delay in range(20, 41):
+        past_year = year - delay
+        fa = forest_area_history.get(past_year, 0)
+        flood_reduction += fa * 0.001  # 洪水被害を最大 40% 程度まで軽減可（例: fa=40000 で 40%）
+        biodiversity_boost += fa * 0.0002
+        water_retention_boost += fa * 0.001  # 水保持量を増加
+
+    # 上限を設定（効果が過剰にならないように）
+    flood_reduction = min(flood_reduction, 0.4)
+    biodiversity_boost = min(biodiversity_boost, 5.0)
+    water_retention_boost = min(water_retention_boost, 20.0)
 
     # --- 気象・水資源・収量の計算 ---
     temp = base_temp + temp_trend * (year - start_year) + np.random.normal(0, temp_uncertainty)
@@ -70,45 +99,54 @@ def simulate_year(year, prev_values, decision_vars, params):
     extreme_precip_events = np.random.poisson(extreme_precip_freq)
     municipal_growth = municipal_demand_trend + np.random.normal(0, municipal_demand_uncertainty)
     current_municipal_demand = prev_municipal_demand * (1 + municipal_growth)
-    current_available_water = min(max(prev_available_water + precip - evapotranspiration_amount \
-                                      - current_municipal_demand - irrigation_water_amount - released_water_amount, 0),
-                                  max_available_water)
-    cy_irrig = max_potential_yield * (irrigation_water_amount / optimal_irrigation_amount)
-    cy_irrig = min(cy_irrig, max_potential_yield)
-    temp_impact = hot_days * temp_coefficient * (1 - prev_high_temp_tolerance_level)
-    current_crop_yield = cy_irrig - temp_impact
+    # 利用可能水量の調整
+    current_available_water = min(
+        max(
+            prev_available_water + precip - evapotranspiration_amount
+            - current_municipal_demand - irrigation_water_amount - released_water_amount
+            + water_retention_boost,  # 森林による水源涵養効果
+            0
+        ),
+        max_available_water
+    )
 
-    # --- レベル更新 ---
-    # 堤防
-    if dam_levee_construction_cost >= levee_investment_threshold:
-        levee_investment_years += 1
-        if levee_investment_years >= levee_investment_required_years:
-            prev_levee_level = min(prev_levee_level + levee_level_increment, 1.0)
-            levee_investment_years = 0
-    else:
-        levee_investment_years = 0
-    # 耐熱性
-    if agricultural_RnD_cost >= RnD_investment_threshold:
-        RnD_investment_years += 1
-        if RnD_investment_years >= RnD_investment_required_years:
-            prev_high_temp_tolerance_level = min(prev_high_temp_tolerance_level + high_temp_tolerance_increment, crop_rnd_max_tolerance)
-            RnD_investment_years = 0
-            crop_rnd_max_tolerance += 0.1
-    else:
-        RnD_investment_years = 0
+    temp_impact = hot_days * temp_coefficient * (1 - prev_high_temp_tolerance_level)
+    current_crop_yield = max_potential_yield - temp_impact
+
+    # 堤防：累積投資で建設（確率的閾値）
+    levee_investment_total += dam_levee_construction_cost
+    levee_threshold_with_noise = np.random.normal(levee_investment_threshold * levee_investment_required_years, levee_investment_threshold * 0.1)
+
+    if levee_investment_total >= levee_threshold_with_noise:
+        prev_levee_level = min(prev_levee_level + levee_level_increment, 1.0)
+        levee_investment_total = 0.0  # リセット（もしくは差額を残す処理も可）
+
+    # R&D：累積投資で耐熱性向上（確率的閾値）
+    RnD_investment_total += agricultural_RnD_cost
+    RnD_threshold_with_noise = np.random.normal(RnD_investment_threshold * RnD_investment_required_years, RnD_investment_threshold * 0.1)
+
+    if RnD_investment_total >= RnD_threshold_with_noise:
+        prev_high_temp_tolerance_level = min(prev_high_temp_tolerance_level + high_temp_tolerance_increment, crop_rnd_max_tolerance)
+        RnD_investment_total = 0.0
+        crop_rnd_max_tolerance += 0.1  # 上限を成長させる
 
     # --- 損害・生態系 ---
     current_flood_damage = extreme_precip_events * (1 - prev_levee_level) * flood_damage_coefficient
+    current_flood_damage *= (1 - flood_reduction)
+
     water_for_ecosystem = precip + released_water_amount
     if water_for_ecosystem < ecosystem_threshold:
         prev_ecosystem_level = max(prev_ecosystem_level - 1, 0)
-    municipal_cost = dam_levee_construction_cost + agricultural_RnD_cost + paddy_dam_construction_cost + capacity_building_cost
-
+    
     # --- 新指標 ---
+    planting_trees_cost = planting_trees_amount * cost_per_1000trees
+    migration_cost = house_migration_amount * cost_per_migration
     urban_level = prev_urban_level + 0.1 * transportation_invest - 0.2 * house_migration_amount
     urban_level = min(max(urban_level, 0), 100)
-    resident_burden = prev_resident_burden + 0.5 * (dam_levee_construction_cost + paddy_dam_construction_cost + capacity_building_cost)
-    biodiversity_level = max(prev_biodiversity_level - 0.05 * dam_levee_construction_cost - 0.02 * paddy_dam_construction_cost, 0)
+    municipal_cost = dam_levee_construction_cost * 1000000 + agricultural_RnD_cost * 1000000 + paddy_dam_construction_cost * 1000000 + capacity_building_cost * 100000 + planting_trees_cost + migration_cost + transportation_invest
+    resident_burden = municipal_cost 
+    biodiversity_level = max(prev_biodiversity_level - 0.05 * dam_levee_construction_cost - 0.02 * paddy_dam_construction_cost + biodiversity_boost, 0)
+
 
     # --- 出力 ---
     outputs = {
@@ -130,6 +168,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         'Resident Burden': resident_burden,
         'Biodiversity Level': biodiversity_level
     }
+    outputs['Forest Area'] = current_forest_area
 
     current_values = {
         'temp': temp,
@@ -146,8 +185,15 @@ def simulate_year(year, prev_values, decision_vars, params):
         'RnD_investment_years': RnD_investment_years,
         'urban_level': urban_level,
         'resident_burden': resident_burden,
-        'biodiversity_level': biodiversity_level
+        'biodiversity_level': biodiversity_level,
+        'levee_investment_total': levee_investment_total,
+        'RnD_investment_total': RnD_investment_total,
     }
+
+    # --- current_values に forest_area 情報も保持 ---
+    current_values['forest_area'] = current_forest_area
+    current_values['forest_area_history'] = forest_area_history
+
 
     return current_values, outputs
 
