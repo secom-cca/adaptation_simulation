@@ -23,9 +23,9 @@ app.add_middleware(
 # 1) グローバルに保持するパラメータとデータ
 # ======================
 # Streamlit 版でハードコーディングしていたパラメータをそのまま辞書に定義
-start_year = 2000
+start_year = 2025
 end_year = 2100
-years = np.arange(start_year, start_year + 1)
+years = np.arange(start_year, end_year - start_year + 1)
 total_years = len(years)
 
 DEFAULT_PARAMS = {
@@ -34,18 +34,18 @@ DEFAULT_PARAMS = {
     'total_years': total_years,
     'years': years,
     'temp_trend': 0.04,
-    'temp_uncertainty': 1.0,
+    'temp_uncertainty': 0.1,
     'precip_trend': 0,
     'base_precip_uncertainty': 50,
     'precip_uncertainty_trend': 5,
-    'base_extreme_precip_freq': 0.1,
+    # 'base_extreme_precip_freq': 0.1,
     'extreme_precip_freq_trend': 0.05,
     'extreme_precip_freq_uncertainty': 0.1,
     'municipal_demand_trend': 0,
     'municipal_demand_uncertainty': 0.05,
-    'initial_hot_days': 30.0,
-    'base_temp': 15.0,
-    'base_precip': 1000.0,
+    # 'initial_hot_days': 30.0,
+    # 'base_temp': 15.0,
+    # 'base_precip': 1000.0,
     'temp_to_hot_days_coeff': 2.0,
     'hot_days_uncertainty': 2.0,
     'ecosystem_threshold': 800.0,
@@ -63,6 +63,15 @@ DEFAULT_PARAMS = {
     'evapotranspiration_amount': 600.0,
 }
 
+# 各RCPに対応した気候パラメータ
+rcp_climate_params = {
+    1.9: {'temp_trend': 0.02, 'precip_uncertainty_trend': 1, 'extreme_precip_freq_trend': 0.05},
+    2.6: {'temp_trend': 0.025, 'precip_uncertainty_trend': 5, 'extreme_precip_freq_trend': 0.1},
+    4.5: {'temp_trend': 0.035, 'precip_uncertainty_trend': 15, 'extreme_precip_freq_trend': 0.15},
+    6.0: {'temp_trend': 0.045, 'precip_uncertainty_trend': 20, 'extreme_precip_freq_trend': 0.2},
+    8.5: {'temp_trend': 0.06, 'precip_uncertainty_trend': 25, 'extreme_precip_freq_trend': 0.25}
+}
+
 # 複数シナリオをサーバ側で一時的に保持するための辞書
 # 例: {"シナリオ1": pd.DataFrame(...), "シナリオ2": pd.DataFrame(...)}
 scenarios_data: Dict[str, pd.DataFrame] = {}
@@ -74,10 +83,17 @@ scenarios_data: Dict[str, pd.DataFrame] = {}
 class DecisionVar(BaseModel):
     """1つの意思決定変数レコードを表すクラス."""
     year: int
-    irrigation_water_amount: float
-    released_water_amount: float
-    levee_construction_cost: float
+    planting_trees_amount: float
+    house_migration_amount: float  
+    dam_levee_construction_cost: float
+    paddy_dam_construction_cost: float
+    capacity_building_cost: float
+    # irrigation_water_amount: float
+    # released_water_amount: float
+    # levee_construction_cost: float
+    transportation_invest: float
     agricultural_RnD_cost: float
+    cp_climate_params: float
 
 class CurrentValues(BaseModel):
     temp: float
@@ -92,6 +108,9 @@ class CurrentValues(BaseModel):
     ecosystem_level: float
     levee_investment_years: int
     RnD_investment_years: int
+    urban_level: float
+    resident_burden: float
+    biodiversity_level: float
 
 
 class SimulationRequest(BaseModel):
@@ -163,37 +182,31 @@ def run_simulation(req: SimulationRequest):
     mode = req.mode
 
     # フロントエンドから受け取った意思決定変数を DataFrame 化
-    # (Monte Carlo向けに 10年ごとに定義されている想定)
     if req.decision_vars:
         df_decisions = pd.DataFrame([dv.dict() for dv in req.decision_vars])
         df_decisions.set_index("year", inplace=True)
-        DEFAULT_PARAMS['start_year'] = req.decision_vars[0].year
+        DEFAULT_PARAMS['start_year'] = req.decision_vars[0].year - 1
         DEFAULT_PARAMS['end_year'] = end_year
-        DEFAULT_PARAMS['years'] = np.arange(req.decision_vars[0].year, req.decision_vars[0].year + 1)
-        DEFAULT_PARAMS['total_years'] = len(years)
+        DEFAULT_PARAMS['temp_trend'] = rcp_climate_params[req.decision_vars[0].cp_climate_params]['temp_trend']
+        DEFAULT_PARAMS['precip_uncertainty_trend'] = rcp_climate_params[req.decision_vars[0].cp_climate_params]['precip_uncertainty_trend']
+        DEFAULT_PARAMS['extreme_precip_freq_trend'] = rcp_climate_params[req.decision_vars[0].cp_climate_params]['extreme_precip_freq_trend']
     else:
         # デフォルト (10年おき100,100,0,3) など、必要に応じて決める
         df_decisions = pd.DataFrame()
+    print('[PARAMS]フロントエンドからdecision varを受け取りました：' + str(df_decisions))
+
+    # print(f"[INFO] Scenario: {scenario_name}, Mode: {mode}, Decision:{df_decisions}")
 
     if req.current_year_index_seq:
         current_values = req.current_year_index_seq.dict()
-        print('フロントエンドからcurrent valuesを受け取りました：' + str(current_values))
+        print('[PARAMS]フロントエンドからcurrent valuesを受け取りました：' + str(current_values))
+        DEFAULT_PARAMS['base_extreme_precip_freq'] = current_values["extreme_precip_freq"]
+        DEFAULT_PARAMS['initial_hot_days'] = current_values["hot_days"]
+        DEFAULT_PARAMS['base_temp'] = current_values["temp"]
+        DEFAULT_PARAMS['base_precip'] = current_values["precip"]
     else:
         # 初期値: Streamlit コードのロジックをそのまま踏襲
-        current_values = {
-            'temp': 15.0,
-            'precip': 1000.0,
-            'municipal_demand': 100.0,
-            'available_water': 1000.0,
-            'crop_yield': 100.0,
-            'levee_level': 0.5,
-            'high_temp_tolerance_level': 0.0,
-            'hot_days': 30.0,
-            'extreme_precip_freq': 0.1,
-            'ecosystem_level': 100.0,
-            'levee_investment_years': 0,
-            'RnD_investment_years': 0
-        }
+        SystemError
         print('フロントエンドからcurrent valuesを受け取れませんでした')
 
     # シミュレーション結果を格納するための変数
@@ -219,10 +232,11 @@ def run_simulation(req: SimulationRequest):
 
     elif mode == "Sequential Decision-Making Mode":
         # Streamlit 版では「10年ごとに意思決定 & 次へ進む」という操作を対話的にやっていた
-        # ここでは一括で全期間を計算するサンプル実装にする
-        # （本当に段階的なシミュレーションを行いたい場合は、フロントから毎回 current_year_index_seq 等を送って繰り返し呼ぶ仕組みが必要）
+        # ここでは一年毎のシミュレーションを行う
+        DEFAULT_PARAMS['years'] = np.arange(req.decision_vars[0].year, req.decision_vars[0].year + 1)
+        DEFAULT_PARAMS['total_years'] = len(years)
+        DEFAULT_PARAMS['temp_uncertainty'] = 0.1
 
-        # まとめて全期間を計算
         seq_result = simulate_simulation(
             years=DEFAULT_PARAMS['years'],
             initial_values=current_values,
@@ -230,15 +244,38 @@ def run_simulation(req: SimulationRequest):
             params=DEFAULT_PARAMS
         )
         all_results_df = pd.DataFrame(seq_result)
+    
+    elif mode == "Predict Simulation Mode":
+        # 全期間の予測値を計算する
+        params = DEFAULT_PARAMS.copy()
+        params['years'] = np.arange(req.decision_vars[0].year, end_year + 1)
+        params['total_years'] = len(years)
+        params['temp_uncertainty'] = 0.01
+        # params['base_precip_uncertainty'] = 0
+        params['extreme_precip_freq_uncertainty'] = 0.001
+        params['municipal_demand_uncertainty'] = 0.005
+        params['hot_days_uncertainty'] = 0.1
+
+        print(f"[Params]意思決定項目をsimulation.pyに渡します:{df_decisions}")
+
+        seq_result = simulate_simulation(
+            years=params['years'],
+            initial_values=current_values,
+            decision_vars_list=df_decisions,
+            params=params
+        )
+
+        all_results_df = pd.DataFrame(seq_result)
 
     else:
         raise HTTPException(status_code=400, detail=f"Unknown mode: {mode}")
 
     # シナリオ名で結果を保存 (サーバー側に一時保管)
-    scenarios_data[scenario_name] = all_results_df.copy()
+    if mode != "Predict Simulation Mode":
+        scenarios_data[scenario_name] = all_results_df.copy()
 
     # JSON で返せるように変換
-    print('バックエンドの計算結果：' + str(all_results_df.to_dict))
+    # print('バックエンドの計算結果：' + str(all_results_df.to_dict))
     response = SimulationResponse(
         scenario_name=scenario_name,
         data=all_results_df.to_dict(orient="records")

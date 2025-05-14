@@ -1,6 +1,7 @@
 # simulation.py
 
 import numpy as np
+import pandas as pd
 
 def simulate_year(year, prev_values, decision_vars, params):
     # --- 前年の値を展開 ---
@@ -237,11 +238,18 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
     for idx, year in enumerate(years):
         # 意思決定変数の取得
         if isinstance(decision_vars_list, list):
-            decision_vars = decision_vars_list[-1]
+            # 意思決定変数の取得
+            decision_vars = decision_vars_list[len(decision_vars_list)-1]
+        elif isinstance(decision_vars_list, pd.DataFrame):
+            decision_vars = decision_vars_list.to_dict(orient='records')[0]
         else:
             decision_year = (year - params['start_year']) // 10 * 10 + params['start_year']
-            raw = decision_vars_list.loc[decision_year].to_dict()
-            decision_vars = { new_key: raw.get(old_key, 0) for old_key, new_key in key_mapping.items() }
+            decision_vars_raw = decision_vars_list.loc[decision_year].to_dict()
+            decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
+            # if '灌漑水量 (Irrigation Water Amount)' in decision_vars_raw:
+            #     decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
+            # else:
+            #     decision_vars = decision_vars_raw
 
         prev_values, outputs = simulate_year(year, prev_values, decision_vars, params)
         results.append(outputs)

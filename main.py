@@ -26,6 +26,20 @@ rcp_climate_params = {
     8.5: {'temp_trend': 0.06, 'precip_uncertainty_trend': 25, 'extreme_precip_freq_trend': 0.25}
 }
 
+# RCPシナリオ選択
+rcp_options = {'RCP1.9': 1.9, 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 'RCP8.5': 8.5}
+selected_rcp = st.sidebar.selectbox('Select RCP Scenario / RCPシナリオを選択', list(rcp_options.keys()), index=1)
+rcp_value = rcp_options[selected_rcp]
+
+# 各RCPに対応した気候パラメータ
+rcp_climate_params = {
+    1.9: {'temp_trend': 0.02, 'precip_uncertainty_trend': 1, 'extreme_precip_freq_trend': 0.05},
+    2.6: {'temp_trend': 0.025, 'precip_uncertainty_trend': 5, 'extreme_precip_freq_trend': 0.1},
+    4.5: {'temp_trend': 0.035, 'precip_uncertainty_trend': 15, 'extreme_precip_freq_trend': 0.15},
+    6.0: {'temp_trend': 0.045, 'precip_uncertainty_trend': 20, 'extreme_precip_freq_trend': 0.2},
+    8.5: {'temp_trend': 0.06, 'precip_uncertainty_trend': 25, 'extreme_precip_freq_trend': 0.25}
+}
+
 # シミュレーションのパラメータ
 start_year = 2026
 end_year = 2100
@@ -241,6 +255,7 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
     # released_water_amount = st.sidebar.slider('Released Water Amount / 放流水量：増やすと洪水リスクが小さくなります', min_value=0, max_value=200, value=100, step=10)
     # levee_construction_cost = st.sidebar.slider('Levee Construction Investment / 堤防工事費：増やすと洪水リスクが小さくなります', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
     # agricultural_RnD_cost = st.sidebar.slider('Agricultural R&D Investment / 農業研究開発費：増やすと高温に強い品種ができます', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
+
     planting_trees_amount = st.sidebar.slider('植林・森林保全（ha/年）', min_value=0, max_value=200, value=100, step=50)
     house_migration_amount = st.sidebar.slider('住宅移転・嵩上げ（軒/年）', min_value=0, max_value=200, value=100, step=10)
     dam_levee_construction_cost = st.sidebar.slider('ダム・堤防工事（億円/年）', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
@@ -400,7 +415,7 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
     # シナリオの比較と散布図
     compare_scenarios_yearly(
         scenarios_data=st.session_state['scenarios'],
-        variables=['Flood Damage', 'Crop Yield', 'Ecosystem Level', 'Urban Level', 'Municipal Cost', 'Forest Area']
+        variables=['Flood Damage', 'Crop Yield', 'Ecosystem Level', 'Urban Level', 'Municipal Cost']
     )
 
 # シナリオの指標を集計
@@ -410,8 +425,7 @@ def calculate_scenario_indicators(scenario_data):
         '洪水被害': scenario_data['Flood Damage'].sum(),
         '生態系': scenario_data.loc[scenario_data['Year'] == end_year, 'Ecosystem Level'].values[0],
         '都市利便性': scenario_data.loc[scenario_data['Year'] == end_year, 'Urban Level'].values[0],
-        '予算': scenario_data['Municipal Cost'].sum(),
-        # '森林面積': scenario_data.loc[scenario_data['Year'] == end_year, 'Forest Area'].values[0],
+        '予算': scenario_data['Municipal Cost'].sum()
     }
     return indicators
 
