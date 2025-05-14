@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Alert, AlertTitle, Box, Button, Dialog, DialogTitle, DialogContent, IconButton, Slider, Stack, styled, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, Dialog, DialogTitle, DialogContent, Grid, IconButton, Slider, Stack, styled, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper } from '@mui/material';
 import { LineChart, ScatterChart, Gauge } from '@mui/x-charts';
 import { ThunderstormOutlined, TsunamiOutlined, WbSunnyOutlined } from '@mui/icons-material';
 import InfoIcon from '@mui/icons-material/Info';
@@ -29,21 +29,31 @@ ChartJS.register(
 // バックエンドの URL を環境変数や直書きなどで指定
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
 
+// 各種設定
+
+const LINE_CHART_ITEM = "Crop Yield"
+
 function App() {
   // シミュレーション実行用のステート
   const [scenarioName, setScenarioName] = useState("シナリオ1");
-  const [numSimulations, setNumSimulations] = useState(50);
+  const [numSimulations, setNumSimulations] = useState(1);
   const intervalRef = useRef(null);
   const isRunningRef = useRef(false);
   const [numA, setNumA] = useState(20)
-  const [testData, setTestData] = useState([[], []])
+  const [chartPredictData, setChartPredictData] = useState([[], []]); // [0]が初期値予測 [1]が下限値予測、[2]が上限値予測
   const [openResultUI, setOpenResultUI] = useState(false);
   const [decisionVar, setDecisionVar] = useState({
     year: 2026,
-    irrigation_water_amount: 100,
-    released_water_amount: 100,
-    levee_construction_cost: 0,
-    agricultural_RnD_cost: 3
+    planting_trees_amount: 100.,   // 植林・森林保全
+    house_migration_amount: 100.,  // 住宅移転・嵩上げ
+    dam_levee_construction_cost: 0., //ダム・堤防工事
+    paddy_dam_construction_cost: 3., //田んぼダム工事
+    capacity_building_cost: 3.,   // 防災訓練・普及啓発
+    // irrigation_water_amount: 100, // 灌漑水量
+    // released_water_amount: 100,   // 放流水量
+    transportation_invest: 3,     // 交通網の拡充
+    agricultural_RnD_cost: 3,      // 農業研究開発
+    cp_climate_params: 4.5 //RCPの不確実性シナリオ
   })
   const [currentValues, setCurrentValues] = useState({
     temp: 15.0,
@@ -57,7 +67,10 @@ function App() {
     extreme_precip_freq: 0.1,
     ecosystem_level: 100.0,
     levee_investment_years: 0,
-    RnD_investment_years: 0
+    RnD_investment_years: 0,
+    urban_level: 100.,
+    resident_burden: 80.,
+    biodiversity_level: 100.,
   })
   const [simulationData, setSimulationData] = useState([]); // 結果格納
 
@@ -75,6 +88,7 @@ function App() {
 
   useEffect(() => {
     decisionVarRef.current = decisionVar;
+    fetchForecastData();
   }, [decisionVar]);
 
   // (A) シミュレーション実行ハンドラ
@@ -121,18 +135,6 @@ function App() {
       // シミュレーション実行
       await handleSimulate();
 
-      // 利害関係者の評価変動
-      const randomNum = Math.floor(Math.random() * 21) - 10;
-      setNumA(prev => prev + randomNum);
-
-      // グラフの評価変動
-      setTestData(prev => {
-        const newData = [...prev];
-        newData[0] = [...newData[0], nextYear + 1];
-        newData[1] = [...newData[1], currentValuesRef.current.temp];
-        return newData;
-      });
-
       // 次へ
       count += 1;
       nextYear += 1;
@@ -145,6 +147,62 @@ function App() {
     }
 
     isRunningRef.current = false;
+  };
+
+  // decisionVarが変動した際に予測値をリアルタイムで取得する
+  const fetchForecastData = async () => {
+    try {
+      // /simulate に POST するパラメータ
+      console.log("現在の入力:", decisionVarRef.current, currentValuesRef.current)
+
+      // 上限予測値の計算
+      let upperDecisionVar = { ...decisionVarRef.current };
+      upperDecisionVar['cp_climate_params'] = 8.5
+      // console.log("上限値のパラメータ：", upperDecisionVar)
+
+      const upperBody = {
+        scenario_name: scenarioName,
+        mode: "Predict Simulation Mode",  // "Monte Carlo Simulation Mode" または "Sequential Decision-Making Mode"
+        decision_vars: [upperDecisionVar],
+        num_simulations: Number(numSimulations),
+        current_year_index_seq: currentValuesRef.current
+      };
+
+      // axios でリクエスト
+      const upresp = await axios.post(`${BACKEND_URL}/simulate`, upperBody);
+      if (upresp.data && upresp.data.data) {
+        setChartPredictData((prev) => {
+          const updated = [...prev];
+          updated[1] = upresp.data.data;
+          return updated;
+        });
+      }
+
+      // 下限予測値の計算
+      let lowerDecisionVar = { ...decisionVarRef.current };
+      lowerDecisionVar['cp_climate_params'] = 1.9
+      // console.log("下限値のパラメータ：", lowerDecisionVar)
+
+      const lowerBody = {
+        scenario_name: scenarioName,
+        mode: "Predict Simulation Mode",  // "Monte Carlo Simulation Mode" または "Sequential Decision-Making Mode"
+        decision_vars: [lowerDecisionVar],
+        num_simulations: Number(numSimulations),
+        current_year_index_seq: currentValuesRef.current
+      };
+
+      // axios でリクエスト
+      const resp = await axios.post(`${BACKEND_URL}/simulate`, lowerBody);
+      if (resp.data && resp.data.data) {
+        setChartPredictData((prev) => {
+          const updated = [...prev];
+          updated[0] = resp.data.data;
+          return updated;
+        });
+      }
+    } catch (error) {
+      console.error("API取得エラー:", error);
+    }
   };
 
 
@@ -221,7 +279,10 @@ function App() {
     });
   };
 
+
+
   const updateCurrentValues = (newDict) => {
+    console.log("更新されるnewDict:", newDict);
     const updated = {
       temp: newDict["Temperature (℃)"],
       precip: newDict["Precipitation (mm)"],
@@ -235,38 +296,62 @@ function App() {
       ecosystem_level: newDict["Ecosystem Level"],
       // levee_investment_years: newDict[""],
       // RnD_investment_years: newDict[""],
+      urban_level: newDict['Urban Level'],
+      resident_burden: newDict['Resident Burden'],
+      biodiversity_level: newDict['Biodiversity Level']
     };
+    console.log("更新されるcurrentValues:", updated);
     setCurrentValues(prev => ({ ...prev, ...updated }));
     currentValuesRef.current = { ...currentValuesRef.current, ...updated };
   };
+
+  // chartPredictData[1] のデータを取得
+  const xAxisYears = Array.from({ length: 2100 - 2025 + 1 }, (_, i) => 2026 + i);
+
+  const getPredictData = (predicDataArray) => {
+    const predictDataMap = new Map();
+    if (predicDataArray) { // predicDataArray が存在する場合のみ処理
+      predicDataArray.forEach(item => {
+        predictDataMap.set(item["Year"], item[LINE_CHART_ITEM]);
+      });
+    }
+
+    // X軸の各年に対応する温度データの配列を生成（データがない年はnull）
+    const formattedPredictData = xAxisYears.map(year => {
+      return predictDataMap.has(year) ? predictDataMap.get(year) : null;
+    });
+
+    return formattedPredictData
+  }
+
+
 
 
 
 
   return (
-    <Box sx={{ padding: 4, backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
+    <Box sx={{ padding: 2, backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
       {/* ヘッダー */}
-      <Typography variant="h4" gutterBottom>
-        Climate Simulation Frontend
-      </Typography>
 
-      <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-        <IconButton color="primary" onClick={handleOpenResultUI}>
-          <InfoIcon />
-        </IconButton>
-      </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Typography variant="h4" gutterBottom>
+          気候変動シミュレーション
+        </Typography>
         <h2>{decisionVar.year - 1}年</h2>
         <Button variant="contained" color="primary" onClick={handleClickCalc}>
           15年進める
         </Button>
-        <h2>現在の世界平均気温: {currentValues.temp.toFixed(1)}度</h2>
+        <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+        <IconButton color="primary" onClick={handleOpenResultUI}>
+          <InfoIcon />
+        </IconButton>
+      </Box>
       </Box>
 
       {/* メインレイアウト */}
-      <Box sx={{ display: 'flex', width: '100%', mt: 4, gap: 3 }}>
-        {/* 左側：画像＋スライダー */}
+      <Box sx={{ display: 'flex', width: '100%', marginBottom: 1, gap: 3 }}>
+        {/* 左側：画像 */}
         <Paper
           elevation={3}
           sx={{
@@ -276,120 +361,15 @@ function App() {
             overflow: 'hidden',
           }}
         >
+
           <Box sx={{ position: 'relative', width: '100%' }}>
             <img
               src="/causal_loop_diagram.png"
               alt="サンプル画像"
               style={{ width: '100%', display: 'block', height: 'auto' }}
             />
-
-            <Box
-              sx={{
-                position: 'absolute',
-                top: '58.5%',
-                left: '67.3%',
-                transform: 'translate(-50%, -50%)',
-                width: '10%',
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                padding: '8px',
-                borderRadius: '8px',
-                boxShadow: 2,
-              }}
-            >
-              灌漑水量
-              <Slider
-                defaultValue={decisionVar.irrigation_water_amount}
-                min={0}
-                max={200}
-                aria-label="画像スライダー"
-                size="small"
-                valueLabelDisplay="auto"
-                color="secondary"
-                onChange={(event, newValue) => updateDecisionVar('irrigation_water_amount', newValue)}
-              />
-            </Box>
-
-            <Box
-              sx={{
-                position: 'absolute',
-                top: '75.5%',
-                left: '67.3%',
-                transform: 'translate(-50%, -50%)',
-                width: '10%',
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                padding: '8px',
-                borderRadius: '8px',
-                boxShadow: 2,
-              }}
-            >
-              released water amount
-              <Slider
-                defaultValue={decisionVar.released_water_amount}
-                min={0}
-                max={200}
-                aria-label="画像スライダー"
-                size="small"
-                valueLabelDisplay="auto"
-                color="secondary"
-                onChange={(event, newValue) => updateDecisionVar('released_water_amount', newValue)}
-              />
-            </Box>
-
-            <Box
-              sx={{
-                position: 'absolute',
-                top: '45.5%',
-                left: '50.3%',
-                transform: 'translate(-50%, -50%)',
-                width: '10%',
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                padding: '8px',
-                borderRadius: '8px',
-                boxShadow: 2,
-              }}
-            >
-              levee_construction_cost
-              <Slider
-                defaultValue={decisionVar.levee_construction_cost}
-                min={0}
-                max={200}
-                aria-label="画像スライダー"
-                size="small"
-                valueLabelDisplay="auto"
-                color="secondary"
-                onChange={(event, newValue) => updateDecisionVar('levee_construction_cost', newValue)}
-              />
-            </Box>
-
-            <Box
-              sx={{
-                position: 'absolute',
-                top: '15.5%',
-                left: '37.3%',
-                transform: 'translate(-50%, -50%)',
-                width: '10%',
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                padding: '8px',
-                borderRadius: '8px',
-                boxShadow: 2,
-              }}
-            >
-              agricultural_RnD_cost
-              <Slider
-                defaultValue={decisionVar.agricultural_RnD_cost}
-                min={0}
-                max={200}
-                aria-label="画像スライダー"
-                size="small"
-                valueLabelDisplay="auto"
-                color="secondary"
-                onChange={(event, newValue) => updateDecisionVar('agricultural_RnD_cost', newValue)}
-              />
-            </Box>
-
-
-
           </Box>
+
         </Paper>
 
         {/* 右側：ゲージ＋グラフ */}
@@ -408,33 +388,33 @@ function App() {
           {/* ゲージセクション */}
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h6" gutterBottom>
-              利害関係者の評価
+              {decisionVar.year - 1}年時点の評価
             </Typography>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 2 }}>
               {/* 各ゲージ */}
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ mb: 0 }}>政府関係者</Typography>
-                <Gauge width={100} height={100} value={simulationData.at(-1)?.["Municipal Cost"].toFixed(1)} startAngle={-90} endAngle={90} />
-                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>予算</Typography>
+                <Typography variant="body2" sx={{ mb: 0 }}>年平均気温</Typography>
+                <Gauge width={100} height={100} value={currentValues.temp} valueMax={40} />
+                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>℃</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ mb: 0 }}>農業関係者</Typography>
-                <Gauge width={100} height={100} value={simulationData.at(-1)?.["Crop Yield"].toFixed(1)} startAngle={-90} endAngle={90} valueMax={100} />
-                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>収穫量</Typography>
+                <Typography variant="body2" sx={{ mb: 0 }}>年平均降水量</Typography>
+                <Gauge width={100} height={100} value={currentValues.precip} valueMax={1500} valueMin={500} />
+                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>mm</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ mb: 0 }}>住民</Typography>
-                <Gauge width={100} height={100} value={simulationData.at(-1)?.["Flood Damage"].toFixed(1)} startAngle={-90} endAngle={90} />
-                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>洪水被害</Typography>
+                <Typography variant="body2" sx={{ mb: 0 }}>住民の負担</Typography>
+                <Gauge width={100} height={100} value={currentValues.resident_burden} valueMax={300} />
+                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>ー</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ mb: 0 }}>環境団体</Typography>
-                <Gauge width={100} height={100} value={simulationData.at(-1)?.["Ecosystem Level"].toFixed(1)} startAngle={-90} endAngle={90} />
-                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>生態系</Typography>
+                <Typography variant="body2" sx={{ mb: 0 }}>生物多様性</Typography>
+                <Gauge width={100} height={100} value={currentValues.biodiversity_level} valueMax={120} />
+                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>ー</Typography>
               </Box>
             </Box>
           </Box>
@@ -444,23 +424,44 @@ function App() {
           <LineChart
             xAxis={[
               {
-                data: testData[0],
+                data: xAxisYears,
                 label: 'Years',
                 scaleType: 'linear',
                 tickMinStep: 1,
                 showGrid: true,
+                min: 2020,
+                max: 2100
               },
             ]}
             yAxis={[
               {
-                label: 'test - 気温（℃）',
+                label: '収穫量',
                 showGrid: true,
+                // min: 10,
+                // max: 30
               },
             ]}
             series={[
               {
-                data: testData[1],
+                data: simulationData.map((row) => row[LINE_CHART_ITEM]),
+                label: '実測値',
+                color: '#ff5722',
+                showMark: false,
               },
+              {
+                data: getPredictData(chartPredictData[1]),
+                label: '上限値予測',
+                color: '#cccccc',
+                lineStyle: 'dashed',
+                showMark: false
+              },
+              {
+                data: getPredictData(chartPredictData[0]),
+                label: '下限値予測',
+                color: '#cccccc',
+                lineStyle: 'dashed',
+                showMark: false
+              }
             ]}
             height={300}
             sx={{
@@ -473,6 +474,185 @@ function App() {
           />
         </Paper>
       </Box>
+      <Box style={{ width: '100%' }}>
+        <Grid container spacing={2}> {/* spacingでBox間の余白を調整できます */}
+          <Grid size={4}>
+
+            <Box
+              sx={{
+                width: '100%',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: '6px',
+                borderRadius: '8px',
+                boxShadow: 2,
+              }}
+            >
+              交通網の充実
+              <Slider
+                defaultValue={decisionVar.transportation_invest}
+                min={0}
+                max={9}
+                marks={[{ value: 0 }, { value: 3 }, { value: 6 }, { value: 9 }]}
+                step={null}
+                aria-label="画像スライダー"
+                size="small"
+                valueLabelDisplay="auto"
+                color="secondary"
+                onChange={(event, newValue) => updateDecisionVar('transportation_invest', newValue)}
+              />
+            </Box>
+          </Grid>
+          <Grid size={4}>
+            <Box
+              sx={{
+                width: '100%',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: '6px',
+                borderRadius: '8px',
+                boxShadow: 2,
+              }}
+            >
+              植林・森林保全
+              <Slider
+                defaultValue={decisionVar.planting_trees_amount}
+                min={0}
+                max={200}
+                marks={[{ value: 0 }, { value: 50 }, { value: 100 }, { value: 150 }, { value: 200 }]}
+                step={null}
+                aria-label="画像スライダー"
+                size="small"
+                valueLabelDisplay="auto"
+                color="secondary"
+                onChange={(event, newValue) => updateDecisionVar('planting_trees_amount', newValue)}
+              />
+            </Box>
+          </Grid>
+          <Grid size={4}>
+            <Box
+              sx={{
+                width: '100%',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: '6px',
+                borderRadius: '8px',
+                boxShadow: 2,
+              }}
+            >
+              ダム・堤防工事
+              <Slider
+                defaultValue={decisionVar.dam_levee_construction_cost}
+                min={0}
+                max={9}
+                marks={[{ value: 0 }, { value: 3 }, { value: 6 }, { value: 9 }]}
+                step={null}
+                aria-label="画像スライダー"
+                size="small"
+                valueLabelDisplay="auto"
+                color="secondary"
+                onChange={(event, newValue) => updateDecisionVar('dam_levee_construction_cost', newValue)}
+              />
+            </Box>
+          </Grid><Grid size={4}>
+            <Box
+              sx={{
+                width: '100%',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: '6px',
+                borderRadius: '8px',
+                boxShadow: 2,
+              }}
+            >
+              農業研究開発
+              <Slider
+                defaultValue={decisionVar.agricultural_RnD_cost}
+                min={0}
+                max={9}
+                marks={[{ value: 0 }, { value: 3 }, { value: 6 }, { value: 9 }]}
+                step={null}
+                aria-label="画像スライダー"
+                size="small"
+                valueLabelDisplay="auto"
+                color="secondary"
+                onChange={(event, newValue) => updateDecisionVar('agricultural_RnD_cost', newValue)}
+              />
+            </Box>
+          </Grid><Grid size={4}>
+            <Box
+              sx={{
+                width: '100%',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: '6px',
+                borderRadius: '8px',
+                boxShadow: 2,
+              }}
+            >
+              住宅移転・嵩上げ
+              <Slider
+                defaultValue={decisionVar.house_migration_amount}
+                min={0}
+                max={200}
+                marks={[{ value: 0 }, { value: 50 }, { value: 100 }, { value: 150 }, { value: 200 }]}
+                step={null}
+                aria-label="画像スライダー"
+                size="small"
+                valueLabelDisplay="auto"
+                color="secondary"
+                onChange={(event, newValue) => updateDecisionVar('house_migration_amount', newValue)}
+              />
+            </Box>
+          </Grid><Grid size={4}>
+            <Box
+              sx={{
+                width: '100%',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: '6px',
+                borderRadius: '8px',
+                boxShadow: 2,
+              }}
+            >
+              田んぼダム工事
+              <Slider
+                defaultValue={decisionVar.paddy_dam_construction_cost}
+                min={0}
+                max={9}
+                marks={[{ value: 0 }, { value: 3 }, { value: 6 }, { value: 9 }]}
+                step={null}
+                aria-label="画像スライダー"
+                size="small"
+                valueLabelDisplay="auto"
+                color="secondary"
+                onChange={(event, newValue) => updateDecisionVar('paddy_dam_construction_cost', newValue)}
+              />
+            </Box>
+          </Grid><Grid size={4}>
+            <Box
+              sx={{
+                width: '100%',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: '6px',
+                borderRadius: '8px',
+                boxShadow: 2,
+              }}
+            >
+              防災訓練・啓発
+              <Slider
+                defaultValue={decisionVar.capacity_building_cost}
+                min={0}
+                max={9}
+                marks={[{ value: 0 }, { value: 3 }, { value: 6 }, { value: 9 }]}
+                step={null}
+                aria-label="画像スライダー"
+                size="small"
+                valueLabelDisplay="auto"
+                color="secondary"
+                onChange={(event, newValue) => updateDecisionVar('capacity_building_cost', newValue)}
+              />
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+
+
+
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <h2>テスト↓ API周り</h2>
         <Button variant="contained" color="primary" onClick={handleSimulate}>
