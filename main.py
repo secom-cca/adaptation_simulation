@@ -20,7 +20,7 @@ rcp_climate_params = {
 }
 
 # シミュレーションのパラメータ
-start_year = 2021
+start_year = 2026
 end_year = 2100
 total_years = end_year - start_year + 1
 years = np.arange(start_year, end_year + 1)
@@ -64,7 +64,7 @@ params = {
 # RCPに基づきトレンドを適用
 params.update(rcp_climate_params[rcp_value])
 
-image_path = "causal_loop_diagram.png"  # 画像ファイルのパスを指定
+image_path = "fig/mayfes_merge.png"  # 画像ファイルのパスを指定
 st.image(image_path, caption='Simulator Overview', use_container_width=True)
 
 # シミュレーションモードの選択
@@ -78,8 +78,10 @@ if 'scenarios' not in st.session_state:
     st.session_state['scenarios'] = {}
 
 if simulation_mode == 'Monte Carlo Simulation Mode':
-    st.sidebar.title('Decision-Making Variables (every 10 yrs) / 意思決定変数（10年ごと）')
-    decision_years = np.arange(start_year, end_year + 1, 10)
+    # st.sidebar.title('Decision-Making Variables (every 10 yrs) / 意思決定変数（10年ごと）')
+    # decision_years = np.arange(start_year, end_year + 1, 10)
+    st.sidebar.title('Decision-Making Variables (every 25 yrs) / 意思決定変数（25年ごと）')
+    decision_years = np.array([2025, 2050, 2075])
     decision_df = pd.DataFrame({
         'Year': decision_years.astype(int),
         '植林・森林保全': [100.0]*len(decision_years),
@@ -116,7 +118,9 @@ if simulation_mode == 'Monte Carlo Simulation Mode':
                 'ecosystem_level': 100.0,
                 'urban_level': 100.0,
                 'levee_investment_years': 0,
-                'RnD_investment_years': 0
+                'RnD_investment_years': 0,
+                'forest_area': 100.0,
+                'forest_area_history': {start_year: 100.0}
             }
 
             # シミュレーションの実行
@@ -222,7 +226,7 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
         st.session_state['decision_vars_seq'] = []
 
     # 意思決定変数の入力（現在の期間用）
-    st.sidebar.title('Decision Making for the next 10 yrs / 意思決定変数（次の10年間）')
+    st.sidebar.title('Decision Making for the next 25 yrs / 意思決定変数（次の25年間）')
     # st.sidebar.write('今後10年間の政策を考えてみましょう')
     # irrigation_water_amount = st.sidebar.slider('Irrigation Water Amount / 灌漑水量：増やすと収量が多くなります', min_value=0, max_value=200, value=100, step=10)
     # released_water_amount = st.sidebar.slider('Released Water Amount / 放流水量：増やすと洪水リスクが小さくなります', min_value=0, max_value=200, value=100, step=10)
@@ -237,7 +241,7 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
     transportation_invest = st.sidebar.slider('交通網の充実', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
 
     # 意思決定変数をセッション状態に保存（10年ごと）
-    if st.session_state['current_year_index_seq'] % 10 == 0:
+    if st.session_state['current_year_index_seq'] % 25 == 0:
         st.session_state['decision_vars_seq'].append({
             # 'irrigation_water_amount': irrigation_water_amount,
             # 'released_water_amount': released_water_amount,
@@ -252,11 +256,12 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
         })
 
     # シミュレーションの実行（次の10年間）
-    simulate_button_seq = st.sidebar.button('Next / 次の10年へ')
+    simulate_button_seq = st.sidebar.button('Next / 次の25年へ')
 
     if simulate_button_seq:
         current_year_index = st.session_state['current_year_index_seq']
-        next_year_index = min(current_year_index + 10, total_years)
+        next_year_index = min(current_year_index + 25, total_years)
+        # next_year_index = min(current_year_index + 10, total_years)
         sim_years = years[current_year_index:next_year_index]
 
         prev_values = st.session_state['prev_values_seq']
@@ -374,7 +379,9 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
             'ecosystem_level': 100.0,
             'urban_level': 100.0,
             'levee_investment_years': 0,
-            'RnD_investment_years': 0
+            'RnD_investment_years': 0,
+            'forest_area': 100.0,
+            'forest_area_history': {start_year: 100.0}
         }
         st.session_state['decision_vars_seq'] = []
         st.rerun()
@@ -382,7 +389,7 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
     # シナリオの比較と散布図
     compare_scenarios_yearly(
         scenarios_data=st.session_state['scenarios'],
-        variables=['Flood Damage', 'Crop Yield', 'Ecosystem Level', 'Urban Level', 'Municipal Cost']
+        variables=['Flood Damage', 'Crop Yield', 'Ecosystem Level', 'Urban Level', 'Municipal Cost', 'Forest Area']
     )
 
 # シナリオの指標を集計
@@ -392,7 +399,8 @@ def calculate_scenario_indicators(scenario_data):
         '洪水被害': scenario_data['Flood Damage'].sum(),
         '生態系': scenario_data.loc[scenario_data['Year'] == end_year, 'Ecosystem Level'].values[0],
         '都市利便性': scenario_data.loc[scenario_data['Year'] == end_year, 'Urban Level'].values[0],
-        '予算': scenario_data['Municipal Cost'].sum()
+        '予算': scenario_data['Municipal Cost'].sum(),
+        '森林面積': scenario_data.loc[scenario_data['Year'] == end_year, 'Forest Area'].values[0],
     }
     return indicators
 
@@ -407,6 +415,7 @@ if st.session_state['scenarios']:
     df_indicators['生態系順位'] = df_indicators['生態系'].rank(ascending=False)
     df_indicators['都市利便性順位'] = df_indicators['都市利便性'].rank(ascending=False)
     df_indicators['予算順位'] = df_indicators['予算'].rank(ascending=True)
+    df_indicators['森林面積順位'] = df_indicators['森林面積'].rank(ascending=False)
 
     # 結果の表示
     st.subheader('Metrics and Rankings / シナリオごとの指標と順位')
