@@ -64,8 +64,8 @@ params = {
 # RCPに基づきトレンドを適用
 params.update(rcp_climate_params[rcp_value])
 
-image_path = "fig/mayfes_image.png"  # 画像ファイルのパスを指定
-st.image(image_path, caption='Simulator Overview') #, use_container_width=True)
+image_path = "fig/mayfes_merge.png"  # 画像ファイルのパスを指定
+st.image(image_path, caption='Simulator Overview', use_container_width=True)
 
 # シミュレーションモードの選択
 simulation_mode = st.sidebar.selectbox('Select Simulation Mode / シミュレーションモードを選択', ['Sequential Decision-Making Mode', 'Monte Carlo Simulation Mode'])
