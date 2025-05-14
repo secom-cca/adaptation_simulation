@@ -1,0 +1,79 @@
+canvas{
+  width: 400px;
+  height: 400px; 
+}
+
+.flex{
+  display: flex;
+  flex-wrap: wrap;
+}
+.scenario {
+  /*width: 90vw;*/
+  height: 5vh;
+  background-color: #fff95d;
+  font-size: 3vh;
+  margin: 0.5em 0 0 20px;
+}
+.box {
+  width: 30vw;
+  height: 12vh;
+  background-color: #77dddd;
+  display: flex;
+  margin: 0 0 0 20px;
+}
+.icon {
+  width: 12vw;
+  height: 100%;
+  text-align:center;
+}
+.icon img {
+  height: 12vh;
+  object-fit: contain;
+}
+.scorebox {
+  width: 20vw;
+  height: 12vh;
+}
+.scorekey {
+  width: 20vw;
+  height: 5vh;
+  background-color: #7777dd;
+  text-align:center;
+  font-size: 3vh;
+}
+.scoreitem {
+  width: 20vw;
+  height: 7vh;
+  background-color: #ddd55d;
+  display: flex;
+}
+.myscore {
+  width: 12vw;
+  height: 100%;
+  background-color: #dd4555;
+  font-size: 5vh;
+  text-align: center;
+  margin: 0 0 0 3vw;
+}
+.fullscore {
+  width: 4vw;
+  height: 60%;
+  margin: 2.8vh 0 0 0; 
+  background-color: #494555;
+  font-size: 3vh;
+  text-align: center;
+}
+.chartbox {
+  width: 30vw;
+  height: 45vh;
+  background-color: #ddddd5;
+  display: flex;
+  margin: 0 0 0 20px;
+}
+.next {
+  width: 5vw;
+  height: 5vh;
+  background-color: #fff95d;
+  font-size: 3vh;
+  margin: 0.4em 0 0 90vw;
+}

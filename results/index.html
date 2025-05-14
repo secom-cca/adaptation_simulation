@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Result</title>
+    <link rel="stylesheet" href="css/index_style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+      <h2>Result - 結果発表</h2>
+      <div class="scenario">
+        <b>最終スコア（2100年）</b>
+        シナリオ：<span id="scenario"></span>
+      </div>
+      <div class="flex">
+        <div class="box">
+          <div class="icon">
+            <img src="images/souji_jusou.png">
+          </div>
+          <div class="scorebox">
+            <div class="scorekey">
+              洪水被害
+            </div>
+            <div class="scoreitem">
+              <div class="myscore">
+                <span id="result1"></span>
+              </div>
+              <div class="fullscore">
+                /100
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="box">
+          <div class="icon">
+            <img src="images/souji_jusou.png">
+          </div>
+          <div class="scorebox">
+            <div class="scorekey">
+              農業生産
+            </div>
+            <div class="scoreitem">
+              <div class="myscore">
+                <span id="result2"></span>
+              </div>
+              <div class="fullscore">
+                /100
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="icon">
+            <img src="images/souji_jusou.png">
+          </div>
+          <div class="scorebox">
+            <div class="scorekey">
+              都市利便性
+            </div>
+            <div class="scoreitem">
+              <div class="myscore">
+                <span id="result3"></span>
+              </div>
+              <div class="fullscore">
+                /100
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="icon">
+            <img src="images/souji_jusou.png">
+          </div>
+          <div class="scorebox">
+            <div class="scorekey">
+              生物・環境多様性
+            </div>
+            <div class="scoreitem">
+              <div class="myscore">
+                <span id="result4"></span>
+              </div>
+              <div class="fullscore">
+                /100
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="icon">
+            <img src="images/souji_jusou.png">
+          </div>
+          <div class="scorebox">
+            <div class="scorekey">
+              住民負担
+            </div>
+            <div class="scoreitem">
+              <div class="myscore">
+                <span id="result5"></span>
+              </div>
+              <div class="fullscore">
+                /100
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="icon">
+            <img src="images/souji_jusou.png">
+          </div>
+          <div class="scorebox">
+            <div class="scorekey">
+              総合結果
+            </div>
+            <div class="scoreitem">
+              <div class="myscore">
+                <span id="resultsum"></span>
+              </div>
+              <div class="fullscore">
+                /500
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scenario">
+        <b>世代別スコア</b>
+      </div>
+
+      <div class="flex">
+        <div class="chartbox">
+          <canvas id="Chart2050"></canvas>
+        </div>
+        <div class="chartbox">
+          <canvas id="Chart2075"></canvas>
+        </div>
+        <div class="chartbox">
+          <canvas id="Chart2100"></canvas>
+        </div>
+        <div class="next">
+          <a href="ranking.html" class="btn">NEXT→</a>
+        </div> 
+      </div>
+
+      <script src="js/index_script.js"></script>
+  </body>
+</html>

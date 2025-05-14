@@ -4,6 +4,27 @@ import streamlit as st
 from io import BytesIO
 from backend.scr.simulation import simulate_simulation
 from backend.scr.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly
+from dotenv import load_dotenv
+import os
+import openai
+
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+client = openai.OpenAI(api_key=api_key)
+
+# RCPシナリオ選択
+rcp_options = {'RCP1.9': 1.9, 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 'RCP8.5': 8.5}
+selected_rcp = st.sidebar.selectbox('Select RCP Scenario / RCPシナリオを選択', list(rcp_options.keys()), index=1)
+rcp_value = rcp_options[selected_rcp]
+
+# 各RCPに対応した気候パラメータ
+rcp_climate_params = {
+    1.9: {'temp_trend': 0.02, 'precip_uncertainty_trend': 1, 'extreme_precip_freq_trend': 0.05},
+    2.6: {'temp_trend': 0.025, 'precip_uncertainty_trend': 5, 'extreme_precip_freq_trend': 0.1},
+    4.5: {'temp_trend': 0.035, 'precip_uncertainty_trend': 15, 'extreme_precip_freq_trend': 0.15},
+    6.0: {'temp_trend': 0.045, 'precip_uncertainty_trend': 20, 'extreme_precip_freq_trend': 0.2},
+    8.5: {'temp_trend': 0.06, 'precip_uncertainty_trend': 25, 'extreme_precip_freq_trend': 0.25}
+}
 
 # RCPシナリオ選択
 rcp_options = {'RCP1.9': 1.9, 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 'RCP8.5': 8.5}
@@ -20,7 +41,7 @@ rcp_climate_params = {
 }
 
 # シミュレーションのパラメータ
-start_year = 2021
+start_year = 2026
 end_year = 2100
 total_years = end_year - start_year + 1
 years = np.arange(start_year, end_year + 1)
@@ -64,7 +85,7 @@ params = {
 # RCPに基づきトレンドを適用
 params.update(rcp_climate_params[rcp_value])
 
-image_path = "causal_loop_diagram.png"  # 画像ファイルのパスを指定
+image_path = "fig/mayfes_merge.png"  # 画像ファイルのパスを指定
 st.image(image_path, caption='Simulator Overview', use_container_width=True)
 
 # シミュレーションモードの選択
@@ -78,8 +99,10 @@ if 'scenarios' not in st.session_state:
     st.session_state['scenarios'] = {}
 
 if simulation_mode == 'Monte Carlo Simulation Mode':
-    st.sidebar.title('Decision-Making Variables (every 10 yrs) / 意思決定変数（10年ごと）')
-    decision_years = np.arange(start_year, end_year + 1, 10)
+    # st.sidebar.title('Decision-Making Variables (every 10 yrs) / 意思決定変数（10年ごと）')
+    # decision_years = np.arange(start_year, end_year + 1, 10)
+    st.sidebar.title('Decision-Making Variables (every 25 yrs) / 意思決定変数（25年ごと）')
+    decision_years = np.array([2025, 2050, 2075])
     decision_df = pd.DataFrame({
         'Year': decision_years.astype(int),
         '植林・森林保全': [100.0]*len(decision_years),
@@ -116,7 +139,10 @@ if simulation_mode == 'Monte Carlo Simulation Mode':
                 'ecosystem_level': 100.0,
                 'urban_level': 100.0,
                 'levee_investment_years': 0,
-                'RnD_investment_years': 0
+                'RnD_investment_years': 0,
+                'forest_area': 100.0,
+                'forest_area_history': {start_year: 100.0},
+                'resident_capacity': 0,
             }
 
             # シミュレーションの実行
@@ -217,27 +243,29 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
             'ecosystem_level': 100.0,
             'urban_level': 100.0,
             'levee_investment_years': 0,
-            'RnD_investment_years': 0
+            'RnD_investment_years': 0,
+            'resident_capacity': 0,
         }
         st.session_state['decision_vars_seq'] = []
 
     # 意思決定変数の入力（現在の期間用）
-    st.sidebar.title('Decision Making for the next 10 yrs / 意思決定変数（次の10年間）')
+    st.sidebar.title('Decision Making for the next 25 yrs / 意思決定変数（次の25年間）')
     # st.sidebar.write('今後10年間の政策を考えてみましょう')
     # irrigation_water_amount = st.sidebar.slider('Irrigation Water Amount / 灌漑水量：増やすと収量が多くなります', min_value=0, max_value=200, value=100, step=10)
     # released_water_amount = st.sidebar.slider('Released Water Amount / 放流水量：増やすと洪水リスクが小さくなります', min_value=0, max_value=200, value=100, step=10)
     # levee_construction_cost = st.sidebar.slider('Levee Construction Investment / 堤防工事費：増やすと洪水リスクが小さくなります', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
     # agricultural_RnD_cost = st.sidebar.slider('Agricultural R&D Investment / 農業研究開発費：増やすと高温に強い品種ができます', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
-    planting_trees_amount = st.sidebar.slider('植林・森林保全', min_value=0, max_value=200, value=100, step=10)
-    house_migration_amount = st.sidebar.slider('住宅移転・嵩上げ', min_value=0, max_value=200, value=100, step=10)
-    dam_levee_construction_cost = st.sidebar.slider('ダム・堤防工事', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
+
+    planting_trees_amount = st.sidebar.slider('植林・森林保全（ha/年）', min_value=0, max_value=200, value=100, step=50)
+    house_migration_amount = st.sidebar.slider('住宅移転・嵩上げ（軒/年）', min_value=0, max_value=200, value=100, step=10)
+    dam_levee_construction_cost = st.sidebar.slider('ダム・堤防工事（億円/年）', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
     paddy_dam_construction_cost = st.sidebar.slider('田んぼダム工事', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
     capacity_building_cost = st.sidebar.slider('防災訓練・普及啓発', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
     agricultural_RnD_cost = st.sidebar.slider('農業研究開発', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
     transportation_invest = st.sidebar.slider('交通網の充実', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
 
     # 意思決定変数をセッション状態に保存（10年ごと）
-    if st.session_state['current_year_index_seq'] % 10 == 0:
+    if st.session_state['current_year_index_seq'] % 25 == 0:
         st.session_state['decision_vars_seq'].append({
             # 'irrigation_water_amount': irrigation_water_amount,
             # 'released_water_amount': released_water_amount,
@@ -252,11 +280,12 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
         })
 
     # シミュレーションの実行（次の10年間）
-    simulate_button_seq = st.sidebar.button('Next / 次の10年へ')
+    simulate_button_seq = st.sidebar.button('Next / 次の25年へ')
 
     if simulate_button_seq:
         current_year_index = st.session_state['current_year_index_seq']
-        next_year_index = min(current_year_index + 10, total_years)
+        next_year_index = min(current_year_index + 25, total_years)
+        # next_year_index = min(current_year_index + 10, total_years)
         sim_years = years[current_year_index:next_year_index]
 
         prev_values = st.session_state['prev_values_seq']
@@ -281,7 +310,8 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
                 'ecosystem_level': sim_results[-1]['Ecosystem Level'],
                 'urban_level': sim_results[-1]['Urban Level'],
                 'levee_investment_years': prev_values['levee_investment_years'],
-                'RnD_investment_years': prev_values['RnD_investment_years']
+                'RnD_investment_years': prev_values['RnD_investment_years'],
+                'resident_capacity': prev_values['resident_capacity'],
             }
 
             st.session_state['prev_values_seq'] = last_values
@@ -374,7 +404,10 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
             'ecosystem_level': 100.0,
             'urban_level': 100.0,
             'levee_investment_years': 0,
-            'RnD_investment_years': 0
+            'RnD_investment_years': 0,
+            'forest_area': 100.0,
+            'forest_area_history': {start_year: 100.0},
+            'resident_capacity': 0,
         }
         st.session_state['decision_vars_seq'] = []
         st.rerun()
@@ -396,6 +429,45 @@ def calculate_scenario_indicators(scenario_data):
     }
     return indicators
 
+def generate_llm_commentary(scenario_name, df_result, model="gpt-4"):
+    # 簡略化された特徴抽出
+    def summarize_results(df):
+        summary = {
+            "収量合計": round(df["Crop Yield"].sum(), 2),
+            "洪水被害合計": round(df["Flood Damage"].sum(), 2),
+            "生態系": round(df[df["Year"] == 2100]["Ecosystem Level"].values[0], 2),
+            "都市利便性": round(df[df["Year"] == 2100]["Urban Level"].values[0], 2),
+            "予算": round(df["Municipal Cost"].sum(), 2)
+        }
+        return summary
+
+    summary_stats = summarize_results(df_result)
+
+    # プロンプトの生成（日本語）
+    prompt = f"""
+あなたはシナリオシミュレーションの専門家です。
+以下は「{scenario_name}」という気候変動適応シナリオにおける結果です。
+
+【シミュレーション結果の要約】
+- 作物収量の合計: {summary_stats['収量合計']}
+- 洪水被害の合計: {summary_stats['洪水被害合計']}
+- 生態系スコア（2050年）: {summary_stats['生態系']}
+- 都市利便性スコア（2100年）: {summary_stats['都市利便性']}
+- 自治体の総予算: {summary_stats['予算']}
+
+この内容を踏まえて、シナリオの長所・短所を含む100-300文字程度の講評を生成してください。
+表現は一般市民に分かりやすくしてください。
+"""
+
+    # OpenAI API呼び出し
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7
+    )
+    return response.choices[0].message.content
+
+
 # シナリオごとに集計
 if st.session_state['scenarios']:
     scenario_indicators = {name: calculate_scenario_indicators(data) for name, data in st.session_state['scenarios'].items()}
@@ -407,10 +479,19 @@ if st.session_state['scenarios']:
     df_indicators['生態系順位'] = df_indicators['生態系'].rank(ascending=False)
     df_indicators['都市利便性順位'] = df_indicators['都市利便性'].rank(ascending=False)
     df_indicators['予算順位'] = df_indicators['予算'].rank(ascending=True)
+    # df_indicators['森林面積順位'] = df_indicators['森林面積'].rank(ascending=False)
 
     # 結果の表示
     st.subheader('Metrics and Rankings / シナリオごとの指標と順位')
     st.write(df_indicators)
+
+    df_result = st.session_state['scenarios'][scenario_name]
+    try:
+        llm_commentary = generate_llm_commentary(scenario_name, df_result)
+        st.subheader("LLMによる講評")
+        st.write(llm_commentary)
+    except Exception as e:
+        st.warning(f"LLM講評の生成に失敗しました: {e}")
 
 # データのエクスポート機能
 st.subheader('Export / データのエクスポート')

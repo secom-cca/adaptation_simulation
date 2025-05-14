@@ -1,0 +1,130 @@
+.flex-container {
+display: flex;
+box-sizing: border-box;
+justify-content:space-around;
+}
+.flex{
+  display: flex;
+}
+.wrap{
+  display: flex;
+  justify-content:space-around;
+  margin: 1em 0s 0;
+}
+.block{
+  display: block;
+}
+.flex-grow-1 {
+  border: solid;
+  margin: 0 1em;
+  flex:3;
+  background-color: #fd6158;
+}
+.flex-grow-2 {
+  margin: 0 1em;
+  flex:1;
+  background-color: #febe3e;
+}
+.ranktitle {
+  width: 100%;
+  height: 6vh;
+  background-color: #fff95d;
+  font-size: 4vh;
+  margin: 0 0 1% 0;
+  text-align: center;
+}
+
+
+.box {
+  width: 33%;
+  height: 20vh;
+  background-color: #77dddd;
+  display: flex;
+  margin: 1em;
+}
+.icon {
+  width: 40%;
+  height: 100%;
+  text-align:center;
+  display: flex;
+  align-items: center;
+}
+.icon img {
+  width: 100%;
+  object-fit: contain;
+  justify-content: center;
+}
+.rankbox {
+  width: 80%;
+  height: 100%;
+}
+.scorekey {
+  width: 100%;
+  height: 20%;
+  background-color: #7777dd;
+  text-align:center;
+}
+.rank{
+  width: 50%;
+  height: 20%;
+  background-color: #1dd4dd;
+  margin: 1% 0 0 0;
+  text-align: center;
+}
+.score{
+  width: 50%;
+  height: 20%;
+  background-color: #12d44d;
+  margin: 1% 0 0 0;
+  text-align: center;
+}
+
+.betbox{
+  width: 45%;
+  height: 25vh;
+  background-color: #77dddd;
+  margin: 1em;
+}
+
+.rankscore{
+  width: 100%;
+  height: 20%;
+  background-color: #83124d;
+}
+
+.yourscenariobox{
+  width: 90%;
+  height: 20vh;
+  background-color: #77dddd;
+  margin: 1em;
+}
+.scenariotitle {
+  width: 100%;
+  height: 4vh;
+  background-color: #63795d;
+  font-size: 3vh;
+  margin: 0 0 0 0;
+  text-align: center;
+}
+.scenariobox{
+  width: 45%;
+  height: 20vh;
+  background-color: #77dddd;
+  margin: 1em;
+}
+
+.prev {
+  width: 30%;
+  height: 5vh;
+  background-color: #fff95d;
+  font-size: 3vh;
+  text-align: center;
+}
+
+.finish {
+  width: 30%;
+  height: 5vh;
+  background-color: #fff95d;
+  font-size: 3vh;
+  text-align: center;
+}
