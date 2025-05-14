@@ -4,6 +4,13 @@ import streamlit as st
 from io import BytesIO
 from backend.scr.simulation import simulate_simulation
 from backend.scr.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly
+from dotenv import load_dotenv
+import os
+import openai
+
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+client = openai.OpenAI(api_key=api_key)
 
 # RCPシナリオ選択
 rcp_options = {'RCP1.9': 1.9, 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 'RCP8.5': 8.5}
@@ -120,7 +127,8 @@ if simulation_mode == 'Monte Carlo Simulation Mode':
                 'levee_investment_years': 0,
                 'RnD_investment_years': 0,
                 'forest_area': 100.0,
-                'forest_area_history': {start_year: 100.0}
+                'forest_area_history': {start_year: 100.0},
+                'resident_capacity': 0,
             }
 
             # シミュレーションの実行
@@ -221,7 +229,8 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
             'ecosystem_level': 100.0,
             'urban_level': 100.0,
             'levee_investment_years': 0,
-            'RnD_investment_years': 0
+            'RnD_investment_years': 0,
+            'resident_capacity': 0,
         }
         st.session_state['decision_vars_seq'] = []
 
@@ -232,9 +241,9 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
     # released_water_amount = st.sidebar.slider('Released Water Amount / 放流水量：増やすと洪水リスクが小さくなります', min_value=0, max_value=200, value=100, step=10)
     # levee_construction_cost = st.sidebar.slider('Levee Construction Investment / 堤防工事費：増やすと洪水リスクが小さくなります', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
     # agricultural_RnD_cost = st.sidebar.slider('Agricultural R&D Investment / 農業研究開発費：増やすと高温に強い品種ができます', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
-    planting_trees_amount = st.sidebar.slider('植林・森林保全', min_value=0, max_value=200, value=100, step=10)
-    house_migration_amount = st.sidebar.slider('住宅移転・嵩上げ', min_value=0, max_value=200, value=100, step=10)
-    dam_levee_construction_cost = st.sidebar.slider('ダム・堤防工事', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
+    planting_trees_amount = st.sidebar.slider('植林・森林保全（ha/年）', min_value=0, max_value=200, value=100, step=50)
+    house_migration_amount = st.sidebar.slider('住宅移転・嵩上げ（軒/年）', min_value=0, max_value=200, value=100, step=10)
+    dam_levee_construction_cost = st.sidebar.slider('ダム・堤防工事（億円/年）', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
     paddy_dam_construction_cost = st.sidebar.slider('田んぼダム工事', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
     capacity_building_cost = st.sidebar.slider('防災訓練・普及啓発', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
     agricultural_RnD_cost = st.sidebar.slider('農業研究開発', min_value=0.0, max_value=10.0, value=3.0, step=1.0)
@@ -286,7 +295,8 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
                 'ecosystem_level': sim_results[-1]['Ecosystem Level'],
                 'urban_level': sim_results[-1]['Urban Level'],
                 'levee_investment_years': prev_values['levee_investment_years'],
-                'RnD_investment_years': prev_values['RnD_investment_years']
+                'RnD_investment_years': prev_values['RnD_investment_years'],
+                'resident_capacity': prev_values['resident_capacity'],
             }
 
             st.session_state['prev_values_seq'] = last_values
@@ -381,7 +391,8 @@ elif simulation_mode == 'Sequential Decision-Making Mode':
             'levee_investment_years': 0,
             'RnD_investment_years': 0,
             'forest_area': 100.0,
-            'forest_area_history': {start_year: 100.0}
+            'forest_area_history': {start_year: 100.0},
+            'resident_capacity': 0,
         }
         st.session_state['decision_vars_seq'] = []
         st.rerun()
@@ -400,9 +411,48 @@ def calculate_scenario_indicators(scenario_data):
         '生態系': scenario_data.loc[scenario_data['Year'] == end_year, 'Ecosystem Level'].values[0],
         '都市利便性': scenario_data.loc[scenario_data['Year'] == end_year, 'Urban Level'].values[0],
         '予算': scenario_data['Municipal Cost'].sum(),
-        '森林面積': scenario_data.loc[scenario_data['Year'] == end_year, 'Forest Area'].values[0],
+        # '森林面積': scenario_data.loc[scenario_data['Year'] == end_year, 'Forest Area'].values[0],
     }
     return indicators
+
+def generate_llm_commentary(scenario_name, df_result, model="gpt-4"):
+    # 簡略化された特徴抽出
+    def summarize_results(df):
+        summary = {
+            "収量合計": round(df["Crop Yield"].sum(), 2),
+            "洪水被害合計": round(df["Flood Damage"].sum(), 2),
+            "生態系": round(df[df["Year"] == 2100]["Ecosystem Level"].values[0], 2),
+            "都市利便性": round(df[df["Year"] == 2100]["Urban Level"].values[0], 2),
+            "予算": round(df["Municipal Cost"].sum(), 2)
+        }
+        return summary
+
+    summary_stats = summarize_results(df_result)
+
+    # プロンプトの生成（日本語）
+    prompt = f"""
+あなたはシナリオシミュレーションの専門家です。
+以下は「{scenario_name}」という気候変動適応シナリオにおける結果です。
+
+【シミュレーション結果の要約】
+- 作物収量の合計: {summary_stats['収量合計']}
+- 洪水被害の合計: {summary_stats['洪水被害合計']}
+- 生態系スコア（2050年）: {summary_stats['生態系']}
+- 都市利便性スコア（2100年）: {summary_stats['都市利便性']}
+- 自治体の総予算: {summary_stats['予算']}
+
+この内容を踏まえて、シナリオの長所・短所を含む100-300文字程度の講評を生成してください。
+表現は一般市民に分かりやすくしてください。
+"""
+
+    # OpenAI API呼び出し
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7
+    )
+    return response.choices[0].message.content
+
 
 # シナリオごとに集計
 if st.session_state['scenarios']:
@@ -415,11 +465,19 @@ if st.session_state['scenarios']:
     df_indicators['生態系順位'] = df_indicators['生態系'].rank(ascending=False)
     df_indicators['都市利便性順位'] = df_indicators['都市利便性'].rank(ascending=False)
     df_indicators['予算順位'] = df_indicators['予算'].rank(ascending=True)
-    df_indicators['森林面積順位'] = df_indicators['森林面積'].rank(ascending=False)
+    # df_indicators['森林面積順位'] = df_indicators['森林面積'].rank(ascending=False)
 
     # 結果の表示
     st.subheader('Metrics and Rankings / シナリオごとの指標と順位')
     st.write(df_indicators)
+
+    df_result = st.session_state['scenarios'][scenario_name]
+    try:
+        llm_commentary = generate_llm_commentary(scenario_name, df_result)
+        st.subheader("LLMによる講評")
+        st.write(llm_commentary)
+    except Exception as e:
+        st.warning(f"LLM講評の生成に失敗しました: {e}")
 
 # データのエクスポート機能
 st.subheader('Export / データのエクスポート')
