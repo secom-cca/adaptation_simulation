@@ -12,18 +12,18 @@ def simulate_year(year, prev_values, decision_vars, params):
     prev_ecosystem_level = prev_values['ecosystem_level']
     levee_investment_years = prev_values['levee_investment_years']
     RnD_investment_years = prev_values['RnD_investment_years']
-    resident_capacity = prev_values['resident_capacity']
 
     # 新指標の前回値
     prev_urban_level = prev_values.get('urban_level', 100.0)
     prev_resident_burden = prev_values.get('resident_burden', 0.0)
     prev_biodiversity_level = prev_values.get('biodiversity_level', prev_ecosystem_level)
-    # --- 初期化（ストックと履歴） ---
+    # # --- 初期化（ストックと履歴） ---
     prev_forest_area = prev_values.get('forest_area', 100.0)  # 初期森林面積 [ha]
     forest_area_history = prev_values.get('forest_area_history', {})  # 年次履歴
     # --- 初期化（累積投資の初期化、必要に応じて） ---
     levee_investment_total = prev_values.get('levee_investment_total', 0.0)
     RnD_investment_total = prev_values.get('RnD_investment_total', 0.0)
+    resident_capacity = prev_values.get('resident_capacity', 0.0)
 
     # --- 意思決定変数を展開 ---
     # モンテカルロモードでは mapping された internal keys が来る前提
@@ -190,7 +190,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         'Resident Burden': resident_burden,
         'Biodiversity Level': biodiversity_level
     }
-    outputs['Forest Area'] = current_forest_area
+    # outputs['Forest Area'] = current_forest_area
 
     current_values = {
         'temp': temp,
@@ -245,11 +245,21 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
         else:
             decision_year = (year - params['start_year']) // 10 * 10 + params['start_year']
             decision_vars_raw = decision_vars_list.loc[decision_year].to_dict()
-            decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
+            # decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
             # if '灌漑水量 (Irrigation Water Amount)' in decision_vars_raw:
             #     decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
             # else:
             #     decision_vars = decision_vars_raw
+            if '灌漑水量 (Irrigation Water Amount)' in decision_vars_raw:
+                key_mapping = {
+                    '灌漑水量 (Irrigation Water Amount)': 'irrigation_water_amount',
+                    '放流水量 (Released Water Amount)': 'released_water_amount',
+                    '堤防工事費 (Levee Construction Cost)': 'levee_construction_cost',
+                    '農業研究開発費 (Agricultural R&D Cost)': 'agricultural_RnD_cost'
+                }
+                decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
+            else:
+                decision_vars = decision_vars_raw
 
         prev_values, outputs = simulate_year(year, prev_values, decision_vars, params)
         results.append(outputs)
