@@ -40,7 +40,9 @@ DEFAULT_PARAMS = {
     'precip_uncertainty_trend': 5,
     # 'base_extreme_precip_freq': 0.1,
     'extreme_precip_freq_trend': 0.05,
-    'extreme_precip_freq_uncertainty': 0.1,
+    # 'extreme_precip_freq_uncertainty': 0.1,
+    'extreme_precip_intensity_trend': 0.2,
+    'extreme_precip_uncertainty_trend': 0.05,
     'municipal_demand_trend': 0,
     'municipal_demand_uncertainty': 0.05,
     # 'initial_hot_days': 30.0,
@@ -50,9 +52,9 @@ DEFAULT_PARAMS = {
     'hot_days_uncertainty': 2.0,
     'ecosystem_threshold': 800.0,
     'temp_coefficient': 1.0,
-    'max_potential_yield': 100.0,
+    'max_potential_yield': 5000.0, # [kg/ha]
     'optimal_irrigation_amount': 30.0,
-    'flood_damage_coefficient': 100000,
+    'flood_damage_coefficient': 100000, # 1mm越水あたりのダメージ，パラメータ調整
     'levee_level_increment': 0.1,
     'high_temp_tolerance_increment': 0.1,
     'levee_investment_threshold': 5.0,
@@ -60,16 +62,53 @@ DEFAULT_PARAMS = {
     'levee_investment_required_years': 10,
     'RnD_investment_required_years': 10,
     'max_available_water': 2000.0,
-    'evapotranspiration_amount': 600.0,
+    'evapotranspiration_amount': 300.0,
 }
 
 # 各RCPに対応した気候パラメータ
+# rcp_climate_params = {
+#     1.9: {'temp_trend': 0.02, 'precip_uncertainty_trend': 1, 'extreme_precip_freq_trend': 0.05},
+#     2.6: {'temp_trend': 0.025, 'precip_uncertainty_trend': 5, 'extreme_precip_freq_trend': 0.1},
+#     4.5: {'temp_trend': 0.035, 'precip_uncertainty_trend': 15, 'extreme_precip_freq_trend': 0.15},
+#     6.0: {'temp_trend': 0.045, 'precip_uncertainty_trend': 20, 'extreme_precip_freq_trend': 0.2},
+#     8.5: {'temp_trend': 0.06, 'precip_uncertainty_trend': 25, 'extreme_precip_freq_trend': 0.25}
+# }
 rcp_climate_params = {
-    1.9: {'temp_trend': 0.02, 'precip_uncertainty_trend': 1, 'extreme_precip_freq_trend': 0.05},
-    2.6: {'temp_trend': 0.025, 'precip_uncertainty_trend': 5, 'extreme_precip_freq_trend': 0.1},
-    4.5: {'temp_trend': 0.035, 'precip_uncertainty_trend': 15, 'extreme_precip_freq_trend': 0.15},
-    6.0: {'temp_trend': 0.045, 'precip_uncertainty_trend': 20, 'extreme_precip_freq_trend': 0.2},
-    8.5: {'temp_trend': 0.06, 'precip_uncertainty_trend': 25, 'extreme_precip_freq_trend': 0.25}
+    1.9: {
+        'temp_trend': 0.02,  # ℃/年
+        'precip_uncertainty_trend': 0,
+        'extreme_precip_freq_trend': 0.05,      # λの年増加量
+        'extreme_precip_intensity_trend': 0.2,  # μの年増加量 [mm/年]
+        'extreme_precip_uncertainty_trend': 0.05  # βの年増加量 [mm/年]
+    },
+    2.6: {
+        'temp_trend': 0.025,
+        'precip_uncertainty_trend': 0,
+        'extreme_precip_freq_trend': 0.07,
+        'extreme_precip_intensity_trend': 0.4,
+        'extreme_precip_uncertainty_trend': 0.07
+    },
+    4.5: {
+        'temp_trend': 0.035,
+        'precip_uncertainty_trend': 0,
+        'extreme_precip_freq_trend': 0.1,
+        'extreme_precip_intensity_trend': 0.8,
+        'extreme_precip_uncertainty_trend': 0.1
+    },
+    6.0: {
+        'temp_trend': 0.045,
+        'precip_uncertainty_trend': 0,
+        'extreme_precip_freq_trend': 0.13,
+        'extreme_precip_intensity_trend': 1.1,
+        'extreme_precip_uncertainty_trend': 0.13
+    },
+    8.5: {
+        'temp_trend': 0.06,
+        'precip_uncertainty_trend': 0,
+        'extreme_precip_freq_trend': 0.17,
+        'extreme_precip_intensity_trend': 1.5,
+        'extreme_precip_uncertainty_trend': 0.15
+    }
 }
 
 # 複数シナリオをサーバ側で一時的に保持するための辞書
@@ -101,17 +140,23 @@ class CurrentValues(BaseModel):
     municipal_demand: float
     available_water: float
     crop_yield: float
-    levee_level: float
-    high_temp_tolerance_level: float
     hot_days: float
     extreme_precip_freq: float
     ecosystem_level: float
-    levee_investment_years: int
-    RnD_investment_years: int
-    urban_level: float
-    resident_burden: float
-    biodiversity_level: float
-
+    levee_level: Optional[float] = 0.0
+    high_temp_tolerance_level: Optional[float] = 0.0
+    forest_area: Optional[float] = 0.0
+    planting_history: Optional[Dict[int, float]] = {}
+    urban_level: Optional[float] = 0.0
+    resident_capacity: Optional[float] = 0.0
+    transportation_level: Optional[float] = 0.0
+    levee_investment_total: Optional[float] = 0.0
+    RnD_investment_total: Optional[float] = 0.0
+    risky_house_total: Optional[float] = 10000.0
+    non_risky_house_total: Optional[float] = 0.0
+    resident_burden: Optional[float] = 0.0
+    biodiversity_level: Optional[float] = 0.0
+    
 
 class SimulationRequest(BaseModel):
     """シミュレーション実行時にフロントエンドから送られる想定パラメータ."""

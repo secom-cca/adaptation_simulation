@@ -56,21 +56,27 @@ function App() {
     cp_climate_params: 4.5 //RCPの不確実性シナリオ
   })
   const [currentValues, setCurrentValues] = useState({
-    temp: 15.0,
-    precip: 1000.0,
-    municipal_demand: 100.0,
-    available_water: 1000.0,
-    crop_yield: 100.0,
-    levee_level: 0.5,
-    high_temp_tolerance_level: 0.0,
-    hot_days: 30.0,
+    temp: 15,
+    precip: 1000,
+    municipal_demand: 100,
+    available_water: 1000,
+    crop_yield: 100,
+    hot_days: 30,
     extreme_precip_freq: 0.1,
-    ecosystem_level: 100.0,
-    levee_investment_years: 0,
-    RnD_investment_years: 0,
-    urban_level: 100.,
-    resident_burden: 80.,
-    biodiversity_level: 100.,
+    ecosystem_level: 100,
+    levee_level: 0.5,
+    high_temp_tolerance_level: 0,
+    forest_area: 0,
+    planting_history: {},
+    urban_level: 100,
+    resident_capacity: 0, 
+    transportation_level: 0, 
+    levee_investment_total: 0, 
+    RnD_investment_total: 0, 
+    risky_house_total: 10000, 
+    non_risky_house_total: 0, 
+    resident_burden: 0,
+    biodiversity_level: 100,
   })
   const [simulationData, setSimulationData] = useState([]); // 結果格納
 
@@ -284,21 +290,26 @@ function App() {
   const updateCurrentValues = (newDict) => {
     console.log("更新されるnewDict:", newDict);
     const updated = {
-      temp: newDict["Temperature (℃)"],
-      precip: newDict["Precipitation (mm)"],
-      municipal_demand: newDict["Municipal Demand"],
-      available_water: newDict["Available Water"],
-      crop_yield: newDict["Crop Yield"],
-      // levee_level: newDict[""],
-      high_temp_tolerance_level: newDict["High Temp Tolerance Level"],
-      hot_days: newDict["Hot Days"],
-      extreme_precip_freq: newDict["Extreme Precip Frequency"],
-      ecosystem_level: newDict["Ecosystem Level"],
-      // levee_investment_years: newDict[""],
-      // RnD_investment_years: newDict[""],
-      urban_level: newDict['Urban Level'],
+      temp: newDict['Temperature (℃)'],
+      precip: newDict['Precipitation (mm)'],
+      municipal_demand: newDict['Municipal Demand'],
+      available_water: newDict['Available Water'],
+      crop_yield: newDict['Crop Yield'],
+      hot_days: newDict['Hot Days'],
+      extreme_precip_freq: newDict['Extreme Precip Frequency'],
+      ecosystem_level: newDict['Ecosystem Level'],
+      levee_level: newDict['Levee Level'],                          // ← 追加
+      high_temp_tolerance_level: newDict['High Temp Tolerance Level'],
+      forest_area: newDict['Forest area'],                         // ← 追加
+      resident_capacity: newDict['Resident capacity'],             // ← 追加
+      transportation_level: newDict['transportation_level'],       // ← 追加
+      levee_investment_total: newDict['Levee investment total'],   // ← 追加
+      RnD_investment_total: newDict['RnD investment total'],       // ← 追加
+      risky_house_total: newDict['risky_house_total'],             // ← 追加
+      non_risky_house_total: newDict['non_risky_house_total'],     // ← 追加
       resident_burden: newDict['Resident Burden'],
-      biodiversity_level: newDict['Biodiversity Level']
+      biodiversity_level: newDict['biodiversity_level'],           // ← 追加（キー名注意）
+  
     };
     console.log("更新されるcurrentValues:", updated);
     setCurrentValues(prev => ({ ...prev, ...updated }));
@@ -413,7 +424,7 @@ function App() {
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>生物多様性</Typography>
-                <Gauge width={100} height={100} value={currentValues.biodiversity_level} valueMax={120} />
+                <Gauge width={100} height={100} value={currentValues.ecosystem_level} valueMax={120} />
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>ー</Typography>
               </Box>
             </Box>
