@@ -16,7 +16,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     prev_urban_level = prev_values['urban_level']
     resident_capacity = prev_values['resident_capacity']
     transportation_level = prev_values['transportation_level']
-    # 初期値を定義していない変数
+    # 初期値を定義していない変数（追って調整）
     levee_investment_total = prev_values.get('levee_investment_total', 0.0)
     RnD_investment_total = prev_values.get('RnD_investment_total', 0.0)
     risky_house_total = prev_values.get('risky_house_total', 10000)
@@ -34,61 +34,69 @@ def simulate_year(year, prev_values, decision_vars, params):
 
     # --- パラメータを展開 ---
     start_year                    = params['start_year']
+    # 年平均気温
     base_temp                     = params['base_temp']
     temp_trend                    = params['temp_trend']
     temp_uncertainty              = params['temp_uncertainty']
+    # 年降水量
     base_precip                   = params['base_precip']
     precip_trend                  = params['precip_trend']
     base_precip_uncertainty       = params['base_precip_uncertainty']
     precip_uncertainty_trend      = params['precip_uncertainty_trend']
-
+    # 高温
     initial_hot_days              = params['initial_hot_days'] # hot_daysは今後の利用可能性を含め残す（熱中症など）
     temp_to_hot_days_coeff        = params['temp_to_hot_days_coeff']
     hot_days_uncertainty          = params['hot_days_uncertainty']
-
+    # 極端降水
     base_extreme_precip_freq      = params['base_extreme_precip_freq']
-
     extreme_precip_freq_trend     = params['extreme_precip_freq_trend']
     extreme_precip_intensity_trend= params['extreme_precip_intensity_trend']
     extreme_precip_uncertainty_trend=params['extreme_precip_uncertainty_trend']
-
+    # 水需要
     municipal_demand_trend        = params['municipal_demand_trend']
     municipal_demand_uncertainty  = params['municipal_demand_uncertainty']
+    # 水循環
+    max_available_water           = params['max_available_water']
+    evapotranspiration_amount     = params['evapotranspiration_amount']
+    ecosystem_threshold           = params['ecosystem_threshold']
+    # 農業
     temp_coefficient              = params['temp_coefficient']
     max_potential_yield           = params['max_potential_yield']
     optimal_irrigation_amount     = params['optimal_irrigation_amount']
+    high_temp_tolerance_increment = params['high_temp_tolerance_increment']
+    # 水災害
     flood_damage_coefficient      = params['flood_damage_coefficient']
     levee_level_increment         = params['levee_level_increment']
-    high_temp_tolerance_increment = params['high_temp_tolerance_increment']
     levee_investment_threshold    = params['levee_investment_threshold']
     RnD_investment_threshold      = params['RnD_investment_threshold']
     levee_investment_required_years = params['levee_investment_required_years']
     RnD_investment_required_years = params['RnD_investment_required_years']
-    max_available_water           = params['max_available_water']
-    evapotranspiration_amount     = params['evapotranspiration_amount']
-    ecosystem_threshold           = params['ecosystem_threshold']
-
+    # 森林
     cost_per_1000trees            = 2310000
-    cost_per_migration            = 3000000
-    crop_rnd_max_tolerance        = 0.5
     forest_degradation_rate       = 0.01
-    necessary_water_for_crops     = 1000 # [mm]
-    capacity_building_coefficient = 0.1
     tree_growup_year              = 20
-
+    # 住宅
+    cost_per_migration            = 3000000
+    # 農業（Again）
+    crop_rnd_max_tolerance        = 0.5
+    necessary_water_for_crops     = 1000 # [mm]
+    # 住民意識
+    capacity_building_coefficient = 0.1
+    resident_capacity_degrade_ratio = 0.01
+    # 領域横断影響
     forest_flood_reduction_coef = 0.4 # 0.1-0.5
     forest_ecosystem_boost_coef = 0.0002
     forest_water_retention_coef = 0.2 # 貯留割合
     flood_crop_damage_coef = 0.00001
     levee_ecosystem_damage_coef = 0.01
     flood_urban_damage_coef = 0.000001
-    resident_capacity_degrade_ratio = 0.01
+    water_ecosystem_coef = 0.01
+    # 水災害（Again）
     flood_recovery_cost_coef = 0.001
+    # 気象（Again）
     base_mu = 180
     base_beta = 20
     total_area = 10000 #[ha]
-
-    water_ecosystem_coef = 0.01
 
     # 0.1 気象環境 ---
     temp = base_temp + temp_trend * (year - start_year) + np.random.normal(0, temp_uncertainty)
@@ -99,7 +107,6 @@ def simulate_year(year, prev_values, decision_vars, params):
     extreme_precip_freq = max(base_extreme_precip_freq + extreme_precip_freq_trend * (year - start_year), 0)
     extreme_precip_events = np.random.poisson(extreme_precip_freq)
     
-    # extreme_precip_intensity = extreme_precip_freq/base_extreme_precip_freq # 降雨強度も頻度と同様に年々高まるという仮定
     mu = max(base_mu + extreme_precip_intensity_trend * (year - start_year), 0)
     beta = max(base_beta + extreme_precip_intensity_trend * (year - start_year), 0) 
     rain_events = gumbel_r.rvs(loc=mu, scale=beta, size=extreme_precip_events)
@@ -109,7 +116,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     current_municipal_demand = prev_municipal_demand * (1 + municipal_growth)
  
     # 1. 森林面積（植林 - 自然減衰） 1000本 = 1ha ---
-    planting_history[year] = planting_trees_amount  # 今期の植林を記録
+    planting_history[year] = planting_trees_amount
     matured_trees = planting_history.get(year - tree_growup_year, 0)
     natural_loss     = prev_forest_area * forest_degradation_rate
     current_forest_area = max(prev_forest_area + matured_trees - natural_loss, 0)
@@ -130,7 +137,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         max_available_water
     )
 
-    # 3. 農業生産量，△このあたり[ha]でなく計算している
+    # 3. 農業生産量，△このあたり[ha]を考えず計算している
     # temp_impact = hot_days * temp_coefficient * (1 - prev_high_temp_tolerance_level)
     temp_ripening = temp + 10.0 # 仮設定：登熟期の気温の計算
     temp_threshold_crop = 26.0
@@ -331,7 +338,3 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
         results.append(outputs)
 
     return results
-
-"""
-Agent Based にして基本的な挙動を把握する
-"""
