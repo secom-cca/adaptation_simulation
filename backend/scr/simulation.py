@@ -9,7 +9,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     prev_municipal_demand = prev_values['municipal_demand']
     prev_available_water = prev_values['available_water']
     prev_levee_level = prev_values['levee_level']
-    prev_high_temp_tolerance_level = prev_values['high_temp_tolerance_level']
+    high_temp_tolerance_level = prev_values['high_temp_tolerance_level']
     ecosystem_level = prev_values['ecosystem_level']
     prev_forest_area = prev_values['forest_area']
     planting_history    = prev_values['planting_history']  
@@ -21,6 +21,8 @@ def simulate_year(year, prev_values, decision_vars, params):
     RnD_investment_total = prev_values.get('RnD_investment_total', 0.0)
     risky_house_total = prev_values.get('risky_house_total', 10000)
     non_risky_house_total = prev_values.get('non_risky_house_total', 0)
+    paddy_dam_area = prev_values.get('paddy_dam_area', 0)
+    temp_threshold_crop = prev_values.get('temp_threshold_crop', 26)
 
     # --- 意思決定変数を展開 ---
     # モンテカルロモードでは mapping された internal keys が来る前提
@@ -81,8 +83,8 @@ def simulate_year(year, prev_values, decision_vars, params):
     crop_rnd_max_tolerance        = 0.5
     necessary_water_for_crops     = 1000 # [mm]
     # 住民意識
-    capacity_building_coefficient = 0.1
-    resident_capacity_degrade_ratio = 0.01
+    capacity_building_coefficient = 0.01
+    resident_capacity_degrade_ratio = 0.05
     # 領域横断影響
     forest_flood_reduction_coef = 0.4 # 0.1-0.5
     forest_ecosystem_boost_coef = 0.0002
@@ -91,12 +93,16 @@ def simulate_year(year, prev_values, decision_vars, params):
     levee_ecosystem_damage_coef = 0.01
     flood_urban_damage_coef = 0.000001
     water_ecosystem_coef = 0.01
+    paddy_dam_flood_coef = 10.0 # [-] 最大で10mmのインパクト
     # 水災害（Again）
     flood_recovery_cost_coef = 0.001
+    runoff_coef = 0.1
     # 気象（Again）
     base_mu = 180
     base_beta = 20
     total_area = 10000 #[ha]
+    paddy_field_area = 1000 # [ha]
+    paddy_dam_yield_coef = 0.1 # [-] 最大で10%のインパクト
 
     # 0.1 気象環境 ---
     temp = base_temp + temp_trend * (year - start_year) + np.random.normal(0, temp_uncertainty)
@@ -130,7 +136,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     evapotranspiration_amount = evapotranspiration_amount * (1 + (temp - base_temp) * 0.05)
     current_available_water = min(
         max(
-            prev_available_water + precip - evapotranspiration_amount - current_municipal_demand + water_retention_boost * precip,
+            prev_available_water + precip - evapotranspiration_amount - current_municipal_demand - runoff_coef * precip + water_retention_boost * precip,
             # - irrigation_water_amount - released_water_amount
             0
         ),
@@ -140,14 +146,15 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 3. 農業生産量，△このあたり[ha]を考えず計算している
     # temp_impact = hot_days * temp_coefficient * (1 - prev_high_temp_tolerance_level)
     temp_ripening = temp + 10.0 # 仮設定：登熟期の気温の計算
-    temp_threshold_crop = 26.0
     temp_critical_crop = 30.0
-    excess = max(temp_ripening - temp_threshold_crop, 0)
+    excess = max(temp_ripening - (temp_threshold_crop + high_temp_tolerance_level), 0)
     loss = (excess / (temp_critical_crop - temp_threshold_crop))
     temp_impact = min(loss, 1)
+    paddy_dam_area += paddy_dam_construction_cost # 1百万円で1ha
+    paddy_dam_yield_impact = paddy_dam_yield_coef * min(paddy_dam_area / paddy_field_area, 1)
 
     water_impact = min(current_available_water/necessary_water_for_crops, 1.0)
-    current_crop_yield = (max_potential_yield * (1 - temp_impact)) * water_impact
+    current_crop_yield = (max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact)
 
     # * 2.農業利用水を利用可能水から引く（System Dynamicsには未導入）
     current_available_water = max(current_available_water - necessary_water_for_crops, 0)
@@ -157,9 +164,9 @@ def simulate_year(year, prev_values, decision_vars, params):
     RnD_threshold_with_noise = np.random.normal(RnD_investment_threshold * RnD_investment_required_years, RnD_investment_threshold * 0.1)
 
     if RnD_investment_total >= RnD_threshold_with_noise:
-        prev_high_temp_tolerance_level = min(prev_high_temp_tolerance_level + high_temp_tolerance_increment, crop_rnd_max_tolerance)
+        high_temp_tolerance_level += high_temp_tolerance_increment #, crop_rnd_max_tolerance)
         RnD_investment_total = 0.0
-        crop_rnd_max_tolerance += 0.1  # レベル（対応温度）が段階的に上がっていくという過程（ここはよくわからない）
+        # crop_rnd_max_tolerance += 0.1  # レベル（対応温度）が段階的に上がっていくという過程（ここはよくわからない）
 
     # 4. 住宅の移転
     risky_house_total = max(risky_house_total - house_migration_amount, 0) 
@@ -180,8 +187,9 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 5.2 水害
     # flood_impact = max(extreme_precip_intensity - current_levee_level, 0) * flood_damage_coefficient
     flood_impact = 0
+    paddy_dam_level = paddy_dam_flood_coef * min(paddy_dam_area / paddy_field_area, 1)
     for rain in rain_events:
-        overflow_amount = max(rain - current_levee_level, 0) * (1 - flood_reduction)
+        overflow_amount = max(rain - current_levee_level - paddy_dam_level, 0) * (1 - flood_reduction)
         flood_impact += overflow_amount * flood_damage_coefficient
 
     # current_flood_damage = extreme_precip_events * flood_impact
@@ -200,7 +208,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     urban_level = min(max(urban_level, 0), 100)
 
     # 8. 住民の防災能力・意識
-    resident_capacity += capacity_building_cost * capacity_building_coefficient - resident_capacity_degrade_ratio # 自然減
+    resident_capacity = resident_capacity * (1 - resident_capacity_degrade_ratio) + capacity_building_cost * capacity_building_coefficient # 自然減
     resident_capacity = min(0.95, resident_capacity)
 
     # 10. コスト算出
@@ -220,7 +228,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         'Municipal Demand': current_municipal_demand,
         'Flood Damage': current_flood_damage,
         'Levee Level': current_levee_level,
-        'High Temp Tolerance Level': prev_high_temp_tolerance_level,
+        'High Temp Tolerance Level': high_temp_tolerance_level,
         'Hot Days': hot_days,
         'Extreme Precip Frequency': extreme_precip_freq,
         'Extreme Precip Events': extreme_precip_events,
@@ -236,6 +244,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         'risky_house_total': risky_house_total,
         'non_risky_house_total': non_risky_house_total,
         'transportation_level' : transportation_level,
+        'paddy_dam_area' : paddy_dam_area,
         # 意思決定変数そのものをログとして保持
         'planting_trees_amount': planting_trees_amount,
         'house_migration_amount': house_migration_amount,
@@ -254,7 +263,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         'available_water': current_available_water,
         'crop_yield': current_crop_yield,
         'levee_level': current_levee_level,
-        'high_temp_tolerance_level': prev_high_temp_tolerance_level,
+        'high_temp_tolerance_level': high_temp_tolerance_level,
         'hot_days': hot_days,
         'extreme_precip_freq': extreme_precip_freq,
         'ecosystem_level': ecosystem_level,
@@ -262,6 +271,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         'levee_investment_total': levee_investment_total,
         'RnD_investment_total': RnD_investment_total,
         'forest_area': current_forest_area,
+        'paddy_dam_area' : paddy_dam_area,
         # 'forest_area_history': forest_area_history,
         'resident_capacity': resident_capacity,
         'planting_history': planting_history,

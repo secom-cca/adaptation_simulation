@@ -18,13 +18,6 @@ selected_rcp = st.sidebar.selectbox('Select RCP Scenario / RCPシナリオを選
 rcp_value = rcp_options[selected_rcp]
 
 # 各RCPに対応した気候パラメータ
-# rcp_climate_params = {
-#     1.9: {'temp_trend': 0.02, 'precip_uncertainty_trend': 1, 'extreme_precip_freq_trend': 0.05},
-#     2.6: {'temp_trend': 0.025, 'precip_uncertainty_trend': 5, 'extreme_precip_freq_trend': 0.1},
-#     4.5: {'temp_trend': 0.035, 'precip_uncertainty_trend': 15, 'extreme_precip_freq_trend': 0.15},
-#     6.0: {'temp_trend': 0.045, 'precip_uncertainty_trend': 20, 'extreme_precip_freq_trend': 0.2},
-#     8.5: {'temp_trend': 0.06, 'precip_uncertainty_trend': 25, 'extreme_precip_freq_trend': 0.25}
-# }
 rcp_climate_params = {
     1.9: {
         'temp_trend': 0.02,  # ℃/年
@@ -220,6 +213,7 @@ if simulation_mode == 'Sequential Decision-Making Mode':
                 'transportation_level' : sim_results[-1]['transportation_level'],
                 'risky_house_total' : sim_results[-1]['risky_house_total'],
                 'non_risky_house_total' : sim_results[-1]['non_risky_house_total'],
+                'paddy_dam_area' : sim_results[-1]['paddy_dam_area'],
                 # 'levee_investment_years': prev_values['levee_investment_years'],
                 # 'RnD_investment_years': prev_values['RnD_investment_years'],
                 # 'resident_capacity': prev_values['resident_capacity'],
