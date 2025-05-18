@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Alert, AlertTitle, Box, Button, Dialog, DialogTitle, DialogContent, Grid, IconButton, Slider, Stack, styled, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, Dialog, DialogTitle, DialogContent, FormControl, Grid, IconButton, InputLabel, MenuItem, Slider, Stack, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper } from '@mui/material';
 import { LineChart, ScatterChart, Gauge } from '@mui/x-charts';
-import { ThunderstormOutlined, TsunamiOutlined, WbSunnyOutlined } from '@mui/icons-material';
+import { Agriculture, Biotech, EmojiTransportation, Flood, Forest, Houseboat, LocalLibrary, Science, ThunderstormOutlined, TsunamiOutlined, WbSunnyOutlined } from '@mui/icons-material';
 import InfoIcon from '@mui/icons-material/Info';
 import axios from "axios";
 
@@ -31,15 +31,27 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"
 
 // 各種設定
 
-const LINE_CHART_ITEM = "Crop Yield"
+const lineChartIndicators = {
+  'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton' },
+  'Flood Damage': { labelTitle: '洪水被害', max: 10, min: 0, unit: '千万円' },
+  'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '' },
+  'Urban Level': { labelTitle: '都市利便性', max: 100, min: 0, unit: '' },
+  'Municipal Cost': { labelTitle: '予算', max: 12, min: 0, unit: '億円' },
+  'Temperature (℃)': { labelTitle: '気温', max: 30, min: 10, unit: '円' }
+};
+const SIMULATION_YEARS = 25 // 一回のシミュレーションで進める年数を決定する 
+const LINE_CHART_DISPLAY_INTERVAL = 100 // ms
+const INDICATOR_CONVERSION = {
+  'Municipal Cost': 1 / 100000000, // 円 → 億円
+  'Flood Damage': 1 / 10000000, // 円 → 千万円
+  'Crop Yield': 1 / 1000 // kg → ton（例）
+};
 
 function App() {
   // シミュレーション実行用のステート
   const [scenarioName, setScenarioName] = useState("シナリオ1");
   const [numSimulations, setNumSimulations] = useState(1);
-  const intervalRef = useRef(null);
   const isRunningRef = useRef(false);
-  const [numA, setNumA] = useState(20)
   const [chartPredictData, setChartPredictData] = useState([[], []]); // [0]が初期値予測 [1]が下限値予測、[2]が上限値予測
   const [openResultUI, setOpenResultUI] = useState(false);
   const [decisionVar, setDecisionVar] = useState({
@@ -69,13 +81,13 @@ function App() {
     forest_area: 0,
     planting_history: {},
     urban_level: 100,
-    resident_capacity: 0, 
-    transportation_level: 0, 
-    levee_investment_total: 0, 
-    RnD_investment_total: 0, 
-    risky_house_total: 10000, 
-    non_risky_house_total: 0, 
-    resident_burden: 0,
+    resident_capacity: 0,
+    transportation_level: 0,
+    levee_investment_total: 0,
+    RnD_investment_total: 0,
+    risky_house_total: 10000,
+    non_risky_house_total: 0,
+    resident_burden: 5.379 * 10**8,
     biodiversity_level: 100,
   })
   const [simulationData, setSimulationData] = useState([]); // 結果格納
@@ -87,6 +99,13 @@ function App() {
   // リアルタイム更新用
   const currentValuesRef = useRef(currentValues);
   const decisionVarRef = useRef(decisionVar);
+
+  // LineChartの縦軸の変更
+  const [selectedIndicator, setSelectedIndicator] = useState('Crop Yield');
+  const currentIndicator = lineChartIndicators[selectedIndicator];
+  const handleLineChartChange = (event) => {
+    setSelectedIndicator(event.target.value);
+  };
 
   useEffect(() => {
     currentValuesRef.current = currentValues;
@@ -118,7 +137,8 @@ function App() {
       console.log("API Response:", resp.data.data[0]);
       // resp.data はバックエンドの SimulationResponse (scenario_name, data)
       if (resp.data && resp.data.data) {
-        setSimulationData(prev => [...prev, ...resp.data.data]);
+        const processedData = processIndicatorData(resp.data.data, selectedIndicator);
+        setSimulationData(prev => [...prev, ...processedData]);
         updateCurrentValues(resp.data.data[0])
       }
     } catch (err) {
@@ -136,7 +156,7 @@ function App() {
     let nextYear = decisionVar.year;
     let count = 0;
 
-    while (count < 15) {
+    while (count < SIMULATION_YEARS) {
 
       // シミュレーション実行
       await handleSimulate();
@@ -149,7 +169,7 @@ function App() {
       updateDecisionVar("year", nextYear);
 
       // 表示更新のために一時停止（見た目をスムーズに）
-      await new Promise(res => setTimeout(res, 750));
+      await new Promise(res => setTimeout(res, LINE_CHART_DISPLAY_INTERVAL));
     }
 
     isRunningRef.current = false;
@@ -309,7 +329,7 @@ function App() {
       non_risky_house_total: newDict['non_risky_house_total'],     // ← 追加
       resident_burden: newDict['Resident Burden'],
       biodiversity_level: newDict['biodiversity_level'],           // ← 追加（キー名注意）
-  
+
     };
     console.log("更新されるcurrentValues:", updated);
     setCurrentValues(prev => ({ ...prev, ...updated }));
@@ -321,9 +341,17 @@ function App() {
 
   const getPredictData = (predicDataArray) => {
     const predictDataMap = new Map();
-    if (predicDataArray) { // predicDataArray が存在する場合のみ処理
+    if (predicDataArray) {
       predicDataArray.forEach(item => {
-        predictDataMap.set(item["Year"], item[LINE_CHART_ITEM]);
+        let value = item[selectedIndicator];
+
+        // 選択された指標に対してのみ、変換処理
+        const conversionFactor = INDICATOR_CONVERSION[selectedIndicator];
+        if (typeof value === 'number' && conversionFactor !== undefined) {
+          value = value * conversionFactor;
+        }
+
+        predictDataMap.set(item["Year"], value);
       });
     }
 
@@ -335,7 +363,21 @@ function App() {
     return formattedPredictData
   }
 
+  // バックエンドで受け取ったデータをUI側の単位に合わせる
+  const processIndicatorData = (rawData) => {
+    return rawData.map(item => {
+      const newItem = { ...item };
 
+      // 全ての定義済み指標に対して変換処理
+      Object.entries(INDICATOR_CONVERSION).forEach(([key, factor]) => {
+        if (typeof newItem[key] === 'number') {
+          newItem[key] = newItem[key] * factor;
+        }
+      });
+
+      return newItem;
+    });
+  };
 
 
 
@@ -351,13 +393,13 @@ function App() {
         </Typography>
         <h2>{decisionVar.year - 1}年</h2>
         <Button variant="contained" color="primary" onClick={handleClickCalc}>
-          15年進める
+          {SIMULATION_YEARS}年進める
         </Button>
         <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-        <IconButton color="primary" onClick={handleOpenResultUI}>
-          <InfoIcon />
-        </IconButton>
-      </Box>
+          <IconButton color="primary" onClick={handleOpenResultUI}>
+            <InfoIcon />
+          </IconButton>
+        </Box>
       </Box>
 
       {/* メインレイアウト */}
@@ -406,20 +448,20 @@ function App() {
               {/* 各ゲージ */}
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>年平均気温</Typography>
-                <Gauge width={100} height={100} value={currentValues.temp} valueMax={40} />
+                <Gauge width={100} height={100} value={Math.round(currentValues.temp * 100) / 100} valueMax={40} />
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>℃</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>年平均降水量</Typography>
-                <Gauge width={100} height={100} value={currentValues.precip} valueMax={1500} valueMin={500} />
+                <Gauge width={100} height={100} value={Math.round(currentValues.precip * 10) / 10} valueMax={1500} valueMin={500} />
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>mm</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>住民の負担</Typography>
-                <Gauge width={100} height={100} value={currentValues.resident_burden} valueMax={300} />
-                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>ー</Typography>
+                <Gauge width={100} height={100} value={currentValues.resident_burden * INDICATOR_CONVERSION["Municipal Cost"]} valueMax={15} />
+                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>億円</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -446,15 +488,15 @@ function App() {
             ]}
             yAxis={[
               {
-                label: '収穫量',
-                showGrid: true,
-                // min: 10,
-                // max: 30
+                label: `${currentIndicator.labelTitle}（${currentIndicator.unit}）`,
+                min: currentIndicator.min,
+                max: currentIndicator.max,
+                showGrid: true
               },
             ]}
             series={[
               {
-                data: simulationData.map((row) => row[LINE_CHART_ITEM]),
+                data: simulationData.map((row) => row[selectedIndicator]),
                 label: '実測値',
                 color: '#ff5722',
                 showMark: false,
@@ -483,6 +525,22 @@ function App() {
               padding: 2,
             }}
           />
+
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel id="indicator-select-label">縦軸を選択</InputLabel>
+            <Select
+              labelId="indicator-select-label"
+              value={selectedIndicator}
+              label="縦軸を選択"
+              onChange={handleLineChartChange}
+            >
+              {Object.keys(lineChartIndicators).map((key) => (
+                <MenuItem key={key} value={key}>
+                  {lineChartIndicators[key].labelTitle}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Paper>
       </Box>
       <Box style={{ width: '100%' }}>
@@ -498,6 +556,7 @@ function App() {
                 boxShadow: 2,
               }}
             >
+              <EmojiTransportation color="action"  />
               交通網の充実
               <Slider
                 defaultValue={decisionVar.transportation_invest}
@@ -523,6 +582,7 @@ function App() {
                 boxShadow: 2,
               }}
             >
+              <Forest color="success" />
               植林・森林保全
               <Slider
                 defaultValue={decisionVar.planting_trees_amount}
@@ -548,7 +608,8 @@ function App() {
                 boxShadow: 2,
               }}
             >
-              ダム・堤防工事
+              <Flood color="info"  />
+                ダム・堤防工事
               <Slider
                 defaultValue={decisionVar.dam_levee_construction_cost}
                 min={0}
@@ -572,6 +633,7 @@ function App() {
                 boxShadow: 2,
               }}
             >
+              <Biotech color="success"  />
               農業研究開発
               <Slider
                 defaultValue={decisionVar.agricultural_RnD_cost}
@@ -596,6 +658,7 @@ function App() {
                 boxShadow: 2,
               }}
             >
+              <Houseboat color={"info"} />
               住宅移転・嵩上げ
               <Slider
                 defaultValue={decisionVar.house_migration_amount}
@@ -620,6 +683,7 @@ function App() {
                 boxShadow: 2,
               }}
             >
+              <Agriculture color={"success"} />
               田んぼダム工事
               <Slider
                 defaultValue={decisionVar.paddy_dam_construction_cost}
@@ -644,6 +708,7 @@ function App() {
                 boxShadow: 2,
               }}
             >
+              <LocalLibrary color="action" />
               防災訓練・啓発
               <Slider
                 defaultValue={decisionVar.capacity_building_cost}
@@ -665,7 +730,7 @@ function App() {
 
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <h2>テスト↓ API周り</h2>
+        <h2>[DEBUG] API周り</h2>
         <Button variant="contained" color="primary" onClick={handleSimulate}>
           simulation
         </Button>
