@@ -1,3 +1,5 @@
 streamlit
 scipy
 plotly
+dotenv
+openai

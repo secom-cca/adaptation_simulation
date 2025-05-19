@@ -172,7 +172,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         # crop_rnd_max_tolerance += 0.1  # レベル（対応温度）が段階的に上がっていくという過程（ここはよくわからない）
 
     # 4. 住宅の移転
-    risky_house_total = max(risky_house_total - house_migration_amount, 0) 
+    risky_house_total = max(risky_house_total - house_migration_amount + (risky_house_total + non_risky_house_total) * municipal_growth, 0) 
     non_risky_house_total = non_risky_house_total + house_migration_amount
     total_house = risky_house_total + non_risky_house_total
     migration_ratio = non_risky_house_total / total_house
