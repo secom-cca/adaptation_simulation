@@ -4,13 +4,13 @@ import streamlit as st
 from io import BytesIO
 from backend.scr.simulation import simulate_simulation
 from backend.scr.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly
-from dotenv import load_dotenv
-import os
-import openai
+# from dotenv import load_dotenv
+# import os
+# import openai
 
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-client = openai.OpenAI(api_key=api_key)
+# load_dotenv()
+# api_key = os.getenv("OPENAI_API_KEY")
+# client = openai.OpenAI(api_key=api_key)
 
 # RCPシナリオ選択
 rcp_options = {'RCP1.9': 1.9, 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 'RCP8.5': 8.5}
@@ -83,7 +83,7 @@ params = {
     'extreme_precip_uncertainty_trend': 0.05,
 
     'municipal_demand_trend': 0,
-    'municipal_demand_uncertainty': 0.05,
+    'municipal_demand_uncertainty': 0.01,
     'initial_hot_days': 30.0,
     'base_temp': 15.0,
     'base_precip': 1700.0,
@@ -462,43 +462,43 @@ def calculate_scenario_indicators(scenario_data):
     }
     return indicators
 
-def generate_llm_commentary(scenario_name, df_result, model="gpt-4"):
-    # 簡略化された特徴抽出
-    def summarize_results(df):
-        summary = {
-            "収量合計": round(df["Crop Yield"].sum(), 2),
-            "洪水被害合計": round(df["Flood Damage"].sum(), 2),
-            "生態系": round(df[df["Year"] == 2100]["Ecosystem Level"].values[0], 2),
-            "都市利便性": round(df[df["Year"] == 2100]["Urban Level"].values[0], 2),
-            "予算": round(df["Municipal Cost"].sum(), 2)
-        }
-        return summary
+# def generate_llm_commentary(scenario_name, df_result, model="gpt-4"):
+#     # 簡略化された特徴抽出
+#     def summarize_results(df):
+#         summary = {
+#             "収量合計": round(df["Crop Yield"].sum(), 2),
+#             "洪水被害合計": round(df["Flood Damage"].sum(), 2),
+#             "生態系": round(df[df["Year"] == 2100]["Ecosystem Level"].values[0], 2),
+#             "都市利便性": round(df[df["Year"] == 2100]["Urban Level"].values[0], 2),
+#             "予算": round(df["Municipal Cost"].sum(), 2)
+#         }
+#         return summary
 
-    summary_stats = summarize_results(df_result)
+#     summary_stats = summarize_results(df_result)
 
-    # プロンプトの生成（日本語）
-    prompt = f"""
-あなたはシナリオシミュレーションの専門家です。
-以下は「{scenario_name}」という気候変動適応シナリオにおける結果です。
+#     # プロンプトの生成（日本語）
+#     prompt = f"""
+# あなたはシナリオシミュレーションの専門家です。
+# 以下は「{scenario_name}」という気候変動適応シナリオにおける結果です。
 
-【シミュレーション結果の要約】
-- 作物収量の合計: {summary_stats['収量合計']}
-- 洪水被害の合計: {summary_stats['洪水被害合計']}
-- 生態系スコア（2050年）: {summary_stats['生態系']}
-- 都市利便性スコア（2100年）: {summary_stats['都市利便性']}
-- 自治体の総予算: {summary_stats['予算']}
+# 【シミュレーション結果の要約】
+# - 作物収量の合計: {summary_stats['収量合計']}
+# - 洪水被害の合計: {summary_stats['洪水被害合計']}
+# - 生態系スコア（2050年）: {summary_stats['生態系']}
+# - 都市利便性スコア（2100年）: {summary_stats['都市利便性']}
+# - 自治体の総予算: {summary_stats['予算']}
 
-この内容を踏まえて、シナリオの長所・短所を含む100-300文字程度の講評を生成してください。
-表現は一般市民に分かりやすくしてください。
-"""
+# この内容を踏まえて、シナリオの長所・短所を含む100-300文字程度の講評を生成してください。
+# 表現は一般市民に分かりやすくしてください。
+# """
 
-    # OpenAI API呼び出し
-    response = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.7
-    )
-    return response.choices[0].message.content
+#     # OpenAI API呼び出し
+#     response = client.chat.completions.create(
+#         model=model,
+#         messages=[{"role": "user", "content": prompt}],
+#         temperature=0.7
+#     )
+#     return response.choices[0].message.content
 
 
 # シナリオごとに集計
