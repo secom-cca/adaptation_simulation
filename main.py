@@ -501,6 +501,51 @@ def calculate_scenario_indicators(scenario_data):
 #     return response.choices[0].message.content
 
 
+# ベンチマーク要調整 ---------------------
+BENCHMARK = {
+    '収量':        dict(best=300_000, worst=0,     invert=False),
+    '洪水被害':    dict(best=0,       worst=200_000_000, invert=True),
+    '生態系':      dict(best=100,     worst=0,     invert=False),
+    '都市利便性':  dict(best=100,     worst=0,     invert=False),
+    '予算':        dict(best=0,       worst=100_000_000_000, invert=True),
+}
+
+BLOCKS = [
+    (2026, 2050, '2026-2050'),
+    (2051, 2075, '2051-2075'),
+    (2076, 2100, '2076-2100')
+]
+
+BAL_PARAMS = dict(field_sd_max=20, period_sd_max=15)
+
+def _balance_score(nums: list[float], sd_max: float) -> float:
+    """数値リストを 0–100 のバランス点に変換"""
+    sd = float(np.std(nums, ddof=0))
+    return float(np.clip(100 * (1 - sd / sd_max), 0, 100))
+
+def _scale_to_100(raw_val: float, metric: str) -> float:
+    """単一値を 0-100 点に変換（ベンチマーク利用）"""
+    b = BENCHMARK[metric]
+    v = np.clip(raw_val, b['worst'], b['best']) if b['worst'] < b['best'] \
+        else np.clip(raw_val, b['best'], b['worst'])
+    if b['invert']:                               # 小さいほど良い
+        score = 100 * (b['best'] - v) / (b['best'] - b['worst'])
+        print(v, score)
+    else:                                         # 大きいほど良い
+        score = 100 * (v - b['worst']) / (b['best'] - b['worst'])
+    return float(np.round(score, 1))
+
+def _raw_values(df: pd.DataFrame, start: int, end: int) -> dict:
+    """2050・2075・2100 年時点の raw 指標を取り出す"""
+    mask = (df['Year'] >= start) & (df['Year'] <= end)
+    return {
+        '収量':       df.loc[mask, 'Crop Yield'].sum(),
+        '洪水被害':   df.loc[mask, 'Flood Damage'].sum(),
+        '予算':       df.loc[mask, 'Municipal Cost'].sum(),
+        '生態系':     df.loc[mask, 'Ecosystem Level'].mean(),
+        '都市利便性': df.loc[mask, 'Urban Level'].mean(),
+    }
+
 # シナリオごとに集計
 if st.session_state['scenarios']:
     scenario_indicators = {name: calculate_scenario_indicators(data) for name, data in st.session_state['scenarios'].items()}
@@ -517,6 +562,45 @@ if st.session_state['scenarios']:
     # 結果の表示
     st.subheader('Metrics and Rankings / シナリオごとの指標と順位')
     st.write(df_indicators)
+
+    records = []
+    for sc_name, df in st.session_state['scenarios'].items():
+        for s, e, label in BLOCKS:
+            raw = _raw_values(df, s, e)
+            scores = {k: _scale_to_100(v, k) for k, v in raw.items()}  # 既存の _scale_to_100 を利用
+            scores.update({'Scenario': sc_name, 'Period': label})
+            records.append(scores)
+
+    score_df = (
+        pd.DataFrame(records)
+          .set_index(['Scenario', 'Period'])            # MultiIndex
+          .sort_index(level='Period')                   # 表示順をブロック順に
+    )
+
+    st.subheader('Period Scores (0–100 点)')
+    st.write(score_df.style.format('{:.1f}'))
+
+    field_balance = (
+        score_df.groupby(['Scenario', 'Period'])
+                .apply(lambda sub: _balance_score(sub.values, BAL_PARAMS['field_sd_max']))
+                .groupby('Scenario').mean()        # 3 ブロック平均
+                .rename('分野間バランス')
+    )
+
+    # ブロック間バランス：指標ごとに 3 ブロックの SD（5 指標平均）
+    block_balance = (
+        score_df.stack()              # → Scenario, Period, Metric
+                .unstack('Period')    # 列=Period
+                .groupby(level=0)     # Scenario ごと
+                .apply(lambda df:
+                    np.mean([_balance_score(row.values, BAL_PARAMS['period_sd_max'])
+                                for _, row in df.iterrows()]))
+                .rename('年代間バランス')
+)
+
+    balance_df = pd.concat([field_balance, block_balance], axis=1)
+    st.subheader('Balance Scores (0–100)')
+    st.write(balance_df.style.format('{:.1f}'))
 
     # df_result = st.session_state['scenarios'][scenario_name]
     # try:
