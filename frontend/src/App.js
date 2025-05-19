@@ -4,6 +4,8 @@ import { LineChart, ScatterChart, Gauge } from '@mui/x-charts';
 import { ThunderstormOutlined, TsunamiOutlined, WbSunnyOutlined } from '@mui/icons-material';
 import InfoIcon from '@mui/icons-material/Info';
 import axios from "axios";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import FormulaPage from "./FormulaPage"; // 新ページ
 
 // ※ chart.js v4 の設定
 import {
@@ -32,6 +34,18 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"
 // 各種設定
 
 const LINE_CHART_ITEM = "Crop Yield"
+
+
+function AppRouter() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/formula" element={<FormulaPage />} />
+      </Routes>
+    </Router>
+  );
+}
 
 function App() {
   // シミュレーション実行用のステート
@@ -353,6 +367,9 @@ function App() {
         <Button variant="contained" color="primary" onClick={handleClickCalc}>
           15年進める
         </Button>
+        <Link to="/formula">
+          <Button variant="outlined">モデルの説明を見る</Button>
+        </Link>
         <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
         <IconButton color="primary" onClick={handleOpenResultUI}>
           <InfoIcon />
