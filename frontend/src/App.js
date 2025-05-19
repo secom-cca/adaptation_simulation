@@ -4,6 +4,8 @@ import { LineChart, ScatterChart, Gauge } from '@mui/x-charts';
 import { Agriculture, Biotech, EmojiTransportation, Flood, Forest, Houseboat, LocalLibrary, Science, ThunderstormOutlined, TsunamiOutlined, WbSunnyOutlined } from '@mui/icons-material';
 import InfoIcon from '@mui/icons-material/Info';
 import axios from "axios";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import FormulaPage from "./FormulaPage"; // 新ページ
 
 // ※ chart.js v4 の設定
 import {
@@ -46,6 +48,18 @@ const INDICATOR_CONVERSION = {
   'Flood Damage': 1 / 10000000, // 円 → 千万円
   'Crop Yield': 1 / 1000 // kg → ton（例）
 };
+
+
+function AppRouter() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/formula" element={<FormulaPage />} />
+      </Routes>
+    </Router>
+  );
+}
 
 function App() {
   // シミュレーション実行用のステート
@@ -395,6 +409,9 @@ function App() {
         <Button variant="contained" color="primary" onClick={handleClickCalc}>
           {SIMULATION_YEARS}年進める
         </Button>
+        <Link to="/formula">
+          <Button variant="outlined">モデルの説明を見る</Button>
+        </Link>
         <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
           <IconButton color="primary" onClick={handleOpenResultUI}>
             <InfoIcon />
