@@ -99,7 +99,7 @@ params = {
     'levee_investment_threshold': 5.0,
     'RnD_investment_threshold': 5.0,
     'levee_investment_required_years': 10,
-    'RnD_investment_required_years': 10,
+    'RnD_investment_required_years': 5,
     'max_available_water': 3000.0,
     'evapotranspiration_amount': 300.0,
 }
@@ -299,7 +299,7 @@ if simulation_mode == 'Sequential Decision-Making Mode':
         st.session_state['prev_values_seq'] = {
             'temp': 15.0,
             'precip': 1700.0,
-            'municipal_demand': 100.0,
+            'municipal_demand': 130.0,
             'available_water': 1000.0,
             'crop_yield': 100.0,
             'levee_level': 100.0,

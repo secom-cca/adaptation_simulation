@@ -79,15 +79,19 @@ def simulate_year(year, prev_values, decision_vars, params):
     tree_growup_year              = 20
     # 住宅
     cost_per_migration            = 300000 # [万円]
+    # resident_density = 1000 # [person/km^2]
+    # water_demand_per_resident = 130 # [m3/person]
+    # current_municipal_demand = water_water_demand_per_resident * resident_density / 1000 = 130 [mm]
     # 農業（Again）
-    crop_rnd_max_tolerance        = 0.5
-    necessary_water_for_crops     = 1000 # [mm]
+    necessary_water_for_crops     = 330 # [mm] TBD
+    # paddy_field_area * 10000 * necessary_water_for_crops (2000-3300) / total_area * 10000
     paddy_dam_cost_per_ha         = 1.5 # [MilYen/ha]
     # 住民意識
     capacity_building_coefficient = 0.01
     resident_capacity_degrade_ratio = 0.05
     # 交通
-    transportation_invest_coef = 10000000 # [コスト]
+    transport_level_coef = 1.0
+    distance_urban_level_coef = 1.0
     # 領域横断影響
     forest_flood_reduction_coef = 0.4 # 0.1-0.5
     forest_ecosystem_boost_coef = 0.0002
@@ -99,13 +103,13 @@ def simulate_year(year, prev_values, decision_vars, params):
     paddy_dam_flood_coef = 10.0 # [-] 最大で10mmのインパクト
     # 水災害（Again）
     flood_recovery_cost_coef = 0.001
-    runoff_coef = 0.1
+    runoff_coef = 0.6
     # 気象（Again）
     base_mu = 180
     base_beta = 20
     total_area = 10000 #[ha]
     paddy_field_area = 1000 # [ha]
-    paddy_dam_yield_coef = 0.1 # [-] 最大で10%のインパクト
+    paddy_dam_yield_coef = 0.01 # [-] 1%の負のインパクト
 
     # 0.1 気象環境 ---
     temp = base_temp + temp_trend * (year - start_year) + np.random.normal(0, temp_uncertainty)
@@ -147,7 +151,6 @@ def simulate_year(year, prev_values, decision_vars, params):
     )
 
     # 3. 農業生産量，△このあたり[ha]を考えず計算している
-    # temp_impact = hot_days * temp_coefficient * (1 - prev_high_temp_tolerance_level)
     temp_ripening = temp + 10.0 # 仮設定：登熟期の気温の計算
     temp_critical_crop = 30.0
     excess = max(temp_ripening - (temp_threshold_crop + high_temp_tolerance_level), 0)
@@ -162,14 +165,13 @@ def simulate_year(year, prev_values, decision_vars, params):
     # * 2.農業利用水を利用可能水から引く（System Dynamicsには未導入）
     current_available_water = max(current_available_water - necessary_water_for_crops, 0)
 
-    # 3.2 農業R&D：累積投資で耐熱性向上（確率的閾値）：△品種改良の他地域への波及効果なども考えておらず「閉じた世界」
+    # 3.2 農業R&D：累積投資で耐熱性向上（確率的閾値）
     RnD_investment_total += agricultural_RnD_cost
     RnD_threshold_with_noise = np.random.normal(RnD_investment_threshold * RnD_investment_required_years, RnD_investment_threshold * 0.1)
 
     if RnD_investment_total >= RnD_threshold_with_noise:
-        high_temp_tolerance_level += high_temp_tolerance_increment #, crop_rnd_max_tolerance)
+        high_temp_tolerance_level += high_temp_tolerance_increment
         RnD_investment_total = 0.0
-        # crop_rnd_max_tolerance += 0.1  # レベル（対応温度）が段階的に上がっていくという過程（ここはよくわからない）
 
     # 4. 住宅の移転
     risky_house_total = max(risky_house_total - house_migration_amount + (risky_house_total + non_risky_house_total) * municipal_growth, 0) 
@@ -188,7 +190,6 @@ def simulate_year(year, prev_values, decision_vars, params):
         current_levee_level = prev_levee_level
 
     # 5.2 水害
-    # flood_impact = max(extreme_precip_intensity - current_levee_level, 0) * flood_damage_coefficient
     flood_impact = 0
     paddy_dam_level = paddy_dam_flood_coef * min(paddy_dam_area / paddy_field_area, 1)
     for rain in rain_events:
@@ -204,9 +205,9 @@ def simulate_year(year, prev_values, decision_vars, params):
     if current_available_water < ecosystem_threshold:
         ecosystem_level = max( ecosystem_level - water_ecosystem_coef * (ecosystem_threshold - current_available_water), 0) # 要検討
 
-    # 7. 都市の居住可能性の評価
-    transportation_level = transportation_level * 0.95 + transportation_invest #ここが非常に怪しい！
-    urban_level = (1 - migration_ratio) * transportation_level #ここが非常に怪しい！
+    # 7. 都市の居住可能性の評価（交通面のみ）
+    transportation_level = transportation_level * 0.95 + transport_level_coef * transportation_invest #ここが非常に怪しい！
+    urban_level = distance_urban_level_coef * (1 - migration_ratio) * transportation_level #平均移動距離が長くなることの効果を算出
     urban_level -= current_flood_damage * flood_urban_damage_coef
     urban_level = min(max(urban_level, 0), 100)
 
