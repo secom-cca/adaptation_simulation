@@ -19,7 +19,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 初期値を定義していない変数（追って調整）
     levee_investment_total = prev_values.get('levee_investment_total', 0.0)
     RnD_investment_total = prev_values.get('RnD_investment_total', 0.0)
-    risky_house_total = prev_values.get('risky_house_total', 10000)
+    risky_house_total = prev_values.get('risky_house_total', 15000)
     non_risky_house_total = prev_values.get('non_risky_house_total', 0)
     paddy_dam_area = prev_values.get('paddy_dam_area', 0)
     temp_threshold_crop = prev_values.get('temp_threshold_crop', 26)
@@ -78,7 +78,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     forest_degradation_rate       = 0.01
     tree_growup_year              = 20
     # 住宅
-    cost_per_migration            = 300000 # [万円]
+    cost_per_migration            = 1000000 # [万円]
     # resident_density = 1000 # [person/km^2]
     # water_demand_per_resident = 130 # [m3/person]
     # current_municipal_demand = water_water_demand_per_resident * resident_density / 1000 = 130 [mm]
@@ -86,6 +86,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     necessary_water_for_crops     = 330 # [mm] TBD
     # paddy_field_area * 10000 * necessary_water_for_crops (2000-3300) / total_area * 10000
     paddy_dam_cost_per_ha         = 1.5 # [MilYen/ha]
+    paddy_dam_yield_coef = 0.01 # [-] 1%の負のインパクト
     # 住民意識
     capacity_building_coefficient = 0.01
     resident_capacity_degrade_ratio = 0.05
@@ -107,9 +108,9 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 気象（Again）
     base_mu = 180
     base_beta = 20
+    # 地形
     total_area = 10000 #[ha]
     paddy_field_area = 1000 # [ha]
-    paddy_dam_yield_coef = 0.01 # [-] 1%の負のインパクト
 
     # 0.1 気象環境 ---
     temp = base_temp + temp_trend * (year - start_year) + np.random.normal(0, temp_uncertainty)
@@ -162,6 +163,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     water_impact = min(current_available_water/necessary_water_for_crops, 1.0)
     current_crop_yield = (max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact)
 
+    print(paddy_dam_area)
     # * 2.農業利用水を利用可能水から引く（System Dynamicsには未導入）
     current_available_water = max(current_available_water - necessary_water_for_crops, 0)
 

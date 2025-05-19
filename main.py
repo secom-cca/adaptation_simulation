@@ -94,9 +94,9 @@ params = {
     'max_potential_yield': 5000.0, # [kg/ha]
     'optimal_irrigation_amount': 30.0,
     'flood_damage_coefficient': 100000, # 1mm越水あたりのダメージ，パラメータ調整
-    'levee_level_increment': 10.0,
-    'high_temp_tolerance_increment': 0.1,
-    'levee_investment_threshold': 5.0,
+    'levee_level_increment': 20.0,
+    'high_temp_tolerance_increment': 0.2,
+    'levee_investment_threshold': 2.0,
     'RnD_investment_threshold': 5.0,
     'levee_investment_required_years': 10,
     'RnD_investment_required_years': 5,
@@ -150,8 +150,8 @@ if simulation_mode == 'Sequential Decision-Making Mode':
     st.sidebar.title(f'Decision Making for the next {timestep_year} yrs / 意思決定変数（次の{timestep_year}年間）')
     st.sidebar.write(f'今後{timestep_year}年間の政策を考えてみましょう')
     planting_trees_amount = st.sidebar.slider('植林・森林保全（ha/年）', min_value=0, max_value=200, value=100, step=100)
-    house_migration_amount = st.sidebar.slider('住宅移転・嵩上げ（軒/年）', min_value=0, max_value=200, value=100, step=100)
-    dam_levee_construction_cost = st.sidebar.slider('ダム・堤防工事（億円/年）', min_value=0.0, max_value=10.0, value=5.0, step=5.0)
+    house_migration_amount = st.sidebar.slider('住宅移転（軒/年）', min_value=0, max_value=100, value=50, step=50)
+    dam_levee_construction_cost = st.sidebar.slider('ダム・堤防工事（億円/年）', min_value=0.0, max_value=2.0, value=1.0, step=1.0)
     paddy_dam_construction_cost = st.sidebar.slider('田んぼダム工事（百万円/年）', min_value=0.0, max_value=10.0, value=5.0, step=5.0)
     capacity_building_cost = st.sidebar.slider('防災訓練・普及啓発（百万円/年）', min_value=0.0, max_value=10.0, value=5.0, step=5.0)
     agricultural_RnD_cost = st.sidebar.slider('農業研究開発（千万円/年）', min_value=0.0, max_value=10.0, value=5.0, step=5.0)
@@ -530,7 +530,6 @@ def _scale_to_100(raw_val: float, metric: str) -> float:
         else np.clip(raw_val, b['best'], b['worst'])
     if b['invert']:                               # 小さいほど良い
         score = 100 * (b['best'] - v) / (b['best'] - b['worst'])
-        print(v, score)
     else:                                         # 大きいほど良い
         score = 100 * (v - b['worst']) / (b['best'] - b['worst'])
     return float(np.round(score, 1))
