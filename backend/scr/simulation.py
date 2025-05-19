@@ -74,17 +74,20 @@ def simulate_year(year, prev_values, decision_vars, params):
     levee_investment_required_years = params['levee_investment_required_years']
     RnD_investment_required_years = params['RnD_investment_required_years']
     # 森林
-    cost_per_1000trees            = 2310000
+    cost_per_1000trees            = 2310000 # [万円]
     forest_degradation_rate       = 0.01
     tree_growup_year              = 20
     # 住宅
-    cost_per_migration            = 3000000
+    cost_per_migration            = 300000 # [万円]
     # 農業（Again）
     crop_rnd_max_tolerance        = 0.5
     necessary_water_for_crops     = 1000 # [mm]
+    paddy_dam_cost_per_ha         = 1.5 # [MilYen/ha]
     # 住民意識
     capacity_building_coefficient = 0.01
     resident_capacity_degrade_ratio = 0.05
+    # 交通
+    transportation_invest_coef = 10000000 # [コスト]
     # 領域横断影響
     forest_flood_reduction_coef = 0.4 # 0.1-0.5
     forest_ecosystem_boost_coef = 0.0002
@@ -150,7 +153,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     excess = max(temp_ripening - (temp_threshold_crop + high_temp_tolerance_level), 0)
     loss = (excess / (temp_critical_crop - temp_threshold_crop))
     temp_impact = min(loss, 1)
-    paddy_dam_area += paddy_dam_construction_cost # 1百万円で1ha
+    paddy_dam_area += paddy_dam_construction_cost / paddy_dam_cost_per_ha
     paddy_dam_yield_impact = paddy_dam_yield_coef * min(paddy_dam_area / paddy_field_area, 1)
 
     water_impact = min(current_available_water/necessary_water_for_crops, 1.0)
@@ -214,9 +217,10 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 10. コスト算出
     planting_trees_cost = planting_trees_amount * cost_per_1000trees
     migration_cost = house_migration_amount * cost_per_migration
-    municipal_cost = dam_levee_construction_cost * 1000000 + agricultural_RnD_cost * 1000000 + paddy_dam_construction_cost * 1000000 + capacity_building_cost * 100000 + planting_trees_cost + migration_cost + transportation_invest
+    municipal_cost = dam_levee_construction_cost * 100000000 + agricultural_RnD_cost * 10000000 + paddy_dam_construction_cost * 1000000 + capacity_building_cost * 1000000 + planting_trees_cost + migration_cost + transportation_invest * 10000000
     resident_burden = municipal_cost 
     resident_burden += current_flood_damage * flood_recovery_cost_coef # added
+    # print(dam_levee_construction_cost * 100000000, agricultural_RnD_cost * 10000000, paddy_dam_construction_cost * 1000000, capacity_building_cost * 1000000, planting_trees_cost, migration_cost, transportation_invest * 10000000)
 
     # --- 出力 ---
     outputs = {
