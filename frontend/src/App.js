@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Alert, AlertTitle, Box, Button, Dialog, DialogTitle, DialogContent, FormControl, Grid, IconButton, InputLabel, MenuItem, Slider, Stack, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, Dialog, DialogTitle, DialogContent, FormControl, Grid, IconButton, InputLabel, MenuItem, Slider, Stack, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper, TextField } from '@mui/material';
 import { LineChart, ScatterChart, Gauge } from '@mui/x-charts';
 import { Agriculture, Biotech, EmojiTransportation, Flood, Forest, Houseboat, LocalLibrary, Science, ThunderstormOutlined, TsunamiOutlined, WbSunnyOutlined } from '@mui/icons-material';
 import InfoIcon from '@mui/icons-material/Info';
@@ -70,20 +70,20 @@ function App() {
   const [openResultUI, setOpenResultUI] = useState(false);
   const [decisionVar, setDecisionVar] = useState({
     year: 2026,
-    planting_trees_amount: 100.,   // 植林・森林保全
-    house_migration_amount: 100.,  // 住宅移転・嵩上げ
+    planting_trees_amount: 0.,   // 植林・森林保全
+    house_migration_amount: 0.,  // 住宅移転・嵩上げ
     dam_levee_construction_cost: 0., //ダム・堤防工事
-    paddy_dam_construction_cost: 3., //田んぼダム工事
-    capacity_building_cost: 3.,   // 防災訓練・普及啓発
+    paddy_dam_construction_cost: 0., //田んぼダム工事
+    capacity_building_cost: 0.,   // 防災訓練・普及啓発
     // irrigation_water_amount: 100, // 灌漑水量
     // released_water_amount: 100,   // 放流水量
-    transportation_invest: 3,     // 交通網の拡充
-    agricultural_RnD_cost: 3,      // 農業研究開発
+    transportation_invest: 0,     // 交通網の拡充
+    agricultural_RnD_cost: 0,      // 農業研究開発
     cp_climate_params: 4.5 //RCPの不確実性シナリオ
   })
   const [currentValues, setCurrentValues] = useState({
     temp: 15,
-    precip: 1000,
+    precip: 1700,
     municipal_demand: 100,
     available_water: 1000,
     crop_yield: 100,
@@ -121,6 +121,15 @@ function App() {
     setSelectedIndicator(event.target.value);
   };
 
+  const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
+  const [openNameDialog, setOpenNameDialog] = useState(!userName);
+  const [blockScores, setBlockScores] = useState([]);   // Array<Backend BlockRaw>
+  const [ranking,setRanking] = useState([]);
+  const fetchRanking = async () => {
+    const res = await axios.get(`${BACKEND_URL}/ranking`);
+    setRanking(res.data);
+  };
+
   useEffect(() => {
     currentValuesRef.current = currentValues;
   }, [currentValues]);
@@ -130,16 +139,44 @@ function App() {
     fetchForecastData();
   }, [decisionVar]);
 
+  useEffect(() => {
+    const storedName = localStorage.getItem('userName');
+    if (!storedName || storedName.trim() === '') {
+      setOpenNameDialog(true);
+    } else {
+      setUserName(storedName);
+    }
+  }, []);
+
+  useEffect(() => {
+    // 開発中のみ userName を強制リセット
+    if (process.env.NODE_ENV === 'development') {
+      localStorage.removeItem('userName');
+    }
+  
+    const storedName = localStorage.getItem('userName');
+    if (!storedName || storedName.trim() === '') {
+      setOpenNameDialog(true);
+    } else {
+      setUserName(storedName);
+    }
+  }, []);
+
   // (A) シミュレーション実行ハンドラ
   const handleSimulate = async () => {
     setLoading(true);
     setError("");
-
+    if (!userName || userName.trim() === "") {
+      alert("お名前を入力してください");
+      setOpenNameDialog(true);
+      return;
+    }
     try {
       // /simulate に POST するパラメータ
       console.log("現在の入力:", decisionVarRef.current, currentValuesRef.current)
       const body = {
         scenario_name: scenarioName,
+        user_name: userName,
         mode: "Sequential Decision-Making Mode",  // "Monte Carlo Simulation Mode" または "Sequential Decision-Making Mode"
         decision_vars: [decisionVarRef.current],
         num_simulations: Number(numSimulations),
@@ -201,6 +238,7 @@ function App() {
       // console.log("上限値のパラメータ：", upperDecisionVar)
 
       const upperBody = {
+        user_name: userName,
         scenario_name: scenarioName,
         mode: "Predict Simulation Mode",  // "Monte Carlo Simulation Mode" または "Sequential Decision-Making Mode"
         decision_vars: [upperDecisionVar],
@@ -224,6 +262,7 @@ function App() {
       // console.log("下限値のパラメータ：", lowerDecisionVar)
 
       const lowerBody = {
+        user_name: userName, // ← これを追加
         scenario_name: scenarioName,
         mode: "Predict Simulation Mode",  // "Monte Carlo Simulation Mode" または "Sequential Decision-Making Mode"
         decision_vars: [lowerDecisionVar],
@@ -233,6 +272,7 @@ function App() {
 
       // axios でリクエスト
       const resp = await axios.post(`${BACKEND_URL}/simulate`, lowerBody);
+      setBlockScores(prev => [...prev, ...resp.data.block_scores]);
       if (resp.data && resp.data.data) {
         setChartPredictData((prev) => {
           const updated = [...prev];
@@ -418,6 +458,39 @@ function App() {
           </IconButton>
         </Box>
       </Box>
+
+      <Dialog open={openNameDialog} disableEscapeKeyDown>
+        <DialogTitle>お名前を入力してください</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            value={userName}
+            onChange={e => setUserName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && userName.trim()) {
+                localStorage.setItem('userName', userName.trim());
+                setUserName(userName.trim());
+                setOpenNameDialog(false);
+              }
+            }}
+          />
+          <Button
+            variant="contained"
+            fullWidth
+            disabled={!userName.trim()}
+            onClick={() => {
+              localStorage.setItem('userName', userName.trim());
+              setUserName(userName.trim());
+              setOpenNameDialog(false);
+            }}
+            sx={{ mt: 2 }}
+          >
+            登録
+          </Button>
+        </DialogContent>
+      </Dialog>
+
 
       {/* メインレイアウト */}
       <Box sx={{ display: 'flex', width: '100%', marginBottom: 1, gap: 3 }}>
@@ -752,6 +825,53 @@ function App() {
           simulation
         </Button>
       </Box>
+
+      <TableContainer component={Paper} sx={{mt:2}}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>期間</TableCell>
+              <TableCell align="right">合計点</TableCell>
+              <TableCell align="right">収量</TableCell>
+              <TableCell align="right">洪水</TableCell>
+              <TableCell align="right">生態系</TableCell>
+              <TableCell align="right">都市</TableCell>
+              <TableCell align="right">予算</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {blockScores.map((b,i)=>(
+              <TableRow key={i}>
+                <TableCell>{b.period}</TableCell>
+                <TableCell align="right">{b.total_score.toFixed(1)}</TableCell>
+                {Object.keys(b.score).map(k=>(
+                  <TableCell key={k} align="right">{b.score[k].toFixed(1)}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog open={openResultUI} onClose={handleCloseResultUI} maxWidth="sm" fullWidth>
+        <DialogTitle>ランキング</DialogTitle>
+        <DialogContent>
+          <Table size="small">
+            <TableHead><TableRow>
+              <TableCell>順位</TableCell><TableCell>ユーザ</TableCell><TableCell align="right">平均点</TableCell>
+            </TableRow></TableHead>
+            <TableBody>
+              {ranking.map(r=>(
+                <TableRow key={r.rank}>
+                  <TableCell>{r.rank}</TableCell>
+                  <TableCell>{r.user_name}</TableCell>
+                  <TableCell align="right">{r.total_score.toFixed(1)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DialogContent>
+      </Dialog>
 
       <p>{simulationData.at(-1)?.["Crop Yield"]}</p>
       <p>{JSON.stringify(simulationData)}</p>

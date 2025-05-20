@@ -163,7 +163,6 @@ def simulate_year(year, prev_values, decision_vars, params):
     water_impact = min(current_available_water/necessary_water_for_crops, 1.0)
     current_crop_yield = (max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact)
 
-    print(paddy_dam_area)
     # * 2.農業利用水を利用可能水から引く（System Dynamicsには未導入）
     current_available_water = max(current_available_water - necessary_water_for_crops, 0)
 
@@ -223,7 +222,6 @@ def simulate_year(year, prev_values, decision_vars, params):
     municipal_cost = dam_levee_construction_cost * 100000000 + agricultural_RnD_cost * 10000000 + paddy_dam_construction_cost * 1000000 + capacity_building_cost * 1000000 + planting_trees_cost + migration_cost + transportation_invest * 10000000
     resident_burden = municipal_cost 
     resident_burden += current_flood_damage * flood_recovery_cost_coef # added
-    # print(dam_levee_construction_cost * 100000000, agricultural_RnD_cost * 10000000, paddy_dam_construction_cost * 1000000, capacity_building_cost * 1000000, planting_trees_cost, migration_cost, transportation_invest * 10000000)
 
     # --- 出力 ---
     outputs = {
