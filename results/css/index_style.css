@@ -1,79 +1,58 @@
-canvas{
-  width: 400px;
-  height: 400px; 
+* {
+    margin: 0;
+    padding: 0;
 }
-
-.flex{
-  display: flex;
-  flex-wrap: wrap;
+.title { 
+    width:100vw;
+    height:8vh;
+    background-color:#bbb333;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 0;
 }
-.scenario {
-  /*width: 90vw;*/
-  height: 5vh;
-  background-color: #fff95d;
-  font-size: 3vh;
-  margin: 0.5em 0 0 20px;
+.wrap { 
+    width:100vw;
+    height:92vh;
+    background-color:#ffffff;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    text-align: left;
 }
-.box {
-  width: 30vw;
-  height: 12vh;
-  background-color: #77dddd;
-  display: flex;
-  margin: 0 0 0 20px;
-}
-.icon {
-  width: 12vw;
-  height: 100%;
-  text-align:center;
-}
-.icon img {
-  height: 12vh;
-  object-fit: contain;
-}
-.scorebox {
-  width: 20vw;
-  height: 12vh;
-}
-.scorekey {
-  width: 20vw;
-  height: 5vh;
-  background-color: #7777dd;
-  text-align:center;
-  font-size: 3vh;
-}
-.scoreitem {
-  width: 20vw;
-  height: 7vh;
-  background-color: #ddd55d;
-  display: flex;
-}
-.myscore {
-  width: 12vw;
-  height: 100%;
-  background-color: #dd4555;
-  font-size: 5vh;
-  text-align: center;
-  margin: 0 0 0 3vw;
-}
-.fullscore {
-  width: 4vw;
-  height: 60%;
-  margin: 2.8vh 0 0 0; 
-  background-color: #494555;
-  font-size: 3vh;
-  text-align: center;
-}
-.chartbox {
-  width: 30vw;
-  height: 45vh;
-  background-color: #ddddd5;
-  display: flex;
-  margin: 0 0 0 20px;
+.content {      
+    width:auto;
+    height: auto;
 }
 .next {
-  width: 5vw;
-  height: 5vh;
-  background-color: #fff95d;
-  font-size: 3vh;
-  margin: 0.4em 0 0 90vw;
+  text-align: right;
+}
+p {
+    font-size: 18px;
+    color: #000;
+    line-height: 3em;
+}
+/*以下フェードイン表示の指定*/
+.fadein {
+    opacity: 0;
+    animation: fadein 2s ease forwards;
+}
+@keyframes fadein {
+    100% {  opacity: 1;}
+}
+/*以下遅延の指定*/
+.txt01 {animation-delay: 1s;}
+.txt02 {animation-delay: 3s;}
+.txt03 {animation-delay: 5s;}
+.txt04 {animation-delay: 7s;}
+.txt05 {animation-delay: 9s;}
+.txt06 {animation-delay: 11s;}
+.txt99 {animation-delay: 12s;
+    background-color: rgb(248, 248, 100);
+    font-size: 3vh;
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgb(249, 177, 42);
+    border-radius: 0.5em;
+    padding: 0.2em;
 }
