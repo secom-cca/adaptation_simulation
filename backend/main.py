@@ -19,6 +19,13 @@ app.add_middleware(
     allow_headers=["*"],              
 )
 
+# main.py 冒頭あたり
+from pathlib import Path, PosixPath
+DATA_DIR: PosixPath = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
+RANK_FILE = DATA_DIR / "block_scores.csv"    # 追記用
+ACTION_LOG_FILE = DATA_DIR / "decision_log.csv"
+
 # ======================
 # 1) グローバルに保持するパラメータとデータ
 # ======================
@@ -158,8 +165,16 @@ class CurrentValues(BaseModel):
     biodiversity_level: Optional[float] = 0.0
     
 
+class BlockRaw(BaseModel):
+    period: str            # '2026-2050' など
+    raw:   Dict[str, float]   # 5 指標の合計／平均
+    score: Dict[str, float]   # 0-100 化した 5 指標
+    total_score: float        # 5 指標平均
+
+
 class SimulationRequest(BaseModel):
     """シミュレーション実行時にフロントエンドから送られる想定パラメータ."""
+    user_name: str                   # ★追加
     scenario_name: str
     mode: str  # "Monte Carlo Simulation Mode" or "Sequential Decision-Making Mode"
     decision_vars: List[DecisionVar] = []   # Monte Carlo のときは 10年ごとの意思決定、Sequential でも可
@@ -172,6 +187,7 @@ class SimulationResponse(BaseModel):
     """シミュレーション結果を返すレスポンス用."""
     scenario_name: str
     data: List[Dict[str, Any]]  # DataFrameを JSON 化したもの
+    block_scores: List[BlockRaw]     # ★追加
 
 
 class CompareRequest(BaseModel):
@@ -206,6 +222,54 @@ def calculate_scenario_indicators(df: pd.DataFrame) -> Dict[str, float]:
     }
     return indicators
 
+BENCHMARK = {
+    '収量':        dict(best=300_000, worst=0,     invert=False),
+    '洪水被害':    dict(best=0,       worst=200_000_000, invert=True),
+    '生態系':      dict(best=100,     worst=0,     invert=False),
+    '都市利便性':  dict(best=100,     worst=0,     invert=False),
+    '予算':        dict(best=0,       worst=100_000_000_000, invert=True),
+}
+
+BLOCKS = [
+    (2026, 2050, '2026-2050'),
+    (2051, 2075, '2051-2075'),
+    (2076, 2100, '2076-2100')
+]
+
+def _aggregate_blocks(df: pd.DataFrame) -> list[dict]:
+    records = []
+    for s, e, label in BLOCKS:
+        # ブロック内のデータが最低でも1年分ある場合のみ集計
+        mask = (df['Year'] >= s) & (df['Year'] <= e)
+        if df.loc[mask].empty:
+            continue  # このブロックはスキップ
+        raw = _raw_values(df, s, e)
+        score = {k: _scale_to_100(v, k) for k, v in raw.items()}
+        total = float(np.mean(list(score.values())))
+        records.append(dict(period=label, raw=raw, score=score, total_score=total))
+    return records
+
+def _scale_to_100(raw_val: float, metric: str) -> float:
+    """単一値を 0-100 点に変換（ベンチマーク利用）"""
+    b = BENCHMARK[metric]
+    v = np.clip(raw_val, b['worst'], b['best']) if b['worst'] < b['best'] \
+        else np.clip(raw_val, b['best'], b['worst'])
+    if b['invert']:                               # 小さいほど良い
+        score = 100 * (b['best'] - v) / (b['best'] - b['worst'])
+    else:                                         # 大きいほど良い
+        score = 100 * (v - b['worst']) / (b['best'] - b['worst'])
+    return float(np.round(score, 1))
+
+def _raw_values(df: pd.DataFrame, start: int, end: int) -> dict:
+    """2050・2075・2100 年時点の raw 指標を取り出す"""
+    mask = (df['Year'] >= start) & (df['Year'] <= end)
+    return {
+        '収量':       df.loc[mask, 'Crop Yield'].sum(),
+        '洪水被害':   df.loc[mask, 'Flood Damage'].sum(),
+        '予算':       df.loc[mask, 'Municipal Cost'].sum(),
+        '生態系':     df.loc[mask, 'Ecosystem Level'].mean(),
+        '都市利便性': df.loc[mask, 'Urban Level'].mean(),
+    }
 
 # ======================
 # 4) エンドポイント定義
@@ -256,6 +320,7 @@ def run_simulation(req: SimulationRequest):
 
     # シミュレーション結果を格納するための変数
     all_results_df = pd.DataFrame()
+    blocks = []
 
     if mode == "Monte Carlo Simulation Mode":
         simulation_results = []
@@ -274,6 +339,7 @@ def run_simulation(req: SimulationRequest):
             simulation_results.append(df_sim)
 
         all_results_df = pd.concat(simulation_results, ignore_index=True)
+        blocks = []
 
     elif mode == "Sequential Decision-Making Mode":
         # Streamlit 版では「10年ごとに意思決定 & 次へ進む」という操作を対話的にやっていた
@@ -289,6 +355,39 @@ def run_simulation(req: SimulationRequest):
             params=DEFAULT_PARAMS
         )
         all_results_df = pd.DataFrame(seq_result)
+
+        # === アクションログ出力 ===
+        df_log = pd.DataFrame([dv.dict() for dv in req.decision_vars])
+        df_log['user_name'] = req.user_name
+        df_log['scenario_name'] = scenario_name
+        df_log['timestamp'] = pd.Timestamp.utcnow()
+
+        if ACTION_LOG_FILE.exists():
+            df_old = pd.read_csv(ACTION_LOG_FILE)
+            df_combined = pd.concat([df_old, df_log], ignore_index=True)
+        else:
+            df_combined = df_log
+
+        df_combined.to_csv(ACTION_LOG_FILE, index=False)
+
+        blocks = _aggregate_blocks(all_results_df)
+
+        # ---- CSV へ追記 or 更新（ユーザ名×シナリオ名×period が unique） ----
+
+        df_csv = pd.DataFrame(blocks)
+        df_csv['user_name']     = req.user_name
+        df_csv['scenario_name'] = scenario_name
+        df_csv['timestamp']     = pd.Timestamp.utcnow()
+
+        if RANK_FILE.exists():
+            old = pd.read_csv(RANK_FILE)
+            # すでに同じ user_name + scenario_name + period があれば置き換え
+            merged = (old.set_index(['user_name','scenario_name','period'])
+                        .combine_first(df_csv.set_index(['user_name','scenario_name','period']))
+                        .reset_index())
+            merged.to_csv(RANK_FILE, index=False)
+        else:
+            df_csv.to_csv(RANK_FILE, index=False)
     
     elif mode == "Predict Simulation Mode":
         # 全期間の予測値を計算する
@@ -311,6 +410,7 @@ def run_simulation(req: SimulationRequest):
         )
 
         all_results_df = pd.DataFrame(seq_result)
+        blocks = []
 
     else:
         raise HTTPException(status_code=400, detail=f"Unknown mode: {mode}")
@@ -323,9 +423,27 @@ def run_simulation(req: SimulationRequest):
     # print('バックエンドの計算結果：' + str(all_results_df.to_dict))
     response = SimulationResponse(
         scenario_name=scenario_name,
-        data=all_results_df.to_dict(orient="records")
+        data=all_results_df.to_dict(orient="records"),
+        block_scores=blocks
     )
     return response
+
+
+@app.get("/ranking")
+def get_ranking():
+    if not RANK_FILE.exists():
+        return []
+    df = pd.read_csv(RANK_FILE)
+    latest = (df.sort_values('timestamp')
+                .drop_duplicates(['user_name','scenario_name','period'], keep='last'))
+    # 直近シナリオの period ごと平均点
+    rank_df = (latest.groupby('user_name')['total_score']
+                      .mean()
+                      .reset_index()
+                      .sort_values('total_score', ascending=False)
+                      .reset_index(drop=True))
+    rank_df['rank'] = rank_df.index + 1
+    return rank_df.to_dict(orient='records')
 
 
 @app.post("/compare", response_model=CompareResponse)
