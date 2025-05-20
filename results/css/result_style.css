@@ -49,27 +49,12 @@ input:checked + .tab {
 #tabcheck2:checked ~ #tabcontent2 { display: block; }
 #tabcheck3:checked ~ #tabcontent3 { display: block; }
 
+/* タブ部おわり */
 
 
-
-.title { 
-    width:100vw;
-    height:8vh;
-    background-color:#bbb333;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+* {
+    margin: 0;
     padding: 0;
-}
-
-canvas{
-    width: 400px;
-    height: 400px; 
-}
-.flex{
-    display: flex;
-    flex-wrap: wrap;
-    justify-content:space-around;
 }
 
 .background{
@@ -77,10 +62,46 @@ canvas{
   background-color: #eeeeff;
 }
 
+
+/* タイトル部 */
+
+.title { 
+    width:100vw;
+    height:8vh;
+    background-color:#bbb333;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    padding: 0;
+}
+.titlename{
+    font-size: 5vh;
+    font-weight: bold;
+    padding-right: 1vw;
+}
+.scenarioname{
+    font-size: 3.5vh;
+    font-weight: bold;
+    margin-top: 1vh;
+    padding-left: 1vw;
+}
+
+/* タイトル部おわり */
+
+
+/* スコア部 */ 
+
+.flex{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content:space-around;
+}
+
 .resultbox {
     width: 30%;
     height: 14vh;
-    background-color: #86e5e5;
+    background-color: #a6f5f0;
     display: flex;
     margin-top: 1%;
     border-radius: 0.5em 0.5em 0.5em 0.5em;
@@ -103,29 +124,42 @@ canvas{
     width: 100%;
     height: 40%;
     background-color: #76ea4c;
+    justify-content: center;
     text-align:center;
-    font-size: 150%;
+    display: flex;
+    align-items: center;
     border-radius: 0 0.5em 0 0;
 }
+.scorekeyname {
+    text-align:center;
+    font-size: 4vh;
+}
+
+
 .scoreitem {
     width: 100%;
     height: 60%;
     background-color: #a0f083;
     display: flex;
-    align-items: center;
+    align-items: end;
     justify-content: center;
     border-radius: 0 0 0.5em 0;
 }
 .myscore {
-    width: 60%;
-    font-size: 250%;
+    width: 50%;
     text-align: center;
 }
-.fullscore {
-    width: 20%;
-    font-size: 120%; 
-    text-align: center;
+.myscorename {
+    font-size: 6vh;
 }
+
+
+
+
+
+
+
+
 
 .chartnextbox { 
     width:98vw;
@@ -151,15 +185,23 @@ canvas{
 
 .next {
     background-color: rgb(248, 248, 100);
-    font-size: 3vh;
+    font-size: 2.5vh;
     border-width: 2px;
     border-style: solid;
-    border-color: rgb(249, 177, 42);
+    border-color: rgb(248, 159, 100);
     border-radius: 0.5em;
     padding: 0.2em;
 }
 
-* {
-    margin: 0;
-    padding: 0;
+a{
+    text-decoration: none;
+    font-weight: bold;
+    color: #323214;
+}
+
+
+
+canvas{
+    width: 400px;
+    height: 400px; 
 }

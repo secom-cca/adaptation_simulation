@@ -7,14 +7,18 @@
     height:8vh;
     background-color:#bbb333;
     justify-content: center;
+    display: flex;
     align-items: center;
     text-align: center;
     padding: 0;
 }
+.titlename{
+    font-size: 5vh;
+    font-weight: bold;
+}
 .wrap { 
     width:100vw;
     height:92vh;
-    background-color:#ffffff;
     display:flex;
     justify-content: center;
     align-items: center;
@@ -25,12 +29,20 @@
     height: auto;
 }
 .next {
-  text-align: right;
+    text-align: right;
+    text-decoration: none;
+}
+h2{
+    font-size: 4vh;
 }
 p {
-    font-size: 18px;
-    color: #000;
+    font-size: 3vh;
     line-height: 3em;
+}
+a{
+    text-decoration: none;
+    font-weight: bold;
+    color: #323214;
 }
 /*以下フェードイン表示の指定*/
 .fadein {
@@ -49,10 +61,10 @@ p {
 .txt06 {animation-delay: 11s;}
 .txt99 {animation-delay: 12s;
     background-color: rgb(248, 248, 100);
-    font-size: 3vh;
+    font-size: 2.5vh;
     border-width: 2px;
     border-style: solid;
-    border-color: rgb(249, 177, 42);
+    border-color: rgb(248, 159, 100);
     border-radius: 0.5em;
     padding: 0.2em;
 }
