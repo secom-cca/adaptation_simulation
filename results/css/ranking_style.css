@@ -2,48 +2,62 @@
     margin: 0;
     padding: 0;
 }
+
+.background { 
+    background-color:#eeeeff;
+}
+
+
+/* タイトル部 */
+
 .title { 
     width:100vw;
     height:8vh;
     background-color:#bbb333;
     justify-content: center;
+    display: flex;
     align-items: center;
     text-align: center;
-    padding: 0;
 }
-.wrap { 
-    width:100vw;
-    height:92vh;
-    background-color:#eeeeff;
-    display:flex;
+.titlename{
+    font-size: 5vh;
+    font-weight: bold;
+    padding-right: 1vw;
 }
-.box1  {
-  flex:4;
-  height:100%;
-  background-color: #eeffff;
+.scenarioname{
+    font-size: 3.5vh;
+    font-weight: bold;
+    margin-top: 1vh;
+    padding-left: 1vw;
 }
-.box2  {
-  flex:1;
-  height:100%;
-  background-color: #55fa64;
-}
+
+/* タイトル部おわり*/
+
+
+/* 分野別ランキング */
+
 .bunyaouter  {
   border: 1px solid gray;
-  height:60%;
-  background-color: #f25714;
-  margin: 1%;
+  height:55vh;
+  background-color: #dfe4dd;
+  margin: 1vh 1vw 1vh 1vw;
   justify-content:space-around;
   font-size: 24px;
 }
 .ranktitle{
   width:100%;
-  height:10%;
+  height:6vh;
   background-color:#ddd777;
-  font-weight: bold;
-  font-size: 100%;
-  align-items: center;
-  text-align: center;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    text-align: center;
 }
+.ranktitlename{
+    font-size: 4vh;
+    font-weight: bold;
+}
+
 .bunyascore{
   height:90%;
   display: flex;
@@ -54,7 +68,9 @@
 .bunyabox{
   width: 32%;
   height: 44%;
-  background-color: #77dddd;
+  background-color: #a6f5f0;
+  border: 1px solid gray;
+  border-radius: 0.5em 0.5em 0.5em 0.5em;
   display: flex;
   text-align: center;
   align-items: center;
@@ -65,6 +81,7 @@
   align-items: center;
   text-align: center;
   border-right: 1px solid gray;
+  border-radius: 0.5em 0 0 0.5em;
 }
 .bunyatitle{
   width: 100%;
@@ -74,6 +91,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  border-radius: 0.5em 0 0 0;
+}
+.bunyatitlename{
+  font-size: 3vh;
 }
 .icon {
   width: 100%;
@@ -95,6 +116,7 @@
   display: flex;
   flex-flow: column;
   justify-content: space-around;
+  border-radius: 0 0.5em 0.5em 0;
 }
 .rankbox {
   width: 90%;
@@ -103,81 +125,130 @@
   display: flex;
   text-align: center;
   align-items: center;
-  border: 1px solid black;
-  border-radius: 0.5em;
+  border-radius: 0.9em 0.3em 0.9em 0.3em;
 }
 .rankgold {
   width: 20%;
   height: 100%;
-  font-size: 85%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  text-align: center;
   background-color: #ffd700;
-  border-right: 1px solid black;
-  border-radius: 0.5em 0 0 0.5em;
+  border: 1.5px solid black;
+  border-radius: 0.9em 0 0 0.3em;
 }
 .ranksilver {
   width: 20%;
   height: 100%;
-  font-size: 85%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  text-align: center;
   background-color: #c9caca;
-  border-right: 1px solid black;
-  border-radius: 0.5em 0 0 0.5em;
+  border: 1.5px solid black;
+  border-radius: 0.9em 0 0 0.3em;
 }
 .rankbronze {
   width: 20%;
   height: 100%;
-  font-size: 85%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  text-align: center;
   background-color: #ac6b25;
-  border-right: 1px solid black;
-  border-radius: 0.5em 0 0 0.5em;
+  border: 1.5px solid black;
+  border-radius: 0.9em 0 0 0.3em;
 }
 .rankyou {
   width: 20%;
   height: 100%;
-  font-size: 85%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  text-align: center;
   background-color: #72ddb4;
-  border-right: 1px solid black;
-  border-radius: 0.5em 0 0 0.5em;
+  border: 1.5px solid black;
+  border-radius: 0.9em 0 0 0.3em;
+}
+.rankidx{
+  font-size: 4vh;
 }
 .rankname {
-  width: 40%;
-  font-size: 50%;
+  width: 45%;
+  height: 100%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  border-top: 1.5px solid black;
+  border-bottom: 1.5px solid black;
+}
+.ranknameidx{
+  font-size: 2.2vh;
 }
 .rankpoint {
-  width: 40%;
+  width: 35%;
   height: 100%;
-  font-size: 80%;
-  border-left: 1px solid black;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  border: 1.5px solid black;
+  border-radius:0 0.3em 1em 0;
+}
+.rankpointidx{
+  font-size: 3.5vh;
 }
 
+
+
+
+
 .balanceouter  {
-  height:35%;
+  height:34vh;
   justify-content:space-around;
   font-size: 12px;
   display: flex;
 }
 .balancebox  {
-  width: 45%;
-  margin: 1%;
+  width: 40%;
+  height: 32vh;
+  margin: 1vh;
   border: 1px solid gray;
   text-align: center;
   align-items: center;
-  font-size: 24px;
-}
-.ranktitle2{
-  width:100%;
-  height:20%;
-  background-color:#ddd777;
-  font-weight: bold;
-  align-items: center;
-  text-align: center;
 }
 .balancescore{
   height:80%;
   align-items: center;
   text-align: center;
-  background-color: #f25714;
+  background-color: #dfe4dd;
   display: flex;
   flex-flow: column;
   justify-content: space-around;
-  font-size: 24px;
+}
+
+
+.btnbox{
+  display:flex;
+  justify-content:flex-end;
+  flex-flow: column;
+  text-align: center;
+}
+.next {
+    width: 10vw;
+    background-color: rgb(248, 248, 100);
+    font-size: 2.5vh;
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgb(248, 159, 100);
+    border-radius: 0.5em;
+    padding: 0.2em;
+    margin-top: 1vh;
+}
+a{
+    text-decoration: none;
+    font-weight: bold;
+    color: #323214;
 }

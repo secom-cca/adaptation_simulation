@@ -1,6 +1,6 @@
 // 共通変数
 var yourname = "あなたの名前"
-var scenarioname = ["RCP0.00"];
+var scenarioname = ["初級"];
 var policyname = ["施策名"]
 var eventname = ["イベント名"]
 var scorename = ["洪水被害", "農業生産", "住民負担", "生態系", "都市利便性"]

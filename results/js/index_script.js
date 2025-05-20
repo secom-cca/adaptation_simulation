@@ -1,6 +1,6 @@
 // 共通変数
 var yourname = "あなたの名前"
-var scenarioname = ["RCP0.00"];
+var scenarioname = ["初級"];
 var policyname = ["施策名"]
 var eventname = ["イベント名"]
 var scorename = ["洪水被害", "農業生産", "住民負担", "生態系", "都市利便性"]
@@ -13,7 +13,7 @@ var sedaibalancescore = 12.146;
 
 // 講評用
 var bunyabalancecomment = ["良好！快適な生活が送れますね。", "まあまあ。生活には少し不安が残ります。", "良くない……。住民からの反発も強いかも。"]
-var sedaibalancecomment = ["いい感じ！持続可能な環境が作れています。", "まずまず。20XX年の住民の生活も考えてあげましょう。", "ぐちゃぐちゃ……。持続可能な環境作りは大切ですよ！"]
+var sedaibalancecomment = ["いい感じ！持続可能な環境が作れています。", "まずまず。住みやすい環境は作り続けていくことが重要です。", "ぐちゃぐちゃ……。持続可能な環境作りは大切です！"]
 
 
 let scoretotal = [0,0,0,0,0];

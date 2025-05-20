@@ -1,12 +1,17 @@
 // 共通変数
 var yourname = "あなたの名前"
-var scenarioname = ["RCP0.00"];
+var scenarioname = ["初級"];
 var policyname = ["施策名"]
 var eventname = ["イベント名"]
 var scorename = ["洪水被害", "農業生産", "住民負担", "生態系", "都市利便性"]
 var score2050 = [10,20,30,40,50];
 var score2075 = [90,80,70,60,50];
 var score2100 = [75,37,73,15,95];
+// "洪水被害", "農業生産", "住民負担"の額
+var value2050 = [12345678, 23456789, 34567890]
+var value2075 = [45678901, 56789012, 67890123]
+var value2100 = [78901234, 89012345, 90123456]
+
 var bunyabalancescore = 11.256;
 var sedaibalancescore = 12.146;
 
@@ -65,6 +70,21 @@ document.getElementById("res2100_2").innerText=score2100[2].toFixed(2);
 document.getElementById("res2100_3").innerText=score2100[3].toFixed(2);
 document.getElementById("res2100_4").innerText=score2100[4].toFixed(2);
 document.getElementById("res2100_sum").innerText=sum2100.toFixed(2);
+
+
+document.getElementById("val2050_0").innerText=Math.round(value2050[0]/10000).toLocaleString();
+document.getElementById("val2050_1").innerText=Math.round(value2050[1]/10000).toLocaleString();
+document.getElementById("val2050_2").innerText=Math.round(value2050[2]/10000).toLocaleString();
+
+document.getElementById("val2075_0").innerText=Math.round(value2075[0]/10000).toLocaleString();
+document.getElementById("val2075_1").innerText=Math.round(value2075[1]/10000).toLocaleString();
+document.getElementById("val2075_2").innerText=Math.round(value2075[2]/10000).toLocaleString();
+
+document.getElementById("val2100_0").innerText=Math.round(value2100[0]/10000).toLocaleString();
+document.getElementById("val2100_1").innerText=Math.round(value2100[1]/10000).toLocaleString();
+document.getElementById("val2100_2").innerText=Math.round(value2100[2]/10000).toLocaleString();
+
+
 
 
 
