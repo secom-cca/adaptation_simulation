@@ -34,18 +34,18 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"
 // 各種設定
 
 const lineChartIndicators = {
-  'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton' },
-  'Flood Damage': { labelTitle: '洪水被害', max: 10, min: 0, unit: '千万円' },
-  'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '' },
-  'Urban Level': { labelTitle: '都市利便性', max: 100, min: 0, unit: '' },
-  'Municipal Cost': { labelTitle: '予算', max: 12, min: 0, unit: '億円' },
-  'Temperature (℃)': { labelTitle: '気温', max: 30, min: 10, unit: '円' }
+  'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton/ha' },
+  'Flood Damage': { labelTitle: '洪水被害', max: 10000, min: 0, unit: '万円' },
+  'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
+  'Urban Level': { labelTitle: '都市利便性', max: 100, min: 0, unit: '-' },
+  'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
+  'Temperature (℃)': { labelTitle: '気温', max: 30, min: 10, unit: '℃' }
 };
 const SIMULATION_YEARS = 25 // 一回のシミュレーションで進める年数を決定する 
 const LINE_CHART_DISPLAY_INTERVAL = 100 // ms
 const INDICATOR_CONVERSION = {
-  'Municipal Cost': 1 / 100000000, // 円 → 億円
-  'Flood Damage': 1 / 10000000, // 円 → 千万円
+  'Municipal Cost': 1 / 10000, // 円 → 億円
+  'Flood Damage': 1 / 10000, // 円 → 万円
   'Crop Yield': 1 / 1000 // kg → ton（例）
 };
 
@@ -651,8 +651,8 @@ function App() {
               <Slider
                 defaultValue={decisionVar.transportation_invest}
                 min={0}
-                max={9}
-                marks={[{ value: 0 }, { value: 3 }, { value: 6 }, { value: 9 }]}
+                max={10}
+                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -678,7 +678,7 @@ function App() {
                 defaultValue={decisionVar.planting_trees_amount}
                 min={0}
                 max={200}
-                marks={[{ value: 0 }, { value: 50 }, { value: 100 }, { value: 150 }, { value: 200 }]}
+                marks={[{ value: 0 }, { value: 100 }, { value: 200 }]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -703,8 +703,8 @@ function App() {
               <Slider
                 defaultValue={decisionVar.dam_levee_construction_cost}
                 min={0}
-                max={9}
-                marks={[{ value: 0 }, { value: 3 }, { value: 6 }, { value: 9 }]}
+                max={2}
+                marks={[{ value: 0 }, { value: 1 }, { value: 2 }]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -728,8 +728,8 @@ function App() {
               <Slider
                 defaultValue={decisionVar.agricultural_RnD_cost}
                 min={0}
-                max={9}
-                marks={[{ value: 0 }, { value: 3 }, { value: 6 }, { value: 9 }]}
+                max={10}
+                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -753,8 +753,8 @@ function App() {
               <Slider
                 defaultValue={decisionVar.house_migration_amount}
                 min={0}
-                max={200}
-                marks={[{ value: 0 }, { value: 50 }, { value: 100 }, { value: 150 }, { value: 200 }]}
+                max={10}
+                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -778,8 +778,8 @@ function App() {
               <Slider
                 defaultValue={decisionVar.paddy_dam_construction_cost}
                 min={0}
-                max={9}
-                marks={[{ value: 0 }, { value: 3 }, { value: 6 }, { value: 9 }]}
+                max={10}
+                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -803,8 +803,8 @@ function App() {
               <Slider
                 defaultValue={decisionVar.capacity_building_cost}
                 min={0}
-                max={9}
-                marks={[{ value: 0 }, { value: 3 }, { value: 6 }, { value: 9 }]}
+                max={10}
+                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"

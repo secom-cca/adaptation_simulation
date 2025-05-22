@@ -41,7 +41,7 @@ DEFAULT_PARAMS = {
     'total_years': total_years,
     'years': years,
     'temp_trend': 0.04,
-    'temp_uncertainty': 0.1,
+    'temp_uncertainty': 0.5,
     'precip_trend': 0,
     'base_precip_uncertainty': 50,
     'precip_uncertainty_trend': 5,
@@ -51,35 +51,27 @@ DEFAULT_PARAMS = {
     'extreme_precip_intensity_trend': 0.2,
     'extreme_precip_uncertainty_trend': 0.05,
     'municipal_demand_trend': 0,
-    'municipal_demand_uncertainty': 0.05,
+    'municipal_demand_uncertainty': 0.01,
     # 'initial_hot_days': 30.0,
     # 'base_temp': 15.0,
     # 'base_precip': 1000.0,
     'temp_to_hot_days_coeff': 2.0,
     'hot_days_uncertainty': 2.0,
-    'ecosystem_threshold': 800.0,
+    'ecosystem_threshold': 800.0, # 使っている？
     'temp_coefficient': 1.0,
     'max_potential_yield': 5000.0, # [kg/ha]
     'optimal_irrigation_amount': 30.0,
     'flood_damage_coefficient': 100000, # 1mm越水あたりのダメージ，パラメータ調整
-    'levee_level_increment': 0.1,
-    'high_temp_tolerance_increment': 0.1,
-    'levee_investment_threshold': 5.0,
+    'levee_level_increment': 20.0,
+    'high_temp_tolerance_increment': 0.2,
+    'levee_investment_threshold': 2.0,
     'RnD_investment_threshold': 5.0,
     'levee_investment_required_years': 10,
-    'RnD_investment_required_years': 10,
-    'max_available_water': 2000.0,
+    'RnD_investment_required_years': 5,
+    'max_available_water': 3000.0,
     'evapotranspiration_amount': 300.0,
 }
 
-# 各RCPに対応した気候パラメータ
-# rcp_climate_params = {
-#     1.9: {'temp_trend': 0.02, 'precip_uncertainty_trend': 1, 'extreme_precip_freq_trend': 0.05},
-#     2.6: {'temp_trend': 0.025, 'precip_uncertainty_trend': 5, 'extreme_precip_freq_trend': 0.1},
-#     4.5: {'temp_trend': 0.035, 'precip_uncertainty_trend': 15, 'extreme_precip_freq_trend': 0.15},
-#     6.0: {'temp_trend': 0.045, 'precip_uncertainty_trend': 20, 'extreme_precip_freq_trend': 0.2},
-#     8.5: {'temp_trend': 0.06, 'precip_uncertainty_trend': 25, 'extreme_precip_freq_trend': 0.25}
-# }
 rcp_climate_params = {
     1.9: {
         'temp_trend': 0.02,  # ℃/年
