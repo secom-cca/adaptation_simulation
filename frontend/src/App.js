@@ -130,6 +130,23 @@ function App() {
     const res = await axios.get(`${BACKEND_URL}/ranking`);
     setRanking(res.data);
   };
+  const handleUserNameRegister = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/block_scores`); // ここはAPIでCSV読ませる形にする
+      const existingUsers = new Set(res.data.map(row => row.user_name));
+      
+      if (existingUsers.has(userName.trim())) {
+        alert("この名前は既に使用されています。別の名前を入力してください。");
+      } else {
+        localStorage.setItem('userName', userName.trim());
+        setUserName(userName.trim());
+        setOpenNameDialog(false);
+      }
+    } catch (err) {
+      console.error("ユーザー名チェックエラー", err);
+    }
+  };
+  
 
   useEffect(() => {
     currentValuesRef.current = currentValues;
@@ -523,7 +540,7 @@ function App() {
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography variant="h4" gutterBottom>
-          気候変動シミュレーション
+          気候変動適応策検討シミュレーション
         </Typography>
         <h2>{decisionVar.year - 1}年</h2>
         <Button variant="contained" color="primary" onClick={handleClickCalc}>
@@ -571,11 +588,7 @@ function App() {
             variant="contained"
             fullWidth
             disabled={!userName.trim()}
-            onClick={() => {
-              localStorage.setItem('userName', userName.trim());
-              setUserName(userName.trim());
-              setOpenNameDialog(false);
-            }}
+            onClick={handleUserNameRegister}
             sx={{ mt: 2 }}
           >
             登録
@@ -599,7 +612,7 @@ function App() {
 
           <Box sx={{ position: 'relative', width: '100%' }}>
             <img
-              src="/causal_loop_diagram.png"
+              src="/sd_model.png"
               alt="サンプル画像"
               style={{ width: '100%', display: 'block', height: 'auto' }}
             />
@@ -623,7 +636,7 @@ function App() {
           {/* ゲージセクション */}
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h6" gutterBottom>
-              {decisionVar.year - 1}年時点の評価
+              {decisionVar.year - 1}年の気象条件と将来影響予測
             </Typography>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 2 }}>
@@ -636,19 +649,31 @@ function App() {
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>年平均降水量</Typography>
-                <Gauge width={100} height={100} value={Math.round(currentValues.precip * 10) / 10} valueMax={1500} valueMin={500} />
+                <Gauge width={100} height={100} value={Math.round(currentValues.precip * 10) / 10} valueMax={2000} valueMin={500} />
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>mm</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Typography variant="body2" sx={{ mb: 0 }}>大雨の頻度</Typography>
+                <Gauge width={100} height={100} value={Math.round(currentValues.extreme_precip_freq)} valueMax={10} valueMin={0} />
+                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>回/年</Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Typography variant="body2" sx={{ mb: 0 }}>収穫量</Typography>
+                <Gauge width={100} height={100} value={Math.round(currentValues.crop_yield)} valueMax={5000} valueMin={0}/>
+                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>ton/ha</Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>住民の負担</Typography>
-                <Gauge width={100} height={100} value={currentValues.resident_burden * INDICATOR_CONVERSION["Municipal Cost"]} valueMax={15} />
+                <Gauge width={100} height={100} value={currentValues.resident_burden * INDICATOR_CONVERSION["Municipal Cost"]} valueMax={10} />
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>億円</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>生物多様性</Typography>
-                <Gauge width={100} height={100} value={currentValues.ecosystem_level} valueMax={120} />
+                <Gauge width={100} height={100} value={currentValues.ecosystem_level} valueMax={100} />
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>ー</Typography>
               </Box>
             </Box>
@@ -727,34 +752,7 @@ function App() {
       </Box>
       <Box style={{ width: '100%' }}>
         <Grid container spacing={2}> {/* spacingでBox間の余白を調整できます */}
-          <Grid size={4}>
-
-            <Box
-              sx={{
-                width: '100%',
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                padding: '6px',
-                borderRadius: '8px',
-                boxShadow: 2,
-              }}
-            >
-              <EmojiTransportation color="action"  />
-              交通網の充実
-              <Slider
-                value={decisionVar.transportation_invest}
-                min={0}
-                max={10}
-                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
-                step={null}
-                aria-label="画像スライダー"
-                size="small"
-                valueLabelDisplay="auto"
-                color="secondary"
-                onChange={(event, newValue) => updateDecisionVar('transportation_invest', newValue)}
-              />
-            </Box>
-          </Grid>
-          <Grid size={4}>
+          <Grid size={3}>
             <Box
               sx={{
                 width: '100%',
@@ -780,7 +778,33 @@ function App() {
               />
             </Box>
           </Grid>
-          <Grid size={4}>
+          <Grid size={3}>
+            <Box
+              sx={{
+                width: '100%',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: '6px',
+                borderRadius: '8px',
+                boxShadow: 2,
+              }}
+            >
+              <EmojiTransportation color="action"  />
+              公共バス
+              <Slider
+                value={decisionVar.transportation_invest}
+                min={0}
+                max={10}
+                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
+                step={null}
+                aria-label="画像スライダー"
+                size="small"
+                valueLabelDisplay="auto"
+                color="secondary"
+                onChange={(event, newValue) => updateDecisionVar('transportation_invest', newValue)}
+              />
+            </Box>
+          </Grid>
+          <Grid size={3}>
             <Box
               sx={{
                 width: '100%',
@@ -791,7 +815,7 @@ function App() {
               }}
             >
               <Flood color="info"  />
-                ダム・堤防工事
+                河川堤防
               <Slider
                 value={decisionVar.dam_levee_construction_cost}
                 min={0}
@@ -805,7 +829,7 @@ function App() {
                 onChange={(event, newValue) => updateDecisionVar('dam_levee_construction_cost', newValue)}
               />
             </Box>
-          </Grid><Grid size={4}>
+          </Grid><Grid size={3}>
             <Box
               sx={{
                 width: '100%',
@@ -816,7 +840,7 @@ function App() {
               }}
             >
               <Biotech color="success"  />
-              農業研究開発
+              高温耐性品種
               <Slider
                 value={decisionVar.agricultural_RnD_cost}
                 min={0}
@@ -841,7 +865,7 @@ function App() {
               }}
             >
               <Houseboat color={"info"} />
-              住宅移転・嵩上げ
+              住宅移転
               <Slider
                 value={decisionVar.house_migration_amount}
                 min={0}
@@ -866,7 +890,7 @@ function App() {
               }}
             >
               <Agriculture color={"success"} />
-              田んぼダム工事
+              田んぼダム
               <Slider
                 value={decisionVar.paddy_dam_construction_cost}
                 min={0}
@@ -911,7 +935,7 @@ function App() {
 
 
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <h2>[DEBUG] API周り</h2>
         <Button variant="contained" color="primary" onClick={handleSimulate}>
           simulation
@@ -963,12 +987,12 @@ function App() {
             </TableBody>
           </Table>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
-      <p>{simulationData.at(-1)?.["Crop Yield"]}</p>
-      <p>{JSON.stringify(simulationData)}</p>
+      {/* <p>{simulationData.at(-1)?.["Crop Yield"]}</p>
+      <p>{JSON.stringify(simulationData)}</p> */}
 
-      <p>テスト↓ 確率で発生した場合に表示するイメージ</p>
+      {/* <p>テスト↓ 確率で発生した場合に表示するイメージ</p>
       <Stack sx={{ width: '100%' }} spacing={2}>
         <Alert
           iconMapping={{
@@ -999,7 +1023,7 @@ function App() {
           <AlertTitle>高温注意</AlertTitle>
           This success Alert uses `iconMapping` to override the default icon.
         </Alert>
-      </Stack>
+      </Stack> */}
 
       <Dialog open={openResultUI} onClose={handleCloseResultUI} maxWidth="md" fullWidth>
         <DialogTitle>各シミュレーション結果の比較</DialogTitle>
