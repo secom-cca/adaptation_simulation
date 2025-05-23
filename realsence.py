@@ -13,7 +13,9 @@ global turn_counter
 
 # === 設定値 ===
 height_threshold = 0.05 # m
+
 turn_counter = 0  # グローバル変数でターン管理
+last_trigger_count = 0  # 前回のトリガー物体数
 
 # === ArUco辞書の定義 ===
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
@@ -76,7 +78,7 @@ parameter_zones = {
     "planting_trees_amount": {"x_min": -0.2, "x_max": -0.1, "y_min": -0.2, "y_max": -0.1, "mid": 100, "max": 200},
     "house_migration_amount": {"x_min": 0.1, "x_max": 0.2, "y_min": -0.2, "y_max": -0.1, "mid": 5, "max": 10},
     "dam_levee_construction_cost": {"x_min": -0.1, "x_max": 0.0, "y_min": -0.2, "y_max": -0.1, "mid": 1, "max": 2},
-    "paddy_dam_construction_cost": {"x_min": 0.0, "x_max": 0.1, "y_min": -0.2, "y_max": -0.1, "mid": 5, "max": 10},
+    "paddy_dam_construction_cost": {"x_min": 0.0, "x_max": 0.1, "y_min": -0.2, "y_max": -0.1, "mid": 1, "max": 2},
     "capacity_building_cost": {"x_min": -0.1, "x_max": 0.0, "y_min": 0.1, "y_max": 0.2, "mid": 5, "max": 10},
     "simulate_trigger": {"x_min": -0.05, "x_max": 0.05, "y_min": 0.0, "y_max": 0.1}
 }
@@ -90,7 +92,7 @@ parameter_zones_normalized = {
     "agricultural_RnD_cost": {
         "x_min": 0.2, "x_max": 0.4,
         "y_min": 0.0, "y_max": 0.55,
-        "mid": 5, "max": 10
+        "mid": 1, "max": 2
     },
     "dam_levee_construction_cost": {
         "x_min": 0.4, "x_max": 0.6,
@@ -100,27 +102,27 @@ parameter_zones_normalized = {
     "capacity_building_cost": {
         "x_min": 0.6, "x_max": 1.0,
         "y_min": 0.0, "y_max": 0.4,
-        "mid": 5, "max": 10
+        "mid": 1, "max": 2
     },
     "paddy_dam_construction_cost": {
         "x_min": 0.6, "x_max": 1.0,
         "y_min": 0.4, "y_max": 0.7,
-        "mid": 5, "max": 10
+        "mid": 1, "max": 2
     },
     "house_migration_amount": {
         "x_min": 0.0, "x_max": 0.2,
         "y_min": 0.2, "y_max": 0.55,
-        "mid": 5, "max": 10
+        "mid": 1, "max": 2
     },
     "planting_trees_amount": {
         "x_min": 0.0, "x_max": 0.4,
         "y_min": 0.55, "y_max": 1.0,
-        "mid": 100, "max": 200
+        "mid": 1, "max": 2
     },
     "transportation_invest": {
         "x_min": 0.6, "x_max": 1.0,
         "y_min": 0.7, "y_max": 1.0,
-        "mid": 5, "max": 10
+        "mid": 1, "max": 2
     }
 }
 
@@ -148,6 +150,9 @@ def decide_parameter_values_normalized(object_positions_normalized):
             param_values[param] = bounds["max"]
         elif count == 1:
             param_values[param] = bounds["mid"]
+        else:
+            param_values[param] = 0
+
 
     if simulate_trigger:
         param_values["simulate"] = True
@@ -175,20 +180,42 @@ def decide_parameter_values(object_positions_2d):
             param_values[param] = bounds["max"]
         elif count == 1:
             param_values[param] = bounds["mid"]
+        else:
+            param_values[param] = 0
+
 
     if simulate_trigger:
         param_values["simulate"] = True
 
     return param_values
 
+# async def send_control_command(data):
+#     uri = "ws://localhost:3001"
+#     try:
+#         async with websockets.connect(uri) as websocket:
+#             await websocket.send(json.dumps(data))
+#             print("[WS SENT]", data)
+#     except Exception as e:
+#         print("[WS ERROR]", e)
+
+def convert_np(obj):
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    raise TypeError(f"{type(obj)} is not JSON serializable")
+
 async def send_control_command(data):
     uri = "ws://localhost:3001"
     try:
         async with websockets.connect(uri) as websocket:
-            await websocket.send(json.dumps(data))
+            await websocket.send(json.dumps(data, default=convert_np))
             print("[WS SENT]", data)
     except Exception as e:
         print("[WS ERROR]", e)
+
 
 def get_filtered_objects(
         object_cloud, 
@@ -372,6 +399,8 @@ try:
     marker_bounds_y_min = np.min(marker_xyz_array_rotated[:, 1])
     marker_bounds_y_max = np.max(marker_xyz_array_rotated[:, 1])
     
+    global last_sent_counts  # ファイルの先頭レベルで宣言
+    last_sent_counts = {}
     while True:
         frames = pipeline.wait_for_frames()
         depth_frame = frames.get_depth_frame()
@@ -509,18 +538,55 @@ try:
                     # === Step 3: ターンによって送信内容を変更 ===
                     counts = count_objects_per_zone(object_positions_normalized)
 
-                    if turn_counter == 0:
-                        if counts.get("simulate_trigger", 0) > 0:
-                            turn_counter = 1
-                            data = { "simulate_trigger": True }
-                            asyncio.run(send_control_command(data))
-                    elif turn_counter in [1, 2]:
-                        data = {
-                            param: min(count, 2) for param, count in counts.items()
-                            if param != "simulate_trigger"
-                        }
-                        asyncio.run(send_control_command(data))
+                    # --- simulate_trigger 判定
+                    current_trigger_count = counts.get("simulate_trigger", 0)
+
+                    if current_trigger_count > last_trigger_count:
                         turn_counter += 1
+                        asyncio.run(send_control_command({"simulate_trigger": True}))
+                        last_trigger_count = current_trigger_count
+                        # ✅ 前ターンの状態を保存
+                        last_sent_counts = counts.copy()
+
+                    elif turn_counter in [1, 2, 3]:
+                        diff_data = {}
+                        for param, count in counts.items():
+                            if param == "simulate_trigger":
+                                continue
+
+                            prev = last_sent_counts.get(param, 0)
+                            delta = count - prev
+                            if delta > 0:
+                                diff_data[param] = int(min(delta, 2))
+                            elif delta <= 0 and prev > 0:
+                                # 👇 残っていても新規でなければ「消した」扱い
+                                diff_data[param] = 0
+
+                        if diff_data:
+                            asyncio.run(send_control_command(diff_data))
+                            last_sent_counts = counts.copy()  # 次の比較用に更新
+
+                    # if current_trigger_count > last_trigger_count:
+                    #     turn_counter += 1
+                    #     data = { "simulate_trigger": True }
+                    #     asyncio.run(send_control_command(data))
+                    #     last_trigger_count = current_trigger_count  # 上回ったときだけ更新                
+                    #     # 新しいターンの開始時に差分送信用データをリセット
+                    #     last_sent_counts = {}
+
+                    # # --- 各ターンのパラメータ送信
+                    # if turn_counter in [1, 2, 3]:
+                    #     diff_data = {}
+                    #     for param, count in counts.items():
+                    #         if param == "simulate_trigger":
+                    #             continue
+                    #         last_value = last_sent_counts.get(param, None)
+                    #         if last_value != count:
+                    #             diff_data[param] = int(min(count, 2))  # intでJSON変換エラー防止
+
+                    #     if diff_data:
+                    #         asyncio.run(send_control_command(diff_data))
+                    #         last_sent_counts.update(diff_data)  # 送信した値で上書き
 
                     # === 物体数と位置に応じて制御コマンド送信 ===
                     # param_update = decide_parameter_values(object_positions_2d)
