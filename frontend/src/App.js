@@ -126,6 +126,8 @@ function App() {
   const [blockScores, setBlockScores] = useState([]);   // Array<Backend BlockRaw>
   const [ranking,setRanking] = useState([]);
   const [showResultButton, setShowResultButton] = useState(false);
+  const [userNameError, setUserNameError] = useState("")
+
   const fetchRanking = async () => {
     const res = await axios.get(`${BACKEND_URL}/ranking`);
     setRanking(res.data);
@@ -136,12 +138,13 @@ function App() {
       const existingUsers = new Set(res.data.map(row => row.user_name));
       
       if (existingUsers.has(userName.trim())) {
-        alert("この名前は既に使用されています。別の名前を入力してください。");
+        setUserNameError("この名前は既に使用されています。別の名前を入力してください。");
       } else {
         localStorage.setItem('userName', userName.trim());
         setUserName(userName.trim());
         setOpenNameDialog(false);
-      }
+        setUserNameError(""); // エラー解除
+      }      
     } catch (err) {
       console.error("ユーザー名チェックエラー", err);
     }
@@ -572,15 +575,15 @@ function App() {
         <DialogTitle>お名前を入力してください</DialogTitle>
         <DialogContent>
           <TextField
+            error={!!userNameError}
+            helperText={userNameError}        
             autoFocus
             fullWidth
             value={userName}
             onChange={e => setUserName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && userName.trim()) {
-                localStorage.setItem('userName', userName.trim());
-                setUserName(userName.trim());
-                setOpenNameDialog(false);
+                handleUserNameRegister();
               }
             }}
           />

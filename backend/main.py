@@ -491,6 +491,18 @@ def export_scenario_data(scenario_name: str):
     # text/plain を返す場合など、mime タイプを適宜変える
     return csv_str
 
+@app.get("/block_scores")
+def get_block_scores():
+    """ユーザ名確認用の block_scores.tsv 読み出しエンドポイント"""
+    if not RANK_FILE.exists():
+        return []
+    
+    try:
+        df = pd.read_csv(RANK_FILE, sep="\t")
+        return df.to_dict(orient="records")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ======================
 # 5) アプリ起動（ローカルテスト用）
