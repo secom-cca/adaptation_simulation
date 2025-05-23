@@ -169,18 +169,18 @@ function App() {
       console.log("✅ WebSocket connected");
     };
 
-    // ws.onmessage = (event) => {
-    //   const data = JSON.parse(event.data);
-    //   console.log("受信:", data);
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("受信:", data);
 
-    //   for (const [key, value] of Object.entries(data)) {
-    //     if (key === "simulate" && value === true) {
-    //       handleClickCalc();  // 自動で25年進める
-    //     } else {
-    //       updateDecisionVar(key, value);
-    //     }
-    //   }
-    // };
+      for (const [key, value] of Object.entries(data)) {
+        if (key === "simulate" && value === true) {
+          handleClickCalc();  // 自動で25年進める
+        } else {
+          updateDecisionVar(key, value);
+        }
+      }
+    };
 
     let resetFlag = false;
 
@@ -200,14 +200,13 @@ function App() {
           paddy_dam_construction_cost: 0,
           capacity_building_cost: 0
         }));
-        handleClickCalc(); // ターン1でシミュレーション実行
+        handleClickCalc();
       } else {
         setDecisionVar(prev => {
           const updated = { ...prev };
           for (const [key, value] of Object.entries(data)) {
             if (typeof prev[key] === "number") {
-              const delta = value; // カウント（最大2）
-              // 1単位の大きさはバー定義により調整
+              const delta = value; // カウント値（1または2）
               const increment = {
                 transportation_invest: 5,
                 agricultural_RnD_cost: 5,
@@ -218,10 +217,7 @@ function App() {
                 capacity_building_cost: 5,
               }[key] || 1;
 
-              updated[key] = Math.min(
-                (resetFlag ? 0 : prev[key]) + delta * increment,
-                increment * 2
-              );
+              updated[key] = Math.min(delta * increment, increment * 2); // ← 絶対値に変更
             }
           }
           resetFlag = false;
@@ -229,7 +225,7 @@ function App() {
         });
       }
     };
-
+    
     ws.onerror = (err) => {
       console.error("❌ WebSocket error", err);
     };
