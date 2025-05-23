@@ -162,6 +162,85 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:3001");
+
+    ws.onopen = () => {
+      console.log("✅ WebSocket connected");
+    };
+
+    // ws.onmessage = (event) => {
+    //   const data = JSON.parse(event.data);
+    //   console.log("受信:", data);
+
+    //   for (const [key, value] of Object.entries(data)) {
+    //     if (key === "simulate" && value === true) {
+    //       handleClickCalc();  // 自動で25年進める
+    //     } else {
+    //       updateDecisionVar(key, value);
+    //     }
+    //   }
+    // };
+
+    let resetFlag = false;
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("受信:", data);
+
+      if (data.simulate_trigger === true) {
+        resetFlag = true;
+        setDecisionVar(prev => ({
+          ...prev,
+          transportation_invest: 0,
+          agricultural_RnD_cost: 0,
+          planting_trees_amount: 0,
+          house_migration_amount: 0,
+          dam_levee_construction_cost: 0,
+          paddy_dam_construction_cost: 0,
+          capacity_building_cost: 0
+        }));
+        handleClickCalc(); // ターン1でシミュレーション実行
+      } else {
+        setDecisionVar(prev => {
+          const updated = { ...prev };
+          for (const [key, value] of Object.entries(data)) {
+            if (typeof prev[key] === "number") {
+              const delta = value; // カウント（最大2）
+              // 1単位の大きさはバー定義により調整
+              const increment = {
+                transportation_invest: 5,
+                agricultural_RnD_cost: 5,
+                planting_trees_amount: 100,
+                house_migration_amount: 5,
+                dam_levee_construction_cost: 1,
+                paddy_dam_construction_cost: 5,
+                capacity_building_cost: 5,
+              }[key] || 1;
+
+              updated[key] = Math.min(
+                (resetFlag ? 0 : prev[key]) + delta * increment,
+                increment * 2
+              );
+            }
+          }
+          resetFlag = false;
+          return updated;
+        });
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error("❌ WebSocket error", err);
+    };
+
+    ws.onclose = () => {
+      console.warn("⚠️ WebSocket closed");
+    };
+
+    return () => ws.close();
+  }, []);
+
   // (A) シミュレーション実行ハンドラ
   const handleSimulate = async () => {
     setLoading(true);
@@ -649,7 +728,7 @@ function App() {
               <EmojiTransportation color="action"  />
               交通網の充実
               <Slider
-                defaultValue={decisionVar.transportation_invest}
+                value={decisionVar.transportation_invest}
                 min={0}
                 max={10}
                 marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
@@ -675,7 +754,7 @@ function App() {
               <Forest color="success" />
               植林・森林保全
               <Slider
-                defaultValue={decisionVar.planting_trees_amount}
+                value={decisionVar.planting_trees_amount}
                 min={0}
                 max={200}
                 marks={[{ value: 0 }, { value: 100 }, { value: 200 }]}
@@ -701,7 +780,7 @@ function App() {
               <Flood color="info"  />
                 ダム・堤防工事
               <Slider
-                defaultValue={decisionVar.dam_levee_construction_cost}
+                value={decisionVar.dam_levee_construction_cost}
                 min={0}
                 max={2}
                 marks={[{ value: 0 }, { value: 1 }, { value: 2 }]}
@@ -726,7 +805,7 @@ function App() {
               <Biotech color="success"  />
               農業研究開発
               <Slider
-                defaultValue={decisionVar.agricultural_RnD_cost}
+                value={decisionVar.agricultural_RnD_cost}
                 min={0}
                 max={10}
                 marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
@@ -751,7 +830,7 @@ function App() {
               <Houseboat color={"info"} />
               住宅移転・嵩上げ
               <Slider
-                defaultValue={decisionVar.house_migration_amount}
+                value={decisionVar.house_migration_amount}
                 min={0}
                 max={10}
                 marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
@@ -776,7 +855,7 @@ function App() {
               <Agriculture color={"success"} />
               田んぼダム工事
               <Slider
-                defaultValue={decisionVar.paddy_dam_construction_cost}
+                value={decisionVar.paddy_dam_construction_cost}
                 min={0}
                 max={10}
                 marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
@@ -801,7 +880,7 @@ function App() {
               <LocalLibrary color="action" />
               防災訓練・啓発
               <Slider
-                defaultValue={decisionVar.capacity_building_cost}
+                value={decisionVar.capacity_building_cost}
                 min={0}
                 max={10}
                 marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}

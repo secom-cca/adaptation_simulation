@@ -6,10 +6,14 @@ import open3d as o3d
 import pyrealsense2 as rs
 import socket
 import time
+import asyncio
+import websockets
 
+global turn_counter
 
 # === 設定値 ===
 height_threshold = 0.05 # m
+turn_counter = 0  # グローバル変数でターン管理
 
 # === ArUco辞書の定義 ===
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
@@ -43,6 +47,17 @@ try:
 except (ConnectionRefusedError, socket.error) as e:
     print(f"[WARN] バックエンドへの接続に失敗しました。送信はスキップされます。 ({e})")
 
+def count_objects_per_zone(object_positions_normalized):
+    counts = {}
+    for param, bounds in parameter_zones_normalized.items():
+        counts[param] = sum(
+            bounds["x_min"] <= obj["x_norm"] <= bounds["x_max"] and
+            bounds["y_min"] <= obj["y_norm"] <= bounds["y_max"]
+            for obj in object_positions_normalized
+        )
+    return counts
+
+
 def send_object_positions(objects):
     if not backend_available:
         return  # バックエンドが使えない場合はスキップ
@@ -53,6 +68,127 @@ def send_object_positions(objects):
         print("[SENT]", data)
     except Exception as e:
         print("[SEND ERROR]", e)
+
+# === パラメータ領域定義と判定 ===
+parameter_zones = {
+    "agricultural_RnD_cost": {"x_min": -0.2, "x_max": -0.1, "y_min": 0.1, "y_max": 0.2, "mid": 5, "max": 10},
+    "transportation_invest": {"x_min": 0.1, "x_max": 0.2, "y_min": 0.1, "y_max": 0.2, "mid": 5, "max": 10},
+    "planting_trees_amount": {"x_min": -0.2, "x_max": -0.1, "y_min": -0.2, "y_max": -0.1, "mid": 100, "max": 200},
+    "house_migration_amount": {"x_min": 0.1, "x_max": 0.2, "y_min": -0.2, "y_max": -0.1, "mid": 5, "max": 10},
+    "dam_levee_construction_cost": {"x_min": -0.1, "x_max": 0.0, "y_min": -0.2, "y_max": -0.1, "mid": 1, "max": 2},
+    "paddy_dam_construction_cost": {"x_min": 0.0, "x_max": 0.1, "y_min": -0.2, "y_max": -0.1, "mid": 5, "max": 10},
+    "capacity_building_cost": {"x_min": -0.1, "x_max": 0.0, "y_min": 0.1, "y_max": 0.2, "mid": 5, "max": 10},
+    "simulate_trigger": {"x_min": -0.05, "x_max": 0.05, "y_min": 0.0, "y_max": 0.1}
+}
+
+parameter_zones_normalized = {
+    "simulate_trigger": {
+        "x_min": 0.0, "x_max": 0.2,
+        "y_min": 0.0, "y_max": 0.2,
+        "mid": None, "max": None  # simulate_trigger は数値不要
+    },
+    "agricultural_RnD_cost": {
+        "x_min": 0.2, "x_max": 0.4,
+        "y_min": 0.0, "y_max": 0.55,
+        "mid": 5, "max": 10
+    },
+    "dam_levee_construction_cost": {
+        "x_min": 0.4, "x_max": 0.6,
+        "y_min": 0.0, "y_max": 1.0,
+        "mid": 1, "max": 2
+    },
+    "capacity_building_cost": {
+        "x_min": 0.6, "x_max": 1.0,
+        "y_min": 0.0, "y_max": 0.4,
+        "mid": 5, "max": 10
+    },
+    "paddy_dam_construction_cost": {
+        "x_min": 0.6, "x_max": 1.0,
+        "y_min": 0.4, "y_max": 0.7,
+        "mid": 5, "max": 10
+    },
+    "house_migration_amount": {
+        "x_min": 0.0, "x_max": 0.2,
+        "y_min": 0.2, "y_max": 0.55,
+        "mid": 5, "max": 10
+    },
+    "planting_trees_amount": {
+        "x_min": 0.0, "x_max": 0.4,
+        "y_min": 0.55, "y_max": 1.0,
+        "mid": 100, "max": 200
+    },
+    "transportation_invest": {
+        "x_min": 0.6, "x_max": 1.0,
+        "y_min": 0.7, "y_max": 1.0,
+        "mid": 5, "max": 10
+    }
+}
+
+simulate_trigger_count = 0
+
+
+def decide_parameter_values_normalized(object_positions_normalized):
+    global simulate_trigger_count
+    param_values = {}
+    simulate_trigger = False
+
+    for param, bounds in parameter_zones_normalized.items():
+        count = sum(
+            bounds["x_min"] <= obj["x_norm"] <= bounds["x_max"] and
+            bounds["y_min"] <= obj["y_norm"] <= bounds["y_max"]
+            for obj in object_positions_normalized
+        )
+        if param == "simulate_trigger":
+            if count > simulate_trigger_count:
+                simulate_trigger = True
+                simulate_trigger_count = count
+            continue
+
+        if count >= 2:
+            param_values[param] = bounds["max"]
+        elif count == 1:
+            param_values[param] = bounds["mid"]
+
+    if simulate_trigger:
+        param_values["simulate"] = True
+
+    return param_values
+
+
+def decide_parameter_values(object_positions_2d):
+    global simulate_trigger_count
+    param_values = {}
+    simulate_trigger = False
+
+    for param, bounds in parameter_zones.items():
+        count = sum(
+            bounds["x_min"] <= obj["x"] <= bounds["x_max"] and bounds["y_min"] <= obj["y"] <= bounds["y_max"]
+            for obj in object_positions_2d
+        )
+        if param == "simulate_trigger":
+            if count > simulate_trigger_count:
+                simulate_trigger = True
+                simulate_trigger_count = count
+            continue
+
+        if count >= 2:
+            param_values[param] = bounds["max"]
+        elif count == 1:
+            param_values[param] = bounds["mid"]
+
+    if simulate_trigger:
+        param_values["simulate"] = True
+
+    return param_values
+
+async def send_control_command(data):
+    uri = "ws://localhost:3001"
+    try:
+        async with websockets.connect(uri) as websocket:
+            await websocket.send(json.dumps(data))
+            print("[WS SENT]", data)
+    except Exception as e:
+        print("[WS ERROR]", e)
 
 def get_filtered_objects(
         object_cloud, 
@@ -315,28 +451,83 @@ try:
                     
                     # === 物体の座標データ格納 === 
                     object_positions_2d = []
-                    for i in range(max_label + 1):
-                        cluster_indices = np.where(labels == i)[0]
-                        cluster_points = np.asarray(filtered_cloud.points)[cluster_indices]
-                        cluster_center = cluster_points.mean(axis=0)
-                        x, y = cluster_center[0], cluster_center[1]
+                    object_positions_normalized = []
+                    # for i in range(max_label + 1):
+                    #     cluster_indices = np.where(labels == i)[0]
+                    #     cluster_points = np.asarray(filtered_cloud.points)[cluster_indices]
+                    #     cluster_center = cluster_points.mean(axis=0)
+                    #     x, y = cluster_center[0], cluster_center[1]
 
-                        # === 正規化の処理 ===
-                        x_norm, y_norm = normalize_coordinates(
-                            x, y,
-                            marker_bounds_x_min, marker_bounds_x_max,
-                            marker_bounds_y_min, marker_bounds_y_max
-                        )
-                        print(f"[INFO] 物体 {i + 1}: 正規化座標 x={x_norm:.3f}, y={y_norm:.3f}")
-                        object_positions_2d.append({
-                                "id": i + 1,
-                                "x": float(cluster_center[0]),
-                                "y": float(cluster_center[1])
-                            })
+                    #     # === 正規化の処理 ===
+                    #     x_norm, y_norm = normalize_coordinates(
+                    #         x, y,
+                    #         marker_bounds_x_min, marker_bounds_x_max,
+                    #         marker_bounds_y_min, marker_bounds_y_max
+                    #     )
+                    #     print(f"[INFO] 物体 {i + 1}: 正規化座標 x={x_norm:.3f}, y={y_norm:.3f}")
+                    #     object_positions_2d.append({
+                    #             "id": i + 1,
+                    #             "x": float(cluster_center[0]),
+                    #             "y": float(cluster_center[1])
+                    #         })
                     
-                    
+                    # object_positions_normalized.append({
+                    #     "id": i + 1,
+                    #     "x_norm": x_norm,
+                    #     "y_norm": y_norm
+                    # })
+
+                for i in range(max_label + 1):
+                    cluster_indices = np.where(labels == i)[0]
+                    cluster_points = np.asarray(filtered_cloud.points)[cluster_indices]
+                    cluster_center = cluster_points.mean(axis=0)
+                    x, y = cluster_center[0], cluster_center[1]
+
+                    # === 正規化の処理 ===
+                    x_norm, y_norm = normalize_coordinates(
+                        x, y,
+                        marker_bounds_x_min, marker_bounds_x_max,
+                        marker_bounds_y_min, marker_bounds_y_max
+                    )
+                    print(f"[INFO] 物体 {i + 1}: 正規化座標 x={x_norm:.3f}, y={y_norm:.3f}")
+
+                    object_positions_2d.append({
+                        "id": i + 1,
+                        "x": float(cluster_center[0]),
+                        "y": float(cluster_center[1])
+                    })
+
+                    object_positions_normalized.append({
+                        "id": i + 1,
+                        "x_norm": x_norm,
+                        "y_norm": y_norm
+                    })
+
                     # === JSON形式でバックエンドに出力 === 
                     send_object_positions(object_positions_2d)
+
+                    # === Step 3: ターンによって送信内容を変更 ===
+                    counts = count_objects_per_zone(object_positions_normalized)
+
+                    if turn_counter == 0:
+                        if counts.get("simulate_trigger", 0) > 0:
+                            turn_counter = 1
+                            data = { "simulate_trigger": True }
+                            asyncio.run(send_control_command(data))
+                    elif turn_counter in [1, 2]:
+                        data = {
+                            param: min(count, 2) for param, count in counts.items()
+                            if param != "simulate_trigger"
+                        }
+                        asyncio.run(send_control_command(data))
+                        turn_counter += 1
+
+                    # === 物体数と位置に応じて制御コマンド送信 ===
+                    # param_update = decide_parameter_values(object_positions_2d)
+                    param_update = decide_parameter_values_normalized(object_positions_normalized)
+                    
+                    if param_update:
+                        asyncio.run(send_control_command(param_update))
                     
                     # === 点群画像の表示 === 
                     if filtered_cloud is not None:
