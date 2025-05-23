@@ -6,6 +6,9 @@ import open3d as o3d
 import pyrealsense2 as rs
 import socket
 import time
+import asyncio
+import websockets
+
 
 
 # === 設定値 ===
@@ -53,6 +56,54 @@ def send_object_positions(objects):
         print("[SENT]", data)
     except Exception as e:
         print("[SEND ERROR]", e)
+
+# === パラメータ領域定義と判定 ===
+parameter_zones = {
+    "agricultural_RnD_cost": {"x_min": -0.2, "x_max": -0.1, "y_min": 0.1, "y_max": 0.2, "mid": 5, "max": 10},
+    "transportation_invest": {"x_min": 0.1, "x_max": 0.2, "y_min": 0.1, "y_max": 0.2, "mid": 5, "max": 10},
+    "planting_trees_amount": {"x_min": -0.2, "x_max": -0.1, "y_min": -0.2, "y_max": -0.1, "mid": 100, "max": 200},
+    "house_migration_amount": {"x_min": 0.1, "x_max": 0.2, "y_min": -0.2, "y_max": -0.1, "mid": 5, "max": 10},
+    "dam_levee_construction_cost": {"x_min": -0.1, "x_max": 0.0, "y_min": -0.2, "y_max": -0.1, "mid": 1, "max": 2},
+    "paddy_dam_construction_cost": {"x_min": 0.0, "x_max": 0.1, "y_min": -0.2, "y_max": -0.1, "mid": 5, "max": 10},
+    "capacity_building_cost": {"x_min": -0.1, "x_max": 0.0, "y_min": 0.1, "y_max": 0.2, "mid": 5, "max": 10},
+    "simulate_trigger": {"x_min": -0.05, "x_max": 0.05, "y_min": 0.0, "y_max": 0.1}
+}
+simulate_trigger_count = 0
+
+def decide_parameter_values(object_positions_2d):
+    global simulate_trigger_count
+    param_values = {}
+    simulate_trigger = False
+
+    for param, bounds in parameter_zones.items():
+        count = sum(
+            bounds["x_min"] <= obj["x"] <= bounds["x_max"] and bounds["y_min"] <= obj["y"] <= bounds["y_max"]
+            for obj in object_positions_2d
+        )
+        if param == "simulate_trigger":
+            if count > simulate_trigger_count:
+                simulate_trigger = True
+                simulate_trigger_count = count
+            continue
+
+        if count >= 2:
+            param_values[param] = bounds["max"]
+        elif count == 1:
+            param_values[param] = bounds["mid"]
+
+    if simulate_trigger:
+        param_values["simulate"] = True
+
+    return param_values
+
+async def send_control_command(data):
+    uri = "ws://localhost:3001"
+    try:
+        async with websockets.connect(uri) as websocket:
+            await websocket.send(json.dumps(data))
+            print("[WS SENT]", data)
+    except Exception as e:
+        print("[WS ERROR]", e)
 
 def get_filtered_objects(
         object_cloud, 
@@ -337,6 +388,11 @@ try:
                     
                     # === JSON形式でバックエンドに出力 === 
                     send_object_positions(object_positions_2d)
+
+                    # === 物体数と位置に応じて制御コマンド送信 ===
+                    param_update = decide_parameter_values(object_positions_2d)
+                    if param_update:
+                        asyncio.run(send_control_command(param_update))
                     
                     # === 点群画像の表示 === 
                     if filtered_cloud is not None:

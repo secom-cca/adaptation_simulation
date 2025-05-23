@@ -162,6 +162,26 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:3001");
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("受信:", data);
+  
+      for (const [key, value] of Object.entries(data)) {
+        if (key === "simulate" && value === true) {
+          handleClickCalc();  // 自動で25年進める
+        } else {
+          updateDecisionVar(key, value);
+        }
+      }
+    };
+  
+    ws.onclose = () => console.warn("WebSocket closed");
+    ws.onerror = (err) => console.error("WebSocket error", err);
+    return () => ws.close();
+  }, []);
+
   // (A) シミュレーション実行ハンドラ
   const handleSimulate = async () => {
     setLoading(true);
