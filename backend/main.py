@@ -23,8 +23,9 @@ app.add_middleware(
 from pathlib import Path, PosixPath
 DATA_DIR: PosixPath = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
-RANK_FILE = DATA_DIR / "block_scores.csv"    # 追記用
+RANK_FILE = DATA_DIR / "block_scores.tsv"    # 追記用
 ACTION_LOG_FILE = DATA_DIR / "decision_log.csv"
+YOUR_NAME_FILE = DATA_DIR / "your_name.csv"  # ユーザ名を保存するファイル
 
 # ======================
 # 1) グローバルに保持するパラメータとデータ
@@ -371,15 +372,17 @@ def run_simulation(req: SimulationRequest):
         df_csv['scenario_name'] = scenario_name
         df_csv['timestamp']     = pd.Timestamp.utcnow()
 
+        df_csv['user_name'].to_csv(YOUR_NAME_FILE, index=False)
+        
         if RANK_FILE.exists():
-            old = pd.read_csv(RANK_FILE)
+            old = pd.read_csv(RANK_FILE, sep='\t')
             # すでに同じ user_name + scenario_name + period があれば置き換え
             merged = (old.set_index(['user_name','scenario_name','period'])
                         .combine_first(df_csv.set_index(['user_name','scenario_name','period']))
                         .reset_index())
-            merged.to_csv(RANK_FILE, index=False)
+            merged.to_csv(RANK_FILE, sep='\t', index=False)
         else:
-            df_csv.to_csv(RANK_FILE, index=False)
+            df_csv.to_csv(RANK_FILE, sep='\t', index=False)
     
     elif mode == "Predict Simulation Mode":
         # 全期間の予測値を計算する
@@ -425,7 +428,7 @@ def run_simulation(req: SimulationRequest):
 def get_ranking():
     if not RANK_FILE.exists():
         return []
-    df = pd.read_csv(RANK_FILE)
+    df = pd.read_csv(RANK_FILE, sep='\t')
     latest = (df.sort_values('timestamp')
                 .drop_duplicates(['user_name','scenario_name','period'], keep='last'))
     # 直近シナリオの period ごと平均点
