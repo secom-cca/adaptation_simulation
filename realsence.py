@@ -8,6 +8,7 @@ import socket
 import time
 import asyncio
 import websockets
+import pandas as pd
 
 global turn_counter
 
@@ -71,60 +72,65 @@ def send_object_positions(objects):
     except Exception as e:
         print("[SEND ERROR]", e)
 
-# === パラメータ領域定義と判定 ===
-parameter_zones = {
-    "agricultural_RnD_cost": {"x_min": -0.2, "x_max": -0.1, "y_min": 0.1, "y_max": 0.2, "mid": 5, "max": 10},
-    "transportation_invest": {"x_min": 0.1, "x_max": 0.2, "y_min": 0.1, "y_max": 0.2, "mid": 5, "max": 10},
-    "planting_trees_amount": {"x_min": -0.2, "x_max": -0.1, "y_min": -0.2, "y_max": -0.1, "mid": 100, "max": 200},
-    "house_migration_amount": {"x_min": 0.1, "x_max": 0.2, "y_min": -0.2, "y_max": -0.1, "mid": 5, "max": 10},
-    "dam_levee_construction_cost": {"x_min": -0.1, "x_max": 0.0, "y_min": -0.2, "y_max": -0.1, "mid": 1, "max": 2},
-    "paddy_dam_construction_cost": {"x_min": 0.0, "x_max": 0.1, "y_min": -0.2, "y_max": -0.1, "mid": 1, "max": 2},
-    "capacity_building_cost": {"x_min": -0.1, "x_max": 0.0, "y_min": 0.1, "y_max": 0.2, "mid": 5, "max": 10},
-    "simulate_trigger": {"x_min": -0.05, "x_max": 0.05, "y_min": 0.0, "y_max": 0.1}
-}
+# parameter_zones_normalized = {
+#     "simulate_trigger": {
+#         "x_min": 0.0, "x_max": 0.2,
+#         "y_min": 0.0, "y_max": 0.2,
+#         "mid": None, "max": None  # simulate_trigger は数値不要
+#     },
+#     "agricultural_RnD_cost": {
+#         "x_min": 0.2, "x_max": 0.4,
+#         "y_min": 0.0, "y_max": 0.55,
+#         "mid": 1, "max": 2
+#     },
+#     "dam_levee_construction_cost": {
+#         "x_min": 0.4, "x_max": 0.6,
+#         "y_min": 0.0, "y_max": 1.0,
+#         "mid": 1, "max": 2
+#     },
+#     "capacity_building_cost": {
+#         "x_min": 0.6, "x_max": 1.0,
+#         "y_min": 0.0, "y_max": 0.4,
+#         "mid": 1, "max": 2
+#     },
+#     "paddy_dam_construction_cost": {
+#         "x_min": 0.6, "x_max": 1.0,
+#         "y_min": 0.4, "y_max": 0.7,
+#         "mid": 1, "max": 2
+#     },
+#     "house_migration_amount": {
+#         "x_min": 0.0, "x_max": 0.2,
+#         "y_min": 0.2, "y_max": 0.55,
+#         "mid": 1, "max": 2
+#     },
+#     "planting_trees_amount": {
+#         "x_min": 0.0, "x_max": 0.4,
+#         "y_min": 0.55, "y_max": 1.0,
+#         "mid": 1, "max": 2
+#     },
+#     "transportation_invest": {
+#         "x_min": 0.6, "x_max": 1.0,
+#         "y_min": 0.7, "y_max": 1.0,
+#         "mid": 1, "max": 2
+#     }
+# }
+
+# もし以下機能しなければ上記でお願いします
+# ---------------------------------------------------
+df = pd.read_csv("backend/data/parameter_zones.csv")
 
 parameter_zones_normalized = {
-    "simulate_trigger": {
-        "x_min": 0.0, "x_max": 0.2,
-        "y_min": 0.0, "y_max": 0.2,
-        "mid": None, "max": None  # simulate_trigger は数値不要
-    },
-    "agricultural_RnD_cost": {
-        "x_min": 0.2, "x_max": 0.4,
-        "y_min": 0.0, "y_max": 0.55,
-        "mid": 1, "max": 2
-    },
-    "dam_levee_construction_cost": {
-        "x_min": 0.4, "x_max": 0.6,
-        "y_min": 0.0, "y_max": 1.0,
-        "mid": 1, "max": 2
-    },
-    "capacity_building_cost": {
-        "x_min": 0.6, "x_max": 1.0,
-        "y_min": 0.0, "y_max": 0.4,
-        "mid": 1, "max": 2
-    },
-    "paddy_dam_construction_cost": {
-        "x_min": 0.6, "x_max": 1.0,
-        "y_min": 0.4, "y_max": 0.7,
-        "mid": 1, "max": 2
-    },
-    "house_migration_amount": {
-        "x_min": 0.0, "x_max": 0.2,
-        "y_min": 0.2, "y_max": 0.55,
-        "mid": 1, "max": 2
-    },
-    "planting_trees_amount": {
-        "x_min": 0.0, "x_max": 0.4,
-        "y_min": 0.55, "y_max": 1.0,
-        "mid": 1, "max": 2
-    },
-    "transportation_invest": {
-        "x_min": 0.6, "x_max": 1.0,
-        "y_min": 0.7, "y_max": 1.0,
-        "mid": 1, "max": 2
+    row["param"]: {
+        "x_min": row["x_min"],
+        "x_max": row["x_max"],
+        "y_min": row["y_min"],
+        "y_max": row["y_max"],
+        "mid": row.get("mid", None),
+        "max": row.get("max", None)
     }
+    for _, row in df.iterrows()
 }
+# ---------------------------------------------------
 
 simulate_trigger_count = 0
 
@@ -159,44 +165,6 @@ def decide_parameter_values_normalized(object_positions_normalized):
 
     return param_values
 
-
-def decide_parameter_values(object_positions_2d):
-    global simulate_trigger_count
-    param_values = {}
-    simulate_trigger = False
-
-    for param, bounds in parameter_zones.items():
-        count = sum(
-            bounds["x_min"] <= obj["x"] <= bounds["x_max"] and bounds["y_min"] <= obj["y"] <= bounds["y_max"]
-            for obj in object_positions_2d
-        )
-        if param == "simulate_trigger":
-            if count > simulate_trigger_count:
-                simulate_trigger = True
-                simulate_trigger_count = count
-            continue
-
-        if count >= 2:
-            param_values[param] = bounds["max"]
-        elif count == 1:
-            param_values[param] = bounds["mid"]
-        else:
-            param_values[param] = 0
-
-
-    if simulate_trigger:
-        param_values["simulate"] = True
-
-    return param_values
-
-# async def send_control_command(data):
-#     uri = "ws://localhost:3001"
-#     try:
-#         async with websockets.connect(uri) as websocket:
-#             await websocket.send(json.dumps(data))
-#             print("[WS SENT]", data)
-#     except Exception as e:
-#         print("[WS ERROR]", e)
 
 def convert_np(obj):
     if isinstance(obj, np.integer):
@@ -566,30 +534,6 @@ try:
                             asyncio.run(send_control_command(diff_data))
                             last_sent_counts = counts.copy()  # 次の比較用に更新
 
-                    # if current_trigger_count > last_trigger_count:
-                    #     turn_counter += 1
-                    #     data = { "simulate_trigger": True }
-                    #     asyncio.run(send_control_command(data))
-                    #     last_trigger_count = current_trigger_count  # 上回ったときだけ更新                
-                    #     # 新しいターンの開始時に差分送信用データをリセット
-                    #     last_sent_counts = {}
-
-                    # # --- 各ターンのパラメータ送信
-                    # if turn_counter in [1, 2, 3]:
-                    #     diff_data = {}
-                    #     for param, count in counts.items():
-                    #         if param == "simulate_trigger":
-                    #             continue
-                    #         last_value = last_sent_counts.get(param, None)
-                    #         if last_value != count:
-                    #             diff_data[param] = int(min(count, 2))  # intでJSON変換エラー防止
-
-                    #     if diff_data:
-                    #         asyncio.run(send_control_command(diff_data))
-                    #         last_sent_counts.update(diff_data)  # 送信した値で上書き
-
-                    # === 物体数と位置に応じて制御コマンド送信 ===
-                    # param_update = decide_parameter_values(object_positions_2d)
                     param_update = decide_parameter_values_normalized(object_positions_normalized)
                     
                     if param_update:
@@ -604,17 +548,6 @@ try:
                             marker_y_min=marker_bounds_y_min, 
                             marker_y_max=marker_bounds_y_max
                         )
-                    
-                    # === 物体2D座標のプロット === 
-                    # plot_object_positions(object_positions_2d, xlim=(-0.3, 0.3), ylim=(-0.2, 0.4))
-
-                        
-                    # === 物体の識別を可視化する === 
-                    # colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
-                    # colors[labels < 0] = 0
-                    # filtered_cloud.colors = o3d.utility.Vector3dVector(colors[:, :3])
-                    # o3d.visualization.draw_geometries([filtered_cloud])
-            
                 # === XY投影 === 
                 cv2.waitKey(1)
 
