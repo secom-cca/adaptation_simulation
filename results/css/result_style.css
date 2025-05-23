@@ -79,6 +79,7 @@ input:checked + .tab {
     font-size: 5vh;
     font-weight: bold;
     padding-right: 1vw;
+    margin-left: 5vw;
 }
 .scenarioname{
     font-size: 3.5vh;
