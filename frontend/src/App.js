@@ -125,6 +125,7 @@ function App() {
   const [openNameDialog, setOpenNameDialog] = useState(!userName);
   const [blockScores, setBlockScores] = useState([]);   // Array<Backend BlockRaw>
   const [ranking,setRanking] = useState([]);
+  const [showResultButton, setShowResultButton] = useState(false);
   const fetchRanking = async () => {
     const res = await axios.get(`${BACKEND_URL}/ranking`);
     setRanking(res.data);
@@ -299,6 +300,10 @@ function App() {
     }
 
     isRunningRef.current = false;
+    if (nextYear > 2100) {
+      setShowResultButton(true);
+    }
+    
   };
 
   // decisionVarが変動した際に予測値をリアルタイムで取得する
@@ -527,6 +532,18 @@ function App() {
         <Link to="/formula">
           <Button variant="outlined">モデルの説明を見る</Button>
         </Link>
+        {showResultButton && (
+        <Box sx={{ textAlign: 'center', mt: 0 }}>
+          <Button
+            variant="contained"
+            color="success"
+            size="large"
+            onClick={() => window.location.href = '/results/index.html'}
+          >
+            結果を見る
+          </Button>
+        </Box>
+      )}
         <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
           <IconButton color="primary" onClick={handleOpenResultUI}>
             <InfoIcon />
