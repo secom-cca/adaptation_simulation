@@ -107,11 +107,7 @@ function convert_dataCSVtoArray(str){
     document.getElementById("res2050_4").innerText=score2050[4].toFixed(1);
     document.getElementById("res2050_sum").innerText=sum2050.toFixed(1);
 
-    var jsonStr2050val = your_data[0][3].replace(/'/g, '"'); // シングルクォートをダブルクォートに変換
-    var obj2050val = JSON.parse(jsonStr2050val);
-    document.getElementById("val2050_0").innerText=Math.round(obj2050val["収量"]).toLocaleString();
-    document.getElementById("val2050_1").innerText=Math.round(obj2050val["洪水被害"]/10000).toLocaleString();
-    document.getElementById("val2050_2").innerText=Math.round(obj2050val["予算"]/10000).toLocaleString();
+ 
 
 
     // 2075年
@@ -135,11 +131,6 @@ function convert_dataCSVtoArray(str){
     document.getElementById("res2075_4").innerText=score2075[4].toFixed(1);
     document.getElementById("res2075_sum").innerText=sum2075.toFixed(1);
 
-    var jsonStr2075val = your_data[1][3].replace(/'/g, '"'); // シングルクォートをダブルクォートに変換
-    var obj2075val = JSON.parse(jsonStr2075val);
-    document.getElementById("val2075_0").innerText=Math.round(obj2075val["収量"]).toLocaleString();
-    document.getElementById("val2075_1").innerText=Math.round(obj2075val["洪水被害"]/10000).toLocaleString();
-    document.getElementById("val2075_2").innerText=Math.round(obj2075val["予算"]/10000).toLocaleString();
 
 
     // 2100年
@@ -163,11 +154,6 @@ function convert_dataCSVtoArray(str){
     document.getElementById("res2100_4").innerText=score2100[4].toFixed(1);
     document.getElementById("res2100_sum").innerText=sum2100.toFixed(1);
 
-    var jsonStr2100val = your_data[2][3].replace(/'/g, '"'); // シングルクォートをダブルクォートに変換
-    var obj2100val = JSON.parse(jsonStr2100val);
-    document.getElementById("val2100_0").innerText=Math.round(obj2100val["収量"]).toLocaleString();
-    document.getElementById("val2100_1").innerText=Math.round(obj2100val["洪水被害"]/10000).toLocaleString();
-    document.getElementById("val2100_2").innerText=Math.round(obj2100val["予算"]/10000).toLocaleString();
 
 
 

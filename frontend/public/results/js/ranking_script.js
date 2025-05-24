@@ -203,7 +203,7 @@ function convert_dataCSVtoArray(str){
             if (scoreElem2 && top3[1]) scoreElem2.innerText = top3[1][fieldIndex[field]].toFixed(1);
             if (nameElem3 && top3[2]) nameElem3.innerText = top3[2][0];
             if (scoreElem3 && top3[2]) scoreElem3.innerText = top3[2][fieldIndex[field]].toFixed(1);
-            if (yourRankElem) yourRankElem.innerText = yourRank;
+            if (yourRankElem) yourRankElem.innerText = "";
             if (yourNameElem) yourNameElem.innerText = yourname;
             if (yourScoreElem) yourScoreElem.innerText = yourScore.toFixed(1);;
         });

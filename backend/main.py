@@ -217,10 +217,10 @@ def calculate_scenario_indicators(df: pd.DataFrame) -> Dict[str, float]:
 
 BENCHMARK = {
     '収量':        dict(best=10_000, worst=0,     invert=False),
-    '洪水被害':    dict(best=0,       worst=500_000_000, invert=True),
+    '洪水被害':    dict(best=0,       worst=10_000_000, invert=True),
     '生態系':      dict(best=100,     worst=0,     invert=False),
     '都市利便性':  dict(best=100,     worst=0,     invert=False),
-    '予算':        dict(best=10_000_000_000, worst=1_000_000_000_000, invert=True),
+    '予算':        dict(best=0, worst=100_000_000, invert=True),
 }
 
 BLOCKS = [

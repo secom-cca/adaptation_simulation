@@ -206,11 +206,15 @@ function App() {
     let resetFlag = false;
 
     ws.onmessage = (event) => {
+      if (isRunningRef.current) {
+        console.log("🛑 シミュレーション中のため信号を無視");
+        return;
+      }
+
       const data = JSON.parse(event.data);
       console.log("受信:", data);
 
       if (data.simulate_trigger === true) {
-        resetFlag = true;
         setDecisionVar(prev => ({
           ...prev,
           transportation_invest: 0,
@@ -227,7 +231,7 @@ function App() {
           const updated = { ...prev };
           for (const [key, value] of Object.entries(data)) {
             if (typeof prev[key] === "number") {
-              const delta = value; // カウント値（1または2）
+              const delta = value;
               const increment = {
                 transportation_invest: 5,
                 agricultural_RnD_cost: 5,
@@ -238,14 +242,14 @@ function App() {
                 capacity_building_cost: 5,
               }[key] || 1;
 
-              updated[key] = Math.min(delta * increment, increment * 2); // ← 絶対値に変更
+              updated[key] = Math.min(delta * increment, increment * 2);
             }
           }
-          resetFlag = false;
           return updated;
         });
       }
     };
+
     
     ws.onerror = (err) => {
       console.error("❌ WebSocket error", err);
@@ -683,11 +687,11 @@ function App() {
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>回/年</Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {/* <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>収穫量</Typography>
                 <Gauge width={100} height={100} value={Math.round(currentValues.crop_yield)} valueMax={5000} valueMin={0}/>
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>ton/ha</Typography>
-              </Box>
+              </Box> */}
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>住民の負担</Typography>

@@ -503,11 +503,11 @@ def calculate_scenario_indicators(scenario_data):
 
 # ベンチマーク要調整 ---------------------
 BENCHMARK = {
-    '収量':        dict(best=300_000, worst=0,     invert=False),
-    '洪水被害':    dict(best=0,       worst=200_000_000, invert=True),
+    '収量':        dict(best=10_000, worst=0,     invert=False),
+    '洪水被害':    dict(best=0,       worst=1_000_000_000, invert=True),
     '生態系':      dict(best=100,     worst=0,     invert=False),
     '都市利便性':  dict(best=100,     worst=0,     invert=False),
-    '予算':        dict(best=0,       worst=100_000_000_000, invert=True),
+    '予算':        dict(best=0,       worst=1_000_000_000, invert=True),
 }
 
 BLOCKS = [
@@ -529,7 +529,7 @@ def _scale_to_100(raw_val: float, metric: str) -> float:
     v = np.clip(raw_val, b['worst'], b['best']) if b['worst'] < b['best'] \
         else np.clip(raw_val, b['best'], b['worst'])
     if b['invert']:                               # 小さいほど良い
-        score = 100 * (b['best'] - v) / (b['best'] - b['worst'])
+        score = 100 * (b['worst'] - v) / (b['worst'] - b['best']
     else:                                         # 大きいほど良い
         score = 100 * (v - b['worst']) / (b['best'] - b['worst'])
     return float(np.round(score, 1))

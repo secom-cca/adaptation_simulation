@@ -501,7 +501,40 @@ try:
                     })
 
                     # === JSON形式でバックエンドに出力 === 
-                    send_object_positions(object_positions_2d)
+                    # === 5秒ごとの送信処理（ループの外に出す）===
+                    if object_positions_2d:
+                        send_object_positions(object_positions_2d)
+
+                        # simulate_trigger 判定
+                        counts = count_objects_per_zone(object_positions_normalized)
+                        current_trigger_count = counts.get("simulate_trigger", 0)
+
+                        if current_trigger_count > last_trigger_count:
+                            turn_counter += 1
+                            asyncio.run(send_control_command({"simulate_trigger": True}))
+                            last_trigger_count = current_trigger_count
+                            last_sent_counts = counts.copy()
+
+                        elif turn_counter in [1, 2, 3]:
+                            diff_data = {}
+                            for param, count in counts.items():
+                                if param == "simulate_trigger":
+                                    continue
+
+                                prev = last_sent_counts.get(param, 0)
+                                delta = count - prev
+                                if delta > 0:
+                                    diff_data[param] = int(min(delta, 2))
+                                elif delta <= 0 and prev > 0:
+                                    diff_data[param] = 0
+
+                            if diff_data:
+                                asyncio.run(send_control_command(diff_data))
+                                last_sent_counts = counts.copy()
+
+                        param_update = decide_parameter_values_normalized(object_positions_normalized)
+                        if param_update:
+                            asyncio.run(send_control_command(param_update))
 
                     # === Step 3: ターンによって送信内容を変更 ===
                     counts = count_objects_per_zone(object_positions_normalized)
