@@ -529,7 +529,7 @@ def _scale_to_100(raw_val: float, metric: str) -> float:
     v = np.clip(raw_val, b['worst'], b['best']) if b['worst'] < b['best'] \
         else np.clip(raw_val, b['best'], b['worst'])
     if b['invert']:                               # 小さいほど良い
-        score = 100 * (b['worst'] - v) / (b['worst'] - b['best']
+        score = 100 * (b['worst'] - v) / (b['worst'] - b['best'])
     else:                                         # 大きいほど良い
         score = 100 * (v - b['worst']) / (b['best'] - b['worst'])
     return float(np.round(score, 1))
