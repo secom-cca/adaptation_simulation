@@ -407,6 +407,18 @@ def run_simulation(req: SimulationRequest):
         all_results_df = pd.DataFrame(seq_result)
         blocks = []
 
+    elif mode == "Record Results Mode":
+        import shutil
+        import glob
+        from pathlib import Path
+
+        src_dir = Path(__file__).parent / "data"
+        dst_dir = Path(__file__).parent.parent / "frontend" / "public" / "results" / "data"
+        dst_dir.mkdir(parents=True, exist_ok=True)
+
+        for filepath in glob.glob(str(src_dir / "*.csv")) + glob.glob(str(src_dir / "*.tsv")):
+            shutil.copy(filepath, dst_dir)
+
     else:
         raise HTTPException(status_code=400, detail=f"Unknown mode: {mode}")
 

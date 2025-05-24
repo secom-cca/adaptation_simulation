@@ -385,6 +385,27 @@ function App() {
     }
   };
 
+  // 結果を保存し、リザルト画面へ
+  const handleShowResult = async () => {
+    try {
+      // Record Results Mode で /simulate にPOST
+      await axios.post(`${BACKEND_URL}/simulate`, {
+        scenario_name: scenarioName,
+        user_name: userName,
+        mode: "Record Results Mode",
+        decision_vars: [decisionVar],
+        num_simulations: Number(numSimulations),
+        current_year_index_seq: currentValues
+      });
+    } catch (err) {
+      alert("結果保存に失敗しました");
+      console.error(err);
+    } finally {
+      // POSTが終わったら必ずページ遷移
+      window.location.href = `${window.location.origin}/results/index.html`;
+    }
+  };
+
 
   // (B) グラフ描画用データ作成
   // 例として "Temperature (℃)" をシミュレーション1本分だけ描画する
@@ -558,7 +579,7 @@ function App() {
             variant="contained"
             color="success"
             size="large"
-            onClick={() => window.location.href = '/results/index.html'}
+            onClick={handleShowResult}
           >
             結果を見る
           </Button>

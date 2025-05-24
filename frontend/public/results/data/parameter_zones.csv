@@ -1,0 +1,9 @@
+param,x_min,x_max,y_min,y_max,mid,max
+simulate_trigger,0.0,0.2,0.0,0.2,,
+agricultural_RnD_cost,0.2,0.4,0.0,0.55,1,2
+dam_levee_construction_cost,0.4,0.6,0.0,1.0,1,2
+capacity_building_cost,0.6,1.0,0.0,0.4,1,2
+paddy_dam_construction_cost,0.6,1.0,0.4,0.7,1,2
+house_migration_amount,0.0,0.2,0.2,0.55,1,2
+planting_trees_amount,0.0,0.4,0.55,1.0,1,2
+transportation_invest,0.6,1.0,0.7,1.0,1,2

@@ -25,7 +25,7 @@ var allscore = [];
 //CSVファイルを読み込む関数getCSV()の定義
 function get_nameCSV(){
     var req = new XMLHttpRequest(); // HTTPでファイルを読み込むためのXMLHttpRrequestオブジェクトを生成
-    req.open("get", "../../backend/data/your_name.csv", true); // アクセスするファイルを指定
+    req.open("get", "http://localhost:3000/results/data/your_name.csv", true); // アクセスするファイルを指定
     req.send(null); // HTTPリクエストの発行
     // レスポンスが返ってきたらconvertCSVtoArray()を呼ぶ
     req.onload = function(){
@@ -35,7 +35,7 @@ function get_nameCSV(){
 // 2つ目のCSVを読み込む
 function get_dataCSV(){
     var req = new XMLHttpRequest();
-    req.open("get", "../../backend/data/block_scores.tsv", true); // ファイル名は適宜変更
+    req.open("get", "http://localhost:3000/results/data/block_scores.tsv", true); // ファイル名は適宜変更
     req.send(null);
     req.onload = function(){
         convert_dataCSVtoArray(req.responseText);
@@ -46,7 +46,7 @@ function convert_nameCSVtoArray(str){
     result1 = [];
     var tmp = str.split("\n");
     for(var i=0;i<tmp.length;++i){
-        result1[i] = tmp[i].split('\t');
+        result1[i] = [tmp[i].trim()]; // 1列しかないので配列に
     }
     // ここで1つ目の値を使って2つ目のCSVを処理
     get_dataCSV();
@@ -60,7 +60,7 @@ function convert_dataCSVtoArray(str){
     }
 
     // プレイヤー名を取得
-    var yourname = result1[1][0].trim();
+    yourname = result1[1][0].trim();
 
     document.getElementById("yourname").innerText=yourname;
 
@@ -125,7 +125,7 @@ function convert_dataCSVtoArray(str){
     // プレイヤー全員の結果をresult2より取得
     // プレイヤー全員の結果をresult2より取得
     allscore = []; // ここで初期化
-    for(var i=1;i<result2.length; i+=3){ // 1行目はヘッダーなのでi=1から
+    for(var i=1;i<result2.length; i=i+3){ // 1行目はヘッダーなのでi=1から
         if (!result2[i] || !result2[i+1] || !result2[i+2]) continue;
         var playername = result2[i][0];
 
@@ -143,7 +143,6 @@ function convert_dataCSVtoArray(str){
             Number(result2[i+2][5])
         ];
         var sedaibalancescore_player = variance(bunyabalancescore_player);
-
         var playerscore = [
             playername,
             Number(obj2050score["収量"]) + Number(obj2075score["収量"]) + Number(obj2100score["収量"]),

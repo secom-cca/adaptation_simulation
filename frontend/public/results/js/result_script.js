@@ -24,7 +24,7 @@ var ctx3 = document.getElementById("Chart2100");
 //CSVファイルを読み込む関数getCSV()の定義
 function get_nameCSV(){
     var req = new XMLHttpRequest(); // HTTPでファイルを読み込むためのXMLHttpRrequestオブジェクトを生成
-    req.open("get", "../../backend/data/your_name.csv", true); // アクセスするファイルを指定
+    req.open("get", "http://localhost:3000/results/data/your_name.csv", true); // アクセスするファイルを指定
     req.send(null); // HTTPリクエストの発行
     // レスポンスが返ってきたらconvertCSVtoArray()を呼ぶ
     req.onload = function(){
@@ -34,7 +34,7 @@ function get_nameCSV(){
 // 2つ目のCSVを読み込む
 function get_dataCSV(){
     var req = new XMLHttpRequest();
-    req.open("get", "../../backend/data/block_scores.tsv", true); // ファイル名は適宜変更
+    req.open("get", "http://localhost:3000/results/data/block_scores.tsv", true); // ファイル名は適宜変更
     req.send(null);
     req.onload = function(){
         convert_dataCSVtoArray(req.responseText);
@@ -58,7 +58,6 @@ function convert_dataCSVtoArray(str){
     for(var i=0;i<tmp.length;++i){
         result2[i] = tmp[i].split('\t');
     }
-
     var yourname = result1[1][0].trim();
 
     for(var i=0;i<tmp.length;++i){
