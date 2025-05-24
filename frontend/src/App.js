@@ -39,7 +39,9 @@ const lineChartIndicators = {
   'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
   'Urban Level': { labelTitle: '都市利便性', max: 100, min: 0, unit: '-' },
   'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
-  'Temperature (℃)': { labelTitle: '気温', max: 30, min: 10, unit: '℃' }
+  'Temperature (℃)': { labelTitle: '年平均気温', max: 18, min: 12, unit: '℃' },
+  'Precipitation (mm)': { labelTitle: '年降水量', max: 3000, min: 0, unit: 'mm' },
+  'Available Water': { labelTitle: '利用可能な水量', max: 3000, min: 0, unit: 'mm' }
 };
 const SIMULATION_YEARS = 25 // 一回のシミュレーションで進める年数を決定する 
 const LINE_CHART_DISPLAY_INTERVAL = 100 // ms
@@ -640,7 +642,7 @@ function App() {
 
           <Box sx={{ position: 'relative', width: '100%' }}>
             <img
-              src="/sd_model.png"
+              src="/stockflow_mayfes.png"
               alt="サンプル画像"
               style={{ width: '100%', display: 'block', height: 'auto' }}
             />
@@ -676,7 +678,7 @@ function App() {
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ mb: 0 }}>年平均降水量</Typography>
+                <Typography variant="body2" sx={{ mb: 0 }}>年降水量</Typography>
                 <Gauge width={100} height={100} value={Math.round(currentValues.precip * 10) / 10} valueMax={2000} valueMin={500} />
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>mm</Typography>
               </Box>
@@ -696,7 +698,7 @@ function App() {
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>住民の負担</Typography>
                 <Gauge width={100} height={100} value={currentValues.resident_burden * INDICATOR_CONVERSION["Municipal Cost"]} valueMax={10} />
-                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>億円</Typography>
+                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>万円</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

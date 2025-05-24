@@ -104,7 +104,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     paddy_dam_flood_coef = 10.0 # [-] 最大で10mmのインパクト
     # 水災害（Again）
     flood_recovery_cost_coef = 0.001
-    runoff_coef = 0.6
+    runoff_coef = 0.55
     # 気象（Again）
     base_mu = 180
     base_beta = 20
@@ -209,7 +209,7 @@ def simulate_year(year, prev_values, decision_vars, params):
 
     # 水不足による減衰を穏やかにする（例：sigmoid風）
     def smooth_degradation(diff, coef=0.0001):
-        return coef * diff**0.8  # exponent < 1.5 で緩やかに
+        return coef * diff**1.1  # exponent < 1.5 で緩やかに
 
     if current_available_water < ecosystem_threshold:
         diff = ecosystem_threshold - current_available_water
