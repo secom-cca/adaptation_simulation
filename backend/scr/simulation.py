@@ -95,7 +95,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     distance_urban_level_coef = 1.0
     # 領域横断影響
     forest_flood_reduction_coef = 0.4 # 0.1-0.5
-    forest_ecosystem_boost_coef = 0.0002
+    forest_ecosystem_boost_coef = 0.01 # 0.0002
     forest_water_retention_coef = 0.2 # 貯留割合
     flood_crop_damage_coef = 0.00001
     levee_ecosystem_damage_coef = 0.0001
@@ -138,8 +138,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     # #forest_area の効果（20〜40年前の森林） ---
     flood_reduction = forest_flood_reduction_coef * current_forest_area / total_area
     water_retention_boost = forest_water_retention_coef * current_forest_area / total_area # 水源涵養効果
-    # ecosystem_boost = min(current_forest_area * forest_ecosystem_boost_coef, 5.0)
-    ecosystem_boost = np.tanh(current_forest_area * forest_ecosystem_boost_coef) * 10
+    ecosystem_boost = min(current_forest_area * forest_ecosystem_boost_coef, 5.0)
 
     # 2. 利用可能水量（System Dynamicsには未導入）
     evapotranspiration_amount = evapotranspiration_amount * (1 + (temp - base_temp) * 0.05)
@@ -208,7 +207,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     #     ecosystem_level = max( ecosystem_level - water_ecosystem_coef * (ecosystem_threshold - current_available_water), 0) # 要検討
 
     # 水不足による減衰を穏やかにする（例：sigmoid風）
-    def smooth_degradation(diff, coef=0.0001):
+    def smooth_degradation(diff, coef=0.001):
         return coef * diff**1.1  # exponent < 1.5 で緩やかに
 
     if current_available_water < ecosystem_threshold:
@@ -216,7 +215,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         ecosystem_level -= smooth_degradation(diff)
 
     # 7. 都市の居住可能性の評価（交通面のみ）
-    transportation_level = transportation_level * 0.95 + transport_level_coef * transportation_invest #ここが非常に怪しい！
+    transportation_level = transportation_level * 0.95 + transport_level_coef * transportation_invest - 0.01 #ここが非常に怪しい！
     urban_level = distance_urban_level_coef * (1 - migration_ratio) * transportation_level #平均移動距離が長くなることの効果を算出
     urban_level -= current_flood_damage * flood_urban_damage_coef
     urban_level = min(max(urban_level, 0), 100)

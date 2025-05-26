@@ -8,7 +8,7 @@ var your_data = [];
 var yourname = "";
 var scenarioname = "";
 var policyname = ["植林・森林保全", "住宅移転・嵩上げ", "ダム・堤防工事", "田んぼダム工事", "防災訓練・啓発", "交通網の充実", "農業研究開発"];
-var scorename = ["農産物収量", "洪水被害", "自治体予算", "生態系", "都市利便性"]
+var scorename = ["農作物収量", "洪水被害", "自治体予算", "生態系", "都市利便性"]
 // 合計スコア
 var sum2050 = 0;
 var sum2075 = 0;
@@ -203,7 +203,7 @@ function convert_dataCSVtoArray(str){
             if (scoreElem2 && top3[1]) scoreElem2.innerText = top3[1][fieldIndex[field]].toFixed(1);
             if (nameElem3 && top3[2]) nameElem3.innerText = top3[2][0];
             if (scoreElem3 && top3[2]) scoreElem3.innerText = top3[2][fieldIndex[field]].toFixed(1);
-            if (yourRankElem) yourRankElem.innerText = "";
+            if (yourRankElem) yourRankElem.innerText = yourRank;
             if (yourNameElem) yourNameElem.innerText = yourname;
             if (yourScoreElem) yourScoreElem.innerText = yourScore.toFixed(1);;
         });

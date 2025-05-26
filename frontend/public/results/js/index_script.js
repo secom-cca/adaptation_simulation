@@ -9,7 +9,7 @@ var your_data = [];
 var yourname = "";
 var scenarioname = "";
 var policyname = ["植林・森林保全", "住宅移転・嵩上げ", "ダム・堤防工事", "田んぼダム工事", "防災訓練・啓発", "交通網の充実", "農業研究開発"];
-var scorename = ["農産物収量", "洪水被害", "自治体予算", "生態系", "都市利便性"]
+var scorename = ["農作物収量", "洪水被害", "自治体予算", "生態系", "都市利便性"]
 // スコア(0~100点)
 var score2050 = [];
 var score2075 = [];
@@ -164,9 +164,9 @@ function convert_dataCSVtoArray(str){
     bunyabalancetotal = bunyabalancescore[0] + bunyabalancescore[1] + bunyabalancescore[2];
 
     let bunyaidx = 0;
-    if (bunyabalancetotal >= 90){
+    if (bunyabalancetotal >= 150){
     bunyaidx = 0;
-    }else if (bunyabalancetotal < 90 && bunyabalancetotal >= 50){
+    }else if (bunyabalancetotal < 150 && bunyabalancetotal >= 100){
     bunyaidx = 1;
     }else{
     bunyaidx = 2;
@@ -181,9 +181,9 @@ function convert_dataCSVtoArray(str){
 
     sedaibalancescore = variance(bunyabalancescore);
     let sedaiidx = 0;
-    if (sedaibalancescore >= 50){
+    if (sedaibalancescore >= 30){
         sedaiidx = 0;
-    }else if (sedaibalancescore < 50 && sedaibalancescore >= 30){
+    }else if (sedaibalancescore < 30 && sedaibalancescore >= 10){
         sedaiidx = 1;
     }else{
         sedaiidx = 2;

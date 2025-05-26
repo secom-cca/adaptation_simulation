@@ -6,7 +6,7 @@ var your_data = [];
 // 共通変数
 var yourname = "";
 var scenarioname = "";
-var scorename = ["農産物収量", "洪水被害", "自治体予算", "生態系", "都市利便性"]
+var scorename = ["農作物収量", "洪水被害", "自治体予算", "生態系", "都市利便性"]
 // スコア(0~100点)
 var score2050 = [];
 var score2075 = [];

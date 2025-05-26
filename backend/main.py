@@ -149,7 +149,7 @@ class CurrentValues(BaseModel):
     planting_history: Optional[Dict[int, float]] = {}
     urban_level: Optional[float] = 0.0
     resident_capacity: Optional[float] = 0.0
-    transportation_level: Optional[float] = 0.0
+    transportation_level: Optional[float] = 100.0
     levee_investment_total: Optional[float] = 0.0
     RnD_investment_total: Optional[float] = 0.0
     risky_house_total: Optional[float] = 10000.0
