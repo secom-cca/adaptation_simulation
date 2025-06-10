@@ -3,7 +3,8 @@ import pandas as pd
 import streamlit as st
 from io import BytesIO
 from backend.scr.simulation import simulate_simulation
-from backend.scr.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly
+from backend.scr.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly, BENCHMARK, BLOCKS
+from backend.config import DEFAULT_PARAMS, rcp_climate_params
 # from dotenv import load_dotenv
 # import os
 # import openai
@@ -17,94 +18,15 @@ rcp_options = {'RCP1.9': 1.9, 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 'RCP8
 selected_rcp = st.sidebar.selectbox('Select RCP Scenario / RCPシナリオを選択', list(rcp_options.keys()), index=1)
 rcp_value = rcp_options[selected_rcp]
 
-# 各RCPに対応した気候パラメータ
-rcp_climate_params = {
-    1.9: {
-        'temp_trend': 0.02,  # ℃/年
-        'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.05,      # λの年増加量
-        'extreme_precip_intensity_trend': 0.2,  # μの年増加量 [mm/年]
-        'extreme_precip_uncertainty_trend': 0.05  # βの年増加量 [mm/年]
-    },
-    2.6: {
-        'temp_trend': 0.025,
-        'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.07,
-        'extreme_precip_intensity_trend': 0.4,
-        'extreme_precip_uncertainty_trend': 0.07
-    },
-    4.5: {
-        'temp_trend': 0.035,
-        'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.1,
-        'extreme_precip_intensity_trend': 0.8,
-        'extreme_precip_uncertainty_trend': 0.1
-    },
-    6.0: {
-        'temp_trend': 0.045,
-        'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.13,
-        'extreme_precip_intensity_trend': 1.1,
-        'extreme_precip_uncertainty_trend': 0.13
-    },
-    8.5: {
-        'temp_trend': 0.06,
-        'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.17,
-        'extreme_precip_intensity_trend': 1.5,
-        'extreme_precip_uncertainty_trend': 0.15
-    }
-}
-
-# シミュレーションのパラメータ
-start_year = 2026
-end_year = 2100
-total_years = end_year - start_year + 1
-years = np.arange(start_year, end_year + 1)
+# パラメータの読み込みと上書き
+params = DEFAULT_PARAMS.copy()
+params.update(rcp_climate_params[rcp_value])
 timestep_year = 25
 
-# パラメータ辞書
-params = {
-    'start_year': start_year,
-    'end_year': end_year,
-    'total_years': total_years,
-    'years': years,
-    # 設定は後でRCPごとに上書き
-    'temp_trend': 0.04,
-    'precip_trend': 0,
-    'temp_uncertainty': 1.0,
-    'base_precip_uncertainty': 50, # will be deleted
-    'precip_uncertainty_trend': 5, 
-    'base_extreme_precip_freq': 0.1,
-    'extreme_precip_freq_trend': 0.05,
-
-    # 'extreme_precip_freq_uncertainty': 0.1,
-    'extreme_precip_intensity_trend': 0.2,
-    'extreme_precip_uncertainty_trend': 0.05,
-
-    'municipal_demand_trend': 0,
-    'municipal_demand_uncertainty': 0.01,
-    'initial_hot_days': 30.0,
-    'base_temp': 15.0,
-    'base_precip': 1700.0,
-    'temp_to_hot_days_coeff': 2.0,
-    'hot_days_uncertainty': 2.0,
-    'ecosystem_threshold': 800.0,
-    'temp_coefficient': 1.0,
-    'max_potential_yield': 5000.0, # [kg/ha]
-    'optimal_irrigation_amount': 30.0,
-    'flood_damage_coefficient': 100000, # 1mm越水あたりのダメージ，パラメータ調整
-    'levee_level_increment': 20.0,
-    'high_temp_tolerance_increment': 0.2,
-    'levee_investment_threshold': 2.0,
-    'RnD_investment_threshold': 5.0,
-    'levee_investment_required_years': 10,
-    'RnD_investment_required_years': 5,
-    'max_available_water': 3000.0,
-    'evapotranspiration_amount': 300.0,
-}
-# RCPに基づきトレンドを適用
-params.update(rcp_climate_params[rcp_value])
+start_year = params['start_year']
+end_year = params['end_year']
+total_years = params['total_years']
+years = params['years']
 
 image_path = "fig/mayfes_merge.png"  # 画像ファイルのパスを指定
 st.image(image_path, caption='Simulator Overview', use_container_width=True)
@@ -461,60 +383,6 @@ def calculate_scenario_indicators(scenario_data):
         '予算': scenario_data['Municipal Cost'].sum()
     }
     return indicators
-
-# def generate_llm_commentary(scenario_name, df_result, model="gpt-4"):
-#     # 簡略化された特徴抽出
-#     def summarize_results(df):
-#         summary = {
-#             "収量合計": round(df["Crop Yield"].sum(), 2),
-#             "洪水被害合計": round(df["Flood Damage"].sum(), 2),
-#             "生態系": round(df[df["Year"] == 2100]["Ecosystem Level"].values[0], 2),
-#             "都市利便性": round(df[df["Year"] == 2100]["Urban Level"].values[0], 2),
-#             "予算": round(df["Municipal Cost"].sum(), 2)
-#         }
-#         return summary
-
-#     summary_stats = summarize_results(df_result)
-
-#     # プロンプトの生成（日本語）
-#     prompt = f"""
-# あなたはシナリオシミュレーションの専門家です。
-# 以下は「{scenario_name}」という気候変動適応シナリオにおける結果です。
-
-# 【シミュレーション結果の要約】
-# - 作物収量の合計: {summary_stats['収量合計']}
-# - 洪水被害の合計: {summary_stats['洪水被害合計']}
-# - 生態系スコア（2050年）: {summary_stats['生態系']}
-# - 都市利便性スコア（2100年）: {summary_stats['都市利便性']}
-# - 自治体の総予算: {summary_stats['予算']}
-
-# この内容を踏まえて、シナリオの長所・短所を含む100-300文字程度の講評を生成してください。
-# 表現は一般市民に分かりやすくしてください。
-# """
-
-#     # OpenAI API呼び出し
-#     response = client.chat.completions.create(
-#         model=model,
-#         messages=[{"role": "user", "content": prompt}],
-#         temperature=0.7
-#     )
-#     return response.choices[0].message.content
-
-
-# ベンチマーク要調整 ---------------------
-BENCHMARK = {
-    '収量':        dict(best=10_000, worst=0,     invert=False),
-    '洪水被害':    dict(best=0,       worst=1_000_000_000, invert=True),
-    '生態系':      dict(best=100,     worst=0,     invert=False),
-    '都市利便性':  dict(best=100,     worst=0,     invert=False),
-    '予算':        dict(best=0,       worst=1_000_000_000, invert=True),
-}
-
-BLOCKS = [
-    (2026, 2050, '2026-2050'),
-    (2051, 2075, '2051-2075'),
-    (2076, 2100, '2076-2100')
-]
 
 BAL_PARAMS = dict(field_sd_max=20, period_sd_max=15)
 

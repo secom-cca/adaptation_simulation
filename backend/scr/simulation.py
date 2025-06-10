@@ -54,6 +54,8 @@ def simulate_year(year, prev_values, decision_vars, params):
     extreme_precip_freq_trend     = params['extreme_precip_freq_trend']
     extreme_precip_intensity_trend= params['extreme_precip_intensity_trend']
     extreme_precip_uncertainty_trend=params['extreme_precip_uncertainty_trend']
+    base_mu = params['base_mu']
+    base_beta = params['base_beta']
     # 水需要
     municipal_demand_trend        = params['municipal_demand_trend']
     municipal_demand_uncertainty  = params['municipal_demand_uncertainty']
@@ -66,6 +68,9 @@ def simulate_year(year, prev_values, decision_vars, params):
     max_potential_yield           = params['max_potential_yield']
     optimal_irrigation_amount     = params['optimal_irrigation_amount']
     high_temp_tolerance_increment = params['high_temp_tolerance_increment']
+    necessary_water_for_crops = params['necessary_water_for_crops']
+    paddy_dam_cost_per_ha = params['paddy_dam_cost_per_ha']
+    paddy_dam_yield_coef = params['paddy_dam_yield_coef']
     # 水災害
     flood_damage_coefficient      = params['flood_damage_coefficient']
     levee_level_increment         = params['levee_level_increment']
@@ -73,44 +78,36 @@ def simulate_year(year, prev_values, decision_vars, params):
     RnD_investment_threshold      = params['RnD_investment_threshold']
     levee_investment_required_years = params['levee_investment_required_years']
     RnD_investment_required_years = params['RnD_investment_required_years']
+    flood_recovery_cost_coef = params['flood_recovery_cost_coef']
+    runoff_coef = params['runoff_coef']
     # 森林
-    cost_per_1000trees            = 2310000 # [万円]
-    forest_degradation_rate       = 0.01
-    tree_growup_year              = 20
+    cost_per_1000trees = params['cost_per_1000trees']
+    forest_degradation_rate = params['forest_degradation_rate']
+    tree_growup_year = params['tree_growup_year']
     # 住宅
-    cost_per_migration            = 1000000 # [万円]
+    cost_per_migration = params['cost_per_migration']
+    # 住民意識
+    capacity_building_coefficient = params['capacity_building_coefficient']
+    resident_capacity_degrade_ratio = params['resident_capacity_degrade_ratio']
+    # 交通
+    transport_level_coef = params['transport_level_coef']
+    distance_urban_level_coef = params['distance_urban_level_coef']
+    # 領域横断影響
+    forest_flood_reduction_coef = params['forest_flood_reduction_coef']
+    forest_ecosystem_boost_coef = params['forest_ecosystem_boost_coef']
+    forest_water_retention_coef = params['forest_water_retention_coef']
+    flood_crop_damage_coef = params['flood_crop_damage_coef']
+    levee_ecosystem_damage_coef = params['levee_ecosystem_damage_coef']
+    flood_urban_damage_coef = params['flood_urban_damage_coef']
+    water_ecosystem_coef = params['water_ecosystem_coef']
+    paddy_dam_flood_coef = params['paddy_dam_flood_coef']
+    # 地形
+    total_area = params['total_area']
+    paddy_field_area = params['paddy_field_area']
+    
     # resident_density = 1000 # [person/km^2]
     # water_demand_per_resident = 130 # [m3/person]
     # current_municipal_demand = water_water_demand_per_resident * resident_density / 1000 = 130 [mm]
-    # 農業（Again）
-    necessary_water_for_crops     = 330 # [mm] TBD
-    # paddy_field_area * 10000 * necessary_water_for_crops (2000-3300) / total_area * 10000
-    paddy_dam_cost_per_ha         = 1.5 # [MilYen/ha]
-    paddy_dam_yield_coef = 0.01 # [-] 1%の負のインパクト
-    # 住民意識
-    capacity_building_coefficient = 0.01
-    resident_capacity_degrade_ratio = 0.05
-    # 交通
-    transport_level_coef = 1.0
-    distance_urban_level_coef = 1.0
-    # 領域横断影響
-    forest_flood_reduction_coef = 0.4 # 0.1-0.5
-    forest_ecosystem_boost_coef = 0.01 # 0.0002
-    forest_water_retention_coef = 0.2 # 貯留割合
-    flood_crop_damage_coef = 0.00001
-    levee_ecosystem_damage_coef = 0.0001
-    flood_urban_damage_coef = 0.000001
-    water_ecosystem_coef = 0.01
-    paddy_dam_flood_coef = 10.0 # [-] 最大で10mmのインパクト
-    # 水災害（Again）
-    flood_recovery_cost_coef = 0.001
-    runoff_coef = 0.55
-    # 気象（Again）
-    base_mu = 180
-    base_beta = 20
-    # 地形
-    total_area = 10000 #[ha]
-    paddy_field_area = 1000 # [ha]
 
     # 0.1 気象環境 ---
     temp = base_temp + temp_trend * (year - start_year) + np.random.normal(0, temp_uncertainty)
