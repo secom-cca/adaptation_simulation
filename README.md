@@ -1,235 +1,179 @@
 # README
 
-This simulation program is a tool designed to analyze future scenarios by adjusting decision variables while considering trends and uncertainties in climate change. It supports two modes of interaction:
-
-* **Streamlit-based interface**
-* **React-based frontend (frontend/src/App.js)**
+This simulation platform allows you to explore future climate adaptation scenarios using either a **Streamlit-based interface** or a **React-based frontend**. It supports policy simulation, Monte Carlo analysis, and optional integration with **Intel RealSense** sensors for gesture-based control.
 
 ---
 
-## How to Use
+## 🔧 Project Structure
 
-### ✳️ Option 1: Streamlit-based UI
-
-### 1. Select Simulation Mode
-
-From the sidebar, choose one of the following under **"Select Simulation Mode"**:
-
-* **Monte Carlo Simulation Mode**
-* **Sequential Decision-Making Mode**
-
-### 2. Enter Scenario Name
-
-Input a name for saving the scenario. For example: `Scenario 1`
-
-### 3. Set Decision Variables
-
-#### For Monte Carlo Simulation Mode
-
-* In **"Decision Variables"**, set the following for each period:
-
-#### For Sequential Decision-Making Mode
-
-* Input the decision variables for the upcoming years via the sidebar sliders.
-
-### 4. Run the Simulation
-
-* Click **"Start Simulation"** or **"Next"**, depending on the mode.
-
-### 5. Review & Save Results
-
-* Graphs will visualize the results.
-* Click **"Save Scenario"** to store the scenario for comparison.
-
-### 6. Compare & Export
-
-* Compare multiple scenarios in scatter plots.
-* Export results via the **"Data Export"** section.
+```
+.
+├── streamlit_main.py                 ← Streamlit entry point
+├── backend/
+│   ├── main.py                       ← FastAPI backend entry point
+│   └── src/
+│       └── simulation.py            ← Core simulation logic
+├── frontend/
+│   ├── src/
+│   │   └── App.js                   ← React frontend app
+│   ├── realsense.py                 ← RealSense input processing (Python)
+│   └── ws_server.js                 ← WebSocket server (Node.js)
+```
 
 ---
 
-### ✳️ Option 2: React-based UI (`frontend/src/App.js`)
+## 🚀 Usage Options
 
-This option allows you to use a modern web interface built with React.
+### Option 1: Streamlit-based UI
 
-### 1. Launch the Backend API
+#### ▶ How to Run
 
-Make sure the FastAPI backend is running.
-
-```bash
-# from the root or backend/ directory
-uvicorn backend.main:app --reload
-```
-
-> Default port: `http://localhost:8000`
-
-You must keep this running while using the frontend.
-
-### 2. Install Frontend Dependencies
-
-```bash
-cd frontend
-npm install
-```
-
-### 3. Start the Frontend App
-
-```bash
-npm start
-```
-
-> This will open the React app at `http://localhost:3000`
-
-### 4. Use the Web Interface
-
-* The UI mimics the Streamlit version but uses REST API to communicate with the backend.
-* You can set simulation parameters, run scenarios, view results, and compare/export data.
-
----
-
-## Notes
-
-* **Session Maintenance**: Reloading the browser may reset session state in Streamlit. Use scenario save/export features as needed.
-* **Simulation Reset**: In Streamlit, use the “Reset Simulation” button to start over.
-* **Performance**: Large numbers of simulations in Monte Carlo mode will increase computation time. Adjust accordingly.
-* **Backend Requirement (React Mode)**: The React frontend requires the FastAPI backend (`backend/main.py`) to be running.
-
----
-
-## Required Libraries
-
-### Backend (Common to Both UIs)
-
-* Python 3.x
-* `streamlit`
-* `fastapi`
-* `uvicorn`
-* `pandas`
-* `numpy`
-* `plotly`
-
-Install via:
-
-```bash
-pip install -r requirements.txt
-```
-
-or
+1. Install dependencies:
 
 ```bash
 poetry install
 ```
 
-### Frontend (`frontend/`)
+2. Start Streamlit app:
 
-* Node.js (v16+)
-* `npm` or `yarn`
+```bash
+poetry run streamlit run streamlit_main.py
+```
+
+> Access at: `http://localhost:8501`
+
+#### 💡 Features
+
+* Fully self-contained (no backend server required)
+* Supports Monte Carlo and Sequential Decision-Making modes
+* Interactive sliders and tables
+* Graphical result visualization
+* Scenario saving, comparison, and export
 
 ---
 
-## How to Run
+### Option 2: React + FastAPI Interface
 
-### ▶ Streamlit Version
+#### ▶ How to Run (without RealSense)
+
+1. **Start the backend server** in one terminal:
 
 ```bash
-streamlit run main.py
+cd backend
+python main.py
 ```
 
-or
+> Runs FastAPI at `http://localhost:8000`
+
+2. **Start the frontend app** in another terminal:
 
 ```bash
-poetry run streamlit run main.py
-```
-
-### ▶ React + FastAPI Version
-
-```bash
-# In one terminal:
-uvicorn backend.main:app --reload
-
-# In another terminal:
 cd frontend
-npm install
+npm install       # only once
 npm start
 ```
 
-了解しました。Intel RealSense を使用する場合に必要な `frontend/ws_server.js` の実行についても明記した、**最終版の README 改訂（該当セクションのみ）** を以下に示します。
+> Runs React at `http://localhost:3000`
+
+#### 💡 Features
+
+* Modern web UI
+* Uses REST API to communicate with backend
+* Suitable for advanced browser interactions and extensibility
 
 ---
 
-### 🎥 Optional: Integration with Intel RealSense (`realsense.py` + `ws_server.js`)
+### Option 3: React + FastAPI + RealSense (Optional)
 
-You can optionally enable **Intel RealSense camera** integration for gesture- or motion-based control of the simulation interface.
+You can enhance the React UI with **gesture or motion input** via Intel RealSense.
 
-#### 🔧 Requirements
+#### ▶ Additional Setup
 
-* Intel RealSense Depth Camera (e.g., D435, D455)
-* [librealsense](https://github.com/IntelRealSense/librealsense)
-* Python package: `pyrealsense2`
+In addition to the above (React + FastAPI), run the following in **two more terminals**:
 
-Install:
+3. **Start RealSense input handler** (Python):
 
 ```bash
-pip install pyrealsense2
+cd frontend
+python realsense.py
 ```
 
-#### ▶ How to Run (RealSense Mode)
-
-1. **Start the backend (FastAPI):**
-
-```bash
-uvicorn backend.main:app --reload
-```
-
-2. **Start the RealSense script:**
-
-```bash
-python backend/utils/realsense.py
-```
-
-3. **Start the WebSocket relay server (`frontend/ws_server.js`):**
+4. **Start WebSocket relay server** (Node.js):
 
 ```bash
 cd frontend
 node ws_server.js
 ```
 
-> This server bridges `realsense.py` and the React frontend using WebSocket for real-time communication.
-
-4. **Start the frontend app:**
-
-```bash
-npm start
-```
-
-> React will listen to RealSense input via WebSocket and trigger UI updates or policy changes.
-
-#### 🔗 Integration Flow
+#### 💡 How It Works
 
 ```text
-Intel RealSense (Depth Input)
+Intel RealSense Camera
         ↓
   realsense.py (Python)
         ↓
-  WebSocket (ws_server.js)
+  ws_server.js (WebSocket relay)
         ↓
-  React frontend (App.js)
+  React App (subscribes via WebSocket)
 ```
 
-#### 💡 Notes
-
-* Ensure all 3 components are running simultaneously:
-
-  * `backend/main.py` (FastAPI)
-  * `backend/utils/realsense.py`
-  * `frontend/ws_server.js`
-* `realsense.py` sends recognized gestures or coordinates to the WebSocket server.
-* The frontend listens and updates UI accordingly (e.g., adjust sliders, trigger simulation).
-
-> This is an **optional and experimental** feature — not required for core functionality.
+This setup enables real-time control (e.g., simulation execution, parameter tuning) through physical gestures.
 
 ---
 
-## License
+## 📦 Dependencies
+
+### Python (Backend + Streamlit)
+
+* `streamlit`
+* `fastapi`
+* `uvicorn`
+* `numpy`
+* `pandas`
+* `plotly`
+* (optional) `pyrealsense2` — for RealSense integration
+
+Install via:
+
+```bash
+poetry install
+```
+
+### JavaScript (Frontend)
+
+* Node.js v16+
+* npm or yarn
+* `react`, `axios`, etc.
+
+Install via:
+
+```bash
+cd frontend
+npm install
+```
+
+---
+
+## 📁 Data Flow Overview
+
+```
+[Decision Input] → [Backend: simulation.py] → [Result JSON]
+                                   ↑
+         Streamlit or React        |
+                    ←── Visualization & Export
+```
+
+---
+
+## 📝 Notes
+
+* Use **Streamlit** for fast prototyping or local analysis.
+* Use **React + FastAPI** for more interactive, customizable deployments.
+* RealSense is entirely **optional**, and not required for core simulations.
+* Make sure to keep the backend server running when using React.
+
+---
+
+## 🪪 License
 
 This project is licensed under the MIT License.
