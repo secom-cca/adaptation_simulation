@@ -9,8 +9,8 @@ from models import (
     SimulationRequest, SimulationResponse, CompareRequest, CompareResponse,
     DecisionVar, CurrentValues, BlockRaw
 )
-from scr.simulation import simulate_simulation
-from scr.utils import calculate_scenario_indicators, aggregate_blocks
+from src.simulation import simulate_simulation
+from src.utils import calculate_scenario_indicators, aggregate_blocks
 
 app = FastAPI()
 app.add_middleware(

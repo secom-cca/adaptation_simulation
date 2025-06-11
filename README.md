@@ -1,15 +1,22 @@
 # README
 
-This simulation program is a tool designed to analyze future scenarios by adjusting decision variables while considering trends and uncertainties in climate change and urban water demand. It utilizes Streamlit to provide an interactive user interface.
+This simulation program is a tool designed to analyze future scenarios by adjusting decision variables while considering trends and uncertainties in climate change. It supports two modes of interaction:
+
+* **Streamlit-based interface**
+* **React-based frontend (frontend/src/App.js)**
+
+---
 
 ## How to Use
 
+### ✳️ Option 1: Streamlit-based UI
+
 ### 1. Select Simulation Mode
 
-From the sidebar, choose one of the following under "Select Simulation Mode":
+From the sidebar, choose one of the following under **"Select Simulation Mode"**:
 
-- **Monte Carlo Simulation Mode**
-- **Sequential Decision-Making Mode**
+* **Monte Carlo Simulation Mode**
+* **Sequential Decision-Making Mode**
 
 ### 2. Enter Scenario Name
 
@@ -19,79 +26,209 @@ Input a name for saving the scenario. For example: `Scenario 1`
 
 #### For Monte Carlo Simulation Mode
 
-- In "Decision Variables (Every 10 yrs)", set the following variables for each 10-year period using the DataFrame:
-  - Irrigation Water Amount
-  - Released Water Amount
-  - Levee Construction Cost
-  - Agricultural R&D Cost
+* In **"Decision Variables"**, set the following for each period:
 
 #### For Sequential Decision-Making Mode
 
-- Input the decision variables for the next 10 years using the sidebar.
+* Input the decision variables for the upcoming years via the sidebar sliders.
 
 ### 4. Run the Simulation
 
-- **Monte Carlo Simulation Mode**: Click the "Start Simulation" button.
-- **Sequential Decision-Making Mode**: Click the "Next" button. Review the results and adjust decision variables as needed.
+* Click **"Start Simulation"** or **"Next"**, depending on the mode.
 
-### 5. Review Results
+### 5. Review & Save Results
 
-- Simulation results will be displayed in graphs.
-- In Monte Carlo Simulation Mode, results from each simulation are overlaid to visualize variability.
-- In Sequential Decision-Making Mode, results from a single simulation are displayed.
+* Graphs will visualize the results.
+* Click **"Save Scenario"** to store the scenario for comparison.
 
-### 6. Save Scenario
+### 6. Compare & Export
 
-- When satisfied with the results, click the "Save Scenario" button to save the scenario.
+* Compare multiple scenarios in scatter plots.
+* Export results via the **"Data Export"** section.
 
-### 7. Compare Scenarios
+---
 
-- In the "Scenario Comparison" section, select the scenarios you wish to compare.
-- Choose variables for the X and Y axes of the scatter plot and compare the scenarios.
+### ✳️ Option 2: React-based UI (`frontend/src/App.js`)
 
-### 8. Export Data
+This option allows you to use a modern web interface built with React.
 
-- In the "Data Export" section, select the file format.
-- Click the "Download" button to download the simulation results.
+### 1. Launch the Backend API
+
+Make sure the FastAPI backend is running.
+
+```bash
+# from the root or backend/ directory
+uvicorn backend.main:app --reload
+```
+
+> Default port: `http://localhost:8000`
+
+You must keep this running while using the frontend.
+
+### 2. Install Frontend Dependencies
+
+```bash
+cd frontend
+npm install
+```
+
+### 3. Start the Frontend App
+
+```bash
+npm start
+```
+
+> This will open the React app at `http://localhost:3000`
+
+### 4. Use the Web Interface
+
+* The UI mimics the Streamlit version but uses REST API to communicate with the backend.
+* You can set simulation parameters, run scenarios, view results, and compare/export data.
+
+---
 
 ## Notes
 
-- **Session Maintenance**: Reloading the browser may reset the session state, causing loss of simulation results and saved scenarios. Export data as needed.
+* **Session Maintenance**: Reloading the browser may reset session state in Streamlit. Use scenario save/export features as needed.
+* **Simulation Reset**: In Streamlit, use the “Reset Simulation” button to start over.
+* **Performance**: Large numbers of simulations in Monte Carlo mode will increase computation time. Adjust accordingly.
+* **Backend Requirement (React Mode)**: The React frontend requires the FastAPI backend (`backend/main.py`) to be running.
 
-- **Simulation Reset**: Use the "Reset Simulation" button if you want to start a new scenario or redo the simulation. Saved scenarios will remain intact.
-
-- **Performance**: Setting a high number of simulations in Monte Carlo Simulation Mode may increase computation time. Choose an appropriate number.
+---
 
 ## Required Libraries
 
-- Python 3.x
-- Streamlit
-- numpy
-- pandas
-- plotly
+### Backend (Common to Both UIs)
+
+* Python 3.x
+* `streamlit`
+* `fastapi`
+* `uvicorn`
+* `pandas`
+* `numpy`
+* `plotly`
+
+Install via:
+
+```bash
+pip install -r requirements.txt
+```
+
+or
+
+```bash
+poetry install
+```
+
+### Frontend (`frontend/`)
+
+* Node.js (v16+)
+* `npm` or `yarn`
+
+---
 
 ## How to Run
 
-1. Install the required libraries:
-
-```bash
-pip install streamlit numpy pandas plotly
-```
-
-2. In the directory where you saved the script, run the following command:
+### ▶ Streamlit Version
 
 ```bash
 streamlit run main.py
 ```
 
-3. If the browser doesn't open automatically, enter the local host URL displayed in the command line (e.g., `http://localhost:8501`) into your browser to access the application.
-
-4. Or you can use poetry:
+or
 
 ```bash
-poetry install
 poetry run streamlit run main.py
 ```
+
+### ▶ React + FastAPI Version
+
+```bash
+# In one terminal:
+uvicorn backend.main:app --reload
+
+# In another terminal:
+cd frontend
+npm install
+npm start
+```
+
+了解しました。Intel RealSense を使用する場合に必要な `frontend/ws_server.js` の実行についても明記した、**最終版の README 改訂（該当セクションのみ）** を以下に示します。
+
+---
+
+### 🎥 Optional: Integration with Intel RealSense (`realsense.py` + `ws_server.js`)
+
+You can optionally enable **Intel RealSense camera** integration for gesture- or motion-based control of the simulation interface.
+
+#### 🔧 Requirements
+
+* Intel RealSense Depth Camera (e.g., D435, D455)
+* [librealsense](https://github.com/IntelRealSense/librealsense)
+* Python package: `pyrealsense2`
+
+Install:
+
+```bash
+pip install pyrealsense2
+```
+
+#### ▶ How to Run (RealSense Mode)
+
+1. **Start the backend (FastAPI):**
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+2. **Start the RealSense script:**
+
+```bash
+python backend/utils/realsense.py
+```
+
+3. **Start the WebSocket relay server (`frontend/ws_server.js`):**
+
+```bash
+cd frontend
+node ws_server.js
+```
+
+> This server bridges `realsense.py` and the React frontend using WebSocket for real-time communication.
+
+4. **Start the frontend app:**
+
+```bash
+npm start
+```
+
+> React will listen to RealSense input via WebSocket and trigger UI updates or policy changes.
+
+#### 🔗 Integration Flow
+
+```text
+Intel RealSense (Depth Input)
+        ↓
+  realsense.py (Python)
+        ↓
+  WebSocket (ws_server.js)
+        ↓
+  React frontend (App.js)
+```
+
+#### 💡 Notes
+
+* Ensure all 3 components are running simultaneously:
+
+  * `backend/main.py` (FastAPI)
+  * `backend/utils/realsense.py`
+  * `frontend/ws_server.js`
+* `realsense.py` sends recognized gestures or coordinates to the WebSocket server.
+* The frontend listens and updates UI accordingly (e.g., adjust sliders, trigger simulation).
+
+> This is an **optional and experimental** feature — not required for core functionality.
+
+---
 
 ## License
 

@@ -33,6 +33,8 @@ DEFAULT_PARAMS = {
     'extreme_precip_uncertainty_trend': 0.05,
     'temp_to_hot_days_coeff': 2.0,
     'hot_days_uncertainty': 2.0,
+    'base_mu': 180,
+    'base_beta': 20,
     # 水需要
     'municipal_demand_trend': 0,
     'municipal_demand_uncertainty': 0.01,
@@ -45,6 +47,10 @@ DEFAULT_PARAMS = {
     'max_potential_yield': 5000.0,
     'optimal_irrigation_amount': 30.0,
     'high_temp_tolerance_increment': 0.2,
+    'necessary_water_for_crops': 330, # [m3/ha]
+    'paddy_dam_cost_per_ha': 1.5,
+    'paddy_dam_yield_coef': 0.01,
+    'temp_threshold_crop_ini': 26.0,
     # 水災害
     'flood_damage_coefficient': 100000,
     'levee_level_increment': 20.0,
@@ -58,10 +64,7 @@ DEFAULT_PARAMS = {
     'tree_growup_year': 20,
     # 住宅
     'cost_per_migration': 1000000,
-    # 農業再掲
-    'necessary_water_for_crops': 330,
-    'paddy_dam_cost_per_ha': 1.5,
-    'paddy_dam_yield_coef': 0.01,
+    'house_total': 15000,
     # 住民意識
     'capacity_building_coefficient': 0.01,
     'resident_capacity_degrade_ratio': 0.05,
@@ -80,9 +83,6 @@ DEFAULT_PARAMS = {
     # 水災害再掲
     'flood_recovery_cost_coef': 0.001,
     'runoff_coef': 0.55,
-    # 気象再掲
-    'base_mu': 180,
-    'base_beta': 20,
     # 地形
     'total_area': 10000,
     'paddy_field_area': 1000,

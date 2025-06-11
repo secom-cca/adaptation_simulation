@@ -8,7 +8,7 @@ from collections import defaultdict
 from itertools import product
 import pickle  # データを保存するため
 
-from scr.simulation import simulate_year
+from backend.src.simulation import simulate_year
 
 # 再現性のためのシード設定
 random.seed(42)

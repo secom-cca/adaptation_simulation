@@ -1,70 +1,179 @@
-# Getting Started with Create React App
+# README
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This simulation platform allows you to explore future climate adaptation scenarios using either a **Streamlit-based interface** or a **React-based frontend**. It supports policy simulation, Monte Carlo analysis, and optional integration with **Intel RealSense** sensors for gesture-based control.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🔧 Project Structure
 
-### `npm start`
+```
+.
+├── streamlit_main.py                 ← Streamlit entry point
+├── backend/
+│   ├── main.py                       ← FastAPI backend entry point
+│   └── src/
+│       └── simulation.py            ← Core simulation logic
+├── frontend/
+│   ├── src/
+│   │   └── App.js                   ← React frontend app
+│   ├── realsense.py                 ← RealSense input processing (Python)
+│   └── ws_server.js                 ← WebSocket server (Node.js)
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🚀 Usage Options
 
-### `npm test`
+### Option 1: Streamlit-based UI
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+#### ▶ How to Run
 
-### `npm run build`
+1. Install dependencies:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+poetry install
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. Start Streamlit app:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+poetry run streamlit run streamlit_main.py
+```
 
-### `npm run eject`
+> Access at: `http://localhost:8501`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+#### 💡 Features
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+* Fully self-contained (no backend server required)
+* Supports Monte Carlo and Sequential Decision-Making modes
+* Interactive sliders and tables
+* Graphical result visualization
+* Scenario saving, comparison, and export
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Option 2: React + FastAPI Interface
 
-## Learn More
+#### ▶ How to Run (without RealSense)
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+1. **Start the backend server** in one terminal:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+cd backend
+python main.py
+```
 
-### Code Splitting
+> Runs FastAPI at `http://localhost:8000`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+2. **Start the frontend app** in another terminal:
 
-### Analyzing the Bundle Size
+```bash
+cd frontend
+npm install       # only once
+npm start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+> Runs React at `http://localhost:3000`
 
-### Making a Progressive Web App
+#### 💡 Features
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+* Modern web UI
+* Uses REST API to communicate with backend
+* Suitable for advanced browser interactions and extensibility
 
-### Advanced Configuration
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Option 3: React + FastAPI + RealSense (Optional)
 
-### Deployment
+You can enhance the React UI with **gesture or motion input** via Intel RealSense.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+#### ▶ Additional Setup
 
-### `npm run build` fails to minify
+In addition to the above (React + FastAPI), run the following in **two more terminals**:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+3. **Start RealSense input handler** (Python):
+
+```bash
+cd frontend
+python realsense.py
+```
+
+4. **Start WebSocket relay server** (Node.js):
+
+```bash
+cd frontend
+node ws_server.js
+```
+
+#### 💡 How It Works
+
+```text
+Intel RealSense Camera
+        ↓
+  realsense.py (Python)
+        ↓
+  ws_server.js (WebSocket relay)
+        ↓
+  React App (subscribes via WebSocket)
+```
+
+This setup enables real-time control (e.g., simulation execution, parameter tuning) through physical gestures.
+
+---
+
+## 📦 Dependencies
+
+### Python (Backend + Streamlit)
+
+* `streamlit`
+* `fastapi`
+* `uvicorn`
+* `numpy`
+* `pandas`
+* `plotly`
+* (optional) `pyrealsense2` — for RealSense integration
+
+Install via:
+
+```bash
+poetry install
+```
+
+### JavaScript (Frontend)
+
+* Node.js v16+
+* npm or yarn
+* `react`, `axios`, etc.
+
+Install via:
+
+```bash
+cd frontend
+npm install
+```
+
+---
+
+## 📁 Data Flow Overview
+
+```
+[Decision Input] → [Backend: simulation.py] → [Result JSON]
+                                   ↑
+         Streamlit or React        |
+                    ←── Visualization & Export
+```
+
+---
+
+## 📝 Notes
+
+* Use **Streamlit** for fast prototyping or local analysis.
+* Use **React + FastAPI** for more interactive, customizable deployments.
+* RealSense is entirely **optional**, and not required for core simulations.
+* Make sure to keep the backend server running when using React.
+
+---
+
+## 🪪 License
+
+This project is licensed under the MIT License.

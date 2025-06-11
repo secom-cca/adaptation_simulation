@@ -2,16 +2,9 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from io import BytesIO
-from backend.scr.simulation import simulate_simulation
-from backend.scr.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly, BENCHMARK, BLOCKS
+from backend.src.simulation import simulate_simulation
+from backend.src.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly, BENCHMARK, BLOCKS
 from backend.config import DEFAULT_PARAMS, rcp_climate_params
-# from dotenv import load_dotenv
-# import os
-# import openai
-
-# load_dotenv()
-# api_key = os.getenv("OPENAI_API_KEY")
-# client = openai.OpenAI(api_key=api_key)
 
 # RCPシナリオ選択
 rcp_options = {'RCP1.9': 1.9, 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 'RCP8.5': 8.5}
@@ -251,13 +244,20 @@ elif simulation_mode == 'Monte Carlo Simulation Mode':
     decision_years = np.arange(start_year, end_year + 1, timestep_year)
     decision_df = pd.DataFrame({
         'Year': decision_years.astype(int),
-        '植林・森林保全': [100.0]*len(decision_years),
-        '住宅移転・嵩上げ': [100.0]*len(decision_years),
-        'ダム・堤防工事': [0.0]*len(decision_years),
-        '田んぼダム工事': [3.0]*len(decision_years),
-        '防災訓練・普及啓発': [3.0]*len(decision_years),
-        '農業研究開発': [3.0]*len(decision_years),
-        '交通網の拡充': [3.0]*len(decision_years)
+        'planting_trees_amount': [100.0]*len(decision_years),
+        'house_migration_amount': [100.0]*len(decision_years),
+        'dam_levee_construction_cost': [1.0]*len(decision_years),  # 億円
+        'paddy_dam_construction_cost': [3.0]*len(decision_years),  # 百万円
+        'capacity_building_cost': [3.0]*len(decision_years),
+        'agricultural_RnD_cost': [3.0]*len(decision_years),
+        'transportation_invest': [3.0]*len(decision_years)
+        # '植林・森林保全': [100.0]*len(decision_years),
+        # '住宅移転・嵩上げ': [100.0]*len(decision_years),
+        # 'ダム・堤防工事': [0.0]*len(decision_years),
+        # '田んぼダム工事': [3.0]*len(decision_years),
+        # '防災訓練・普及啓発': [3.0]*len(decision_years),
+        # '農業研究開発': [3.0]*len(decision_years),
+        # '交通網の拡充': [3.0]*len(decision_years)
     })
     decision_df = st.sidebar.data_editor(decision_df, use_container_width=True)
     decision_df.set_index('Year', inplace=True)
@@ -469,14 +469,6 @@ if st.session_state['scenarios']:
     st.subheader('Balance Scores (0–100)')
     st.write(balance_df.style.format('{:.1f}'))
 
-    # df_result = st.session_state['scenarios'][scenario_name]
-    # try:
-    #     llm_commentary = generate_llm_commentary(scenario_name, df_result)
-    #     st.subheader("LLMによる講評")
-    #     st.write(llm_commentary)
-    # except Exception as e:
-    #     st.warning(f"LLM講評の生成に失敗しました: {e}")
-
 # データのエクスポート機能
 st.subheader('Export / データのエクスポート')
 # export_format = st.selectbox('ファイル形式を選択', ['CSV', 'Excel'])
@@ -491,15 +483,5 @@ if export_button:
         st.warning('No data to export')
 
     if not export_df.empty:
-        # if export_format == 'CSV':
         csv = export_df.to_csv(index=False).encode('utf-8')
         st.download_button(label='Download CSV', data=csv, file_name='simulation_results.csv', mime='text/csv')
-
-        # elif export_format == 'Excel':
-        #     output = BytesIO()
-        #     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        #         export_df.to_excel(writer, index=False, sheet_name='Simulation Results')
-        #         writer.save()
-        #         processed_data = output.getvalue()
-
-        #     st.download_button(label='Excelファイルをダウンロード', data=processed_data, file_name='simulation_results.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

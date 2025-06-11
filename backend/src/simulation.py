@@ -19,10 +19,10 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 初期値を定義していない変数（追って調整）
     levee_investment_total = prev_values.get('levee_investment_total', 0.0)
     RnD_investment_total = prev_values.get('RnD_investment_total', 0.0)
-    risky_house_total = prev_values.get('risky_house_total', 15000)
+    risky_house_total = prev_values.get('risky_house_total', params['house_total'])
     non_risky_house_total = prev_values.get('non_risky_house_total', 0)
     paddy_dam_area = prev_values.get('paddy_dam_area', 0)
-    temp_threshold_crop = prev_values.get('temp_threshold_crop', 26)
+    temp_threshold_crop = prev_values.get('temp_threshold_crop', params['temp_threshold_crop_ini'])
 
     # --- 意思決定変数を展開 ---
     # モンテカルロモードでは mapping された internal keys が来る前提
@@ -84,6 +84,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     cost_per_1000trees = params['cost_per_1000trees']
     forest_degradation_rate = params['forest_degradation_rate']
     tree_growup_year = params['tree_growup_year']
+    # co2_absorption_per_ha = params['co2_absorption_per_ha']
     # 住宅
     cost_per_migration = params['cost_per_migration']
     # 住民意識
@@ -126,8 +127,8 @@ def simulate_year(year, prev_values, decision_vars, params):
     municipal_growth = municipal_demand_trend + np.random.normal(0, municipal_demand_uncertainty)
     current_municipal_demand = prev_municipal_demand * (1 + municipal_growth)
  
-    # 1. 森林面積（植林 - 自然減衰） 1000本 = 1ha ---
-    planting_history[year] = planting_trees_amount
+    # 1. 森林面積（植林 - 自然減衰） ---
+    planting_history[year] = planting_trees_amount # assume 1000 trees = 1ha
     matured_trees = planting_history.get(year - tree_growup_year, 0)
     natural_loss     = prev_forest_area * forest_degradation_rate
     current_forest_area = max(prev_forest_area + matured_trees - natural_loss, 0)
@@ -136,6 +137,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     flood_reduction = forest_flood_reduction_coef * current_forest_area / total_area
     water_retention_boost = forest_water_retention_coef * current_forest_area / total_area # 水源涵養効果
     ecosystem_boost = min(current_forest_area * forest_ecosystem_boost_coef, 5.0)
+    # co2_absorbed = current_forest_area * co2_absorption_per_ha  # tCO2
 
     # 2. 利用可能水量（System Dynamicsには未導入）
     evapotranspiration_amount = evapotranspiration_amount * (1 + (temp - base_temp) * 0.05)
@@ -148,7 +150,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         max_available_water
     )
 
-    # 3. 農業生産量，△このあたり[ha]を考えず計算している
+    # 3. 農業生産量
     temp_ripening = temp + 10.0 # 仮設定：登熟期の気温の計算
     temp_critical_crop = 30.0
     excess = max(temp_ripening - (temp_threshold_crop + high_temp_tolerance_level), 0)
@@ -158,7 +160,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     paddy_dam_yield_impact = paddy_dam_yield_coef * min(paddy_dam_area / paddy_field_area, 1)
 
     water_impact = min(current_available_water/necessary_water_for_crops, 1.0)
-    current_crop_yield = (max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact)
+    current_crop_yield = (max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact) * paddy_field_area
 
     # * 2.農業利用水を利用可能水から引く（System Dynamicsには未導入）
     current_available_water = max(current_available_water - necessary_water_for_crops, 0)
@@ -224,7 +226,13 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 10. コスト算出
     planting_trees_cost = planting_trees_amount * cost_per_1000trees
     migration_cost = house_migration_amount * cost_per_migration
-    municipal_cost = dam_levee_construction_cost * 100000000 + agricultural_RnD_cost * 10000000 + paddy_dam_construction_cost * 1000000 + capacity_building_cost * 1000000 + planting_trees_cost + migration_cost + transportation_invest * 10000000
+    municipal_cost = dam_levee_construction_cost * 100000000 \
+                   + agricultural_RnD_cost * 10000000 \
+                   + paddy_dam_construction_cost * 1000000 \
+                   + capacity_building_cost * 1000000 \
+                   + planting_trees_cost \
+                   + migration_cost \
+                   + transportation_invest * 10000000
     resident_burden = municipal_cost 
     resident_burden += current_flood_damage * flood_recovery_cost_coef # added
 
@@ -255,6 +263,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         'non_risky_house_total': non_risky_house_total,
         'transportation_level' : transportation_level,
         'paddy_dam_area' : paddy_dam_area,
+        # 'CO2 Absorbed': co2_absorbed,
         # 意思決定変数そのものをログとして保持
         'planting_trees_amount': planting_trees_amount,
         'house_migration_amount': house_migration_amount,
@@ -264,7 +273,6 @@ def simulate_year(year, prev_values, decision_vars, params):
         'agricultural_RnD_cost': agricultural_RnD_cost,
         'transportation_invest': transportation_invest,
     }
-    # outputs['Forest Area'] = current_forest_area
 
     current_values = {
         'temp': temp,
@@ -282,7 +290,6 @@ def simulate_year(year, prev_values, decision_vars, params):
         'RnD_investment_total': RnD_investment_total,
         'forest_area': current_forest_area,
         'paddy_dam_area' : paddy_dam_area,
-        # 'forest_area_history': forest_area_history,
         'resident_capacity': resident_capacity,
         'planting_history': planting_history,
         'risky_house_total': risky_house_total,
@@ -338,11 +345,6 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
         else:
             decision_year = (year - params['start_year']) // 10 * 10 + params['start_year']
             decision_vars_raw = decision_vars_list.loc[decision_year].to_dict()
-            # decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
-            # if '灌漑水量 (Irrigation Water Amount)' in decision_vars_raw:
-            #     decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
-            # else:
-            #     decision_vars = decision_vars_raw
             if '灌漑水量 (Irrigation Water Amount)' in decision_vars_raw:
                 key_mapping = {
                     '灌漑水量 (Irrigation Water Amount)': 'irrigation_water_amount',
