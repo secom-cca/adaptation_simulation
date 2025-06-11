@@ -160,7 +160,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     paddy_dam_yield_impact = paddy_dam_yield_coef * min(paddy_dam_area / paddy_field_area, 1)
 
     water_impact = min(current_available_water/necessary_water_for_crops, 1.0)
-    current_crop_yield = (max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact) * paddy_field_area
+    current_crop_yield = (max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact) # * paddy_field_area [haあたり]
 
     # * 2.農業利用水を利用可能水から引く（System Dynamicsには未導入）
     current_available_water = max(current_available_water - necessary_water_for_crops, 0)

@@ -37,10 +37,9 @@ def run_simulation(req: SimulationRequest):
     params = DEFAULT_PARAMS.copy()
     rcp_param = rcp_climate_params.get(req.decision_vars[0].cp_climate_params, {})
     params.update(rcp_param)
-    params['base_extreme_precip_freq'] = req.current_year_index_seq.extreme_precip_freq
-    params['initial_hot_days'] = req.current_year_index_seq.hot_days
-    params['base_temp'] = req.current_year_index_seq.temp
-    params['base_precip'] = req.current_year_index_seq.precip
+
+    all_df = pd.DataFrame()
+    block_scores = []
 
     if mode == "Monte Carlo Simulation Mode":
         results = []
@@ -58,9 +57,9 @@ def run_simulation(req: SimulationRequest):
         block_scores = []
 
     elif mode == "Sequential Decision-Making Mode":
-        params['years'] = np.arange(req.decision_vars[0].year, req.decision_vars[0].year + 1)
+        sim_years = np.arange(req.decision_vars[0].year, req.decision_vars[0].year + 1)
         result = simulate_simulation(
-            years=params['years'],
+            years=sim_years,
             initial_values=req.current_year_index_seq.model_dump(),
             decision_vars_list=decision_df,
             params=params
@@ -100,16 +99,9 @@ def run_simulation(req: SimulationRequest):
     elif mode == "Predict Simulation Mode":
         # 全期間の予測値を計算する
         params = DEFAULT_PARAMS.copy()
-        params['years'] = np.arange(req.decision_vars[0].year, params['end_year'] + 1)
-        params['total_years'] = len(params['years'])
-        # params['temp_uncertainty'] = 0.01
-        # # params['base_precip_uncertainty'] = 0
-        # params['extreme_precip_freq_uncertainty'] = 0.001
-        # params['municipal_demand_uncertainty'] = 0.005
-        # params['hot_days_uncertainty'] = 0.1
-
+        sim_years = np.arange(req.decision_vars[0].year, params['end_year'] + 1)
         seq_result = simulate_simulation(
-            years=params['years'],
+            years=sim_years,
             initial_values=req.current_year_index_seq.model_dump(),
             decision_vars_list=decision_df,
             params=params
