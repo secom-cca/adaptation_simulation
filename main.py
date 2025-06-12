@@ -206,12 +206,12 @@ elif simulation_mode == 'Monte Carlo Simulation Mode':
     decision_df = pd.DataFrame({
         'Year': decision_years.astype(int),
         'planting_trees_amount': [100.0]*len(decision_years),
-        'house_migration_amount': [100.0]*len(decision_years),
+        'house_migration_amount': [50.0]*len(decision_years),
         'dam_levee_construction_cost': [1.0]*len(decision_years),  # 億円
-        'paddy_dam_construction_cost': [3.0]*len(decision_years),  # 百万円
-        'capacity_building_cost': [3.0]*len(decision_years),
-        'agricultural_RnD_cost': [3.0]*len(decision_years),
-        'transportation_invest': [3.0]*len(decision_years),
+        'paddy_dam_construction_cost': [5.0]*len(decision_years),  # 百万円
+        'capacity_building_cost': [5.0]*len(decision_years),
+        'agricultural_RnD_cost': [5.0]*len(decision_years),
+        'transportation_invest': [5.0]*len(decision_years),
     })
     decision_df = st.sidebar.data_editor(decision_df, use_container_width=True)
     decision_df.set_index('Year', inplace=True)
