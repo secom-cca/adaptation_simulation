@@ -499,17 +499,17 @@ function App() {
       hot_days: newDict['Hot Days'],
       extreme_precip_freq: newDict['Extreme Precip Frequency'],
       ecosystem_level: newDict['Ecosystem Level'],
-      levee_level: newDict['Levee Level'],                          // ← 追加
+      levee_level: newDict['Levee Level'],                       
       high_temp_tolerance_level: newDict['High Temp Tolerance Level'],
-      forest_area: newDict['Forest area'],                         // ← 追加
-      resident_capacity: newDict['Resident capacity'],             // ← 追加
-      transportation_level: newDict['transportation_level'],       // ← 追加
-      levee_investment_total: newDict['Levee investment total'],   // ← 追加
-      RnD_investment_total: newDict['RnD investment total'],       // ← 追加
-      risky_house_total: newDict['risky_house_total'],             // ← 追加
-      non_risky_house_total: newDict['non_risky_house_total'],     // ← 追加
+      forest_area: newDict['Forest area'],                      
+      resident_capacity: newDict['Resident capacity'],          
+      transportation_level: newDict['transportation_level'],    
+      levee_investment_total: newDict['Levee investment total'],
+      RnD_investment_total: newDict['RnD investment total'],    
+      risky_house_total: newDict['risky_house_total'],          
+      non_risky_house_total: newDict['non_risky_house_total'],  
       resident_burden: newDict['Resident Burden'],
-      biodiversity_level: newDict['biodiversity_level'],           // ← 追加（キー名注意）
+      biodiversity_level: newDict['biodiversity_level'],
 
     };
     console.log("更新されるcurrentValues:", updated);

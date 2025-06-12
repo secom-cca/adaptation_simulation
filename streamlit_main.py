@@ -40,25 +40,7 @@ if simulation_mode == 'Sequential Decision-Making Mode':
     if 'current_year_index_seq' not in st.session_state:
         st.session_state['current_year_index_seq'] = 0
         st.session_state['simulation_results_seq'] = []
-        st.session_state['prev_values_seq'] = {
-            'temp': 15.0,
-            'precip': 1700.0,
-            'municipal_demand': 100.0,
-            'available_water': 1000.0,
-            'crop_yield': 100.0,
-            'levee_level': 100.0,
-            'high_temp_tolerance_level': 0.0,
-            'hot_days': 30.0,
-            'extreme_precip_freq': 0.1,
-            'ecosystem_level': 100.0,
-            'urban_level': 100.0,
-            'levee_investment_years': 0,
-            'RnD_investment_years': 0,
-            'resident_capacity': 0,
-            'forest_area': 1000,
-            'planting_history': {},
-            'transportation_level': 100
-        }
+        st.session_state['prev_values_seq'] = {}
         st.session_state['decision_vars_seq'] = []
 
     # 意思決定変数の入力（現在の期間用）
@@ -85,7 +67,7 @@ if simulation_mode == 'Sequential Decision-Making Mode':
             'paddy_dam_construction_cost':paddy_dam_construction_cost,
             'capacity_building_cost': capacity_building_cost,
             'agricultural_RnD_cost':agricultural_RnD_cost,
-            'transportation_invest':transportation_invest
+            'transportation_invest':transportation_invest,
             # 'irrigation_water_amount': irrigation_water_amount,
             # 'released_water_amount': released_water_amount,
             # 'levee_construction_cost': levee_construction_cost,
@@ -123,15 +105,12 @@ if simulation_mode == 'Sequential Decision-Making Mode':
                 'levee_investment_total': sim_results[-1]['Levee investment total'],
                 'RnD_investment_total': sim_results[-1]['RnD investment total'],
                 'resident_capacity': sim_results[-1]['Resident capacity'],
-                'forest_area': sim_results[-1]['Forest area'],
+                'forest_area': sim_results[-1]['Forest Area'],
                 'planting_history': sim_results[-1]['planting_history'],
                 'transportation_level' : sim_results[-1]['transportation_level'],
                 'risky_house_total' : sim_results[-1]['risky_house_total'],
                 'non_risky_house_total' : sim_results[-1]['non_risky_house_total'],
                 'paddy_dam_area' : sim_results[-1]['paddy_dam_area'],
-                # 'levee_investment_years': prev_values['levee_investment_years'],
-                # 'RnD_investment_years': prev_values['RnD_investment_years'],
-                # 'resident_capacity': prev_values['resident_capacity'],
             }
 
             st.session_state['prev_values_seq'] = last_values
@@ -211,25 +190,7 @@ if simulation_mode == 'Sequential Decision-Making Mode':
     if reset_simulation_seq:
         st.session_state['current_year_index_seq'] = 0
         st.session_state['simulation_results_seq'] = []
-        st.session_state['prev_values_seq'] = {
-            'temp': 15.0,
-            'precip': 1700.0,
-            'municipal_demand': 130.0,
-            'available_water': 1000.0,
-            'crop_yield': 100.0,
-            'levee_level': 100.0,
-            'high_temp_tolerance_level': 0.0,
-            'hot_days': 30.0,
-            'extreme_precip_freq': 0.1,
-            'ecosystem_level': 100.0,
-            'urban_level': 100.0,
-            'levee_investment_years': 0,
-            'RnD_investment_years': 0,
-            'forest_area': 1000.0,
-            'planting_history': {start_year: 100.0},
-            'resident_capacity': 0,
-            'transportation_level' : 100,
-        }
+        st.session_state['prev_values_seq'] = {}
         st.session_state['decision_vars_seq'] = []
         st.rerun()
 
@@ -250,14 +211,7 @@ elif simulation_mode == 'Monte Carlo Simulation Mode':
         'paddy_dam_construction_cost': [3.0]*len(decision_years),  # 百万円
         'capacity_building_cost': [3.0]*len(decision_years),
         'agricultural_RnD_cost': [3.0]*len(decision_years),
-        'transportation_invest': [3.0]*len(decision_years)
-        # '植林・森林保全': [100.0]*len(decision_years),
-        # '住宅移転・嵩上げ': [100.0]*len(decision_years),
-        # 'ダム・堤防工事': [0.0]*len(decision_years),
-        # '田んぼダム工事': [3.0]*len(decision_years),
-        # '防災訓練・普及啓発': [3.0]*len(decision_years),
-        # '農業研究開発': [3.0]*len(decision_years),
-        # '交通網の拡充': [3.0]*len(decision_years)
+        'transportation_invest': [3.0]*len(decision_years),
     })
     decision_df = st.sidebar.data_editor(decision_df, use_container_width=True)
     decision_df.set_index('Year', inplace=True)
@@ -272,25 +226,7 @@ elif simulation_mode == 'Monte Carlo Simulation Mode':
 
         for sim in range(num_simulations):
             # 初期値
-            initial_values = {
-                'temp': 15.0,
-                'precip': 1700.0,
-                'municipal_demand': 100.0,
-                'available_water': 1000.0,
-                'crop_yield': 100.0,
-                'levee_level': 100.0,
-                'high_temp_tolerance_level': 0.0,
-                'hot_days': 30.0,
-                'extreme_precip_freq': 0.1,
-                'ecosystem_level': 100.0,
-                'urban_level': 100.0,
-                'levee_investment_years': 0,
-                'RnD_investment_years': 0,
-                'forest_area': 1000.0,
-                'planting_history': {start_year: 100.0},
-                'resident_capacity': 0,
-                'transportation_level' : 100,
-            }
+            initial_values = {}
 
             # シミュレーションの実行
             sim_results = simulate_simulation(years, initial_values, decision_df, params)
@@ -380,7 +316,9 @@ def calculate_scenario_indicators(scenario_data):
         '洪水被害': scenario_data['Flood Damage'].sum(),
         '生態系': scenario_data.loc[scenario_data['Year'] == end_year, 'Ecosystem Level'].values[0],
         '都市利便性': scenario_data.loc[scenario_data['Year'] == end_year, 'Urban Level'].values[0],
-        '予算': scenario_data['Municipal Cost'].sum()
+        '予算': scenario_data['Municipal Cost'].sum(),
+        '住民負担': scenario_data['Resident Burden'].mean(),
+        '森林面積': scenario_data.loc[scenario_data['Year'] == end_year, 'Forest Area'].values[0],
     }
     return indicators
 
@@ -411,6 +349,8 @@ def _raw_values(df: pd.DataFrame, start: int, end: int) -> dict:
         '予算':       df.loc[mask, 'Municipal Cost'].sum(),
         '生態系':     df.loc[mask, 'Ecosystem Level'].mean(),
         '都市利便性': df.loc[mask, 'Urban Level'].mean(),
+        '森林面積':     df.loc[mask, 'Forest Area'].mean(),
+        '住民負担': df.loc[mask, 'Resident Burden'].mean(),
     }
 
 # シナリオごとに集計
@@ -424,7 +364,8 @@ if st.session_state['scenarios']:
     df_indicators['生態系順位'] = df_indicators['生態系'].rank(ascending=False)
     df_indicators['都市利便性順位'] = df_indicators['都市利便性'].rank(ascending=False)
     df_indicators['予算順位'] = df_indicators['予算'].rank(ascending=True)
-    # df_indicators['森林面積順位'] = df_indicators['森林面積'].rank(ascending=False)
+    df_indicators['森林面積順位'] = df_indicators['森林面積'].rank(ascending=False)
+    df_indicators['住民負担順位'] = df_indicators['住民負担'].rank(ascending=True)
 
     # 結果の表示
     st.subheader('Metrics and Rankings / シナリオごとの指標と順位')

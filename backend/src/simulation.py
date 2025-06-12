@@ -5,18 +5,16 @@ import pandas as pd
 from scipy.stats import gumbel_r
 
 def simulate_year(year, prev_values, decision_vars, params):
-    # --- 前年の値を展開 ---
-    prev_municipal_demand = prev_values['municipal_demand']
-    prev_available_water = prev_values['available_water']
-    prev_levee_level = prev_values['levee_level']
-    high_temp_tolerance_level = prev_values['high_temp_tolerance_level']
-    ecosystem_level = prev_values['ecosystem_level']
-    prev_forest_area = prev_values['forest_area']
-    planting_history    = prev_values['planting_history']  
-    prev_urban_level = prev_values['urban_level']
-    resident_capacity = prev_values['resident_capacity']
-    transportation_level = prev_values['transportation_level']
-    # 初期値を定義していない変数（追って調整）
+    # --- 前年の値を展開（初期値を定義していない変数は追って調整） ---
+    prev_levee_level = prev_values.get('levee_level', 0.0)
+    high_temp_tolerance_level = prev_values.get('high_temp_tolerance_level', 0.0)
+    ecosystem_level = prev_values.get('ecosystem_level', 100)
+    prev_forest_area = prev_values.get('forest_area', params['initial_forest_area']) ##################
+    planting_history    = prev_values.get('planting_history', {}) ##################
+    resident_capacity = prev_values.get('resident_capacity', 0.0) ##################
+    transportation_level = prev_values.get('transportation_level', 0.0) ##################
+    prev_municipal_demand = prev_values.get('municipal_demand', params['initial_municipal_demand'])##################
+    prev_available_water = prev_values.get('available_water', 0.0)
     levee_investment_total = prev_values.get('levee_investment_total', 0.0)
     RnD_investment_total = prev_values.get('RnD_investment_total', 0.0)
     risky_house_total = prev_values.get('risky_house_total', params['house_total'])
@@ -71,6 +69,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     necessary_water_for_crops = params['necessary_water_for_crops']
     paddy_dam_cost_per_ha = params['paddy_dam_cost_per_ha']
     paddy_dam_yield_coef = params['paddy_dam_yield_coef']
+    temp_critical_crop = params['temp_critical_crop']
     # 水災害
     flood_damage_coefficient      = params['flood_damage_coefficient']
     levee_level_increment         = params['levee_level_increment']
@@ -152,7 +151,6 @@ def simulate_year(year, prev_values, decision_vars, params):
 
     # 3. 農業生産量
     temp_ripening = temp + 10.0 # 仮設定：登熟期の気温の計算
-    temp_critical_crop = 30.0
     excess = max(temp_ripening - (temp_threshold_crop + high_temp_tolerance_level), 0)
     loss = (excess / (temp_critical_crop - temp_threshold_crop))
     temp_impact = min(loss, 1)
@@ -174,9 +172,9 @@ def simulate_year(year, prev_values, decision_vars, params):
         RnD_investment_total = 0.0
 
     # 4. 住宅の移転
-    risky_house_total = max(risky_house_total - house_migration_amount + (risky_house_total + non_risky_house_total) * municipal_growth, 0) 
-    non_risky_house_total = non_risky_house_total + house_migration_amount
     total_house = risky_house_total + non_risky_house_total
+    risky_house_total = max(risky_house_total - house_migration_amount + total_house * municipal_growth, 0) 
+    non_risky_house_total += house_migration_amount
     migration_ratio = non_risky_house_total / total_house
 
     # 5.1 堤防：累積投資で建設（確率的閾値）
@@ -206,18 +204,19 @@ def simulate_year(year, prev_values, decision_vars, params):
     #     ecosystem_level = max( ecosystem_level - water_ecosystem_coef * (ecosystem_threshold - current_available_water), 0) # 要検討
 
     # 水不足による減衰を穏やかにする（例：sigmoid風）
-    def smooth_degradation(diff, coef=0.001):
-        return coef * diff**1.1  # exponent < 1.5 で緩やかに
+    def smooth_degradation(diff, coef=0.01):
+        return coef * diff**1.3  # exponent < 1.5 で緩やかに
 
     if current_available_water < ecosystem_threshold:
         diff = ecosystem_threshold - current_available_water
         ecosystem_level -= smooth_degradation(diff)
 
-    # 7. 都市の居住可能性の評価（交通面のみ）
-    transportation_level = transportation_level * 0.95 + transport_level_coef * transportation_invest - 0.01 #ここが非常に怪しい！
-    urban_level = distance_urban_level_coef * (1 - migration_ratio) * transportation_level #平均移動距離が長くなることの効果を算出
-    urban_level -= current_flood_damage * flood_urban_damage_coef
-    urban_level = min(max(urban_level, 0), 100)
+    # 7. 都市の居住可能性の評価（交通面のみ）→ 一旦，土地のすみやすさ，ばらつきを表現
+    # transportation_level = transportation_level * 0.95 + transport_level_coef * transportation_invest - 0.01 #ここが非常に怪しい！
+    # urban_level = distance_urban_level_coef * (1 - migration_ratio) * transportation_level #平均移動距離が長くなることの効果を算出
+    # urban_level -= current_flood_damage * flood_urban_damage_coef
+    # urban_level = min(max(urban_level, 0), 100)
+    urban_level = (1 - migration_ratio) * 100
 
     # 8. 住民の防災能力・意識
     resident_capacity = resident_capacity * (1 - resident_capacity_degrade_ratio) + capacity_building_cost * capacity_building_coefficient # 自然減
@@ -233,7 +232,7 @@ def simulate_year(year, prev_values, decision_vars, params):
                    + planting_trees_cost \
                    + migration_cost \
                    + transportation_invest * 10000000
-    resident_burden = municipal_cost 
+    resident_burden = municipal_cost / total_house
     resident_burden += current_flood_damage * flood_recovery_cost_coef # added
 
     # --- 出力 ---
@@ -257,7 +256,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         'Levee investment total': levee_investment_total,
         'RnD investment total': RnD_investment_total,
         'Resident capacity': resident_capacity,
-        'Forest area': current_forest_area,
+        'Forest Area': current_forest_area,
         'planting_history': planting_history,
         'risky_house_total': risky_house_total,
         'non_risky_house_total': non_risky_house_total,
@@ -322,19 +321,6 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
     prev_values = initial_values.copy()
     results = []
 
-    # 日本語列名を internal key にマッピング
-    key_mapping = {
-        '植林・森林保全': 'planting_trees_amount',
-        '住宅移転・嵩上げ': 'house_migration_amount',
-        'ダム・堤防工事': 'dam_levee_construction_cost',
-        '田んぼダム工事': 'paddy_dam_construction_cost',
-        '防災訓練・普及啓発': 'capacity_building_cost',
-        '農業研究開発': 'agricultural_RnD_cost',
-        '交通網の拡充': 'transportation_invest',
-        '灌漑水量 (Irrigation Water Amount)': 'irrigation_water_amount',
-        '放流水量 (Released Water Amount)': 'released_water_amount'
-    }
-
     for idx, year in enumerate(years):
         # 意思決定変数の取得
         if isinstance(decision_vars_list, list):
@@ -345,16 +331,7 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
         else:
             decision_year = (year - params['start_year']) // 10 * 10 + params['start_year']
             decision_vars_raw = decision_vars_list.loc[decision_year].to_dict()
-            if '灌漑水量 (Irrigation Water Amount)' in decision_vars_raw:
-                key_mapping = {
-                    '灌漑水量 (Irrigation Water Amount)': 'irrigation_water_amount',
-                    '放流水量 (Released Water Amount)': 'released_water_amount',
-                    '堤防工事費 (Levee Construction Cost)': 'levee_construction_cost',
-                    '農業研究開発費 (Agricultural R&D Cost)': 'agricultural_RnD_cost'
-                }
-                decision_vars = { new_key: decision_vars_raw[old_key] for old_key, new_key in key_mapping.items() }
-            else:
-                decision_vars = decision_vars_raw
+            decision_vars = decision_vars_raw
 
         prev_values, outputs = simulate_year(year, prev_values, decision_vars, params)
         results.append(outputs)
