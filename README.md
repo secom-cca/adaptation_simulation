@@ -8,9 +8,9 @@ This simulation platform allows you to explore future climate adaptation scenari
 
 ```
 .
-├── streamlit_main.py                 ← Streamlit entry point
+├── main.py                          ← Streamlit entry point
 ├── backend/
-│   ├── main.py                       ← FastAPI backend entry point
+│   ├── main.py                      ← FastAPI backend entry point
 │   └── src/
 │       └── simulation.py            ← Core simulation logic
 ├── frontend/
@@ -37,7 +37,7 @@ poetry install
 2. Start Streamlit app:
 
 ```bash
-poetry run streamlit run streamlit_main.py
+poetry run streamlit run main.py
 ```
 
 > Access at: `http://localhost:8501`
