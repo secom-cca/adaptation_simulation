@@ -9,7 +9,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     prev_levee_level = prev_values.get('levee_level', 0.0)
     high_temp_tolerance_level = prev_values.get('high_temp_tolerance_level', 0.0)
     ecosystem_level = prev_values.get('ecosystem_level', 100)
-    prev_forest_area = prev_values.get('forest_area', params['initial_forest_area']) ##################
+    prev_forest_area = prev_values.get('forest_area', params['total_area'] * params['initial_forest_area']) ##################
     planting_history    = prev_values.get('planting_history', {}) ##################
     resident_capacity = prev_values.get('resident_capacity', 0.0) ##################
     transportation_level = prev_values.get('transportation_level', 0.0) ##################
@@ -93,9 +93,11 @@ def simulate_year(year, prev_values, decision_vars, params):
     transport_level_coef = params['transport_level_coef']
     distance_urban_level_coef = params['distance_urban_level_coef']
     # 領域横断影響
-    forest_flood_reduction_coef = params['forest_flood_reduction_coef']
-    forest_ecosystem_boost_coef = params['forest_ecosystem_boost_coef']
-    forest_water_retention_coef = params['forest_water_retention_coef']
+    forest_flood_reduction_coef = params['forest_flood_reduction_coef'] ### 0.4-2.8 [%/%] http://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2486.2007.01446.x
+    forest_water_retention_coef = params['forest_water_retention_coef'] ### 2-4 [mm/%] https://www.jstage.jst.go.jp/article/suirikagaku/52/1/52_46/_pdf/-char/ja
+    forest_flood_reduction_coef = np.random.uniform(0.4,2.8)
+    forest_water_retention_coef = np.random.uniform(2,4)
+    # forest_ecosystem_boost_coef = params['forest_ecosystem_boost_coef'] 
     flood_crop_damage_coef = params['flood_crop_damage_coef']
     levee_ecosystem_damage_coef = params['levee_ecosystem_damage_coef']
     flood_urban_damage_coef = params['flood_urban_damage_coef']
@@ -109,47 +111,55 @@ def simulate_year(year, prev_values, decision_vars, params):
     # water_demand_per_resident = 130 # [m3/person]
     # current_municipal_demand = water_water_demand_per_resident * resident_density / 1000 = 130 [mm]
 
-    # 0.1 気象環境 ---
+    # ---------------------------------------------------------
+    # 1. 気象環境 ---
     temp = base_temp + temp_trend * (year - start_year) + np.random.normal(0, temp_uncertainty)
+
     precip_unc = base_precip_uncertainty + precip_uncertainty_trend * (year - start_year)
     precip = max(0, base_precip + precip_trend * (year - start_year) + np.random.normal(0, precip_unc))
+    
     hot_days = initial_hot_days + (temp - base_temp) * temp_to_hot_days_coeff + np.random.normal(0, hot_days_uncertainty)
     hot_days = max(hot_days, 0)
+    
     extreme_precip_freq = max(base_extreme_precip_freq + extreme_precip_freq_trend * (year - start_year), 0)
     extreme_precip_events = np.random.poisson(extreme_precip_freq)
     
     mu = max(base_mu + extreme_precip_intensity_trend * (year - start_year), 0)
     beta = max(base_beta + extreme_precip_intensity_trend * (year - start_year), 0) 
+    
     rain_events = gumbel_r.rvs(loc=mu, scale=beta, size=extreme_precip_events)
 
-    # 0.2 社会環境 ---
+    # ---------------------------------------------------------
+    # 2. 社会環境（水需要） ---
     municipal_growth = municipal_demand_trend + np.random.normal(0, municipal_demand_uncertainty)
     current_municipal_demand = prev_municipal_demand * (1 + municipal_growth)
  
-    # 1. 森林面積（植林 - 自然減衰） ---
+     # ---------------------------------------------------------
+    # 3. 森林面積（植林 - 自然減衰） ---
     planting_history[year] = planting_trees_amount # assume 1000 trees = 1ha
     matured_trees = planting_history.get(year - tree_growup_year, 0)
-    natural_loss     = prev_forest_area * forest_degradation_rate
+    natural_loss = prev_forest_area * forest_degradation_rate
     current_forest_area = max(prev_forest_area + matured_trees - natural_loss, 0)
 
-    # #forest_area の効果（20〜40年前の森林） ---
-    flood_reduction = forest_flood_reduction_coef * current_forest_area / total_area
+    # #forest_area の効果発現 ---
+    flood_reduction = forest_flood_reduction_coef * ((current_forest_area - total_area * params['initial_forest_area']) / total_area)
     water_retention_boost = forest_water_retention_coef * current_forest_area / total_area # 水源涵養効果
-    ecosystem_boost = min(current_forest_area * forest_ecosystem_boost_coef, 5.0)
+    # ecosystem_boost = min(current_forest_area * forest_ecosystem_boost_coef, 5.0)
     # co2_absorbed = current_forest_area * co2_absorption_per_ha  # tCO2
 
-    # 2. 利用可能水量（System Dynamicsには未導入）
-    evapotranspiration_amount = evapotranspiration_amount * (1 + (temp - base_temp) * 0.05)
+    # ---------------------------------------------------------
+    # 4. 利用可能水量（System Dynamicsには未導入）
+    evapotranspiration_amount = evapotranspiration_amount * (1 + (temp - base_temp) * 0.05) # クラウジウス・クラペイロン
     current_available_water = min(
         max(
             prev_available_water + precip - evapotranspiration_amount - current_municipal_demand - runoff_coef * precip + water_retention_boost * precip,
-            # - irrigation_water_amount - released_water_amount
             0
         ),
         max_available_water
     )
 
-    # 3. 農業生産量
+    # ---------------------------------------------------------
+    # 5. 農業生産量
     temp_ripening = temp + 10.0 # 仮設定：登熟期の気温の計算
     excess = max(temp_ripening - (temp_threshold_crop + high_temp_tolerance_level), 0)
     loss = (excess / (temp_critical_crop - temp_threshold_crop))
@@ -158,12 +168,12 @@ def simulate_year(year, prev_values, decision_vars, params):
     paddy_dam_yield_impact = paddy_dam_yield_coef * min(paddy_dam_area / paddy_field_area, 1)
 
     water_impact = min(current_available_water/necessary_water_for_crops, 1.0)
-    current_crop_yield = (max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact) # * paddy_field_area [haあたり]
+    current_crop_yield = max((max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact),0) # * paddy_field_area [haあたり]
 
-    # * 2.農業利用水を利用可能水から引く（System Dynamicsには未導入）
+    # (4. 農業利用水を利用可能水から引く（System Dynamicsには未導入）)
     current_available_water = max(current_available_water - necessary_water_for_crops, 0)
 
-    # 3.2 農業R&D：累積投資で耐熱性向上（確率的閾値）
+    # 5.2 農業R&D：累積投資で耐熱性向上（確率的閾値）
     RnD_investment_total += agricultural_RnD_cost
     RnD_threshold_with_noise = np.random.normal(RnD_investment_threshold * RnD_investment_required_years, RnD_investment_threshold * 0.1)
 
@@ -171,13 +181,15 @@ def simulate_year(year, prev_values, decision_vars, params):
         high_temp_tolerance_level += high_temp_tolerance_increment
         RnD_investment_total = 0.0
 
-    # 4. 住宅の移転
+    # ---------------------------------------------------------
+    # 6. 住宅の移転
     total_house = risky_house_total + non_risky_house_total
     risky_house_total = max(risky_house_total - house_migration_amount + total_house * municipal_growth, 0) 
     non_risky_house_total += house_migration_amount
     migration_ratio = non_risky_house_total / total_house
 
-    # 5.1 堤防：累積投資で建設（確率的閾値）
+    # ---------------------------------------------------------
+    # 7.1 堤防：累積投資で建設（確率的閾値）
     levee_investment_total += dam_levee_construction_cost
     levee_threshold_with_noise = np.random.normal(levee_investment_threshold * levee_investment_required_years, levee_investment_threshold * 0.1)
 
@@ -187,53 +199,88 @@ def simulate_year(year, prev_values, decision_vars, params):
     else:
         current_levee_level = prev_levee_level
 
-    # 5.2 水害
+    # 7.2 水害
     flood_impact = 0
     paddy_dam_level = paddy_dam_flood_coef * min(paddy_dam_area / paddy_field_area, 1)
     for rain in rain_events:
         overflow_amount = max(rain - current_levee_level - paddy_dam_level, 0) * (1 - flood_reduction)
-        flood_impact += overflow_amount * flood_damage_coefficient
-
-    # current_flood_damage = extreme_precip_events * flood_impact
-    current_flood_damage = flood_impact * (1 - resident_capacity) * (1 - migration_ratio)
+        flood_impact = overflow_amount * flood_damage_coefficient
+        # 対策効果は災害規模により段階的に変化（S字カーブ）
+        response_factor = 1 / (1 + np.exp(-0.1 * (overflow_amount - 400)))  # 400mm超過で能力無効に近づく
+        effective_protection = (1 - resident_capacity * (1 - response_factor)) * (1 - migration_ratio * (1 - response_factor))
+        flood_impact += flood_impact * effective_protection
+    
+    # # current_flood_damage = extreme_precip_events * flood_impact
+    # current_flood_damage = flood_impact * (1 - resident_capacity) * (1 - migration_ratio)
+    current_flood_damage = max(flood_impact,0.0)
     current_crop_yield -= current_flood_damage * flood_crop_damage_coef
 
-    # 6. 損害・生態系の評価
-    ecosystem_level = max(ecosystem_level - levee_ecosystem_damage_coef * current_levee_level + ecosystem_boost, 0)
+
+    # ---------------------------------------------------------
+    # 8. 損害・生態系の評価
+    # Natural resource base (0–1)
+    ecological_base = 0.5 * min(current_forest_area / total_area, 1.0) + 0.5 * min(current_available_water / ecosystem_threshold, 1.0)
+
+    # Disturbance resistance
+    temp_diff = abs(temp - base_temp)
+    extreme_factor = extreme_precip_events
+    disturbance_resistance = max(0, 1.0 - 0.05 * temp_diff - 0.03 * extreme_factor) 
+
+    # Human pressure
+    human_pressure_raw = min(0.01 * current_levee_level, 1.0)
+    human_pressure = 1.0 - human_pressure_raw
+
+    # Weighted ecosystem score
+    # w1, w2, w3 = 1/3, 1/3, 1/3
+    weights = np.random.dirichlet([1, 1, 1])
+    w1, w2, w3 = weights
+
+    ecosystem_level = (w1 * ecological_base + w2 * disturbance_resistance + w3 * human_pressure) * 100
+
+    # =========================================================
+    # ecosystem_level = max(ecosystem_level - levee_ecosystem_damage_coef * current_levee_level + ecosystem_boost, 0)
+    # # if current_available_water < ecosystem_threshold:
+    # #     ecosystem_level = max( ecosystem_level - water_ecosystem_coef * (ecosystem_threshold - current_available_water), 0) # 要検討
+
+    # # 水不足による減衰を穏やかにする（例：sigmoid風）
+    # def smooth_degradation(diff, coef=0.01):
+    #     return coef * diff**1.3  # exponent < 1.5 で緩やかに
+
     # if current_available_water < ecosystem_threshold:
-    #     ecosystem_level = max( ecosystem_level - water_ecosystem_coef * (ecosystem_threshold - current_available_water), 0) # 要検討
+    #     diff = ecosystem_threshold - current_available_water
+    #     ecosystem_level -= smooth_degradation(diff)
+    # =========================================================
 
-    # 水不足による減衰を穏やかにする（例：sigmoid風）
-    def smooth_degradation(diff, coef=0.01):
-        return coef * diff**1.3  # exponent < 1.5 で緩やかに
-
-    if current_available_water < ecosystem_threshold:
-        diff = ecosystem_threshold - current_available_water
-        ecosystem_level -= smooth_degradation(diff)
-
-    # 7. 都市の居住可能性の評価（交通面のみ）→ 一旦，土地のすみやすさ，ばらつきを表現
+    # ---------------------------------------------------------
+    # 9. 都市の居住可能性の評価（交通面のみ）→ 一旦，土地のすみやすさ，ばらつきを表現
     # transportation_level = transportation_level * 0.95 + transport_level_coef * transportation_invest - 0.01 #ここが非常に怪しい！
     # urban_level = distance_urban_level_coef * (1 - migration_ratio) * transportation_level #平均移動距離が長くなることの効果を算出
     # urban_level -= current_flood_damage * flood_urban_damage_coef
     # urban_level = min(max(urban_level, 0), 100)
     urban_level = (1 - migration_ratio) * 100
 
-    # 8. 住民の防災能力・意識
-    resident_capacity = resident_capacity * (1 - resident_capacity_degrade_ratio) + capacity_building_cost * capacity_building_coefficient # 自然減
-    resident_capacity = min(0.95, resident_capacity)
 
-    # 10. コスト算出
+    # ---------------------------------------------------------
+    # 10. 住民の防災能力・意識
+    # resident_capacity = resident_capacity * (1 - resident_capacity_degrade_ratio) + capacity_building_cost * capacity_building_coefficient # 自然減
+    # resident_capacity = min(0.95, resident_capacity)
+
+    # 高齢化自然低下率
+    resident_capacity = min(0.99, max(0.0, resident_capacity * (1 - resident_capacity_degrade_ratio) + capacity_building_cost * capacity_building_coefficient))
+
+    # ---------------------------------------------------------
+    # 11. コスト・住民負担算出
     planting_trees_cost = planting_trees_amount * cost_per_1000trees
     migration_cost = house_migration_amount * cost_per_migration
-    municipal_cost = dam_levee_construction_cost * 100000000 \
-                   + agricultural_RnD_cost * 10000000 \
-                   + paddy_dam_construction_cost * 1000000 \
-                   + capacity_building_cost * 1000000 \
+    municipal_cost = dam_levee_construction_cost * 100_000_000 \
+                   + agricultural_RnD_cost * 10_000_000 \
+                   + paddy_dam_construction_cost * 1_000_000 \
+                   + capacity_building_cost * 1_000_000 \
                    + planting_trees_cost \
                    + migration_cost \
-                   + transportation_invest * 10000000
+                   + transportation_invest * 10_000_000
     resident_burden = municipal_cost / total_house
-    resident_burden += current_flood_damage * flood_recovery_cost_coef # added
+    resident_burden += current_flood_damage * flood_recovery_cost_coef / total_house # added
 
     # --- 出力 ---
     outputs = {

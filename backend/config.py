@@ -62,8 +62,8 @@ DEFAULT_PARAMS = {
     # 森林
     'cost_per_1000trees': 2310000,
     'forest_degradation_rate': 0.01,
-    'tree_growup_year': 20,
-    'initial_forest_area': 0.0,
+    'tree_growup_year': 30,
+    'initial_forest_area': 0.5,
 
     # 農業
     'temp_coefficient': 1.0,
@@ -85,7 +85,7 @@ DEFAULT_PARAMS = {
     'levee_level_increment': 20.0,
     'levee_investment_threshold': 2.0, #########
     'levee_investment_required_years': 10, ###########
-    'flood_recovery_cost_coef': 0.001,
+    'flood_recovery_cost_coef': 0.1,
     'runoff_coef': 0.55,
 
     # 交通
