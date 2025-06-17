@@ -2,109 +2,24 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from io import BytesIO
-from backend.scr.simulation import simulate_simulation
-from backend.scr.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly
-# from dotenv import load_dotenv
-# import os
-# import openai
-
-# load_dotenv()
-# api_key = os.getenv("OPENAI_API_KEY")
-# client = openai.OpenAI(api_key=api_key)
+from backend.src.simulation import simulate_simulation
+from backend.src.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly, BENCHMARK, BLOCKS
+from backend.config import DEFAULT_PARAMS, rcp_climate_params
 
 # RCPシナリオ選択
 rcp_options = {'RCP1.9': 1.9, 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 'RCP8.5': 8.5}
 selected_rcp = st.sidebar.selectbox('Select RCP Scenario / RCPシナリオを選択', list(rcp_options.keys()), index=1)
 rcp_value = rcp_options[selected_rcp]
 
-# 各RCPに対応した気候パラメータ
-rcp_climate_params = {
-    1.9: {
-        'temp_trend': 0.02,  # ℃/年
-        'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.05,      # λの年増加量
-        'extreme_precip_intensity_trend': 0.2,  # μの年増加量 [mm/年]
-        'extreme_precip_uncertainty_trend': 0.05  # βの年増加量 [mm/年]
-    },
-    2.6: {
-        'temp_trend': 0.025,
-        'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.07,
-        'extreme_precip_intensity_trend': 0.4,
-        'extreme_precip_uncertainty_trend': 0.07
-    },
-    4.5: {
-        'temp_trend': 0.035,
-        'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.1,
-        'extreme_precip_intensity_trend': 0.8,
-        'extreme_precip_uncertainty_trend': 0.1
-    },
-    6.0: {
-        'temp_trend': 0.045,
-        'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.13,
-        'extreme_precip_intensity_trend': 1.1,
-        'extreme_precip_uncertainty_trend': 0.13
-    },
-    8.5: {
-        'temp_trend': 0.06,
-        'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.17,
-        'extreme_precip_intensity_trend': 1.5,
-        'extreme_precip_uncertainty_trend': 0.15
-    }
-}
-
-# シミュレーションのパラメータ
-start_year = 2026
-end_year = 2100
-total_years = end_year - start_year + 1
-years = np.arange(start_year, end_year + 1)
+# パラメータの読み込みと上書き
+params = DEFAULT_PARAMS.copy()
+params.update(rcp_climate_params[rcp_value])
 timestep_year = 25
 
-# パラメータ辞書
-params = {
-    'start_year': start_year,
-    'end_year': end_year,
-    'total_years': total_years,
-    'years': years,
-    # 設定は後でRCPごとに上書き
-    'temp_trend': 0.04,
-    'precip_trend': 0,
-    'temp_uncertainty': 1.0,
-    'base_precip_uncertainty': 50, # will be deleted
-    'precip_uncertainty_trend': 5, 
-    'base_extreme_precip_freq': 0.1,
-    'extreme_precip_freq_trend': 0.05,
-
-    # 'extreme_precip_freq_uncertainty': 0.1,
-    'extreme_precip_intensity_trend': 0.2,
-    'extreme_precip_uncertainty_trend': 0.05,
-
-    'municipal_demand_trend': 0,
-    'municipal_demand_uncertainty': 0.01,
-    'initial_hot_days': 30.0,
-    'base_temp': 15.0,
-    'base_precip': 1700.0,
-    'temp_to_hot_days_coeff': 2.0,
-    'hot_days_uncertainty': 2.0,
-    'ecosystem_threshold': 800.0,
-    'temp_coefficient': 1.0,
-    'max_potential_yield': 5000.0, # [kg/ha]
-    'optimal_irrigation_amount': 30.0,
-    'flood_damage_coefficient': 100000, # 1mm越水あたりのダメージ，パラメータ調整
-    'levee_level_increment': 10.0,
-    'high_temp_tolerance_increment': 0.1,
-    'levee_investment_threshold': 5.0,
-    'RnD_investment_threshold': 5.0,
-    'levee_investment_required_years': 10,
-    'RnD_investment_required_years': 5,
-    'max_available_water': 3000.0,
-    'evapotranspiration_amount': 300.0,
-}
-# RCPに基づきトレンドを適用
-params.update(rcp_climate_params[rcp_value])
+start_year = params['start_year']
+end_year = params['end_year']
+total_years = params['total_years']
+years = params['years']
 
 image_path = "fig/mayfes_merge.png"  # 画像ファイルのパスを指定
 st.image(image_path, caption='Simulator Overview', use_container_width=True)
@@ -125,37 +40,19 @@ if simulation_mode == 'Sequential Decision-Making Mode':
     if 'current_year_index_seq' not in st.session_state:
         st.session_state['current_year_index_seq'] = 0
         st.session_state['simulation_results_seq'] = []
-        st.session_state['prev_values_seq'] = {
-            'temp': 15.0,
-            'precip': 1700.0,
-            'municipal_demand': 100.0,
-            'available_water': 1000.0,
-            'crop_yield': 100.0,
-            'levee_level': 100.0,
-            'high_temp_tolerance_level': 0.0,
-            'hot_days': 30.0,
-            'extreme_precip_freq': 0.1,
-            'ecosystem_level': 100.0,
-            'urban_level': 100.0,
-            'levee_investment_years': 0,
-            'RnD_investment_years': 0,
-            'resident_capacity': 0,
-            'forest_area': 1000,
-            'planting_history': {},
-            'transportation_level': 100
-        }
+        st.session_state['prev_values_seq'] = {}
         st.session_state['decision_vars_seq'] = []
 
     # 意思決定変数の入力（現在の期間用）
     st.sidebar.title(f'Decision Making for the next {timestep_year} yrs / 意思決定変数（次の{timestep_year}年間）')
     st.sidebar.write(f'今後{timestep_year}年間の政策を考えてみましょう')
-    planting_trees_amount = st.sidebar.slider('植林・森林保全（ha/年）', min_value=0, max_value=200, value=100, step=100)
-    house_migration_amount = st.sidebar.slider('住宅移転・嵩上げ（軒/年）', min_value=0, max_value=200, value=100, step=100)
-    dam_levee_construction_cost = st.sidebar.slider('ダム・堤防工事（億円/年）', min_value=0.0, max_value=10.0, value=5.0, step=5.0)
+    planting_trees_amount = st.sidebar.slider('植林・森林保全（ha/年）', min_value=0, max_value=100, value=50, step=50)
+    house_migration_amount = st.sidebar.slider('住宅移転（軒/年）', min_value=0, max_value=100, value=50, step=50)
+    dam_levee_construction_cost = st.sidebar.slider('ダム・堤防工事（億円/年）', min_value=0.0, max_value=2.0, value=1.0, step=1.0)
     paddy_dam_construction_cost = st.sidebar.slider('田んぼダム工事（百万円/年）', min_value=0.0, max_value=10.0, value=5.0, step=5.0)
     capacity_building_cost = st.sidebar.slider('防災訓練・普及啓発（百万円/年）', min_value=0.0, max_value=10.0, value=5.0, step=5.0)
-    agricultural_RnD_cost = st.sidebar.slider('農業研究開発（千万円/年）', min_value=0.0, max_value=10.0, value=5.0, step=5.0)
-    transportation_invest = st.sidebar.slider('交通網の充実（千万円/年）', min_value=0.0, max_value=10.0, value=5.0, step=5.0)
+    agricultural_RnD_cost = st.sidebar.slider('農業研究開発（千万円/年）', min_value=0.0, max_value=10.0, value=0.0, step=5.0)
+    transportation_invest = st.sidebar.slider('交通網の充実（千万円/年）', min_value=0.0, max_value=10.0, value=0.0, step=5.0)
     # irrigation_water_amount = st.sidebar.slider('Irrigation Water Amount / 灌漑水量：増やすと収量が多くなります', min_value=0, max_value=200, value=100, step=10)
     # released_water_amount = st.sidebar.slider('Released Water Amount / 放流水量：増やすと洪水リスクが小さくなります', min_value=0, max_value=200, value=100, step=10)
     # levee_construction_cost = st.sidebar.slider('Levee Construction Investment / 堤防工事費：増やすと洪水リスクが小さくなります', min_value=0.0, max_value=10.0, value=2.0, step=1.0)
@@ -170,7 +67,7 @@ if simulation_mode == 'Sequential Decision-Making Mode':
             'paddy_dam_construction_cost':paddy_dam_construction_cost,
             'capacity_building_cost': capacity_building_cost,
             'agricultural_RnD_cost':agricultural_RnD_cost,
-            'transportation_invest':transportation_invest
+            'transportation_invest':transportation_invest,
             # 'irrigation_water_amount': irrigation_water_amount,
             # 'released_water_amount': released_water_amount,
             # 'levee_construction_cost': levee_construction_cost,
@@ -208,15 +105,12 @@ if simulation_mode == 'Sequential Decision-Making Mode':
                 'levee_investment_total': sim_results[-1]['Levee investment total'],
                 'RnD_investment_total': sim_results[-1]['RnD investment total'],
                 'resident_capacity': sim_results[-1]['Resident capacity'],
-                'forest_area': sim_results[-1]['Forest area'],
+                'forest_area': sim_results[-1]['Forest Area'],
                 'planting_history': sim_results[-1]['planting_history'],
                 'transportation_level' : sim_results[-1]['transportation_level'],
                 'risky_house_total' : sim_results[-1]['risky_house_total'],
                 'non_risky_house_total' : sim_results[-1]['non_risky_house_total'],
                 'paddy_dam_area' : sim_results[-1]['paddy_dam_area'],
-                # 'levee_investment_years': prev_values['levee_investment_years'],
-                # 'RnD_investment_years': prev_values['RnD_investment_years'],
-                # 'resident_capacity': prev_values['resident_capacity'],
             }
 
             st.session_state['prev_values_seq'] = last_values
@@ -296,25 +190,7 @@ if simulation_mode == 'Sequential Decision-Making Mode':
     if reset_simulation_seq:
         st.session_state['current_year_index_seq'] = 0
         st.session_state['simulation_results_seq'] = []
-        st.session_state['prev_values_seq'] = {
-            'temp': 15.0,
-            'precip': 1700.0,
-            'municipal_demand': 130.0,
-            'available_water': 1000.0,
-            'crop_yield': 100.0,
-            'levee_level': 100.0,
-            'high_temp_tolerance_level': 0.0,
-            'hot_days': 30.0,
-            'extreme_precip_freq': 0.1,
-            'ecosystem_level': 100.0,
-            'urban_level': 100.0,
-            'levee_investment_years': 0,
-            'RnD_investment_years': 0,
-            'forest_area': 1000.0,
-            'planting_history': {start_year: 100.0},
-            'resident_capacity': 0,
-            'transportation_level' : 100,
-        }
+        st.session_state['prev_values_seq'] = {}
         st.session_state['decision_vars_seq'] = []
         st.rerun()
 
@@ -329,13 +205,13 @@ elif simulation_mode == 'Monte Carlo Simulation Mode':
     decision_years = np.arange(start_year, end_year + 1, timestep_year)
     decision_df = pd.DataFrame({
         'Year': decision_years.astype(int),
-        '植林・森林保全': [100.0]*len(decision_years),
-        '住宅移転・嵩上げ': [100.0]*len(decision_years),
-        'ダム・堤防工事': [0.0]*len(decision_years),
-        '田んぼダム工事': [3.0]*len(decision_years),
-        '防災訓練・普及啓発': [3.0]*len(decision_years),
-        '農業研究開発': [3.0]*len(decision_years),
-        '交通網の拡充': [3.0]*len(decision_years)
+        'planting_trees_amount': [100.0]*len(decision_years),
+        'house_migration_amount': [50.0]*len(decision_years),
+        'dam_levee_construction_cost': [1.0]*len(decision_years),  # 億円
+        'paddy_dam_construction_cost': [5.0]*len(decision_years),  # 百万円
+        'capacity_building_cost': [5.0]*len(decision_years),
+        'agricultural_RnD_cost': [5.0]*len(decision_years),
+        'transportation_invest': [5.0]*len(decision_years),
     })
     decision_df = st.sidebar.data_editor(decision_df, use_container_width=True)
     decision_df.set_index('Year', inplace=True)
@@ -350,25 +226,7 @@ elif simulation_mode == 'Monte Carlo Simulation Mode':
 
         for sim in range(num_simulations):
             # 初期値
-            initial_values = {
-                'temp': 15.0,
-                'precip': 1700.0,
-                'municipal_demand': 100.0,
-                'available_water': 1000.0,
-                'crop_yield': 100.0,
-                'levee_level': 100.0,
-                'high_temp_tolerance_level': 0.0,
-                'hot_days': 30.0,
-                'extreme_precip_freq': 0.1,
-                'ecosystem_level': 100.0,
-                'urban_level': 100.0,
-                'levee_investment_years': 0,
-                'RnD_investment_years': 0,
-                'forest_area': 1000.0,
-                'planting_history': {start_year: 100.0},
-                'resident_capacity': 0,
-                'transportation_level' : 100,
-            }
+            initial_values = {}
 
             # シミュレーションの実行
             sim_results = simulate_simulation(years, initial_values, decision_df, params)
@@ -458,63 +316,11 @@ def calculate_scenario_indicators(scenario_data):
         '洪水被害': scenario_data['Flood Damage'].sum(),
         '生態系': scenario_data.loc[scenario_data['Year'] == end_year, 'Ecosystem Level'].values[0],
         '都市利便性': scenario_data.loc[scenario_data['Year'] == end_year, 'Urban Level'].values[0],
-        '予算': scenario_data['Municipal Cost'].sum()
+        '予算': scenario_data['Municipal Cost'].sum(),
+        '住民負担': scenario_data['Resident Burden'].mean(),
+        '森林面積': scenario_data.loc[scenario_data['Year'] == end_year, 'Forest Area'].values[0],
     }
     return indicators
-
-# def generate_llm_commentary(scenario_name, df_result, model="gpt-4"):
-#     # 簡略化された特徴抽出
-#     def summarize_results(df):
-#         summary = {
-#             "収量合計": round(df["Crop Yield"].sum(), 2),
-#             "洪水被害合計": round(df["Flood Damage"].sum(), 2),
-#             "生態系": round(df[df["Year"] == 2100]["Ecosystem Level"].values[0], 2),
-#             "都市利便性": round(df[df["Year"] == 2100]["Urban Level"].values[0], 2),
-#             "予算": round(df["Municipal Cost"].sum(), 2)
-#         }
-#         return summary
-
-#     summary_stats = summarize_results(df_result)
-
-#     # プロンプトの生成（日本語）
-#     prompt = f"""
-# あなたはシナリオシミュレーションの専門家です。
-# 以下は「{scenario_name}」という気候変動適応シナリオにおける結果です。
-
-# 【シミュレーション結果の要約】
-# - 作物収量の合計: {summary_stats['収量合計']}
-# - 洪水被害の合計: {summary_stats['洪水被害合計']}
-# - 生態系スコア（2050年）: {summary_stats['生態系']}
-# - 都市利便性スコア（2100年）: {summary_stats['都市利便性']}
-# - 自治体の総予算: {summary_stats['予算']}
-
-# この内容を踏まえて、シナリオの長所・短所を含む100-300文字程度の講評を生成してください。
-# 表現は一般市民に分かりやすくしてください。
-# """
-
-#     # OpenAI API呼び出し
-#     response = client.chat.completions.create(
-#         model=model,
-#         messages=[{"role": "user", "content": prompt}],
-#         temperature=0.7
-#     )
-#     return response.choices[0].message.content
-
-
-# ベンチマーク要調整 ---------------------
-BENCHMARK = {
-    '収量':        dict(best=300_000, worst=0,     invert=False),
-    '洪水被害':    dict(best=0,       worst=200_000_000, invert=True),
-    '生態系':      dict(best=100,     worst=0,     invert=False),
-    '都市利便性':  dict(best=100,     worst=0,     invert=False),
-    '予算':        dict(best=0,       worst=100_000_000_000, invert=True),
-}
-
-BLOCKS = [
-    (2026, 2050, '2026-2050'),
-    (2051, 2075, '2051-2075'),
-    (2076, 2100, '2076-2100')
-]
 
 BAL_PARAMS = dict(field_sd_max=20, period_sd_max=15)
 
@@ -529,8 +335,7 @@ def _scale_to_100(raw_val: float, metric: str) -> float:
     v = np.clip(raw_val, b['worst'], b['best']) if b['worst'] < b['best'] \
         else np.clip(raw_val, b['best'], b['worst'])
     if b['invert']:                               # 小さいほど良い
-        score = 100 * (b['best'] - v) / (b['best'] - b['worst'])
-        print(v, score)
+        score = 100 * (b['worst'] - v) / (b['worst'] - b['best'])
     else:                                         # 大きいほど良い
         score = 100 * (v - b['worst']) / (b['best'] - b['worst'])
     return float(np.round(score, 1))
@@ -544,6 +349,8 @@ def _raw_values(df: pd.DataFrame, start: int, end: int) -> dict:
         '予算':       df.loc[mask, 'Municipal Cost'].sum(),
         '生態系':     df.loc[mask, 'Ecosystem Level'].mean(),
         '都市利便性': df.loc[mask, 'Urban Level'].mean(),
+        '森林面積':     df.loc[mask, 'Forest Area'].mean(),
+        '住民負担': df.loc[mask, 'Resident Burden'].mean(),
     }
 
 # シナリオごとに集計
@@ -557,7 +364,8 @@ if st.session_state['scenarios']:
     df_indicators['生態系順位'] = df_indicators['生態系'].rank(ascending=False)
     df_indicators['都市利便性順位'] = df_indicators['都市利便性'].rank(ascending=False)
     df_indicators['予算順位'] = df_indicators['予算'].rank(ascending=True)
-    # df_indicators['森林面積順位'] = df_indicators['森林面積'].rank(ascending=False)
+    df_indicators['森林面積順位'] = df_indicators['森林面積'].rank(ascending=False)
+    df_indicators['住民負担順位'] = df_indicators['住民負担'].rank(ascending=True)
 
     # 結果の表示
     st.subheader('Metrics and Rankings / シナリオごとの指標と順位')
@@ -602,14 +410,6 @@ if st.session_state['scenarios']:
     st.subheader('Balance Scores (0–100)')
     st.write(balance_df.style.format('{:.1f}'))
 
-    # df_result = st.session_state['scenarios'][scenario_name]
-    # try:
-    #     llm_commentary = generate_llm_commentary(scenario_name, df_result)
-    #     st.subheader("LLMによる講評")
-    #     st.write(llm_commentary)
-    # except Exception as e:
-    #     st.warning(f"LLM講評の生成に失敗しました: {e}")
-
 # データのエクスポート機能
 st.subheader('Export / データのエクスポート')
 # export_format = st.selectbox('ファイル形式を選択', ['CSV', 'Excel'])
@@ -624,15 +424,5 @@ if export_button:
         st.warning('No data to export')
 
     if not export_df.empty:
-        # if export_format == 'CSV':
         csv = export_df.to_csv(index=False).encode('utf-8')
         st.download_button(label='Download CSV', data=csv, file_name='simulation_results.csv', mime='text/csv')
-
-        # elif export_format == 'Excel':
-        #     output = BytesIO()
-        #     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        #         export_df.to_excel(writer, index=False, sheet_name='Simulation Results')
-        #         writer.save()
-        #         processed_data = output.getvalue()
-
-        #     st.download_button(label='Excelファイルをダウンロード', data=processed_data, file_name='simulation_results.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

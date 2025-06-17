@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ランキング</title>
+  <link rel="stylesheet" href="css/ranking_style.css">
+</head>
+<body>
+  <div class="background">
+    <div class="title">
+      <div class="titlename">ランキング</div>
+      <div class="scenarioname">Player: <span id="yourname"></span></div>
+    </div>
+
+    <div class="bunyaouter">
+      <div class="ranktitle">
+        <div class="ranktitlename">分野別</div>
+      </div>
+
+      <div class="bunyascore">
+        <div class="bunyabox">
+          <div class="bunyaicon">
+            <div class="bunyatitle">
+              <div class="bunyatitlename" id="bunya0"></div>
+            </div>
+            <div class="icon"><img src="images/icon0.png"></div>
+          </div>
+          <div class="bunyarank">
+            <div class="rankbox">
+              <div class="rankgold"><div class="rankidx">1</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name1_収量"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score1_収量"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="ranksilver"><div class="rankidx">2</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name2_収量"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score2_収量"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankbronze"><div class="rankidx">3</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name3_収量"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score3_収量"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankyou"><div class="rankidx"        id="yourrank_収量"></div></div>
+              <div class="rankname"><div class="ranknameidx"   id="yourname_収量"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="yourscore_収量"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bunyabox">
+          <div class="bunyaicon">
+            <div class="bunyatitle"><span id="bunya1"></span></div>
+            <div class="icon"><img src="images/icon1.png"></div>
+          </div>
+          <div class="bunyarank">
+            <div class="rankbox">
+              <div class="rankgold"><div class="rankidx">1</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name1_洪水被害"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score1_洪水被害"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="ranksilver"><div class="rankidx">2</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name2_洪水被害"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score2_洪水被害"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankbronze"><div class="rankidx">3</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name3_洪水被害"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score3_洪水被害"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankyou"><div class="rankidx"        id="yourrank_洪水被害"></div></div>
+              <div class="rankname"><div class="ranknameidx"   id="yourname_洪水被害"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="yourscore_洪水被害"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bunyabox">
+          <div class="bunyaicon">
+            <div class="bunyatitle"><span id="bunya2"></span></div>
+            <div class="icon"><img src="images/icon2.png"></div>
+          </div>
+          <div class="bunyarank">
+            <div class="rankbox">
+              <div class="rankgold"><div class="rankidx">1</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name1_予算"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score1_予算"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="ranksilver"><div class="rankidx">2</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name2_予算"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score2_予算"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankbronze"><div class="rankidx">3</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name3_予算"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score3_予算"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankyou"><div class="rankidx"        id="yourrank_予算"></div></div>
+              <div class="rankname"><div class="ranknameidx"   id="yourname_予算"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="yourscore_予算"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bunyabox">
+          <div class="bunyaicon">
+            <div class="bunyatitle"><span id="bunya3"></span></div>
+            <div class="icon"><img src="images/icon3.png"></div>
+          </div>
+          <div class="bunyarank">
+            <div class="rankbox">
+              <div class="rankgold"><div class="rankidx">1</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name1_生態系"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score1_生態系"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="ranksilver"><div class="rankidx">2</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name2_生態系"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score2_生態系"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankbronze"><div class="rankidx">3</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name3_生態系"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score3_生態系"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankyou"><div class="rankidx"        id="yourrank_生態系"></div></div>
+              <div class="rankname"><div class="ranknameidx"   id="yourname_生態系"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="yourscore_生態系"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bunyabox">
+          <div class="bunyaicon">
+            <div class="bunyatitle" id="bunya4"></div>
+            <div class="icon"><img src="images/icon4.png"></div>
+          </div>
+          <div class="bunyarank">
+            <div class="rankbox">
+              <div class="rankgold"><div class="rankidx">1</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name1_都市利便性"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score1_都市利便性"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="ranksilver"><div class="rankidx">2</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name2_都市利便性"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score2_都市利便性"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankbronze"><div class="rankidx">3</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name3_都市利便性"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score3_都市利便性"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankyou"><div class="rankidx"        id="yourrank_都市利便性"></div></div>
+              <div class="rankname"><div class="ranknameidx"   id="yourname_都市利便性"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="yourscore_都市利便性"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bunyabox">
+          <div class="bunyaicon">
+            <div class="bunyatitle">総合</div>
+            <div class="icon"><img src="images/icon5.png"></div>
+          </div>
+          <div class="bunyarank">
+            <div class="rankbox">
+              <div class="rankgold"><div class="rankidx">1</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name1_総合"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score1_総合"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="ranksilver"><div class="rankidx">2</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name2_総合"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score2_総合"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankbronze"><div class="rankidx">3</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name3_総合"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score3_総合"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankyou"><div class="rankidx"        id="yourrank_総合"></div></div>
+              <div class="rankname"><div class="ranknameidx"   id="yourname_総合"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="yourscore_総合"></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+      <div class="balanceouter">
+        <div class="balancebox">
+          <div class="ranktitle">
+            <div class="ranktitlename">分野間バランス度</div>
+          </div>
+          <div class="balancescore">
+            <div class="rankbox">
+              <div class="rankgold"><div class="rankidx">1</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name1_分野間バランス"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score1_分野間バランス"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="ranksilver"><div class="rankidx">2</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name2_分野間バランス"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score2_分野間バランス"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankbronze"><div class="rankidx">3</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name3_分野間バランス"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score3_分野間バランス"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankyou"><div class="rankidx"        id="yourrank_分野間バランス"></div></div>
+              <div class="rankname"><div class="ranknameidx"   id="yourname_分野間バランス"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="yourscore_分野間バランス"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="balancebox">
+          <div class="ranktitle">
+            <div class="ranktitlename">世代間バランス度</div>
+          </div>
+          <div class="balancescore">
+            <div class="rankbox">
+              <div class="rankgold"><div class="rankidx">1</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name1_世代間バランス"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score1_世代間バランス"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="ranksilver"><div class="rankidx">2</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name2_世代間バランス"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score2_世代間バランス"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankbronze"><div class="rankidx">3</div></div>
+              <div class="rankname"><div class="ranknameidx"   id="name3_世代間バランス"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="score3_世代間バランス"></div></div>
+            </div>
+            <div class="rankbox">
+              <div class="rankyou"><div class="rankidx"        id="yourrank_世代間バランス"></div></div>
+              <div class="rankname"><div class="ranknameidx"   id="yourname_世代間バランス"></div></div>
+              <div class="rankpoint"><div class="rankpointidx" id="yourscore_世代間バランス"></div></div>
+            </div>
+          </div>
+        </div>
+
+      <div class="btnbox">
+        <div class="next">
+          <a href="comment.html" class="btn">←最初に戻る</a>
+        </div> 
+        <div class="next">
+          <a href="result.html" class="btn">←結果に戻る</a>
+        </div>
+        <div class="next">
+          <a href="http://localhost:3000/" class="btn">終了</a>
+        </div> 
+      </div>
+
+
+      </div>
+
+    </div>
+  
+  <script src="js/ranking_script.js"></script>
+</body>

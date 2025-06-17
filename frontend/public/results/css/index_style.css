@@ -1,0 +1,70 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+.title { 
+    width:100vw;
+    height:8vh;
+    background-color:#bbb333;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    padding: 0;
+}
+.titlename{
+    font-size: 5vh;
+    font-weight: bold;
+}
+.wrap { 
+    width:100vw;
+    height:92vh;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    text-align: left;
+}
+.content {      
+    width:auto;
+    height: auto;
+}
+.next {
+    text-align: right;
+    text-decoration: none;
+}
+h2{
+    font-size: 4vh;
+}
+p {
+    font-size: 3vh;
+    line-height: 3em;
+}
+a{
+    text-decoration: none;
+    font-weight: bold;
+    color: #323214;
+}
+/*以下フェードイン表示の指定*/
+.fadein {
+    opacity: 0;
+    animation: fadein 2s ease forwards;
+}
+@keyframes fadein {
+    100% {  opacity: 1;}
+}
+/*以下遅延の指定*/
+.txt01 {animation-delay: 1s;}
+.txt02 {animation-delay: 3s;}
+.txt03 {animation-delay: 5s;}
+.txt04 {animation-delay: 7s;}
+.txt05 {animation-delay: 9s;}
+.txt06 {animation-delay: 11s;}
+.txt99 {animation-delay: 12s;
+    background-color: rgb(248, 248, 100);
+    font-size: 2.5vh;
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgb(248, 159, 100);
+    border-radius: 0.5em;
+    padding: 0.2em;
+}

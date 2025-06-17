@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>結果</title>
+    <link rel="stylesheet" href="css/result_style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+  <div class="background">
+    <div class="title">
+      <div class="titlename">結果</div>
+      <div class="scenarioname">Player: <span id="yourname"></span></div>
+    </div>
+
+    <div class="tabbox">
+      <input type="radio" name="tabset" id="tabcheck1" checked><label for="tabcheck1" class="tab">2050年</label>
+      <input type="radio" name="tabset" id="tabcheck2"        ><label for="tabcheck2" class="tab">2075年</label>
+      <input type="radio" name="tabset" id="tabcheck3"        ><label for="tabcheck3" class="tab">2100年</label>
+      <div class="tabcontent" id="tabcontent1">
+        <div class="flex">
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon0.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2050_0"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2050_0"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon1.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2050_1"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2050_1"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon2.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2050_2"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2050_2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex">
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon3.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2050_3"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2050_3"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon4.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2050_4"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2050_4"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon5.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname">合計</div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2050_sum"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabcontent" id="tabcontent2">
+        <div class="flex">
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon0.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2075_0"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2075_0"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon1.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2075_1"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2075_1"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon2.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2075_2"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2075_2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex">
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon3.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2075_3"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2075_3"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon4.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2075_4"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2075_4"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon5.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname">合計</div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2075_sum"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabcontent" id="tabcontent3">
+        <div class="flex">
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon0.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2100_0"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2100_0"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon1.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2100_1"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2100_1"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon2.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2100_2"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2100_2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex">
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon3.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2100_3"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2100_3"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon4.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname" id="scorename2100_4"></div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2100_4"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resultbox">
+            <div class="icon"><img src="images/icon5.png"></div>
+            <div class="scorebox">
+              <div class="scorekey">
+                <div class="scorekeyname">合計</div>
+              </div>
+              <div class="scoreitem">
+                <div class="myscore">
+                  <div class="myscorename" id="res2100_sum"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+
+    <div class="chartnextbox">
+      <div class="chartbox">
+        <canvas id="Chart2050"></canvas>
+      </div>
+      <div class="chartbox">
+        <canvas id="Chart2075"></canvas>
+      </div>
+      <div class="chartbox">
+        <canvas id="Chart2100"></canvas>
+      </div>
+      <div class="btnbox">
+        <div class="next">
+          <a href="comment.html" class="btn">←戻る</a>
+        </div> 
+        <div class="next">
+          <a href="ranking.html" class="btn">次へ→</a>
+        </div> 
+      </div>
+    </div>
+
+  </div>
+
+
+    <script src="js/result_script.js"></script>
+  </body>
+</html>
