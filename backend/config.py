@@ -64,6 +64,7 @@ DEFAULT_PARAMS = {
     'forest_degradation_rate': 0.01,
     'tree_growup_year': 30,
     'initial_forest_area': 0.5,
+    'co2_absorption_per_ha': 8.8,
 
     # 農業
     'temp_coefficient': 1.0,
