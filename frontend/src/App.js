@@ -344,6 +344,17 @@ function App() {
   const currentIndicator = getLineChartIndicators(language)[selectedIndicator];
   const handleLineChartChange = (event) => {
     setSelectedIndicator(event.target.value);
+
+    // --- 縦軸選択変更ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "GraphSelect",
+        name: event.target.value,
+        timestamp: new Date().toISOString()
+      }));
+    }
   };
 
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
@@ -353,6 +364,23 @@ function App() {
   const [showResultButton, setShowResultButton] = useState(false);
   const [userNameError, setUserNameError] = useState("")
   const [selectedMode, setSelectedMode] = useState(localStorage.getItem('selectedMode') || 'group'); // モード選択: 'group', 'upstream', 'downstream'
+
+  // ここでuseRefを定義
+  const wsLogRef = useRef(null);
+
+  // ここでuseEffectを定義
+  useEffect(() => {
+    wsLogRef.current = new WebSocket("ws://localhost:8000/ws/log");
+    wsLogRef.current.onopen = () => {
+      console.log("✅ Log WebSocket connected");
+    };
+    wsLogRef.current.onerror = (e) => {
+      console.error("Log WebSocket error", e);
+    };
+    return () => {
+      wsLogRef.current && wsLogRef.current.close();
+    };
+  }, []);
 
   const fetchRanking = async () => {
     const res = await axios.get(`${BACKEND_URL}/ranking`);
@@ -372,7 +400,18 @@ function App() {
         setUserName(userName.trim());
         setOpenNameDialog(false);
         setUserNameError(""); // エラー解除
-      }      
+
+        // --- ユーザ名をWebSocketで送信 ---
+        if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+          wsLogRef.current.send(JSON.stringify({
+            user_name: userName,
+            mode: chartPredictMode,
+            type: "Register",
+            timestamp: new Date().toISOString()
+          }));
+        }
+        // ------------------------------------------------------
+      }    
     } catch (err) {
       console.error("ユーザー名チェックエラー", err);
     }
@@ -530,6 +569,19 @@ function App() {
   };
 
   const handleClickCalc = async () => {
+    // --- 「25年進める」押下ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "Next",
+        name: decisionVar.year,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+    // ------------------------------------------------------
+
     if (isRunningRef.current) return;
     isRunningRef.current = true;
 
@@ -706,6 +758,19 @@ function App() {
 
   // 次のサイクルに移る処理
   const handleNextCycle = () => {
+    // --- 「次のサイクル」押下ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "EndCycle",
+        name: decisionVar.year,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+    // ------------------------------------------------------
+
     // 新しいサイクルの準備
     setCurrentCycle(prev => prev + 1);
     setCycleCompleted(false);
@@ -807,11 +872,65 @@ function App() {
 
   const handleOpenResultUI = () => {
     setOpenResultUI(true);
+    // --- 「サイクルの比較」開始をWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "StartCompare",
+        timestamp: new Date().toISOString()
+      }));
+    }
+    // ------------------------------------------------------
   };
 
   const handleCloseResultUI = () => {
     setOpenResultUI(false);
+    // --- 「サイクルの比較」終了をWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "EndCompare",
+        timestamp: new Date().toISOString()
+      }));
+    }
+    // ------------------------------------------------------
   };
+  // X軸変更時
+  const handleXAxisChange = (event) => {
+    setSelectedXAxis(event.target.value);
+
+    // --- X軸選択変更ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "ScatterX",
+        name: event.target.value,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  };
+
+  // Y軸変更時
+  const handleYAxisChange = (event) => {
+    setSelectedYAxis(event.target.value);
+
+    // --- Y軸選択変更ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "ScatterY",
+        name: event.target.value,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  };
+
 
   const handleOpenSettings = () => {
     setOpenSettingsDialog(true);
@@ -826,6 +945,18 @@ function App() {
     setDecisionVar(prev => {
       const updated = { ...prev, [key]: value };
       decisionVarRef.current = updated;
+      // --- スライダー操作ログをWebSocketで送信 ---
+      if (key != "year" && wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+        wsLogRef.current.send(JSON.stringify({
+          user_name: userName,
+          mode: chartPredictMode,
+          type: "Slider",
+          name: key,
+          value: value,
+          timestamp: new Date().toISOString()
+        }));
+      }
+      // --------------------------------------------
       return updated;
     });
   };
@@ -1212,7 +1343,7 @@ function App() {
                     <Select
                       value={selectedXAxis}
                       label={t.scatter.xAxis}
-                      onChange={(e) => setSelectedXAxis(e.target.value)}
+                      onChange={handleXAxisChange}
                     >
                       {Object.keys(getLineChartIndicators(language)).map((key) => (
                         <MenuItem key={key} value={key}>
@@ -1227,7 +1358,7 @@ function App() {
                     <Select
                       value={selectedYAxis}
                       label={t.scatter.yAxis}
-                      onChange={(e) => setSelectedYAxis(e.target.value)}
+                      onChange={handleYAxisChange}
                     >
                       {Object.keys(getLineChartIndicators(language)).map((key) => (
                         <MenuItem key={key} value={key}>

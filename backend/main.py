@@ -1,4 +1,8 @@
-from fastapi import FastAPI, HTTPException
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent / "src"))
+
+from fastapi import FastAPI, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
@@ -9,8 +13,8 @@ from models import (
     SimulationRequest, SimulationResponse, CompareRequest, CompareResponse,
     DecisionVar, CurrentValues, BlockRaw
 )
-from src.simulation import simulate_simulation
-from src.utils import calculate_scenario_indicators, aggregate_blocks
+from simulation import simulate_simulation
+from utils import calculate_scenario_indicators, aggregate_blocks
 
 app = FastAPI()
 app.add_middleware(
@@ -177,6 +181,21 @@ def get_block_scores():
         return df.to_dict(orient="records")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# サーバに送信されているログをWebSocketで受信。現在はbackendに保存中
+@app.websocket("/ws/log")
+async def websocket_log_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    log_path = Path(__file__).parent / "data" / "user_log.jsonl"
+    while True:
+        try:
+            data = await websocket.receive_text()
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(data + "\n")
+        except Exception as e:
+            # クライアント切断などでエラーが出たら終了
+            break
 
 if __name__ == "__main__":
     import uvicorn
