@@ -1,37 +1,12 @@
 // FormulaPage.js
-import React, { useState } from 'react';
-import { Box, Typography, Slider, Paper, Button } from '@mui/material';
+import React from 'react';
+import { Box, Typography, Paper, Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
 
 function FormulaPage() {
-  /* ====== 既存のステート（気候関連パラメータ etc.） ====== */
-  const [tempTrend, setTempTrend]           = useState(0.03);
-  const [hotDaysCoeff, setHotDaysCoeff]     = useState(2.0);
-  const [temp, setTemp]                     = useState(17.0);
-  const [baseTemp, setBaseTemp]             = useState(15.0);
-
-  const [extremeFreqTrend, setExtremeFreqTrend] = useState(0.05);
-  const [startYear, setStartYear]           = useState(2025);
-  const [year, setYear]                     = useState(2035);
-
-  const [forestArea, setForestArea]         = useState(3000);
-  const [totalArea, setTotalArea]           = useState(10000);
-  const [floodReductionCoef, setFloodReductionCoef] = useState(0.4);
-
-  const [leveeLevel, setLeveeLevel]         = useState(100);
-  const [paddyDam, setPaddyDam]             = useState(10);
-  const [damageCoef, setDamageCoef]         = useState(100000);
-  const [tempImpact, setTempImpact]         = useState(0.2);
-  const [waterAvail, setWaterAvail]         = useState(0.8);
-  const [paddyImpact, setPaddyImpact]       = useState(0.1);
-
-  /* ====== 派生計算 ====== */
-  const deltaYear         = year - startYear;
-  const expectedTemp      = baseTemp + tempTrend * deltaYear;
-  const expectedHotDays   = (temp - baseTemp) * hotDaysCoeff;
-  const floodReductionRate = (forestArea / totalArea) * floodReductionCoef;
+  // 纯信息展示页面 - 不需要状态管理
 
   return (
     <Box sx={{ p: 4 }}>
@@ -74,14 +49,11 @@ function FormulaPage() {
         <BlockMath math={`\\lambda_t = \\max\\bigl(0, \\lambda_0 + \\alpha_\\lambda\\,(t - t_0)\\bigr),\\quad N_{\\text{extreme}} \\sim \\text{Poisson}(\\lambda_t)`} />
         <BlockMath math={`\\text{RainEvent}_i \\sim \\text{Gumbel}(\\mu_t,\\,\\beta_t),\\quad i=1,\\ldots,N_{\\text{extreme}}`} />
 
-        {/* 既存のインタラクティブ気温・降水パネルを再利用 */}
-        {/* ----- 気温予測 ----- */}
-        <Typography variant="subtitle2" sx={{ mt: 3 }}>► 年平均気温の予測</Typography>
+        {/* 静态示例 - 移除交互元素 */}
+        <Typography variant="subtitle2" sx={{ mt: 3 }}>► 年平均気温の予測（例）</Typography>
         <BlockMath math={`\\text{Temp}(t) = T_0 + \\alpha_T\\,(t - t_0)`} />
-        <Typography>気温上昇率 (α<InlineMath math="T" />): {tempTrend}</Typography>
-        <Slider value={tempTrend} step={0.005} min={0.01} max={0.1}
-                onChange={(e,val)=>setTempTrend(val)} valueLabelDisplay="auto"/>
-        <Typography>計算結果（{year}年）: {expectedTemp.toFixed(2)} ℃</Typography>
+        <Typography>例：気温上昇率 α<InlineMath math="T" /> = 0.03 ℃/年</Typography>
+        <Typography>計算結果（2035年）: 15.3 ℃</Typography>
       </Paper>
 
       {/* ---------- (2) 社会環境シナリオ ---------- */}
@@ -103,13 +75,11 @@ function FormulaPage() {
         <BlockMath math={`\\varphi_{\\text{retention}} = \\rho_w \\frac{A_{f,t}}{A_{\\text{total}}}`} />
         <BlockMath math={`\\varphi_{\\text{ecosystem}} = \\min\\bigl(\\rho_e\\,A_{f,t},\\,5.0\\bigr)`} />
 
-        {/* インタラクティブ洪水緩和率 (既存) */}
-        <Typography variant="subtitle2" sx={{ mt: 3 }}>► 森林による洪水軽減効果（簡易）</Typography>
+        {/* 静态示例 - 移除交互元素 */}
+        <Typography variant="subtitle2" sx={{ mt: 3 }}>► 森林による洪水軽減効果（例）</Typography>
         <BlockMath math={`\\text{FloodReduction} = \\rho_f \\cdot \\frac{A_{\\text{forest}}}{A_{\\text{total}}}`}/>
-        <Typography>森林面積 (ha): {forestArea}</Typography>
-        <Slider value={forestArea} step={100} min={0} max={10000}
-                onChange={(e,val)=>setForestArea(val)} valueLabelDisplay="auto"/>
-        <Typography>洪水軽減割合: {(floodReductionRate*100).toFixed(1)} %</Typography>
+        <Typography>例：森林面積 = 3000 ha, 総面積 = 10000 ha, 軽減係数 = 0.4</Typography>
+        <Typography>洪水軽減割合: 12.0 %</Typography>
       </Paper>
 
       {/* ---------- (4) 水資源モジュール ---------- */}
@@ -125,12 +95,10 @@ function FormulaPage() {
         <BlockMath math={`L_T = \\min\\!\\Bigl(\\tfrac{\\max(0,\\,T_{\\text{ripening}} - (T_{\\text{thresh}} + T_{\\text{tol}}))}{T_{\\text{crit}} - T_{\\text{thresh}}},\\,1\\Bigr)`} />
         <BlockMath math={`Y_{t} = Y_{\\max}\\,(1 - L_T)\\,\\varphi_W\\,(1 - \\varphi_{\\text{paddy}})`} />
 
-        {/* インタラクティブ収量パネル (既存) */}
-        <Typography variant="subtitle2" sx={{ mt: 3 }}>► 作物収量の推定</Typography>
+        {/* 静态示例 - 移除交互元素 */}
+        <Typography variant="subtitle2" sx={{ mt: 3 }}>► 作物収量の推定（例）</Typography>
         <BlockMath math={`Y = Y_{\\max}\\,(1-L_T)\\,\\varphi_W\\,(1-\\varphi_{\\text{paddy}})`}/>
-        <Typography>温度被害 L<InlineMath math="T" />: {tempImpact}</Typography>
-        <Slider value={tempImpact} step={0.01} min={0} max={1}
-                onChange={(e,val)=>setTempImpact(val)} valueLabelDisplay="auto"/>
+        <Typography>例：温度被害 L<InlineMath math="T" /> = 0.2 （20%の被害）</Typography>
       </Paper>
 
       {/* ---------- (6) 居住モジュール ---------- */}
@@ -145,12 +113,10 @@ function FormulaPage() {
         <BlockMath math={`I_{\\text{levee},t} = I_{\\text{levee},t-1} + C_{\\text{levee}}`} />
         <BlockMath math={`D_{\\text{flood}} = \\sum_i \\max(R_i - L_t - \\varphi_{\\text{paddy-flood}}, 0)\\,(1-\\varphi_{\\text{flood}})\\,\\rho_D`} />
 
-        {/* インタラクティブ被害パネル (既存) */}
-        <Typography variant="subtitle2" sx={{ mt: 3 }}>► 洪水被害の簡易推定</Typography>
+        {/* 静态示例 - 移除交互元素 */}
+        <Typography variant="subtitle2" sx={{ mt: 3 }}>► 洪水被害の簡易推定（例）</Typography>
         <BlockMath math={`D = \\sum(R_i - L - P)\\,(1-\\varphi_{\\text{flood}})\\,\\rho_D`} />
-        <Typography>堤防高さ L (mm): {leveeLevel}</Typography>
-        <Slider value={leveeLevel} step={10} min={0} max={300}
-                onChange={(e,val)=>setLeveeLevel(val)} valueLabelDisplay="auto"/>
+        <Typography>例：堤防高さ L = 100 mm</Typography>
       </Paper>
 
       {/* ---------- (8) 都市の居住可能性 ---------- */}
