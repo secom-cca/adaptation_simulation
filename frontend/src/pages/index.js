@@ -1,2 +1,2 @@
 // Pages exports
-export { default as FormulaPage } from './FormulaPage';
+// FormulaPage moved to src/FormulaPage.js and imported directly in App.js
