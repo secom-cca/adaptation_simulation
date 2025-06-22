@@ -284,9 +284,11 @@ function App() {
   const getInitialSimulationState = () => {
     try {
       const stored = localStorage.getItem('simulationState');
+      console.log('尝试恢复模拟状态:', stored);
       if (stored) {
         const parsed = JSON.parse(stored);
-        return {
+        console.log('成功解析模拟状态:', parsed);
+        const restoredState = {
           chartPredictData: parsed.chartPredictData || [[], []],
           resultHistory: parsed.resultHistory || [],
           currentCycle: parsed.currentCycle || 1,
@@ -295,11 +297,14 @@ function App() {
           inputHistory: parsed.inputHistory || [],
           simulationData: parsed.simulationData || []
         };
+        console.log('恢复的状态:', restoredState);
+        return restoredState;
       }
     } catch (error) {
       console.warn('simulationState復元エラー:', error);
     }
 
+    console.log('使用默认模拟状态');
     return {
       chartPredictData: [[], []],
       resultHistory: [],
@@ -503,7 +508,10 @@ function App() {
 
   useEffect(() => {
     simulationDataRef.current = simulationData;
-    // 模拟状态保存到localStorage
+  }, [simulationData]);
+
+  // 分离模拟状态保存逻辑，减少触发频率
+  useEffect(() => {
     const simulationState = {
       chartPredictData,
       resultHistory,
@@ -514,7 +522,8 @@ function App() {
       simulationData
     };
     localStorage.setItem('simulationState', JSON.stringify(simulationState));
-  }, [simulationData, chartPredictData, resultHistory, currentCycle, cycleCompleted, inputCount, inputHistory]);
+    console.log('模拟状态已保存:', simulationState);
+  }, [currentCycle, cycleCompleted, inputCount, simulationData.length]); // 减少依赖项，只在关键状态变化时保存
 
   useEffect(() => {
     // 開発中のみ userName を強制リセット（コメントアウト - Bug修正）

@@ -28,7 +28,8 @@ app.add_middleware(
         "http://localhost:3000",  # 本地开发
         "http://localhost:3001",  # 本地开发备用端口
         "https://climate-adaptation-backend.vercel.app",  # Vercel前端域名
-        "https://*.vercel.app",  # 允许所有Vercel子域名
+        "https://climate-adaptation-backend-git-fix-y-axis-adaptation-and-ui-improvements-terryzhang-jp.vercel.app",  # Git分支域名
+        "*"  # 临时允许所有域名进行调试
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
