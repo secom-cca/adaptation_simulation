@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Box, Button, Dialog, DialogTitle, DialogContent, FormControl, Grid, IconButton, InputLabel, MenuItem, Slider, Stack, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper, TextField } from '@mui/material';
 import { LineChart, ScatterChart, Gauge } from '@mui/x-charts';
 import { Agriculture, Biotech, EmojiTransportation, Flood, Forest, Houseboat, LocalLibrary, PlayCircle } from '@mui/icons-material';
@@ -60,8 +60,8 @@ const getLineChartIndicators = (language) => {
   return indicators[language] || indicators.ja;
 };
 
-const SIMULATION_YEARS = 25 // 一回のシミュレーションで進める年数を決定する 
-const LINE_CHART_DISPLAY_INTERVAL = 100 // ms
+const SIMULATION_YEARS = 25 // 一回のシミュレーションで進める年数を決定する
+const LINE_CHART_DISPLAY_INTERVAL = 300 // ms - 从100ms增加到300ms以减少卡顿
 const INDICATOR_CONVERSION = {
   'Municipal Cost': 1 / 10000, // 円 → 億円
   'Flood Damage': 1 / 10000, // 円 → 万円
@@ -292,42 +292,78 @@ function App() {
   const [selectedYAxis, setSelectedYAxis] = useState('Flood Damage'); // 散布図Y軸選択
   const [chartPredictMode, setChartPredictMode] = useState(localStorage.getItem('chartPredictMode') || 'best-worst'); // 予測データ表示モード: 'best-worst', 'monte-carlo', 'none'
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'ja'); // 言語モード: 'ja', 'en'
-  const [decisionVar, setDecisionVar] = useState({
-    year: 2026,
-    planting_trees_amount: 0.,   // 植林・森林保全
-    house_migration_amount: 0.,  // 住宅移転・嵩上げ
-    dam_levee_construction_cost: 0., //ダム・堤防工事
-    paddy_dam_construction_cost: 0., //田んぼダム工事
-    capacity_building_cost: 0.,   // 防災訓練・普及啓発
-    // irrigation_water_amount: 100, // 灌漑水量
-    // released_water_amount: 100,   // 放流水量
-    transportation_invest: 0,     // 交通網の拡充
-    agricultural_RnD_cost: 0,      // 農業研究開発
-    cp_climate_params: 4.5 //RCPの不確実性シナリオ
-  })
-  const [currentValues, setCurrentValues] = useState({
-    temp: 15,
-    precip: 1700,
-    municipal_demand: 100,
-    available_water: 1000,
-    crop_yield: 100,
-    hot_days: 30,
-    extreme_precip_freq: 0.1,
-    ecosystem_level: 100,
-    levee_level: 0.5,
-    high_temp_tolerance_level: 0,
-    forest_area: 0,
-    planting_history: {},
-    urban_level: 100,
-    resident_capacity: 0,
-    transportation_level: 50, // 修改初始值为50，避免变成负数
-    levee_investment_total: 0,
-    RnD_investment_total: 0,
-    risky_house_total: 10000,
-    non_risky_house_total: 0,
-    resident_burden: 5.379 * 10**8,
-    biodiversity_level: 100,
-  })
+  // decisionVarの初期値を定義
+  const getInitialDecisionVar = () => {
+    const defaultValues = {
+      year: 2026,
+      planting_trees_amount: 0.,   // 植林・森林保全
+      house_migration_amount: 0.,  // 住宅移転・嵩上げ
+      dam_levee_construction_cost: 0., //ダム・堤防工事
+      paddy_dam_construction_cost: 0., //田んぼダム工事
+      capacity_building_cost: 0.,   // 防災訓練・普及啓発
+      // irrigation_water_amount: 100, // 灌漑水量
+      // released_water_amount: 100,   // 放流水量
+      transportation_invest: 0,     // 交通網の拡充
+      agricultural_RnD_cost: 0,      // 農業研究開発
+      cp_climate_params: 4.5 //RCPの不確実性シナリオ
+    };
+
+    // localStorageから復元を試みる
+    try {
+      const stored = localStorage.getItem('decisionVar');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return { ...defaultValues, ...parsed };
+      }
+    } catch (error) {
+      console.warn('decisionVar復元エラー:', error);
+    }
+
+    return defaultValues;
+  };
+
+  const [decisionVar, setDecisionVar] = useState(getInitialDecisionVar())
+  // currentValuesの初期値を定義
+  const getInitialCurrentValues = () => {
+    const defaultValues = {
+      temp: 15,
+      precip: 1700,
+      municipal_demand: 100,
+      available_water: 1000,
+      crop_yield: 100,
+      hot_days: 30,
+      extreme_precip_freq: 0.1,
+      ecosystem_level: 100,
+      levee_level: 0.5,
+      high_temp_tolerance_level: 0,
+      forest_area: 0,
+      planting_history: {},
+      urban_level: 100,
+      resident_capacity: 0,
+      transportation_level: 50, // 修改初始值为50，避免变成负数
+      levee_investment_total: 0,
+      RnD_investment_total: 0,
+      risky_house_total: 10000,
+      non_risky_house_total: 0,
+      resident_burden: 5.379 * 10**8,
+      biodiversity_level: 100,
+    };
+
+    // localStorageから復元を試みる
+    try {
+      const stored = localStorage.getItem('currentValues');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return { ...defaultValues, ...parsed };
+      }
+    } catch (error) {
+      console.warn('currentValues復元エラー:', error);
+    }
+
+    return defaultValues;
+  };
+
+  const [currentValues, setCurrentValues] = useState(getInitialCurrentValues())
   const [simulationData, setSimulationData] = useState([]); // 結果格納
 
   // ロード中やエラー表示用
@@ -421,10 +457,14 @@ function App() {
 
   useEffect(() => {
     currentValuesRef.current = currentValues;
+    // currentValuesをlocalStorageに保存
+    localStorage.setItem('currentValues', JSON.stringify(currentValues));
   }, [currentValues]);
 
   useEffect(() => {
     decisionVarRef.current = decisionVar;
+    // decisionVarをlocalStorageに保存
+    localStorage.setItem('decisionVar', JSON.stringify(decisionVar));
     fetchForecastData();
   }, [decisionVar]);
 
@@ -1663,7 +1703,27 @@ function App() {
 
 
           {/* グラフ */}
-          <LineChart
+          {/* Y轴范围计算优化 - 使用useMemo缓存计算结果 */}
+          {useMemo(() => {
+            // 计算Y轴范围，避免每次渲染都重新计算
+            const dataValues = simulationData.map((row) => row[selectedIndicator]).filter(val => val != null);
+            const predictValues = chartPredictMode !== 'none' ?
+              chartPredictData.flatMap(data => getPredictData(data)).filter(val => val != null) : [];
+            const allValues = [...dataValues, ...predictValues];
+
+            let yMin, yMax;
+            if (allValues.length > 0) {
+              const actualMin = Math.min(...allValues);
+              const actualMax = Math.max(...allValues);
+              yMin = actualMin > 0 ? actualMin * 0.9 : Math.min(actualMin * 1.1, getLineChartIndicators(language)[selectedIndicator].min);
+              yMax = actualMax * 1.15;
+            } else {
+              yMin = getLineChartIndicators(language)[selectedIndicator].min;
+              yMax = getLineChartIndicators(language)[selectedIndicator].max;
+            }
+
+            return (
+              <LineChart
             xAxis={[
               {
                 data: xAxisYears,
@@ -1678,38 +1738,8 @@ function App() {
             yAxis={[
               {
                 label: `${getLineChartIndicators(language)[selectedIndicator].labelTitle}（${getLineChartIndicators(language)[selectedIndicator].unit}）`,
-                min: (() => {
-                  // 计算实际数据的最小值
-                  const dataValues = simulationData.map((row) => row[selectedIndicator]).filter(val => val != null);
-                  const predictValues = chartPredictMode !== 'none' ?
-                    chartPredictData.flatMap(data => getPredictData(data)).filter(val => val != null) : [];
-                  const allValues = [...dataValues, ...predictValues];
-
-                  if (allValues.length > 0) {
-                    const actualMin = Math.min(...allValues);
-                    // 如果实际最小值大于0，留出10%缓冲空间；如果小于等于0，使用配置最小值
-                    return actualMin > 0 ? actualMin * 0.9 : Math.min(actualMin * 1.1, getLineChartIndicators(language)[selectedIndicator].min);
-                  } else {
-                    // 没有数据时使用配置的最小值
-                    return getLineChartIndicators(language)[selectedIndicator].min;
-                  }
-                })(),
-                max: (() => {
-                  // 计算实际数据的最大值
-                  const dataValues = simulationData.map((row) => row[selectedIndicator]).filter(val => val != null);
-                  const predictValues = chartPredictMode !== 'none' ?
-                    chartPredictData.flatMap(data => getPredictData(data)).filter(val => val != null) : [];
-                  const allValues = [...dataValues, ...predictValues];
-
-                  if (allValues.length > 0) {
-                    const actualMax = Math.max(...allValues);
-                    // 优先使用实际数据范围，留出15%缓冲空间
-                    return actualMax * 1.15;
-                  } else {
-                    // 没有数据时使用配置的最大值
-                    return getLineChartIndicators(language)[selectedIndicator].max;
-                  }
-                })(),
+                min: yMin,
+                max: yMax,
                 showGrid: true
               },
             ]}
@@ -1756,6 +1786,8 @@ function App() {
               padding: 2,
             }}
           />
+            );
+          }, [simulationData, selectedIndicator, chartPredictMode, chartPredictData, language])}
 
           <FormControl fullWidth sx={{ mt: 2 }}>
             <InputLabel id="indicator-select-label">{t.chart.selectYAxis}</InputLabel>

@@ -14,25 +14,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 加载玩家名称
 function loadPlayerName() {
-    // 尝试从localStorage获取用户名
+    // 优先从localStorage获取用户名
     const storedName = localStorage.getItem('userName');
-    if (storedName) {
+    if (storedName && storedName.trim() !== '') {
+        console.log('从localStorage加载用户名:', storedName);
         document.getElementById('player-name').textContent = storedName;
         return;
     }
-    
-    // 如果localStorage中没有，尝试从CSV文件读取
-    fetch('/results/data/your_name.csv')
-        .then(response => response.text())
-        .then(data => {
-            const lines = data.split('\n');
-            const playerName = lines[1] ? lines[1].trim() : 'プレイヤー';
-            document.getElementById('player-name').textContent = playerName;
-        })
-        .catch(error => {
-            console.log('用户名加载失败，使用默认值');
-            document.getElementById('player-name').textContent = 'プレイヤー';
-        });
+
+    // 尝试从sessionStorage获取（作为备选）
+    const sessionName = sessionStorage.getItem('userName');
+    if (sessionName && sessionName.trim() !== '') {
+        console.log('从sessionStorage加载用户名:', sessionName);
+        document.getElementById('player-name').textContent = sessionName;
+        // 同时保存到localStorage
+        localStorage.setItem('userName', sessionName);
+        return;
+    }
+
+    // 最后尝试从URL参数获取
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlName = urlParams.get('userName');
+    if (urlName && urlName.trim() !== '') {
+        console.log('从URL参数加载用户名:', urlName);
+        document.getElementById('player-name').textContent = urlName;
+        // 保存到localStorage
+        localStorage.setItem('userName', urlName);
+        return;
+    }
+
+    // 如果都没有，使用默认值
+    console.log('未找到用户名，使用默认值');
+    document.getElementById('player-name').textContent = 'プレイヤー';
 }
 
 // 重新开始模拟
@@ -44,8 +57,11 @@ function restartSimulation() {
         // localStorage.removeItem('selectedMode');
         // localStorage.removeItem('chartPredictMode');
         
-        // 跳转到主页
-        window.location.href = 'http://localhost:3000/';
+        // 跳转到主页（自动检测环境）
+        const baseUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:3000/'
+            : window.location.origin.replace(/\/results.*/, '/');
+        window.location.href = baseUrl;
     }
 }
 
