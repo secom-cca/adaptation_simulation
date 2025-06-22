@@ -1,7 +1,13 @@
 from pathlib import Path, PosixPath
 import numpy as np
+import os
 
-DATA_DIR: PosixPath = Path("data")
+# 检查是否在Railway环境中，如果是则使用Volume路径
+if os.getenv("RAILWAY_ENVIRONMENT"):
+    DATA_DIR: PosixPath = Path("/app/data")
+else:
+    DATA_DIR: PosixPath = Path("data")
+
 DATA_DIR.mkdir(exist_ok=True)
 
 RANK_FILE = DATA_DIR / "block_scores.tsv"
