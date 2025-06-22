@@ -1,0 +1,54 @@
+{"user_name":"ABCDE","mode":"best-worst","type":"Register","timestamp":"2025-06-20T07:38:18.034Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-20T07:38:21.309Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:38:21.948Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:38:21.949Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"transportation_invest","value":5,"timestamp":"2025-06-20T07:38:23.625Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"transportation_invest","value":5,"timestamp":"2025-06-20T07:38:23.626Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-20T07:38:24.212Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-20T07:38:24.212Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-20T07:38:25.340Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-20T07:38:25.340Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-20T07:38:26.967Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-20T07:38:26.968Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-20T07:38:27.905Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-20T07:38:27.905Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-20T07:38:31.231Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-20T07:38:31.779Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-20T07:38:58.076Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"transportation_invest","value":10,"timestamp":"2025-06-20T07:38:59.002Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"transportation_invest","value":10,"timestamp":"2025-06-20T07:38:59.003Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-20T07:39:00.276Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"GraphSelect","name":"Available Water","timestamp":"2025-06-20T07:39:41.762Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"StartCompare","timestamp":"2025-06-20T07:39:42.712Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"EndCompare","timestamp":"2025-06-20T07:39:43.652Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-20T07:39:44.677Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"EndCycle","name":2101,"cycle":1,"timestamp":"2025-06-20T07:40:01.210Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"StartCompare","timestamp":"2025-06-20T07:40:02.162Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"ScatterY","name":"Municipal Cost","cycle":2,"timestamp":"2025-06-20T07:40:03.976Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"ScatterX","name":"Ecosystem Level","cycle":2,"timestamp":"2025-06-20T07:40:05.427Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"ScatterY","name":"Flood Damage","cycle":2,"timestamp":"2025-06-20T07:40:07.326Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"EndCompare","timestamp":"2025-06-20T07:40:20.591Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Next","name":2026,"cycle":2,"timestamp":"2025-06-20T07:40:21.642Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"StartCompare","timestamp":"2025-06-20T07:40:47.092Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"EndCompare","timestamp":"2025-06-20T07:40:51.007Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-20T07:40:53.286Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-20T07:40:53.287Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"capacity_building_cost","value":0,"timestamp":"2025-06-20T07:40:53.572Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"capacity_building_cost","value":0,"timestamp":"2025-06-20T07:40:53.573Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-20T07:43:03.802Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-20T07:43:03.802Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:04.468Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:04.469Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-20T07:43:05.701Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-20T07:43:05.701Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:06.301Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:06.301Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-20T07:43:06.984Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-20T07:43:06.984Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:07.751Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:07.751Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-20T07:43:08.518Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-20T07:43:08.518Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:09.084Z"}
+{"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:09.085Z"}
+{"user_name":"BCDE","mode":"best-worst","type":"Register","timestamp":"2025-06-20T07:45:15.912Z"}
