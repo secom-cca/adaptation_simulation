@@ -52,3 +52,66 @@
 {"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:09.084Z"}
 {"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:09.085Z"}
 {"user_name":"BCDE","mode":"best-worst","type":"Register","timestamp":"2025-06-20T07:45:15.912Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Register","timestamp":"2025-06-22T09:37:35.757Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-22T09:37:45.631Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-22T09:37:45.631Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"transportation_invest","value":5,"timestamp":"2025-06-22T09:37:47.236Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"transportation_invest","value":5,"timestamp":"2025-06-22T09:37:47.236Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T09:37:49.019Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T09:37:49.019Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-22T09:37:50.130Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-22T09:37:50.130Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-22T09:37:51.448Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-22T09:37:51.449Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-22T09:37:52.417Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-22T09:37:52.417Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-22T09:37:53.320Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-22T09:37:53.320Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-22T09:37:56.432Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-22T09:38:01.581Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-22T09:38:03.031Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-22T09:38:06.122Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Temperature (℃)","timestamp":"2025-06-22T09:38:07.736Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Precipitation (mm)","timestamp":"2025-06-22T09:38:09.569Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"transportation_invest","value":10,"timestamp":"2025-06-22T09:38:13.279Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"transportation_invest","value":10,"timestamp":"2025-06-22T09:38:13.279Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-22T09:38:14.782Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-22T09:38:14.783Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-22T09:38:15.806Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-22T09:38:21.473Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-22T09:38:24.006Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-22T09:38:25.837Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-22T09:38:27.320Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-22T09:38:28.617Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Available Water","timestamp":"2025-06-22T09:38:33.069Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-22T09:38:36.167Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-22T09:38:36.167Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-22T09:38:37.070Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"StartCompare","timestamp":"2025-06-22T09:38:45.630Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"ScatterX","name":"Flood Damage","cycle":1,"timestamp":"2025-06-22T09:38:47.871Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"ScatterX","name":"Urban Level","cycle":1,"timestamp":"2025-06-22T09:38:49.088Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"ScatterY","name":"Ecosystem Level","cycle":1,"timestamp":"2025-06-22T09:38:50.319Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"EndCompare","timestamp":"2025-06-22T09:38:52.594Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T13:31:28.055Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T13:31:28.058Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-22T13:31:29.259Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-22T13:31:36.485Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Urban Level","timestamp":"2025-06-22T13:31:38.494Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-22T13:31:41.431Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Temperature (℃)","timestamp":"2025-06-22T13:31:44.759Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Precipitation (mm)","timestamp":"2025-06-22T13:31:46.995Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Available Water","timestamp":"2025-06-22T13:31:48.769Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Urban Level","timestamp":"2025-06-22T13:31:50.614Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-22T13:31:53.560Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Urban Level","timestamp":"2025-06-22T13:32:12.331Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-22T13:32:29.477Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-22T13:32:31.178Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-22T13:33:19.683Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-22T13:33:22.124Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Urban Level","timestamp":"2025-06-22T13:33:24.338Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Precipitation (mm)","timestamp":"2025-06-22T13:33:27.017Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Available Water","timestamp":"2025-06-22T13:33:29.436Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-22T13:33:53.125Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-22T13:33:54.967Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Urban Level","timestamp":"2025-06-22T13:33:56.308Z"}
+{"user_name":"test_terry3","mode":"best-worst","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-22T13:33:59.008Z"}

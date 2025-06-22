@@ -38,20 +38,20 @@ const getLineChartIndicators = (language) => {
   const indicators = {
     ja: {
       'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton/ha' },
-      'Flood Damage': { labelTitle: '洪水被害', max: 10000, min: 0, unit: '万円' },
+      'Flood Damage': { labelTitle: '洪水被害', max: 1000, min: 0, unit: '万円' }, // 转换后的合理范围
       'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
       'Urban Level': { labelTitle: '都市利便性', max: 100, min: 0, unit: '-' },
-      'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
+      'Municipal Cost': { labelTitle: '予算', max: 10000, min: 0, unit: '万円' }, // 转换后的合理范围
       'Temperature (℃)': { labelTitle: '年平均気温', max: 18, min: 12, unit: '℃' },
       'Precipitation (mm)': { labelTitle: '年降水量', max: 3000, min: 0, unit: 'mm' },
       'Available Water': { labelTitle: '利用可能な水量', max: 3000, min: 0, unit: 'mm' }
     },
     en: {
       'Crop Yield': { labelTitle: 'Crop Yield', max: 5, min: 0, unit: 'ton/ha' },
-      'Flood Damage': { labelTitle: 'Flood Damage', max: 10000, min: 0, unit: '10k yen' },
+      'Flood Damage': { labelTitle: 'Flood Damage', max: 1000, min: 0, unit: '10k yen' }, // 转换后的合理范围
       'Ecosystem Level': { labelTitle: 'Ecosystem Level', max: 100, min: 0, unit: '-' },
       'Urban Level': { labelTitle: 'Urban Level', max: 100, min: 0, unit: '-' },
-      'Municipal Cost': { labelTitle: 'Municipal Cost', max: 100000, min: 0, unit: '10k yen' },
+      'Municipal Cost': { labelTitle: 'Municipal Cost', max: 10000, min: 0, unit: '10k yen' }, // 转换后的合理范围
       'Temperature (℃)': { labelTitle: 'Average Temperature', max: 18, min: 12, unit: '°C' },
       'Precipitation (mm)': { labelTitle: 'Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
       'Available Water': { labelTitle: 'Available Water', max: 3000, min: 0, unit: 'mm' }
@@ -320,7 +320,7 @@ function App() {
     planting_history: {},
     urban_level: 100,
     resident_capacity: 0,
-    transportation_level: 0,
+    transportation_level: 50, // 修改初始值为50，避免变成负数
     levee_investment_total: 0,
     RnD_investment_total: 0,
     risky_house_total: 10000,
@@ -432,13 +432,13 @@ function App() {
   }, [simulationData]);
 
   useEffect(() => {
-    // 開発中のみ userName を強制リセット
-    if (process.env.NODE_ENV === 'development') {
-      localStorage.removeItem('userName');
-      localStorage.removeItem('selectedMode'); // モードもリセット
-      localStorage.removeItem('chartPredictMode'); // 予測モードもリセット
-    }
-  
+    // 開発中のみ userName を強制リセット（コメントアウト - Bug修正）
+    // if (process.env.NODE_ENV === 'development') {
+    //   localStorage.removeItem('userName');
+    //   localStorage.removeItem('selectedMode'); // モードもリセット
+    //   localStorage.removeItem('chartPredictMode'); // 予測モードもリセット
+    // }
+
     const storedName = localStorage.getItem('userName');
     const storedMode = localStorage.getItem('selectedMode');
     const storedPredictMode = localStorage.getItem('chartPredictMode');
@@ -804,7 +804,7 @@ function App() {
       planting_history: {},
       urban_level: 100,
       resident_capacity: 0,
-      transportation_level: 0,
+      transportation_level: 50, // 修改初始值为50，避免变成负数
       levee_investment_total: 0,
       RnD_investment_total: 0,
       risky_house_total: 10000,
@@ -1059,7 +1059,14 @@ function App() {
   const t = texts[language]; // 現在の言語のテキストを取得
 
   return (
-    <Box sx={{ padding: 2, backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
+    <Box sx={{
+      padding: 1,
+      backgroundColor: '#f5f7fa',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden'
+    }}>
 
 
 
@@ -1422,17 +1429,41 @@ function App() {
                     }).flat()}
                     xAxis={[{
                       label: '', // ラベル非表示
-                      min: 0,
-                      max: Math.max(...resultHistory.flatMap(cycle => 
-                        cycle.simulationData.map(data => data[selectedXAxis] || 0)
-                      )) * 1.1
+                      min: (() => {
+                        const allValues = resultHistory.flatMap(cycle =>
+                          cycle.simulationData.map(data => data[selectedXAxis] || 0)
+                        );
+                        const minValue = allValues.length > 0 ? Math.min(...allValues) : 0;
+                        // 确保最小值不会太接近0，留出缓冲空间
+                        return Math.min(minValue * 0.9, 0);
+                      })(),
+                      max: (() => {
+                        const allValues = resultHistory.flatMap(cycle =>
+                          cycle.simulationData.map(data => data[selectedXAxis] || 0)
+                        );
+                        const maxValue = allValues.length > 0 ? Math.max(...allValues) : 100;
+                        // 留出15%的缓冲空间，确保数据不会被截断
+                        return maxValue * 1.15;
+                      })()
                     }]}
                     yAxis={[{
                       label: '', // ラベル非表示
-                      min: 0,
-                      max: Math.max(...resultHistory.flatMap(cycle => 
-                        cycle.simulationData.map(data => data[selectedYAxis] || 0)
-                      )) * 1.1
+                      min: (() => {
+                        const allValues = resultHistory.flatMap(cycle =>
+                          cycle.simulationData.map(data => data[selectedYAxis] || 0)
+                        );
+                        const minValue = allValues.length > 0 ? Math.min(...allValues) : 0;
+                        // 确保最小值不会太接近0，留出缓冲空间
+                        return Math.min(minValue * 0.9, 0);
+                      })(),
+                      max: (() => {
+                        const allValues = resultHistory.flatMap(cycle =>
+                          cycle.simulationData.map(data => data[selectedYAxis] || 0)
+                        );
+                        const maxValue = allValues.length > 0 ? Math.max(...allValues) : 100;
+                        // 留出15%的缓冲空间，确保数据不会被截断
+                        return maxValue * 1.15;
+                      })()
                     }]}
                     legend={null}
                   />
@@ -1531,9 +1562,16 @@ function App() {
         </DialogContent>
       </Dialog>
 
-      {/* メインレイアウト */}
-      <Box sx={{ display: 'flex', width: '100%', marginBottom: 1, gap: 3 }}>
-        {/* 左側：画像 */}
+      {/* メインレイアウト - 高さを最適化 */}
+      <Box sx={{
+        display: 'flex',
+        width: '100%',
+        flex: 1,
+        gap: 2,
+        minHeight: 0,
+        overflow: 'hidden'
+      }}>
+        {/* 左側：画像 - 高さを最適化 */}
         <Paper
           elevation={3}
           sx={{
@@ -1541,29 +1579,38 @@ function App() {
             width: '60%',
             borderRadius: 2,
             overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 0,
           }}
         >
-
-          <Box sx={{ position: 'relative', width: '100%' }}>
+          <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
             <img
               src="/stockflow_mayfes.png"
               alt="サンプル画像"
-              style={{ width: '100%', display: 'block', height: 'auto' }}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                display: 'block'
+              }}
             />
           </Box>
-
         </Paper>
 
-        {/* 右側：ゲージ＋グラフ */}
+        {/* 右側：ゲージ＋グラフ - 高さを最適化 */}
         <Paper
           elevation={3}
           sx={{
             width: '40%',
-            padding: 3,
-            borderRadius: 2,
+            padding: 2,
             display: 'flex',
             flexDirection: 'column',
-            gap: 3,
+            minHeight: 0,
+            overflow: 'hidden',
+            borderRadius: 2,
+            gap: 2,
             backgroundColor: '#ffffff',
           }}
         >
@@ -1630,8 +1677,38 @@ function App() {
             yAxis={[
               {
                 label: `${getLineChartIndicators(language)[selectedIndicator].labelTitle}（${getLineChartIndicators(language)[selectedIndicator].unit}）`,
-                min: getLineChartIndicators(language)[selectedIndicator].min,
-                max: getLineChartIndicators(language)[selectedIndicator].max,
+                min: (() => {
+                  // 计算实际数据的最小值
+                  const dataValues = simulationData.map((row) => row[selectedIndicator]).filter(val => val != null);
+                  const predictValues = chartPredictMode !== 'none' ?
+                    chartPredictData.flatMap(data => getPredictData(data)).filter(val => val != null) : [];
+                  const allValues = [...dataValues, ...predictValues];
+
+                  if (allValues.length > 0) {
+                    const actualMin = Math.min(...allValues);
+                    // 如果实际最小值大于0，留出10%缓冲空间；如果小于等于0，使用配置最小值
+                    return actualMin > 0 ? actualMin * 0.9 : Math.min(actualMin * 1.1, getLineChartIndicators(language)[selectedIndicator].min);
+                  } else {
+                    // 没有数据时使用配置的最小值
+                    return getLineChartIndicators(language)[selectedIndicator].min;
+                  }
+                })(),
+                max: (() => {
+                  // 计算实际数据的最大值
+                  const dataValues = simulationData.map((row) => row[selectedIndicator]).filter(val => val != null);
+                  const predictValues = chartPredictMode !== 'none' ?
+                    chartPredictData.flatMap(data => getPredictData(data)).filter(val => val != null) : [];
+                  const allValues = [...dataValues, ...predictValues];
+
+                  if (allValues.length > 0) {
+                    const actualMax = Math.max(...allValues);
+                    // 优先使用实际数据范围，留出15%缓冲空间
+                    return actualMax * 1.15;
+                  } else {
+                    // 没有数据时使用配置的最大值
+                    return getLineChartIndicators(language)[selectedIndicator].max;
+                  }
+                })(),
                 showGrid: true
               },
             ]}
@@ -1669,7 +1746,7 @@ function App() {
                 })) : []
               )
             ]}
-            height={300}
+            height={250}
             sx={{
               width: '100%',
               '& .MuiChartsLegend-root': { display: 'none' },
@@ -1746,8 +1823,14 @@ function App() {
           </Box>
         </Paper>
       </Box>
-      <Box style={{ width: '100%' }}>
-        <Grid container spacing={2}> {/* spacingでBox間の余白を調整できます */}
+
+      {/* 滑块控制区域 - 紧凑布局 */}
+      <Box sx={{
+        width: '100%',
+        flexShrink: 0,
+        mt: 1
+      }}>
+        <Grid container spacing={1}>
           <Grid size={3}>
             <Box
               sx={{

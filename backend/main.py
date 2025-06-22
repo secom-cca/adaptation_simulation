@@ -2,10 +2,15 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent / "src"))
 
-from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi import FastAPI, HTTPException, WebSocket, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import pandas as pd
 import numpy as np
+import json
+import zipfile
+from datetime import datetime
 from typing import Dict
 
 from config import DEFAULT_PARAMS, rcp_climate_params, RANK_FILE, ACTION_LOG_FILE, YOUR_NAME_FILE
@@ -26,6 +31,22 @@ app.add_middleware(
 )
 
 scenarios_data: Dict[str, pd.DataFrame] = {}
+
+# 管理员认证
+security = HTTPBasic()
+
+def authenticate_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    """验证管理员身份"""
+    correct_username = "admin"
+    correct_password = "climate2025"
+
+    if credentials.username != correct_username or credentials.password != correct_password:
+        raise HTTPException(
+            status_code=401,
+            detail="管理者認証に失敗しました",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 @app.get("/ping")
 def ping():
@@ -196,6 +217,128 @@ async def websocket_log_endpoint(websocket: WebSocket):
         except Exception as e:
             # クライアント切断などでエラーが出たら終了
             break
+
+# 管理员路由
+@app.get("/admin/dashboard")
+async def get_admin_dashboard(admin: str = Depends(authenticate_admin)):
+    """获取管理员仪表板数据"""
+    try:
+        data_dir = Path(__file__).parent / "data"
+
+        # 读取用户日志
+        user_log_file = data_dir / "user_log.jsonl"
+        user_logs = []
+        if user_log_file.exists():
+            with open(user_log_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if line.strip():
+                        user_logs.append(json.loads(line.strip()))
+
+        # 读取评分数据
+        block_scores = []
+        if RANK_FILE.exists():
+            df = pd.read_csv(RANK_FILE, sep='\t')
+            block_scores = df.to_dict('records')
+
+        # 统计信息
+        unique_users = set()
+        for log in user_logs:
+            if 'user_name' in log:
+                unique_users.add(log['user_name'])
+
+        # 按用户分组的评分数据
+        user_scores = {}
+        for score in block_scores:
+            user_name = score['user_name']
+            if user_name not in user_scores:
+                user_scores[user_name] = []
+            user_scores[user_name].append(score)
+
+        # 最近活动
+        recent_logs = sorted(user_logs, key=lambda x: x.get('timestamp', ''), reverse=True)[:50]
+
+        return {
+            "summary": {
+                "total_users": len(unique_users),
+                "total_logs": len(user_logs),
+                "total_simulations": len(block_scores),
+                "last_activity": recent_logs[0]['timestamp'] if recent_logs else None
+            },
+            "users": list(unique_users),
+            "user_scores": user_scores,
+            "recent_activity": recent_logs,
+            "data_files": {
+                "user_log_size": user_log_file.stat().st_size if user_log_file.exists() else 0,
+                "block_scores_size": RANK_FILE.stat().st_size if RANK_FILE.exists() else 0
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"データの取得に失敗しました: {str(e)}")
+
+@app.get("/admin/download/all")
+async def download_all_data(admin: str = Depends(authenticate_admin)):
+    """下载所有数据的压缩包"""
+    try:
+        data_dir = Path(__file__).parent / "data"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        zip_filename = f"climate_simulation_data_{timestamp}.zip"
+        zip_path = data_dir / zip_filename
+
+        # 创建压缩包
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # 添加所有数据文件
+            for file_path in data_dir.glob("*.jsonl"):
+                zipf.write(file_path, file_path.name)
+            for file_path in data_dir.glob("*.tsv"):
+                zipf.write(file_path, file_path.name)
+            for file_path in data_dir.glob("*.csv"):
+                zipf.write(file_path, file_path.name)
+
+        return FileResponse(
+            path=zip_path,
+            filename=zip_filename,
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={zip_filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"ダウンロードに失敗しました: {str(e)}")
+
+@app.get("/admin/download/logs")
+async def download_user_logs(admin: str = Depends(authenticate_admin)):
+    """下载用户日志文件"""
+    try:
+        data_dir = Path(__file__).parent / "data"
+        log_file = data_dir / "user_log.jsonl"
+
+        if not log_file.exists():
+            raise HTTPException(status_code=404, detail="ログファイルが存在しません")
+
+        return FileResponse(
+            path=log_file,
+            filename=f"user_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl",
+            media_type="application/json"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"ログのダウンロードに失敗しました: {str(e)}")
+
+@app.get("/admin/download/scores")
+async def download_scores(admin: str = Depends(authenticate_admin)):
+    """下载评分数据文件"""
+    try:
+        if not RANK_FILE.exists():
+            raise HTTPException(status_code=404, detail="評価ファイルが存在しません")
+
+        return FileResponse(
+            path=RANK_FILE,
+            filename=f"block_scores_{datetime.now().strftime('%Y%m%d_%H%M%S')}.tsv",
+            media_type="text/tab-separated-values"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"評価データのダウンロードに失敗しました: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

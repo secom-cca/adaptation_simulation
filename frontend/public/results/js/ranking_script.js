@@ -24,6 +24,7 @@ var allscore = [];
 
 //CSVファイルを読み込む関数getCSV()の定義
 function get_nameCSV(){
+    console.log('开始加载用户名数据...');
     var req = new XMLHttpRequest(); // HTTPでファイルを読み込むためのXMLHttpRrequestオブジェクトを生成
     req.open("get", "http://localhost:3000/results/data/your_name.csv", true); // アクセスするファイルを指定
     req.send(null); // HTTPリクエストの発行
@@ -53,14 +54,18 @@ function convert_nameCSVtoArray(str){
 }
 // 3つ目のCSVを配列に変換し、1つ目の値を使って処理
 function convert_dataCSVtoArray(str){
+    console.log('开始处理评分数据...');
+    console.log('评分数据前500字符:', str.substring(0, 500));
     result2 = [];
     var tmp = str.split("\n");
+    console.log('数据行数:', tmp.length);
     for(var i=0;i<tmp.length;++i){
         result2[i] = tmp[i].split('\t');
     }
 
     // プレイヤー名を取得
     yourname = result1[1][0].trim();
+    console.log('当前玩家名:', yourname);
 
     document.getElementById("yourname").innerText=yourname;
 
@@ -70,26 +75,29 @@ function convert_dataCSVtoArray(str){
     document.getElementById("bunya3").innerText=scorename[3];
     document.getElementById("bunya4").innerText=scorename[4];
 
+    console.log('开始查找玩家数据...');
     for(var i=1;i<tmp.length;++i){
         if (result2[i][0] == yourname){
+            console.log('找到玩家数据，行', i, ':', result2[i]);
             your_data.push(result2[i]);
         }
     }
+    console.log('玩家数据总数:', your_data.length);
 
     // 2050年
-    var jsonStr2050score = your_data[0][4].replace(/'/g, '"'); // シングルクォートをダブルクォートに変換
+    var jsonStr2050score = your_data[0][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''); // numpy型を除去
     var obj2050score = JSON.parse(jsonStr2050score);
     sum2050 = Object.values(obj2050score).reduce(function(acc, val){
     return acc + Number(val);
     }, 0);
     // 2075年
-    var jsonStr2075score = your_data[1][4].replace(/'/g, '"'); // シングルクォートをダブルクォートに変換
+    var jsonStr2075score = your_data[1][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''); // numpy型を除去
     var obj2075score = JSON.parse(jsonStr2075score);
     sum2075 = Object.values(obj2075score).reduce(function(acc, val){
     return acc + Number(val);
     }, 0);
     // 2100年
-    var jsonStr2100score = your_data[2][4].replace(/'/g, '"'); // シングルクォートをダブルクォートに変換
+    var jsonStr2100score = your_data[2][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''); // numpy型を除去
     var obj2100score = JSON.parse(jsonStr2100score);
     sum2100 = Object.values(obj2100score).reduce(function(acc, val){
     return acc + Number(val);
@@ -126,12 +134,24 @@ function convert_dataCSVtoArray(str){
     // プレイヤー全員の結果をresult2より取得
     allscore = []; // ここで初期化
     for(var i=1;i<result2.length; i=i+3){ // 1行目はヘッダーなのでi=1から
-        if (!result2[i] || !result2[i+1] || !result2[i+2]) continue;
+        // 更严格的数据检查
+        if (!result2[i] || !result2[i+1] || !result2[i+2] ||
+            !result2[i][4] || !result2[i+1][4] || !result2[i+2][4] ||
+            result2[i].length < 6 || result2[i+1].length < 6 || result2[i+2].length < 6) {
+            console.log('跳过不完整的数据行:', i);
+            continue;
+        }
         var playername = result2[i][0];
+        console.log('处理玩家:', playername);
 
-        var obj2050score = JSON.parse(result2[i][4].replace(/'/g, '"'));
-        var obj2075score = JSON.parse(result2[i+1][4].replace(/'/g, '"'));
-        var obj2100score = JSON.parse(result2[i+2][4].replace(/'/g, '"'));
+        try {
+            var obj2050score = JSON.parse(result2[i][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''));
+            var obj2075score = JSON.parse(result2[i+1][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''));
+            var obj2100score = JSON.parse(result2[i+2][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''));
+        } catch (error) {
+            console.error('JSON解析错误，玩家:', playername, '错误:', error);
+            continue;
+        }
 
         var sum2050 = Object.values(obj2050score).reduce((acc, val) => acc + Number(val), 0);
         var sum2075 = Object.values(obj2075score).reduce((acc, val) => acc + Number(val), 0);

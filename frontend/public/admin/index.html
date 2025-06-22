@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者コンソール - 気候適応シミュレーション</title>
+    <link rel="stylesheet" href="admin_style.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- 認証画面 -->
+        <div id="auth-section" class="auth-section">
+            <div class="auth-card">
+                <h1>🔐 管理者認証</h1>
+                <p>システムデータにアクセスするため、管理者認証情報を入力してください</p>
+                <form id="auth-form">
+                    <div class="form-group">
+                        <label for="username">ユーザー名:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">パスワード:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="auth-btn">ログイン</button>
+                </form>
+                <div id="auth-error" class="error-message"></div>
+            </div>
+        </div>
+
+        <!-- 管理者ダッシュボード -->
+        <div id="dashboard-section" class="dashboard-section" style="display: none;">
+            <header class="dashboard-header">
+                <h1>📊 気候適応シミュレーション - 管理者コンソール</h1>
+                <div class="header-actions">
+                    <span id="last-update">最終更新: --</span>
+                    <button id="refresh-btn" class="action-btn">🔄 更新</button>
+                    <button id="logout-btn" class="action-btn logout">🚪 ログアウト</button>
+                </div>
+            </header>
+
+            <!-- 統計概要 -->
+            <section class="stats-overview">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="total-users">--</div>
+                        <div class="stat-label">総ユーザー数</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="total-logs">--</div>
+                        <div class="stat-label">操作ログ</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="total-simulations">--</div>
+                        <div class="stat-label">シミュレーション記録</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="last-activity">--</div>
+                        <div class="stat-label">最終活動</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- クイックアクション -->
+            <section class="quick-actions">
+                <h2>📥 データダウンロード</h2>
+                <div class="action-grid">
+                    <button id="download-all-btn" class="download-btn">
+                        <span class="btn-icon">📦</span>
+                        <span class="btn-text">全データダウンロード</span>
+                        <span class="btn-desc">全ユーザーデータとログを含むZIPファイル</span>
+                    </button>
+                    <button id="download-logs-btn" class="download-btn">
+                        <span class="btn-icon">📋</span>
+                        <span class="btn-text">ユーザーログダウンロード</span>
+                        <span class="btn-desc">ユーザー操作ログファイル (JSONL)</span>
+                    </button>
+                    <button id="download-scores-btn" class="download-btn">
+                        <span class="btn-icon">🏆</span>
+                        <span class="btn-text">評価データダウンロード</span>
+                        <span class="btn-desc">シミュレーション結果と評価データ (TSV)</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ユーザーリスト -->
+            <section class="users-section">
+                <h2>👥 ユーザーリスト</h2>
+                <div class="users-grid" id="users-grid">
+                    <!-- ユーザーカードはJavaScriptで動的に生成されます -->
+                </div>
+            </section>
+
+            <!-- 最近のアクティビティ -->
+            <section class="activity-section">
+                <h2>📈 最近のアクティビティ</h2>
+                <div class="activity-list" id="activity-list">
+                    <!-- アクティビティ記録はJavaScriptで動的に生成されます -->
+                </div>
+            </section>
+
+            <!-- ユーザー詳細モーダル -->
+            <div id="user-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modal-user-name">ユーザー詳細</h3>
+                        <span class="close">&times;</span>
+                    </div>
+                    <div class="modal-body" id="modal-body">
+                        <!-- ユーザー詳細内容 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ローディングインジケーター -->
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>データを読み込み中...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="admin_script.js"></script>
+</body>
+</html>
