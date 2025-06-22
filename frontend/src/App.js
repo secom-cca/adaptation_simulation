@@ -1144,6 +1144,92 @@ function App() {
 
   const t = texts[language]; // 現在の言語のテキストを取得
 
+  // Y轴范围计算优化 - 使用useMemo缓存计算结果，必须在条件渲染之外
+  const chartComponent = useMemo(() => {
+    // 计算Y轴范围，避免每次渲染都重新计算
+    const dataValues = simulationData.map((row) => row[selectedIndicator]).filter(val => val != null);
+    const predictValues = chartPredictMode !== 'none' ?
+      chartPredictData.flatMap(data => getPredictData(data)).filter(val => val != null) : [];
+    const allValues = [...dataValues, ...predictValues];
+
+    let yMin, yMax;
+    if (allValues.length > 0) {
+      const actualMin = Math.min(...allValues);
+      const actualMax = Math.max(...allValues);
+      yMin = actualMin > 0 ? actualMin * 0.9 : Math.min(actualMin * 1.1, getLineChartIndicators(language)[selectedIndicator].min);
+      yMax = actualMax * 1.15;
+    } else {
+      yMin = getLineChartIndicators(language)[selectedIndicator].min;
+      yMax = getLineChartIndicators(language)[selectedIndicator].max;
+    }
+
+    return (
+      <LineChart
+        xAxis={[
+          {
+            data: xAxisYears,
+            label: t.chart.years,
+            scaleType: 'linear',
+            tickMinStep: 1,
+            showGrid: true,
+            min: 2020,
+            max: 2100
+          },
+        ]}
+        yAxis={[
+          {
+            label: `${getLineChartIndicators(language)[selectedIndicator].labelTitle}（${getLineChartIndicators(language)[selectedIndicator].unit}）`,
+            min: yMin,
+            max: yMax,
+            showGrid: true
+          },
+        ]}
+        series={[
+          {
+            data: simulationData.map((row) => row[selectedIndicator]),
+            label: t.chart.measuredValue,
+            color: '#ff5722',
+            showMark: false,
+          },
+          // 予測データの表示（モードに応じて変更）
+          ...(chartPredictMode === 'best-worst' ? [
+            {
+              data: getPredictData(chartPredictData[1]),
+              label: t.chart.upperLimit,
+              color: '#cccccc',
+              lineStyle: 'dashed',
+              showMark: false
+            },
+            {
+              data: getPredictData(chartPredictData[0]),
+              label: t.chart.lowerLimit,
+              color: '#cccccc',
+              lineStyle: 'dashed',
+              showMark: false
+            }
+          ] : chartPredictMode === 'monte-carlo' ?
+            chartPredictData.map((data, index) => ({
+              data: getPredictData(data),
+              label: `${t.chart.monteCarlo} ${index + 1}`,
+              color: `rgba(100, 100, 100, 0.1)`,
+              lineStyle: 'dashed',
+              lineWidth: 1,
+              showMark: false
+            })) : []
+          )
+        ]}
+        height={250}
+        sx={{
+          width: '100%',
+          '& .MuiChartsLegend-root': { display: 'none' },
+          backgroundColor: '#f9f9f9',
+          borderRadius: 2,
+          padding: 2,
+        }}
+      />
+    );
+  }, [simulationData, selectedIndicator, chartPredictMode, chartPredictData, language, t.chart]);
+
   return (
     <Box sx={{
       padding: 1,
@@ -1754,91 +1840,7 @@ function App() {
 
 
           {/* グラフ */}
-          {/* Y轴范围计算优化 - 使用useMemo缓存计算结果 */}
-          {useMemo(() => {
-            // 计算Y轴范围，避免每次渲染都重新计算
-            const dataValues = simulationData.map((row) => row[selectedIndicator]).filter(val => val != null);
-            const predictValues = chartPredictMode !== 'none' ?
-              chartPredictData.flatMap(data => getPredictData(data)).filter(val => val != null) : [];
-            const allValues = [...dataValues, ...predictValues];
-
-            let yMin, yMax;
-            if (allValues.length > 0) {
-              const actualMin = Math.min(...allValues);
-              const actualMax = Math.max(...allValues);
-              yMin = actualMin > 0 ? actualMin * 0.9 : Math.min(actualMin * 1.1, getLineChartIndicators(language)[selectedIndicator].min);
-              yMax = actualMax * 1.15;
-            } else {
-              yMin = getLineChartIndicators(language)[selectedIndicator].min;
-              yMax = getLineChartIndicators(language)[selectedIndicator].max;
-            }
-
-            return (
-              <LineChart
-            xAxis={[
-              {
-                data: xAxisYears,
-                label: t.chart.years,
-                scaleType: 'linear',
-                tickMinStep: 1,
-                showGrid: true,
-                min: 2020,
-                max: 2100
-              },
-            ]}
-            yAxis={[
-              {
-                label: `${getLineChartIndicators(language)[selectedIndicator].labelTitle}（${getLineChartIndicators(language)[selectedIndicator].unit}）`,
-                min: yMin,
-                max: yMax,
-                showGrid: true
-              },
-            ]}
-            series={[
-              {
-                data: simulationData.map((row) => row[selectedIndicator]),
-                label: t.chart.measuredValue,
-                color: '#ff5722',
-                showMark: false,
-              },
-              // 予測データの表示（モードに応じて変更）
-              ...(chartPredictMode === 'best-worst' ? [
-                {
-                  data: getPredictData(chartPredictData[1]),
-                  label: t.chart.upperLimit,
-                  color: '#cccccc',
-                  lineStyle: 'dashed',
-                  showMark: false
-                },
-                {
-                  data: getPredictData(chartPredictData[0]),
-                  label: t.chart.lowerLimit,
-                  color: '#cccccc',
-                  lineStyle: 'dashed',
-                  showMark: false
-                }
-              ] : chartPredictMode === 'monte-carlo' ? 
-                chartPredictData.map((data, index) => ({
-                  data: getPredictData(data),
-                  label: `${t.chart.monteCarlo} ${index + 1}`,
-                  color: `rgba(100, 100, 100, 0.1)`,
-                  lineStyle: 'dashed',
-                  lineWidth: 1,
-                  showMark: false
-                })) : []
-              )
-            ]}
-            height={250}
-            sx={{
-              width: '100%',
-              '& .MuiChartsLegend-root': { display: 'none' },
-              backgroundColor: '#f9f9f9',
-              borderRadius: 2,
-              padding: 2,
-            }}
-          />
-            );
-          }, [simulationData, selectedIndicator, chartPredictMode, chartPredictData, language])}
+          {chartComponent}
 
           <FormControl fullWidth sx={{ mt: 2 }}>
             <InputLabel id="indicator-select-label">{t.chart.selectYAxis}</InputLabel>
