@@ -6,7 +6,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import SettingsIcon from '@mui/icons-material/Settings';
 import axios from "axios";
 
-import FormulaPage from "./FormulaPage"; // 新ページ
+import ModelExplanationPage from "./ModelExplanationPage"; // 模型说明页面
 
 // ※ chart.js v4 の設定
 import {
@@ -1737,7 +1737,7 @@ function App() {
 
       {/* 条件渲染：主页面或模型解释页面 */}
       {showFormulaPage ? (
-        <FormulaPage onBack={() => setShowFormulaPage(false)} />
+        <ModelExplanationPage onBack={() => setShowFormulaPage(false)} />
       ) : (
         <>
           {/* メインレイアウト - 高さを最適化 */}
