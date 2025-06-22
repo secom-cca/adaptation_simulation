@@ -502,7 +502,7 @@ function App() {
     simulationDataRef.current = simulationData;
   }, [simulationData]);
 
-  // 分离模拟状态保存逻辑，减少触发频率
+  // 修复模拟状态保存逻辑，确保所有相关状态变化都会触发保存
   useEffect(() => {
     const simulationState = {
       chartPredictData,
@@ -515,7 +515,7 @@ function App() {
     };
     localStorage.setItem('simulationState', JSON.stringify(simulationState));
     console.log('模拟状态已保存:', simulationState);
-  }, [currentCycle, cycleCompleted, inputCount, simulationData.length]); // 减少依赖项，只在关键状态变化时保存
+  }, [chartPredictData, resultHistory, currentCycle, cycleCompleted, inputCount, inputHistory, simulationData]); // 修复：包含所有相关状态
 
   useEffect(() => {
     // 開発中のみ userName を強制リセット（コメントアウト - Bug修正）
@@ -729,6 +729,12 @@ function App() {
 
   // decisionVarが変動した際に予測値をリアルタイムで取得する
   const fetchForecastData = async () => {
+    // 模型解释页面显示时，跳过预测数据更新以避免状态重置
+    if (showFormulaPage) {
+      console.log('模型解释页面显示中，跳过预测数据更新');
+      return;
+    }
+
     try {
       // /simulate に POST するパラメータ
       console.log("現在の入力:", decisionVarRef.current, currentValuesRef.current)
@@ -1268,7 +1274,11 @@ function App() {
         </Box>
         <Button
           variant="outlined"
-          onClick={() => setShowFormulaPage(true)}
+          onClick={() => {
+            console.log('点击模型解释按钮，当前模拟数据长度:', simulationData.length);
+            console.log('当前chartPredictData:', chartPredictData);
+            setShowFormulaPage(true);
+          }}
         >
           {t.buttons.viewModel}
         </Button>
@@ -1737,7 +1747,11 @@ function App() {
 
       {/* 条件渲染：主页面或模型解释页面 */}
       {showFormulaPage ? (
-        <ModelExplanationPage onBack={() => setShowFormulaPage(false)} />
+        <ModelExplanationPage onBack={() => {
+          console.log('从模型解释页面返回，当前模拟数据长度:', simulationData.length);
+          console.log('当前chartPredictData:', chartPredictData);
+          setShowFormulaPage(false);
+        }} />
       ) : (
         <>
           {/* メインレイアウト - 高さを最適化 */}
