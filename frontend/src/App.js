@@ -30,7 +30,7 @@ ChartJS.register(
 );
 
 // バックエンドの URL を環境変数や直書きなどで指定
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://web-production-5fb04.up.railway.app";
 
 // 各種設定
 
@@ -370,7 +370,8 @@ function App() {
 
   // ここでuseEffectを定義
   useEffect(() => {
-    wsLogRef.current = new WebSocket("ws://localhost:8000/ws/log");
+    const wsUrl = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+    wsLogRef.current = new WebSocket(`${wsUrl}/ws/log`);
     wsLogRef.current.onopen = () => {
       console.log("✅ Log WebSocket connected");
     };
