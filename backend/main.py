@@ -24,9 +24,14 @@ from utils import calculate_scenario_indicators, aggregate_blocks
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",  # 本地开发
+        "http://localhost:3001",  # 本地开发备用端口
+        "https://climate-adaptation-backend.vercel.app",  # Vercel前端域名
+        "https://*.vercel.app",  # 允许所有Vercel子域名
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
