@@ -5,7 +5,7 @@ import { Agriculture, Biotech, EmojiTransportation, Flood, Forest, Houseboat, Lo
 import InfoIcon from '@mui/icons-material/Info';
 import SettingsIcon from '@mui/icons-material/Settings';
 import axios from "axios";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+
 import FormulaPage from "./FormulaPage"; // 新ページ
 
 // ※ chart.js v4 の設定
@@ -264,16 +264,7 @@ const texts = {
   }
 };
 
-function AppRouter() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/formula" element={<FormulaPage />} />
-      </Routes>
-    </Router>
-  );
-}
+
 
 function App() {
   // シミュレーション実行用のステート
@@ -438,6 +429,7 @@ function App() {
   const [showResultButton, setShowResultButton] = useState(false);
   const [userNameError, setUserNameError] = useState("")
   const [selectedMode, setSelectedMode] = useState(localStorage.getItem('selectedMode') || 'group'); // モード選択: 'group', 'upstream', 'downstream'
+  const [showFormulaPage, setShowFormulaPage] = useState(false); // 模型解释页面显示状态
 
   // ここでuseRefを定義
   const wsLogRef = useRef(null);
@@ -1188,11 +1180,12 @@ function App() {
             {selectedMode === 'downstream' && t.mode.downstreamDesc}
           </Typography>
         </Box>
-        <Link to="/formula">
-          <Button variant="outlined">
-            {t.buttons.viewModel}
-          </Button>
-        </Link>
+        <Button
+          variant="outlined"
+          onClick={() => setShowFormulaPage(true)}
+        >
+          {t.buttons.viewModel}
+        </Button>
         {showResultButton && (
         <Box sx={{ textAlign: 'center', mt: 0 }}>
           <Button
@@ -1656,15 +1649,20 @@ function App() {
         </DialogContent>
       </Dialog>
 
-      {/* メインレイアウト - 高さを最適化 */}
-      <Box sx={{
-        display: 'flex',
-        width: '100%',
-        flex: 1,
-        gap: 2,
-        minHeight: 0,
-        overflow: 'hidden'
-      }}>
+      {/* 条件渲染：主页面或模型解释页面 */}
+      {showFormulaPage ? (
+        <FormulaPage onBack={() => setShowFormulaPage(false)} />
+      ) : (
+        <>
+          {/* メインレイアウト - 高さを最適化 */}
+          <Box sx={{
+            display: 'flex',
+            width: '100%',
+            flex: 1,
+            gap: 2,
+            minHeight: 0,
+            overflow: 'hidden'
+          }}>
         {/* 左側：画像 - 高さを最適化 */}
         <Paper
           elevation={3}
@@ -2104,6 +2102,8 @@ function App() {
           </Grid>
         </Grid>
       </Box>
+        </>
+      )}
 
     </Box >
   );

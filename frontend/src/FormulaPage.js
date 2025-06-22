@@ -1,11 +1,10 @@
 // FormulaPage.js
 import React from 'react';
 import { Box, Typography, Paper, Button } from '@mui/material';
-import { Link } from 'react-router-dom';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
 
-function FormulaPage() {
+function FormulaPage({ onBack }) {
   // 纯信息展示页面 - 不需要状态管理
 
   return (
@@ -15,9 +14,12 @@ function FormulaPage() {
       </Typography>
 
       <Box sx={{ mb: 3 }}>
-        <Link to="/" style={{ textDecoration: 'none' }}>
-          <Button variant="contained">戻る</Button>
-        </Link>
+        <Button
+          variant="contained"
+          onClick={onBack}
+        >
+          戻る
+        </Button>
       </Box>
 
       {/* ---------- 概要 ---------- */}
