@@ -37,20 +37,20 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"
 const getLineChartIndicators = (language) => {
   const indicators = {
     ja: {
-      'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton/ha' },
       'Flood Damage': { labelTitle: '洪水被害', max: 10000, min: 0, unit: '万円' },
+      'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton/ha' },
       'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
-      'Urban Level': { labelTitle: '都市利便性', max: 100, min: 0, unit: '-' },
+      // 'Urban Level': { labelTitle: '都市利便性', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
       'Temperature (℃)': { labelTitle: '年平均気温', max: 18, min: 12, unit: '℃' },
       'Precipitation (mm)': { labelTitle: '年降水量', max: 3000, min: 0, unit: 'mm' },
       'Available Water': { labelTitle: '利用可能な水量', max: 3000, min: 0, unit: 'mm' }
     },
     en: {
-      'Crop Yield': { labelTitle: 'Crop Yield', max: 5, min: 0, unit: 'ton/ha' },
       'Flood Damage': { labelTitle: 'Flood Damage', max: 10000, min: 0, unit: '10k yen' },
+      'Crop Yield': { labelTitle: 'Crop Yield', max: 5, min: 0, unit: 'ton/ha' },
       'Ecosystem Level': { labelTitle: 'Ecosystem Level', max: 100, min: 0, unit: '-' },
-      'Urban Level': { labelTitle: 'Urban Level', max: 100, min: 0, unit: '-' },
+      // 'Urban Level': { labelTitle: 'Urban Level', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: 'Municipal Cost', max: 100000, min: 0, unit: '10k yen' },
       'Temperature (℃)': { labelTitle: 'Average Temperature', max: 18, min: 12, unit: '°C' },
       'Precipitation (mm)': { labelTitle: 'Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
@@ -77,7 +77,7 @@ const texts = {
     cropYield: '収穫量',
     floodDamage: '洪水被害',
     ecosystemLevel: '生態系',
-    urbanLevel: '都市利便性',
+    // urbanLevel: '都市利便性',
     municipalCost: '予算',
     temperature: '年平均気温',
     precipitation: '年降水量',
@@ -117,7 +117,7 @@ const texts = {
     },
     sliders: {
       plantingTrees: '植林・森林保全',
-      transportation: '公共バス',
+      // transportation: '公共バス',
       damLevee: '河川堤防',
       agriculturalRnD: '高温耐性品種',
       houseMigration: '住宅移転',
@@ -147,7 +147,6 @@ const texts = {
       cycleComplete: 'サイクル',
       completed: 'が完了しました！',
       viewResults: '結果を見る',
-      viewModel: 'モデルの説明を見る'
     },
     scatter: {
       title: 'サイクルの比較',
@@ -173,7 +172,7 @@ const texts = {
     cropYield: 'Crop Yield',
     floodDamage: 'Flood Damage',
     ecosystemLevel: 'Ecosystem Level',
-    urbanLevel: 'Urban Level',
+    // urbanLevel: 'Urban Level',
     municipalCost: 'Municipal Cost',
     temperature: 'Average Temperature',
     precipitation: 'Annual Precipitation',
@@ -213,7 +212,7 @@ const texts = {
     },
     sliders: {
       plantingTrees: 'Forest Conservation',
-      transportation: 'Public Transportation',
+      // transportation: 'Public Transportation',
       damLevee: 'River Levee',
       agriculturalRnD: 'Heat-resistant Varieties',
       houseMigration: 'House Migration',
@@ -243,7 +242,6 @@ const texts = {
       cycleComplete: 'Cycle',
       completed: 'completed!',
       viewResults: 'View Results',
-      viewModel: 'View Model Description'
     },
     scatter: {
       title: 'Cycle Comparison',
@@ -340,7 +338,7 @@ function App() {
   const simulationDataRef = useRef(simulationData);
 
   // LineChartの縦軸の変更
-  const [selectedIndicator, setSelectedIndicator] = useState('Crop Yield');
+  const [selectedIndicator, setSelectedIndicator] = useState('Flood Damage');
   const currentIndicator = getLineChartIndicators(language)[selectedIndicator];
   const handleLineChartChange = (event) => {
     setSelectedIndicator(event.target.value);
@@ -1057,6 +1055,7 @@ function App() {
   }, [chartPredictMode]);
 
   const t = texts[language]; // 現在の言語のテキストを取得
+  const [openFormulaModal, setOpenFormulaModal] = useState(false);
 
   return (
     <Box sx={{ padding: 2, backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
@@ -1087,11 +1086,6 @@ function App() {
             {selectedMode === 'downstream' && t.mode.downstreamDesc}
           </Typography>
         </Box>
-        <Link to="/formula">
-          <Button variant="outlined">
-            {t.buttons.viewModel}
-          </Button>
-        </Link>
         {showResultButton && (
         <Box sx={{ textAlign: 'center', mt: 0 }}>
           <Button
@@ -1110,6 +1104,39 @@ function App() {
           </IconButton>
         </Box>
       </Box>
+
+      <Box sx={{ p: 3 }}>
+        <Button variant="outlined" onClick={() => setOpenFormulaModal(true)}>
+          Model Description
+        </Button>
+
+        <Dialog
+          open={openFormulaModal}
+          onClose={() => setOpenFormulaModal(false)}
+          fullWidth
+          maxWidth="xl"
+        >
+          <DialogTitle>Model Description</DialogTitle>
+          <DialogContent>
+            <FormulaPage />
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Button variant="contained" onClick={() => setOpenFormulaModal(false)}>
+                Close
+              </Button>
+            </Box>
+          </DialogContent>
+        </Dialog>
+      </Box>
+
+      <Dialog open={openFormulaModal} onClose={() => setOpenFormulaModal(false)} maxWidth="xl" fullWidth>
+        <DialogTitle>Model Description</DialogTitle>
+        <DialogContent>
+          <FormulaPage />
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <Button variant="contained" onClick={() => setOpenFormulaModal(false)}>Close</Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={openNameDialog} disableEscapeKeyDown>
         <DialogTitle>{t.dialog.nameTitle}</DialogTitle>
@@ -1496,7 +1523,7 @@ function App() {
                           <TableCell>{t.sliders.damLevee}</TableCell>
                           <TableCell>{t.sliders.paddyDam}</TableCell>
                           <TableCell>{t.sliders.capacityBuilding}</TableCell>
-                          <TableCell>{t.sliders.transportation}</TableCell>
+                          {/* <TableCell>{t.sliders.transportation}</TableCell> */}
                           <TableCell>{t.sliders.agriculturalRnD}</TableCell>
                         </TableRow>
                       </TableHead>
@@ -1512,7 +1539,7 @@ function App() {
                               <TableCell>{input.decisionVariables.dam_levee_construction_cost}</TableCell>
                               <TableCell>{input.decisionVariables.paddy_dam_construction_cost}</TableCell>
                               <TableCell>{input.decisionVariables.capacity_building_cost}</TableCell>
-                              <TableCell>{input.decisionVariables.transportation_invest}</TableCell>
+                              {/* <TableCell>{input.decisionVariables.transportation_invest}</TableCell> */}
                               <TableCell>{input.decisionVariables.agricultural_RnD_cost}</TableCell>
                             </TableRow>
                           ))
@@ -1546,7 +1573,7 @@ function App() {
 
           <Box sx={{ position: 'relative', width: '100%' }}>
             <img
-              src="/stockflow_mayfes.png"
+              src="/system_dynamics.png"
               alt="サンプル画像"
               style={{ width: '100%', display: 'block', height: 'auto' }}
             />
@@ -1592,12 +1619,6 @@ function App() {
                 <Gauge width={100} height={100} value={Math.round(currentValues.extreme_precip_freq)} valueMax={10} valueMin={0} />
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>{t.unit.frequency}</Typography>
               </Box>
-
-              {/* <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ mb: 0 }}>収穫量</Typography>
-                <Gauge width={100} height={100} value={Math.round(currentValues.crop_yield)} valueMax={5000} valueMin={0}/>
-                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>ton/ha</Typography>
-              </Box> */}
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>{t.chart.residentBurden}</Typography>
@@ -1748,7 +1769,7 @@ function App() {
       </Box>
       <Box style={{ width: '100%' }}>
         <Grid container spacing={2}> {/* spacingでBox間の余白を調整できます */}
-          <Grid size={3}>
+          <Grid size={4}>
             <Box
               sx={{
                 width: '100%',
@@ -1775,7 +1796,7 @@ function App() {
               />
             </Box>
           </Grid>
-          <Grid size={3}>
+          {/* <Grid size={3}>
             <Box
               sx={{
                 width: '100%',
@@ -1801,8 +1822,8 @@ function App() {
                 disabled={!isSliderEnabled('transportation_invest')}
               />
             </Box>
-          </Grid>
-          <Grid size={3}>
+          </Grid> */}
+          <Grid size={4}>
             <Box
               sx={{
                 width: '100%',
@@ -1828,7 +1849,7 @@ function App() {
                 disabled={!isSliderEnabled('dam_levee_construction_cost')}
               />
             </Box>
-          </Grid><Grid size={3}>
+          </Grid><Grid size={4}>
             <Box
               sx={{
                 width: '100%',

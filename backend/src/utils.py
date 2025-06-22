@@ -187,3 +187,39 @@ def compare_scenarios_yearly(scenarios_data, variables, x_axis_label='X軸', y_a
         )
         st.plotly_chart(fig_scatter_seq)
 
+def estimate_rice_yield_loss(temp_mean_annual,
+                            high_temp_tolerance_level,
+                            base_min_temp=20.0,
+                            base_opt_temp=22.0,
+                            base_turn_point_temp=30.0):
+    """
+    temp_mean_annual: 年平均気温（℃）
+    high_temp_tolerance_level: 品種などによる高温耐性（℃）
+    戻り値: 収量損失率（0〜1）
+    # based on https://doi.org/10.1016/j.scitotenv.2023.165256
+    """
+    # 登熟期夜間気温の推定（簡易モデル）
+    temp_ripening = temp_mean_annual + 6.0
+
+    # 耐性レベルに応じてしきい値を調整
+    opt_temp = base_opt_temp + high_temp_tolerance_level  # 22°Cが基準（最大収量）
+    turn_point_temp = base_turn_point_temp + high_temp_tolerance_level  # 30°Cが変曲点
+
+    if temp_ripening <= base_min_temp:
+        # 20°C未満：急激な減収（10%/°C）
+        loss = (base_min_temp - temp_ripening) * 0.10
+
+    elif base_min_temp < temp_ripening <= opt_temp:
+        # 20〜22°C（または耐性で調整された範囲）：最大収量
+        loss = 0.0
+
+    elif opt_temp < temp_ripening <= turn_point_temp:
+        # 22〜30°C（調整可）：4%/°C 減収
+        loss = (temp_ripening - opt_temp) * 0.04
+
+    else:
+        # 30°C超（調整可）：変曲点までの損失 + 10%/°C で追加損失
+        loss = (turn_point_temp - opt_temp) * 0.04 + (temp_ripening - turn_point_temp) * 0.10
+
+    # 最大100%損失でクリップ
+    return min(loss, 1.0)

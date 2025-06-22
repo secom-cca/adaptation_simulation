@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import gumbel_r
+from utils import estimate_rice_yield_loss
 
 def simulate_year(year, prev_values, decision_vars, params):
     # --- 前年の値を展開（初期値を定義していない変数は追って調整） ---
@@ -51,7 +52,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     base_extreme_precip_freq      = params['base_extreme_precip_freq']
     extreme_precip_freq_trend     = params['extreme_precip_freq_trend']
     extreme_precip_intensity_trend= params['extreme_precip_intensity_trend']
-    extreme_precip_uncertainty_trend=params['extreme_precip_uncertainty_trend']
+    # extreme_precip_uncertainty_trend=params['extreme_precip_uncertainty_trend']
     base_mu = params['base_mu']
     base_beta = params['base_beta']
     # 水需要
@@ -62,14 +63,14 @@ def simulate_year(year, prev_values, decision_vars, params):
     evapotranspiration_amount     = params['evapotranspiration_amount']
     ecosystem_threshold           = params['ecosystem_threshold']
     # 農業
-    temp_coefficient              = params['temp_coefficient']
+    # temp_coefficient              = params['temp_coefficient']
     max_potential_yield           = params['max_potential_yield']
-    optimal_irrigation_amount     = params['optimal_irrigation_amount']
+    # optimal_irrigation_amount     = params['optimal_irrigation_amount']
     high_temp_tolerance_increment = params['high_temp_tolerance_increment']
     necessary_water_for_crops = params['necessary_water_for_crops']
     paddy_dam_cost_per_ha = params['paddy_dam_cost_per_ha']
     paddy_dam_yield_coef = params['paddy_dam_yield_coef']
-    temp_critical_crop = params['temp_critical_crop']
+    temp_crop_decrease_coef = params['temp_crop_decrease_coef']
     # 水災害
     flood_damage_coefficient      = params['flood_damage_coefficient']
     levee_level_increment         = params['levee_level_increment']
@@ -99,9 +100,9 @@ def simulate_year(year, prev_values, decision_vars, params):
     forest_water_retention_coef = np.random.uniform(2,4)
     # forest_ecosystem_boost_coef = params['forest_ecosystem_boost_coef'] 
     flood_crop_damage_coef = params['flood_crop_damage_coef']
-    levee_ecosystem_damage_coef = params['levee_ecosystem_damage_coef']
+    # levee_ecosystem_damage_coef = params['levee_ecosystem_damage_coef']
     flood_urban_damage_coef = params['flood_urban_damage_coef']
-    water_ecosystem_coef = params['water_ecosystem_coef']
+    # water_ecosystem_coef = params['water_ecosystem_coef']
     paddy_dam_flood_coef = params['paddy_dam_flood_coef']
     # 地形
     total_area = params['total_area']
@@ -159,10 +160,10 @@ def simulate_year(year, prev_values, decision_vars, params):
 
     # ---------------------------------------------------------
     # 5. 農業生産量
-    temp_ripening = temp + 10.0 # 仮設定：登熟期の気温の計算
-    excess = max(temp_ripening - (temp_threshold_crop + high_temp_tolerance_level), 0)
-    loss = (excess / (temp_critical_crop - temp_threshold_crop))
-    temp_impact = min(loss, 1)
+    # temp_ripening = temp + 6.0 # 仮設定：登熟期の気温の計算
+    # excess = max(temp_ripening - (temp_threshold_crop + high_temp_tolerance_level), 0)
+    # loss = excess * temp_crop_decrease_coef
+    temp_impact = estimate_rice_yield_loss(temp, high_temp_tolerance_level)
     paddy_dam_area += paddy_dam_construction_cost / paddy_dam_cost_per_ha
     paddy_dam_yield_impact = paddy_dam_yield_coef * min(paddy_dam_area / paddy_field_area, 1)
 
