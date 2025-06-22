@@ -280,12 +280,45 @@ function App() {
   const [scenarioName, setScenarioName] = useState("シナリオ1");
   const [numSimulations, setNumSimulations] = useState(1);
   const isRunningRef = useRef(false);
-  const [chartPredictData, setChartPredictData] = useState([[], []]); // [0]が初期値予測 [1]が下限値予測、[2]が上限値予測
-  const [resultHistory, setResultHistory] = useState([]); // サイクルごとの結果履歴
-  const [currentCycle, setCurrentCycle] = useState(1); // 現在のサイクル番号
-  const [cycleCompleted, setCycleCompleted] = useState(false); // サイクル完了フラグ
-  const [inputCount, setInputCount] = useState(0); // 現在のサイクルでの入力回数（0-3回）
-  const [inputHistory, setInputHistory] = useState([]); // 現在のサイクルでの入力履歴
+  // 模拟进度状态的初始化函数
+  const getInitialSimulationState = () => {
+    try {
+      const stored = localStorage.getItem('simulationState');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          chartPredictData: parsed.chartPredictData || [[], []],
+          resultHistory: parsed.resultHistory || [],
+          currentCycle: parsed.currentCycle || 1,
+          cycleCompleted: parsed.cycleCompleted || false,
+          inputCount: parsed.inputCount || 0,
+          inputHistory: parsed.inputHistory || [],
+          simulationData: parsed.simulationData || []
+        };
+      }
+    } catch (error) {
+      console.warn('simulationState復元エラー:', error);
+    }
+
+    return {
+      chartPredictData: [[], []],
+      resultHistory: [],
+      currentCycle: 1,
+      cycleCompleted: false,
+      inputCount: 0,
+      inputHistory: [],
+      simulationData: []
+    };
+  };
+
+  const initialSimState = getInitialSimulationState();
+
+  const [chartPredictData, setChartPredictData] = useState(initialSimState.chartPredictData); // [0]が初期値予測 [1]が下限値予測、[2]が上限値予測
+  const [resultHistory, setResultHistory] = useState(initialSimState.resultHistory); // サイクルごとの結果履歴
+  const [currentCycle, setCurrentCycle] = useState(initialSimState.currentCycle); // 現在のサイクル番号
+  const [cycleCompleted, setCycleCompleted] = useState(initialSimState.cycleCompleted); // サイクル完了フラグ
+  const [inputCount, setInputCount] = useState(initialSimState.inputCount); // 現在のサイクルでの入力回数（0-3回）
+  const [inputHistory, setInputHistory] = useState(initialSimState.inputHistory); // 現在のサイクルでの入力履歴
   const [openResultUI, setOpenResultUI] = useState(false);
   const [openSettingsDialog, setOpenSettingsDialog] = useState(false); // 設定ダイアログ
   const [selectedXAxis, setSelectedXAxis] = useState('Crop Yield'); // 散布図X軸選択
@@ -364,7 +397,7 @@ function App() {
   };
 
   const [currentValues, setCurrentValues] = useState(getInitialCurrentValues())
-  const [simulationData, setSimulationData] = useState([]); // 結果格納
+  const [simulationData, setSimulationData] = useState(initialSimState.simulationData); // 結果格納
 
   // ロード中やエラー表示用
   const [loading, setLoading] = useState(false);
@@ -470,7 +503,18 @@ function App() {
 
   useEffect(() => {
     simulationDataRef.current = simulationData;
-  }, [simulationData]);
+    // 模拟状态保存到localStorage
+    const simulationState = {
+      chartPredictData,
+      resultHistory,
+      currentCycle,
+      cycleCompleted,
+      inputCount,
+      inputHistory,
+      simulationData
+    };
+    localStorage.setItem('simulationState', JSON.stringify(simulationState));
+  }, [simulationData, chartPredictData, resultHistory, currentCycle, cycleCompleted, inputCount, inputHistory]);
 
   useEffect(() => {
     // 開発中のみ userName を強制リセット（コメントアウト - Bug修正）

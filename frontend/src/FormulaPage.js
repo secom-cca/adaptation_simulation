@@ -39,10 +39,38 @@ function FormulaPage() {
         シミュレーション数式とパラメータ調整
       </Typography>
 
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
           <Button variant="contained">戻る</Button>
         </Link>
+        <Button
+          variant="outlined"
+          color="warning"
+          onClick={() => {
+            // 清除模拟状态但保留用户设置
+            const keysToKeep = ['userName', 'selectedMode', 'chartPredictMode', 'language', 'decisionVar', 'currentValues'];
+            const preservedData = {};
+            keysToKeep.forEach(key => {
+              const value = localStorage.getItem(key);
+              if (value) preservedData[key] = value;
+            });
+
+            // 清除所有localStorage
+            localStorage.clear();
+
+            // 恢复保留的数据
+            Object.entries(preservedData).forEach(([key, value]) => {
+              localStorage.setItem(key, value);
+            });
+
+            // 清除模拟状态
+            localStorage.removeItem('simulationState');
+
+            alert('模拟进度已重置，但用户设置已保留。返回主页面后将从头开始。');
+          }}
+        >
+          重置模拟进度
+        </Button>
       </Box>
 
       {/* ---------- 概要 ---------- */}
