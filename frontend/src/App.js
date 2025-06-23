@@ -42,7 +42,7 @@ const getLineChartIndicators = (language) => {
       'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
       // 'Urban Level': { labelTitle: '都市利便性', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
-      'Temperature (℃)': { labelTitle: '年平均気温', max: 18, min: 12, unit: '℃' },
+      'Temperature (℃)': { labelTitle: '年平均気温', max: 20, min: 12, unit: '℃' },
       'Precipitation (mm)': { labelTitle: '年降水量', max: 3000, min: 0, unit: 'mm' },
       'Available Water': { labelTitle: '利用可能な水量', max: 3000, min: 0, unit: 'mm' }
     },
@@ -52,7 +52,7 @@ const getLineChartIndicators = (language) => {
       'Ecosystem Level': { labelTitle: 'Ecosystem Level', max: 100, min: 0, unit: '-' },
       // 'Urban Level': { labelTitle: 'Urban Level', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: 'Municipal Cost', max: 100000, min: 0, unit: '10k yen' },
-      'Temperature (℃)': { labelTitle: 'Average Temperature', max: 18, min: 12, unit: '°C' },
+      'Temperature (℃)': { labelTitle: 'Average Temperature', max: 20, min: 12, unit: '°C' },
       'Precipitation (mm)': { labelTitle: 'Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
       'Available Water': { labelTitle: 'Available Water', max: 3000, min: 0, unit: 'mm' }
     }
@@ -147,6 +147,9 @@ const texts = {
       cycleComplete: 'サイクル',
       completed: 'が完了しました！',
       viewResults: '結果を見る',
+    },
+    rcp: {
+      scenario: 'RCPシナリオ'
     },
     scatter: {
       title: 'サイクルの比較',
@@ -243,6 +246,9 @@ const texts = {
       completed: 'completed!',
       viewResults: 'View Results',
     },
+    rcp: {
+      scenario: 'RCP Scenario'
+    },
     scatter: {
       title: 'Cycle Comparison',
       description: 'Compare evaluations of 2050, 2075, and 2100 for each cycle',
@@ -288,7 +294,7 @@ function App() {
   const [openSettingsDialog, setOpenSettingsDialog] = useState(false); // 設定ダイアログ
   const [selectedXAxis, setSelectedXAxis] = useState('Crop Yield'); // 散布図X軸選択
   const [selectedYAxis, setSelectedYAxis] = useState('Flood Damage'); // 散布図Y軸選択
-  const [chartPredictMode, setChartPredictMode] = useState(localStorage.getItem('chartPredictMode') || 'best-worst'); // 予測データ表示モード: 'best-worst', 'monte-carlo', 'none'
+  const [chartPredictMode, setChartPredictMode] = useState(localStorage.getItem('chartPredictMode') || 'monte-carlo'); // 予測データ表示モード: 'best-worst', 'monte-carlo', 'none'
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'ja'); // 言語モード: 'ja', 'en'
   const [decisionVar, setDecisionVar] = useState({
     year: 2026,
@@ -445,7 +451,7 @@ function App() {
     } else {
       setUserName(storedName);
       setSelectedMode(storedMode || 'group');
-      setChartPredictMode(storedPredictMode || 'best-worst');
+      setChartPredictMode(storedPredictMode || 'monte-carlo');
     }
   }, []);
 
@@ -540,6 +546,8 @@ function App() {
     try {
       // /simulate に POST するパラメータ
       console.log("現在の入力:", decisionVarRef.current, currentValuesRef.current)
+      console.log("RCP value being sent:", decisionVarRef.current.cp_climate_params)
+      
       const body = {
         scenario_name: scenarioName,
         user_name: userName,
@@ -699,7 +707,7 @@ function App() {
         
         for (let i = 0; i < 10; i++) {
           let monteCarloDecisionVar = { ...decisionVarRef.current };
-          monteCarloDecisionVar['cp_climate_params'] = 4.5;
+          monteCarloDecisionVar['cp_climate_params'] = decisionVarRef.current.cp_climate_params;
 
           const monteCarloBody = {
             user_name: userName,
@@ -1057,6 +1065,16 @@ function App() {
   const t = texts[language]; // 現在の言語のテキストを取得
   const [openFormulaModal, setOpenFormulaModal] = useState(false);
 
+  // RCPの初期値をログ出力
+  useEffect(() => {
+    console.log('RCP初期値:', decisionVar.cp_climate_params);
+  }, []);
+
+  // decisionVarの変更を監視（RCPの値変更確認用）
+  useEffect(() => {
+    console.log('decisionVar更新:', decisionVar);
+  }, [decisionVar]);
+
   return (
     <Box sx={{ padding: 2, backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
 
@@ -1086,6 +1104,38 @@ function App() {
             {selectedMode === 'downstream' && t.mode.downstreamDesc}
           </Typography>
         </Box>
+
+        <Link to="/formula">
+          <Button variant="outlined">
+            {t.buttons.viewModel}
+          </Button>
+        </Link>
+        
+        {/* RCPの不確実性シナリオ選択スライダー */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
+          <Typography variant="body2" sx={{ minWidth: 120 }}>
+            {t.rcp.scenario}: {decisionVar.cp_climate_params}
+          </Typography>
+          <Slider
+            value={decisionVar.cp_climate_params}
+            onChange={(event, newValue) => {
+              console.log('RCPスライダー変更:', newValue);
+              updateDecisionVar('cp_climate_params', newValue);
+            }}
+            step={null}
+            marks={[
+              { value: 1.9, label: '1.9' },
+              { value: 2.6, label: '2.6' },
+              { value: 4.5, label: '4.5' },
+              { value: 6.0, label: '6.0' },
+              { value: 8.5, label: '8.5' }
+            ]}
+            min={1.9}
+            max={8.5}
+            sx={{ width: 200 }}
+          />
+        </Box>
+        
         {showResultButton && (
         <Box sx={{ textAlign: 'center', mt: 0 }}>
           <Button

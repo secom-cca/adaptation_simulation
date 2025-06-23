@@ -39,8 +39,17 @@ def run_simulation(req: SimulationRequest):
 
     # Update params based on RCP scenario and current values
     params = DEFAULT_PARAMS.copy()
-    rcp_param = rcp_climate_params.get(req.decision_vars[0].cp_climate_params, {})
+    
+    # RCPパラメータの取得を修正
+    rcp_value = req.decision_vars[0].cp_climate_params
+    
+    # 浮動小数点数の比較問題を回避するため、最も近い値を見つける
+    available_rcp_values = list(rcp_climate_params.keys())
+    closest_rcp = min(available_rcp_values, key=lambda x: abs(x - rcp_value))
+    
+    rcp_param = rcp_climate_params[closest_rcp]
     params.update(rcp_param)
+    
 
     all_df = pd.DataFrame()
     block_scores = []
@@ -102,7 +111,7 @@ def run_simulation(req: SimulationRequest):
     
     elif mode == "Predict Simulation Mode":
         # 全期間の予測値を計算する
-        params = DEFAULT_PARAMS.copy()
+        # paramsは既にRCPパラメータで更新済みなので、再度コピーしない
         sim_years = np.arange(req.decision_vars[0].year, params['end_year'] + 1)
         seq_result = simulate_simulation(
             years=sim_years,
