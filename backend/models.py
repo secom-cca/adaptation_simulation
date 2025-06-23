@@ -48,6 +48,9 @@ class SimulationRequest(BaseModel):
     decision_vars: List[DecisionVar] = []
     num_simulations: int = 100
     current_year_index_seq: CurrentValues
+    # 添加仿真数据字段，用于Record Results Mode
+    simulation_data: Optional[List[Dict[str, Any]]] = []
+    result_history: Optional[List[Dict[str, Any]]] = []
 
 class SimulationResponse(BaseModel):
     scenario_name: str

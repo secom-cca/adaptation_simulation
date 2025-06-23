@@ -30,7 +30,7 @@ ChartJS.register(
 );
 
 // バックエンドの URL を環境変数や直書きなどで指定
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://web-production-5fb04.up.railway.app";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
 
 // 各種設定
 
@@ -830,21 +830,52 @@ function App() {
   // 結果を保存し、リザルト画面へ
   const handleShowResult = async () => {
     try {
-      // Record Results Mode で /simulate にPOST
-      await axios.post(`${BACKEND_URL}/simulate`, {
+      // 合并所有周期的仿真数据
+      const allSimulationData = [];
+      resultHistory.forEach(cycle => {
+        if (cycle.simulationData && cycle.simulationData.length > 0) {
+          allSimulationData.push(...cycle.simulationData);
+        }
+      });
+
+      console.log("发送数据到后端:", {
+        scenario_name: scenarioName,
+        user_name: userName,
+        mode: "Record Results Mode",
+        simulation_data_length: allSimulationData.length
+      });
+
+      // Record Results Mode で /simulate にPOST - 发送完整的仿真数据
+      const response = await axios.post(`${BACKEND_URL}/simulate`, {
         scenario_name: scenarioName,
         user_name: userName,
         mode: "Record Results Mode",
         decision_vars: [decisionVar],
         num_simulations: Number(numSimulations),
-        current_year_index_seq: currentValues
+        current_year_index_seq: currentValues,
+        // 添加完整的仿真数据
+        simulation_data: allSimulationData,
+        result_history: resultHistory
       });
-    } catch (err) {
-      alert("結果保存に失敗しました");
-      console.error(err);
-    } finally {
-      // POSTが終わったら必ずページ遷移
+
+      console.log("后端响应:", response.data);
+
+      // 只有在POST请求成功时才跳转
       window.location.href = `${window.location.origin}/results/index.html`;
+
+    } catch (err) {
+      console.error("详细错误信息:", err);
+      if (err.response) {
+        console.error("响应状态:", err.response.status);
+        console.error("响应数据:", err.response.data);
+        alert(`結果保存に失敗しました: ${err.response.status} - ${err.response.data?.detail || err.response.statusText}`);
+      } else if (err.request) {
+        console.error("请求未收到响应:", err.request);
+        alert("結果保存に失敗しました: サーバーに接続できません");
+      } else {
+        console.error("请求配置错误:", err.message);
+        alert(`結果保存に失敗しました: ${err.message}`);
+      }
     }
   };
 

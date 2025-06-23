@@ -75,6 +75,20 @@ def run_simulation(req: SimulationRequest):
         block_scores = []
 
     elif mode == "Record Results Mode":
+        # 处理前端发送的完整仿真数据
+        print(f"DEBUG: Record Results Mode - user_name: {req.user_name}")
+        if req.simulation_data and len(req.simulation_data) > 0:
+            # 将仿真数据转换为DataFrame
+            all_df = pd.DataFrame(req.simulation_data)
+
+            # 计算评分数据
+            block_scores = aggregate_blocks(all_df)
+
+            # 保存数据到文件
+            print(f"DEBUG: Saving data for user: {req.user_name}")
+            _save_results_data(req.user_name, req.scenario_name, block_scores)
+
+        # 复制文件到前端目录
         _copy_results_to_frontend()
 
     else:
@@ -121,6 +135,34 @@ def _save_simulation_logs(req: SimulationRequest, scenario_name: str, block_scor
         merged.to_csv(settings.RANK_FILE, sep='\t', index=False)
     else:
         df_csv.to_csv(settings.RANK_FILE, sep='\t', index=False)
+
+def _save_results_data(user_name: str, scenario_name: str, block_scores: list):
+    """保存结果数据到文件"""
+    import pandas as pd
+
+    # 保存用户名
+    user_name_df = pd.DataFrame([{"user_name": user_name}])
+    user_name_df.to_csv(settings.YOUR_NAME_FILE, index=False)
+
+    # 保存评分数据
+    if block_scores:
+        df_scores = pd.DataFrame(block_scores)
+        df_scores['user_name'] = user_name
+        df_scores['scenario_name'] = scenario_name
+        df_scores['timestamp'] = pd.Timestamp.utcnow()
+
+        # 保存到block_scores.tsv
+        if settings.RANK_FILE.exists():
+            # 读取现有数据
+            existing_df = pd.read_csv(settings.RANK_FILE, sep='\t')
+            # 删除同一用户的旧数据
+            existing_df = existing_df[existing_df['user_name'] != user_name]
+            # 合并新数据
+            combined_df = pd.concat([existing_df, df_scores], ignore_index=True)
+        else:
+            combined_df = df_scores
+
+        combined_df.to_csv(settings.RANK_FILE, sep='\t', index=False)
 
 def _copy_results_to_frontend():
     """复制结果到前端目录"""

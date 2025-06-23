@@ -21,6 +21,39 @@ from models import (
 from simulation import simulate_simulation
 from utils import calculate_scenario_indicators, aggregate_blocks
 
+def _save_results_data(user_name: str, scenario_name: str, block_scores: list):
+    """保存结果数据到文件"""
+    import pandas as pd
+    from pathlib import Path
+
+    data_dir = Path(__file__).parent / "data"
+    data_dir.mkdir(exist_ok=True)
+
+    # 保存用户名
+    user_name_file = data_dir / "your_name.csv"
+    pd.DataFrame([{"user_name": user_name}]).to_csv(user_name_file, index=False)
+
+    # 保存评分数据
+    if block_scores:
+        df_scores = pd.DataFrame(block_scores)
+        df_scores['user_name'] = user_name
+        df_scores['scenario_name'] = scenario_name
+        df_scores['timestamp'] = pd.Timestamp.utcnow()
+
+        # 保存到block_scores.tsv
+        block_scores_file = data_dir / "block_scores.tsv"
+        if block_scores_file.exists():
+            # 读取现有数据
+            existing_df = pd.read_csv(block_scores_file, sep='\t')
+            # 删除同一用户的旧数据
+            existing_df = existing_df[existing_df['user_name'] != user_name]
+            # 合并新数据
+            combined_df = pd.concat([existing_df, df_scores], ignore_index=True)
+        else:
+            combined_df = df_scores
+
+        combined_df.to_csv(block_scores_file, sep='\t', index=False)
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -66,8 +99,9 @@ def run_simulation(req: SimulationRequest):
 
     # Update params based on RCP scenario and current values
     params = DEFAULT_PARAMS.copy()
-    rcp_param = rcp_climate_params.get(req.decision_vars[0].cp_climate_params, {})
-    params.update(rcp_param)
+    if req.decision_vars and len(req.decision_vars) > 0:
+        rcp_param = rcp_climate_params.get(req.decision_vars[0].cp_climate_params, {})
+        params.update(rcp_param)
 
     all_df = pd.DataFrame()
     block_scores = []
@@ -114,7 +148,8 @@ def run_simulation(req: SimulationRequest):
         df_csv['user_name'] = req.user_name
         df_csv['scenario_name'] = scenario_name
         df_csv['timestamp'] = pd.Timestamp.utcnow()
-        df_csv['user_name'].to_csv(YOUR_NAME_FILE, index=False)
+        # 保存用户名文件
+        pd.DataFrame([{"user_name": req.user_name}]).to_csv(YOUR_NAME_FILE, index=False)
         if RANK_FILE.exists():
             old = pd.read_csv(RANK_FILE, sep='\t')
             merged = (
@@ -142,6 +177,36 @@ def run_simulation(req: SimulationRequest):
         block_scores = []
 
     elif mode == "Record Results Mode":
+        # 处理前端发送的完整仿真数据
+        print(f"🔍 [Record Results Mode] 开始处理用户: {req.user_name}")
+        print(f"🔍 [Record Results Mode] 接收到的仿真数据长度: {len(req.simulation_data) if req.simulation_data else 0}")
+
+        if req.simulation_data and len(req.simulation_data) > 0:
+            print(f"✅ [Record Results Mode] 仿真数据有效，开始处理...")
+            # 将仿真数据转换为DataFrame
+            all_df = pd.DataFrame(req.simulation_data)
+            print(f"✅ [Record Results Mode] DataFrame创建成功，行数: {len(all_df)}")
+
+            # 计算评分数据
+            try:
+                block_scores = aggregate_blocks(all_df)
+                print(f"✅ [Record Results Mode] 评分计算成功，评分数量: {len(block_scores)}")
+            except Exception as e:
+                print(f"❌ [Record Results Mode] 评分计算失败: {str(e)}")
+                block_scores = []
+
+            # 保存数据到文件
+            try:
+                print(f"💾 [Record Results Mode] 开始保存数据...")
+                _save_results_data(req.user_name, req.scenario_name, block_scores)
+                print(f"✅ [Record Results Mode] 数据保存成功")
+            except Exception as e:
+                print(f"❌ [Record Results Mode] 数据保存失败: {str(e)}")
+        else:
+            print(f"⚠️ [Record Results Mode] 没有接收到有效的仿真数据")
+
+        # 复制文件到前端目录
+        print(f"📁 [Record Results Mode] 开始复制文件到前端目录...")
         import shutil
         import glob
         from pathlib import Path
@@ -150,8 +215,15 @@ def run_simulation(req: SimulationRequest):
         dst_dir = Path(__file__).parent.parent / "frontend" / "public" / "results" / "data"
         dst_dir.mkdir(parents=True, exist_ok=True)
 
+        copied_files = []
         for filepath in glob.glob(str(src_dir / "*.csv")) + glob.glob(str(src_dir / "*.tsv")):
-            shutil.copy(filepath, dst_dir)
+            try:
+                shutil.copy(filepath, dst_dir)
+                copied_files.append(Path(filepath).name)
+            except Exception as e:
+                print(f"❌ [Record Results Mode] 复制文件失败 {filepath}: {str(e)}")
+
+        print(f"✅ [Record Results Mode] 复制完成，文件: {copied_files}")
 
     else:
         raise HTTPException(status_code=400, detail=f"Unknown mode: {mode}")
@@ -208,6 +280,61 @@ def get_block_scores():
         return df.to_dict(orient="records")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/debug/file_status")
+def get_file_status():
+    """检查所有必需文件的状态"""
+    from pathlib import Path
+
+    data_dir = Path(__file__).parent / "data"
+    frontend_data_dir = Path(__file__).parent.parent / "frontend" / "public" / "results" / "data"
+
+    files_to_check = [
+        ("your_name.csv", YOUR_NAME_FILE),
+        ("decision_log.csv", ACTION_LOG_FILE),
+        ("block_scores.tsv", RANK_FILE)
+    ]
+
+    status = {
+        "backend_data_dir": str(data_dir),
+        "frontend_data_dir": str(frontend_data_dir),
+        "backend_files": {},
+        "frontend_files": {},
+        "summary": {
+            "all_backend_files_exist": True,
+            "all_frontend_files_exist": True,
+            "missing_files": []
+        }
+    }
+
+    # 检查后端文件
+    for file_name, file_path in files_to_check:
+        exists = file_path.exists()
+        size = file_path.stat().st_size if exists else 0
+        status["backend_files"][file_name] = {
+            "exists": exists,
+            "path": str(file_path),
+            "size": size
+        }
+        if not exists:
+            status["summary"]["all_backend_files_exist"] = False
+            status["summary"]["missing_files"].append(f"backend/{file_name}")
+
+    # 检查前端文件
+    for file_name, _ in files_to_check:
+        frontend_file = frontend_data_dir / file_name
+        exists = frontend_file.exists()
+        size = frontend_file.stat().st_size if exists else 0
+        status["frontend_files"][file_name] = {
+            "exists": exists,
+            "path": str(frontend_file),
+            "size": size
+        }
+        if not exists:
+            status["summary"]["all_frontend_files_exist"] = False
+            status["summary"]["missing_files"].append(f"frontend/{file_name}")
+
+    return status
 
 
 # サーバに送信されているログをWebSocketで受信。現在はbackendに保存中
