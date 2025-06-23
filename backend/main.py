@@ -4,7 +4,7 @@ sys.path.append(str(Path(__file__).parent / "src"))
 
 from fastapi import FastAPI, HTTPException, WebSocket, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import pandas as pd
 import numpy as np
@@ -278,6 +278,43 @@ def get_block_scores():
     try:
         df = pd.read_csv(RANK_FILE, sep="\t")
         return df.to_dict(orient="records")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/your_name.csv")
+def get_your_name_csv():
+    """提供your_name.csv文件内容"""
+    if not YOUR_NAME_FILE.exists():
+        raise HTTPException(status_code=404, detail="your_name.csv not found")
+
+    try:
+        df = pd.read_csv(YOUR_NAME_FILE)
+        # 返回CSV格式的文本
+        return Response(content=df.to_csv(index=False), media_type="text/csv")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/decision_log.csv")
+def get_decision_log_csv():
+    """提供decision_log.csv文件内容"""
+    if not ACTION_LOG_FILE.exists():
+        raise HTTPException(status_code=404, detail="decision_log.csv not found")
+
+    try:
+        df = pd.read_csv(ACTION_LOG_FILE)
+        return Response(content=df.to_csv(index=False), media_type="text/csv")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/block_scores.tsv")
+def get_block_scores_tsv():
+    """提供block_scores.tsv文件内容"""
+    if not RANK_FILE.exists():
+        raise HTTPException(status_code=404, detail="block_scores.tsv not found")
+
+    try:
+        df = pd.read_csv(RANK_FILE, sep='\t')
+        return Response(content=df.to_csv(sep='\t', index=False), media_type="text/tab-separated-values")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

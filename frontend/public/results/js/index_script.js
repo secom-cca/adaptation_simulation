@@ -29,7 +29,7 @@ var sedaibalancecomment = ["いい感じ！持続可能な環境が作れてい�
 //CSVファイルを読み込む関数getCSV()の定義
 function get_nameCSV(){
     var req = new XMLHttpRequest(); // HTTPでファイルを読み込むためのXMLHttpRrequestオブジェクトを生成
-    req.open("get", "http://localhost:3000/results/data/your_name.csv", true); // アクセスするファイルを指定
+    req.open("get", "https://web-production-5fb04.up.railway.app/api/your_name.csv", true); // アクセスするファイルを指定
     req.send(null); // HTTPリクエストの発行
     // レスポンスが返ってきたらconvertCSVtoArray()を呼ぶ
     req.onload = function(){
@@ -39,7 +39,7 @@ function get_nameCSV(){
 // 2つ目のCSVを読み込む
 function get_logCSV(){
     var req = new XMLHttpRequest();
-    req.open("get", "http://localhost:3000/results/data/decision_log.csv", true); // ファイル名は適宜変更
+    req.open("get", "https://web-production-5fb04.up.railway.app/api/decision_log.csv", true); // ファイル名は適宜変更
     req.send(null);
     req.onload = function(){
         convert_logCSVtoArray(req.responseText);
@@ -48,7 +48,7 @@ function get_logCSV(){
 // 3つ目のCSVを読み込む
 function get_dataCSV(){
     var req = new XMLHttpRequest();
-    req.open("get", "http://localhost:3000/results/data/block_scores.tsv", true); // ファイル名は適宜変更
+    req.open("get", "https://web-production-5fb04.up.railway.app/api/block_scores.tsv", true); // ファイル名は適宜変更
     req.send(null);
     req.onload = function(){
         convert_dataCSVtoArray(req.responseText);
