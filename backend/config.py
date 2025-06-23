@@ -52,7 +52,7 @@ DEFAULT_PARAMS = {
 
     # 住宅
     'house_total': 15000,
-    'cost_per_migration': 1000000,
+    'cost_per_migration': 975000,
 
     # 水循環
     'max_available_water': 3000.0,
@@ -70,7 +70,6 @@ DEFAULT_PARAMS = {
     'temp_coefficient': 1.0,
     'max_potential_yield': 5000.0,
     'optimal_irrigation_amount': 30.0,
-    'high_temp_tolerance_increment': 0.2,
     'necessary_water_for_crops': 330, # [m3/ha]
     'paddy_dam_cost_per_ha': 1.5,
     'paddy_dam_yield_coef': 0.01,
@@ -78,8 +77,9 @@ DEFAULT_PARAMS = {
     # 農業R&D
     'RnD_investment_threshold': 5.0, ############
     'RnD_investment_required_years': 5, ###########
-    'temp_threshold_crop_ini': 26.0,
-    'temp_critical_crop': 30.0,
+    'temp_threshold_crop_ini': 28.0,
+    'temp_crop_decrease_coef': 0.06,
+    'high_temp_tolerance_increment': 0.2,
 
     # 水災害
     'flood_damage_coefficient': 100000,
@@ -125,21 +125,21 @@ rcp_climate_params = {
     },
     4.5: {
         'temp_trend': 0.035,
-        'precip_uncertainty_trend': 0,
+        'precip_uncertainty_trend': 0.002,
         'extreme_precip_freq_trend': 0.1,
         'extreme_precip_intensity_trend': 0.8,
         'extreme_precip_uncertainty_trend': 0.1
     },
     6.0: {
         'temp_trend': 0.045,
-        'precip_uncertainty_trend': 0,
+        'precip_uncertainty_trend': 0.003,
         'extreme_precip_freq_trend': 0.13,
         'extreme_precip_intensity_trend': 1.1,
         'extreme_precip_uncertainty_trend': 0.13
     },
     8.5: {
         'temp_trend': 0.06,
-        'precip_uncertainty_trend': 0,
+        'precip_uncertainty_trend': 0.005,
         'extreme_precip_freq_trend': 0.17,
         'extreme_precip_intensity_trend': 1.5,
         'extreme_precip_uncertainty_trend': 0.15
