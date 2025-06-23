@@ -23,7 +23,7 @@ window.ADMIN_CONFIG = {
                 return `${protocol}//${hostname}:8000`;
             }
             // 如果后端在不同的域名（Railway部署场景）
-            return 'https://your-backend-railway-url.railway.app';
+            return 'https://web-production-5fb04.up.railway.app';
         }
     }
 };
