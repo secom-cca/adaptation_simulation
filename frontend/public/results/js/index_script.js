@@ -28,30 +28,64 @@ var sedaibalancecomment = ["いい感じ！持続可能な環境が作れてい�
 
 //CSVファイルを読み込む関数getCSV()の定義
 function get_nameCSV(){
-    var req = new XMLHttpRequest(); // HTTPでファイルを読み込むためのXMLHttpRrequestオブジェクトを生成
-    req.open("get", "https://web-production-5fb04.up.railway.app/api/your_name.csv", true); // アクセスするファイルを指定
-    req.send(null); // HTTPリクエストの発行
-    // レスポンスが返ってきたらconvertCSVtoArray()を呼ぶ
+    // 从localStorage获取用户名
+    const userName = localStorage.getItem('userName') || 'default_user';
+
+    var req = new XMLHttpRequest();
+    req.open("get", `https://web-production-5fb04.up.railway.app/api/user_data/${userName}`, true);
+    req.send(null);
+
     req.onload = function(){
-	convert_nameCSVtoArray(req.responseText); // 渡されるのは読み込んだCSVデータ
+        if (req.status === 200) {
+            try {
+                const userData = JSON.parse(req.responseText);
+                convert_nameCSVtoArray(userData.your_name_csv);
+            } catch (e) {
+                console.error('解析用户数据失败:', e);
+            }
+        } else {
+            console.error('用户数据加载失败:', req.status);
+        }
     }
 }
 // 2つ目のCSVを読み込む
 function get_logCSV(){
+    const userName = localStorage.getItem('userName') || 'default_user';
+
     var req = new XMLHttpRequest();
-    req.open("get", "https://web-production-5fb04.up.railway.app/api/decision_log.csv", true); // ファイル名は適宜変更
+    req.open("get", `https://web-production-5fb04.up.railway.app/api/user_data/${userName}`, true);
     req.send(null);
     req.onload = function(){
-        convert_logCSVtoArray(req.responseText);
+        if (req.status === 200) {
+            try {
+                const userData = JSON.parse(req.responseText);
+                if (userData.decision_log_csv) {
+                    convert_logCSVtoArray(userData.decision_log_csv);
+                }
+            } catch (e) {
+                console.error('解析决策日志失败:', e);
+            }
+        }
     }
 }
 // 3つ目のCSVを読み込む
 function get_dataCSV(){
+    const userName = localStorage.getItem('userName') || 'default_user';
+
     var req = new XMLHttpRequest();
-    req.open("get", "https://web-production-5fb04.up.railway.app/api/block_scores.tsv", true); // ファイル名は適宜変更
+    req.open("get", `https://web-production-5fb04.up.railway.app/api/user_data/${userName}`, true);
     req.send(null);
     req.onload = function(){
-        convert_dataCSVtoArray(req.responseText);
+        if (req.status === 200) {
+            try {
+                const userData = JSON.parse(req.responseText);
+                if (userData.block_scores_tsv) {
+                    convert_dataCSVtoArray(userData.block_scores_tsv);
+                }
+            } catch (e) {
+                console.error('解析评分数据失败:', e);
+            }
+        }
     }
 }
 

@@ -281,40 +281,41 @@ def get_block_scores():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/your_name.csv")
-def get_your_name_csv():
-    """提供your_name.csv文件内容"""
-    if not YOUR_NAME_FILE.exists():
-        raise HTTPException(status_code=404, detail="your_name.csv not found")
-
+@app.get("/api/user_data/{user_name}")
+def get_user_data(user_name: str):
+    """获取指定用户的所有数据"""
     try:
-        df = pd.read_csv(YOUR_NAME_FILE)
-        # 返回CSV格式的文本
-        return Response(content=df.to_csv(index=False), media_type="text/csv")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        result = {
+            "user_name": user_name,
+            "your_name_csv": f"user_name\n{user_name}",
+            "decision_log_csv": "",
+            "block_scores_tsv": "",
+            "found": False
+        }
 
-@app.get("/api/decision_log.csv")
-def get_decision_log_csv():
-    """提供decision_log.csv文件内容"""
-    if not ACTION_LOG_FILE.exists():
-        raise HTTPException(status_code=404, detail="decision_log.csv not found")
+        # 获取决策日志
+        if ACTION_LOG_FILE.exists():
+            df_log = pd.read_csv(ACTION_LOG_FILE)
+            user_logs = df_log[df_log['user_name'] == user_name]
+            if not user_logs.empty:
+                result["decision_log_csv"] = user_logs.to_csv(index=False)
+                result["found"] = True
 
-    try:
-        df = pd.read_csv(ACTION_LOG_FILE)
-        return Response(content=df.to_csv(index=False), media_type="text/csv")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # 获取评分数据
+        if RANK_FILE.exists():
+            df_scores = pd.read_csv(RANK_FILE, sep='\t')
+            user_scores = df_scores[df_scores['user_name'] == user_name]
+            if not user_scores.empty:
+                result["block_scores_tsv"] = user_scores.to_csv(sep='\t', index=False)
+                result["found"] = True
 
-@app.get("/api/block_scores.tsv")
-def get_block_scores_tsv():
-    """提供block_scores.tsv文件内容"""
-    if not RANK_FILE.exists():
-        raise HTTPException(status_code=404, detail="block_scores.tsv not found")
+        if not result["found"]:
+            raise HTTPException(status_code=404, detail=f"No data found for user: {user_name}")
 
-    try:
-        df = pd.read_csv(RANK_FILE, sep='\t')
-        return Response(content=df.to_csv(sep='\t', index=False), media_type="text/tab-separated-values")
+        return result
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
