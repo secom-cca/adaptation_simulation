@@ -205,25 +205,8 @@ def run_simulation(req: SimulationRequest):
         else:
             print(f"⚠️ [Record Results Mode] 没有接收到有效的仿真数据")
 
-        # 复制文件到前端目录
-        print(f"📁 [Record Results Mode] 开始复制文件到前端目录...")
-        import shutil
-        import glob
-        from pathlib import Path
-
-        src_dir = Path(__file__).parent / "data"
-        dst_dir = Path(__file__).parent.parent / "frontend" / "public" / "results" / "data"
-        dst_dir.mkdir(parents=True, exist_ok=True)
-
-        copied_files = []
-        for filepath in glob.glob(str(src_dir / "*.csv")) + glob.glob(str(src_dir / "*.tsv")):
-            try:
-                shutil.copy(filepath, dst_dir)
-                copied_files.append(Path(filepath).name)
-            except Exception as e:
-                print(f"❌ [Record Results Mode] 复制文件失败 {filepath}: {str(e)}")
-
-        print(f"✅ [Record Results Mode] 复制完成，文件: {copied_files}")
+        # 部署环境下不需要文件复制，数据通过API提供
+        print(f"✅ [Record Results Mode] 数据已保存，可通过API访问")
 
     else:
         raise HTTPException(status_code=400, detail=f"Unknown mode: {mode}")
@@ -283,14 +266,18 @@ def get_block_scores():
 
 @app.get("/api/user_data/{user_name}")
 def get_user_data(user_name: str):
-    """获取指定用户的所有数据"""
+    """获取指定用户的所有数据，确保数据完整性"""
     try:
+        print(f"🔍 [API] 获取用户数据: {user_name}")
+
         result = {
             "user_name": user_name,
             "your_name_csv": f"user_name\n{user_name}",
             "decision_log_csv": "",
             "block_scores_tsv": "",
-            "found": False
+            "found": False,
+            "data_complete": False,
+            "periods_found": 0
         }
 
         # 获取决策日志
@@ -300,23 +287,44 @@ def get_user_data(user_name: str):
             if not user_logs.empty:
                 result["decision_log_csv"] = user_logs.to_csv(index=False)
                 result["found"] = True
+                print(f"✅ [API] 找到决策日志: {len(user_logs)} 条记录")
 
-        # 获取评分数据
+        # 获取评分数据并验证完整性
         if RANK_FILE.exists():
             df_scores = pd.read_csv(RANK_FILE, sep='\t')
             user_scores = df_scores[df_scores['user_name'] == user_name]
             if not user_scores.empty:
-                result["block_scores_tsv"] = user_scores.to_csv(sep='\t', index=False)
+                # 检查是否有3个时期的数据
+                periods = user_scores['period'].unique()
+                expected_periods = ['2026-2050', '2051-2075', '2076-2100']
+
+                result["periods_found"] = len(periods)
+                result["data_complete"] = len(periods) >= 3
+
+                if result["data_complete"]:
+                    # 按时期排序，确保顺序正确
+                    user_scores_sorted = user_scores.sort_values('period')
+                    result["block_scores_tsv"] = user_scores_sorted.to_csv(sep='\t', index=False)
+                    print(f"✅ [API] 找到完整评分数据: {len(periods)} 个时期")
+                else:
+                    result["block_scores_tsv"] = user_scores.to_csv(sep='\t', index=False)
+                    print(f"⚠️ [API] 评分数据不完整: 只有 {len(periods)} 个时期")
+
                 result["found"] = True
 
         if not result["found"]:
+            print(f"❌ [API] 未找到用户数据: {user_name}")
             raise HTTPException(status_code=404, detail=f"No data found for user: {user_name}")
+
+        if not result["data_complete"]:
+            print(f"⚠️ [API] 用户数据不完整: {user_name}, 时期数: {result['periods_found']}")
 
         return result
 
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ [API] 获取用户数据失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/debug/file_status")
