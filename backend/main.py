@@ -603,6 +603,10 @@ async def preview_file_content(filename: str, admin: str = Depends(authenticate_
         data_dir = Path(__file__).parent / "data"
         file_path = data_dir / filename
 
+        print(f"Preview request for file: {filename}")
+        print(f"File path: {file_path}")
+        print(f"File exists: {file_path.exists()}")
+
         # セキュリティチェック
         if not file_path.resolve().is_relative_to(data_dir.resolve()):
             raise HTTPException(status_code=400, detail="無効なファイルパスです")
@@ -611,10 +615,14 @@ async def preview_file_content(filename: str, admin: str = Depends(authenticate_
             raise HTTPException(status_code=404, detail="ファイルが見つかりません")
 
         file_extension = file_path.suffix.lower()
+        print(f"File extension: {file_extension}")
 
         # ファイルサイズチェック（大きすぎる場合は制限）
         max_size = 5 * 1024 * 1024  # 5MB
-        if file_path.stat().st_size > max_size:
+        file_size = file_path.stat().st_size
+        print(f"File size: {file_size}")
+
+        if file_size > max_size:
             return {
                 "filename": filename,
                 "type": "error",
@@ -625,23 +633,39 @@ async def preview_file_content(filename: str, admin: str = Depends(authenticate_
         try:
             if file_extension in ['.csv']:
                 # CSV ファイルの処理
-                df = pd.read_csv(file_path)
+                print(f"Processing CSV file: {filename}")
+                try:
+                    df = pd.read_csv(file_path, encoding='utf-8')
+                except UnicodeDecodeError:
+                    df = pd.read_csv(file_path, encoding='shift_jis')
+
+                print(f"CSV loaded successfully. Shape: {df.shape}")
+                print(f"Columns: {df.columns.tolist()}")
+
                 return {
                     "filename": filename,
                     "type": "table",
                     "columns": df.columns.tolist(),
-                    "data": df.head(100).to_dict('records'),  # 最初の100行のみ
+                    "data": df.head(100).fillna('').to_dict('records'),  # 最初の100行のみ、NaNを空文字に
                     "total_rows": len(df)
                 }
 
             elif file_extension in ['.tsv']:
                 # TSV ファイルの処理
-                df = pd.read_csv(file_path, sep='\t')
+                print(f"Processing TSV file: {filename}")
+                try:
+                    df = pd.read_csv(file_path, sep='\t', encoding='utf-8')
+                except UnicodeDecodeError:
+                    df = pd.read_csv(file_path, sep='\t', encoding='shift_jis')
+
+                print(f"TSV loaded successfully. Shape: {df.shape}")
+                print(f"Columns: {df.columns.tolist()}")
+
                 return {
                     "filename": filename,
                     "type": "table",
                     "columns": df.columns.tolist(),
-                    "data": df.head(100).to_dict('records'),
+                    "data": df.head(100).fillna('').to_dict('records'),
                     "total_rows": len(df)
                 }
 
@@ -683,8 +707,13 @@ async def preview_file_content(filename: str, admin: str = Depends(authenticate_
 
         except Exception as parse_error:
             # ファイル解析エラーの場合、生テキストとして表示
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read(10000)
+            print(f"Parse error for {filename}: {str(parse_error)}")
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read(10000)
+            except Exception as read_error:
+                print(f"Read error for {filename}: {str(read_error)}")
+                content = f"ファイル読み込みエラー: {str(read_error)}"
 
             return {
                 "filename": filename,
@@ -696,6 +725,7 @@ async def preview_file_content(filename: str, admin: str = Depends(authenticate_
     except HTTPException:
         raise
     except Exception as e:
+        print(f"General error for {filename}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"ファイルプレビューに失敗しました: {str(e)}")
 
 @app.get("/admin/download/file/{filename}")
