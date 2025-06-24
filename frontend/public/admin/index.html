@@ -138,35 +138,170 @@
             max-height: 400px;
             overflow-y: auto;
         }
+
+        /* ログインスタイル */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .login-input {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .login-error {
+            color: #dc3545;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .admin-content {
+            display: none;
+        }
+
+        .logout-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .logout-btn:hover {
+            background: #5a6268;
+        }
     </style>
 </head>
 <body>
-    <h1>管理者ダッシュボード</h1>
-    <button onclick="loadData()">データを更新</button>
-
-    <div class="stat">
-        <h3>統計情報</h3>
-        <p>ユーザー数: <span id="user-count">--</span></p>
-        <p>ログ数: <span id="log-count">--</span></p>
-        <p>評価数: <span id="score-count">--</span></p>
-        <p>決定数: <span id="decision-count">--</span></p>
+    <!-- ログイン画面 -->
+    <div id="login-container" class="login-container">
+        <div class="login-box">
+            <h1 class="login-title">🔐 管理者ログイン</h1>
+            <form class="login-form" onsubmit="handleLogin(event)">
+                <input
+                    type="text"
+                    id="username"
+                    class="login-input"
+                    placeholder="ユーザー名"
+                    required
+                    autocomplete="username"
+                >
+                <input
+                    type="password"
+                    id="password"
+                    class="login-input"
+                    placeholder="パスワード"
+                    required
+                    autocomplete="current-password"
+                >
+                <button type="submit" class="login-btn">ログイン</button>
+                <div id="login-error" class="login-error"></div>
+            </form>
+        </div>
     </div>
 
-    <div id="users-section">
-        <h3>ユーザーリスト</h3>
-        <div id="users-data">読み込み中...</div>
-    </div>
+    <!-- 管理者ダッシュボード -->
+    <div id="admin-content" class="admin-content">
+        <div class="container">
+            <div class="header">
+                <h1>🔧 管理者ダッシュボード</h1>
+                <div>
+                    <button class="refresh-btn" onclick="loadData()">🔄 データを更新</button>
+                    <button class="logout-btn" onclick="logout()">🚪 ログアウト</button>
+                </div>
+            </div>
 
-    <div id="logs-section">
-        <h3>最新ログ</h3>
-        <div id="logs-data">読み込み中...</div>
-    </div>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-users">--</div>
+                    <div class="stat-label">ユーザー数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-logs">--</div>
+                    <div class="stat-label">ログ数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-scores">--</div>
+                    <div class="stat-label">評価数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-decisions">--</div>
+                    <div class="stat-label">決定数</div>
+                </div>
+            </div>
 
-    <div id="files-section">
-        <h3>データファイル</h3>
-        <button class="download-all-btn" onclick="downloadAllData()">📦 全データをダウンロード</button>
-        <button class="clear-data-btn" onclick="clearAllData()">🗑️ 全データを消去</button>
-        <div id="files-data">読み込み中...</div>
+            <div class="data-section">
+                <h3>👥 ユーザーリスト</h3>
+                <div id="users-container" class="loading">読み込み中...</div>
+            </div>
+
+            <div class="data-section">
+                <h3>🔍 最新ログ</h3>
+                <div id="logs-container" class="loading">読み込み中...</div>
+            </div>
+
+            <div class="data-section">
+                <h3>📁 データファイル</h3>
+                <button class="download-all-btn" onclick="downloadAllData()">📦 全データをダウンロード</button>
+                <button class="clear-data-btn" onclick="clearAllData()">🗑️ 全データを消去</button>
+                <div id="files-data">読み込み中...</div>
+            </div>
+        </div>
     </div>
 
     <!-- プレビューモーダル -->
@@ -184,8 +319,77 @@
     
     <script>
         const BACKEND_URL = "https://web-production-5fb04.up.railway.app";
-        
+        let authCredentials = null;
+
+        // ページ読み込み時にログイン状態をチェック
+        window.addEventListener('load', function() {
+            checkLoginStatus();
+        });
+
+        function checkLoginStatus() {
+            const savedCredentials = localStorage.getItem('adminCredentials');
+            if (savedCredentials) {
+                authCredentials = savedCredentials;
+                showAdminContent();
+                loadData();
+            } else {
+                showLoginForm();
+            }
+        }
+
+        function showLoginForm() {
+            document.getElementById('login-container').style.display = 'flex';
+            document.getElementById('admin-content').style.display = 'none';
+        }
+
+        function showAdminContent() {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('admin-content').style.display = 'block';
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('login-error');
+
+            // 認証情報をチェック
+            if (username === 'admin' && password === 'climate2025') {
+                // 認証成功
+                authCredentials = btoa(`${username}:${password}`);
+                localStorage.setItem('adminCredentials', authCredentials);
+
+                errorDiv.style.display = 'none';
+                showAdminContent();
+                loadData();
+            } else {
+                // 認証失敗
+                errorDiv.textContent = 'ユーザー名またはパスワードが正しくありません';
+                errorDiv.style.display = 'block';
+
+                // パスワードフィールドをクリア
+                document.getElementById('password').value = '';
+            }
+        }
+
+        function logout() {
+            if (confirm('ログアウトしますか？')) {
+                authCredentials = null;
+                localStorage.removeItem('adminCredentials');
+                showLoginForm();
+
+                // フォームをクリア
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+            }
+        }
+
         async function loadData() {
+            if (!authCredentials) {
+                showLoginForm();
+                return;
+            }
             console.log("データ読み込み開始...");
 
             try {
@@ -193,7 +397,7 @@
                 try {
                     const dashboardResponse = await fetch(`${BACKEND_URL}/admin/dashboard`, {
                         headers: {
-                            'Authorization': 'Basic ' + btoa('admin:climate2025')
+                            'Authorization': 'Basic ' + authCredentials
                         }
                     });
 
@@ -255,7 +459,7 @@
             try {
                 const response = await fetch(`${BACKEND_URL}/admin/data-files`, {
                     headers: {
-                        'Authorization': 'Basic ' + btoa('admin:climate2025')
+                        'Authorization': 'Basic ' + authCredentials
                     }
                 });
 
@@ -317,7 +521,7 @@
             // Basic認証のヘッダーを設定
             fetch(url, {
                 headers: {
-                    'Authorization': 'Basic ' + btoa('admin:climate2025')
+                    'Authorization': 'Basic ' + authCredentials
                 }
             }).then(response => {
                 if (response.ok) {
@@ -345,7 +549,7 @@
 
             fetch(url, {
                 headers: {
-                    'Authorization': 'Basic ' + btoa('admin:climate2025')
+                    'Authorization': 'Basic ' + authCredentials
                 }
             }).then(response => {
                 if (response.ok) {
@@ -373,7 +577,7 @@
 
             fetch(url, {
                 headers: {
-                    'Authorization': 'Basic ' + btoa('admin:climate2025')
+                    'Authorization': 'Basic ' + authCredentials
                 }
             }).then(response => {
                 if (response.ok) {
@@ -461,7 +665,7 @@
             fetch(url, {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Basic ' + btoa('admin:climate2025'),
+                    'Authorization': 'Basic ' + authCredentials,
                     'Content-Type': 'application/json'
                 }
             }).then(response => {
@@ -488,8 +692,7 @@
             }
         }
 
-        // 页面加载时自动加载数据
-        window.addEventListener("load", loadData);
+        // ページ読み込み時の処理は checkLoginStatus() で行う
     </script>
 </body>
 </html>
