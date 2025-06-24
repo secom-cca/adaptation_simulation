@@ -107,8 +107,12 @@ def run_simulation(req: SimulationRequest):
     block_scores = []
 
     if mode == "Monte Carlo Simulation Mode":
-        results = []
-        for sim in range(req.num_simulations):
+        # 并行化蒙特卡洛仿真以充分利用多核CPU
+        from concurrent.futures import ProcessPoolExecutor
+        import multiprocessing
+
+        def single_simulation(sim_index):
+            """单次仿真函数，用于并行执行"""
             sim_result = simulate_simulation(
                 years=params['years'],
                 initial_values=req.current_year_index_seq.model_dump(),
@@ -116,10 +120,22 @@ def run_simulation(req: SimulationRequest):
                 params=params
             )
             df_sim = pd.DataFrame(sim_result)
-            df_sim["Simulation"] = sim
-            results.append(df_sim)
+            df_sim["Simulation"] = sim_index
+            return df_sim
+
+        # 使用所有可用CPU核心进行并行计算
+        max_workers = min(multiprocessing.cpu_count(), req.num_simulations)
+        print(f"🚀 [Monte Carlo] 使用 {max_workers} 个CPU核心并行计算 {req.num_simulations} 次仿真")
+
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            # 提交所有仿真任务
+            futures = [executor.submit(single_simulation, sim) for sim in range(req.num_simulations)]
+            # 收集结果
+            results = [future.result() for future in futures]
+
         all_df = pd.concat(results, ignore_index=True)
         block_scores = []
+        print(f"✅ [Monte Carlo] 并行计算完成，共处理 {len(all_df)} 行数据")
 
     elif mode == "Sequential Decision-Making Mode":
         sim_years = np.arange(req.decision_vars[0].year, req.decision_vars[0].year + 1)
