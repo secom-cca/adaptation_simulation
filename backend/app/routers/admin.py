@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import pandas as pd
 
-from ..config import settings
+from ..core.config import DATA_DIR
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 security = HTTPBasic()
@@ -35,7 +35,7 @@ def authenticate_admin(credentials: HTTPBasicCredentials = Depends(security)):
 async def get_admin_dashboard(admin: str = Depends(authenticate_admin)):
     """获取管理员仪表板数据"""
     try:
-        data_dir = Path(settings.DATA_DIR)
+        data_dir = Path(DATA_DIR)
         
         # 读取用户日志
         user_log_file = data_dir / "user_log.jsonl"
@@ -92,7 +92,7 @@ async def get_admin_dashboard(admin: str = Depends(authenticate_admin)):
 async def get_user_detail(user_name: str, admin: str = Depends(authenticate_admin)):
     """获取特定用户的详细数据 - 包含所有数据文件"""
     try:
-        data_dir = Path(settings.DATA_DIR)
+        data_dir = Path(DATA_DIR)
 
         # 1. 用户操作日志 (user_log.jsonl)
         user_log_file = data_dir / "user_log.jsonl"
@@ -205,7 +205,7 @@ async def get_user_detail(user_name: str, admin: str = Depends(authenticate_admi
 async def get_data_files(admin: str = Depends(authenticate_admin)):
     """获取data文件夹中的所有数据文件列表"""
     try:
-        data_dir = Path(settings.DATA_DIR)
+        data_dir = Path(DATA_DIR)
 
         if not data_dir.exists():
             return {"files": [], "total_count": 0}
@@ -267,7 +267,7 @@ async def get_data_files(admin: str = Depends(authenticate_admin)):
 async def get_file_content(filename: str, admin: str = Depends(authenticate_admin)):
     """获取指定文件的内容"""
     try:
-        data_dir = Path(settings.DATA_DIR)
+        data_dir = Path(DATA_DIR)
         file_path = data_dir / filename
 
         if not file_path.exists() or not file_path.is_file():
@@ -356,7 +356,7 @@ async def get_file_content(filename: str, admin: str = Depends(authenticate_admi
 async def download_all_data(admin: str = Depends(authenticate_admin)):
     """下载所有数据的压缩包"""
     try:
-        data_dir = Path(settings.DATA_DIR)
+        data_dir = Path(DATA_DIR)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         zip_filename = f"climate_simulation_data_{timestamp}.zip"
         zip_path = data_dir / zip_filename
@@ -389,7 +389,7 @@ async def download_all_data(admin: str = Depends(authenticate_admin)):
 async def download_user_logs(admin: str = Depends(authenticate_admin)):
     """下载用户日志文件"""
     try:
-        data_dir = Path(settings.DATA_DIR)
+        data_dir = Path(DATA_DIR)
         log_file = data_dir / "user_log.jsonl"
         
         if not log_file.exists():
@@ -409,7 +409,7 @@ async def download_user_logs(admin: str = Depends(authenticate_admin)):
 async def download_scores(admin: str = Depends(authenticate_admin)):
     """下载评分数据文件"""
     try:
-        data_dir = Path(settings.DATA_DIR)
+        data_dir = Path(DATA_DIR)
         scores_file = data_dir / "block_scores.tsv"
         
         if not scores_file.exists():
@@ -429,7 +429,7 @@ async def download_scores(admin: str = Depends(authenticate_admin)):
 async def clear_all_data(admin: str = Depends(authenticate_admin)):
     """清空所有数据（谨慎使用）"""
     try:
-        data_dir = Path(settings.DATA_DIR)
+        data_dir = Path(DATA_DIR)
         
         # 备份当前数据
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
