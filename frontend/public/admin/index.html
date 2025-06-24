@@ -95,6 +95,30 @@
                 </div>
             </section>
 
+            <!-- データ管理セクション -->
+            <section class="data-management">
+                <h2>🗂️ データ管理</h2>
+                <div class="management-grid">
+                    <div class="management-card danger-zone">
+                        <div class="card-header">
+                            <span class="card-icon">🧹</span>
+                            <h3>データクリア</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>システム内の全データを削除します。この操作は取り消せません。</p>
+                            <div class="warning-box">
+                                <span class="warning-icon">⚠️</span>
+                                <span>実行前に必ずデータをダウンロードしてください</span>
+                            </div>
+                            <button id="clear-data-btn" class="danger-btn">
+                                <span class="btn-icon">🗑️</span>
+                                <span class="btn-text">全データクリア</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- ユーザーリスト -->
             <section class="users-section">
                 <h2>👥 ユーザーリスト</h2>
@@ -120,6 +144,57 @@
                     </div>
                     <div class="modal-body" id="modal-body">
                         <!-- ユーザー詳細内容 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- データクリア確認モーダル -->
+            <div id="clear-confirm-modal" class="modal">
+                <div class="modal-content confirm-modal">
+                    <div class="modal-header">
+                        <h3>🗑️ データクリア確認</h3>
+                        <span class="close" id="clear-modal-close">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="confirm-content">
+                            <div class="warning-section">
+                                <div class="warning-icon-large">⚠️</div>
+                                <h4>この操作は取り消せません</h4>
+                                <p>以下のデータが完全に削除されます：</p>
+                            </div>
+
+                            <div class="stats-section" id="clear-stats">
+                                <!-- 統計情報がJavaScriptで動的に挿入されます -->
+                            </div>
+
+                            <div class="confirmation-section">
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="confirm-backup">
+                                        <span class="checkmark"></span>
+                                        データのバックアップを取得済みです
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="confirm-understand">
+                                        <span class="checkmark"></span>
+                                        この操作が取り消せないことを理解しています
+                                    </label>
+                                </div>
+
+                                <div class="final-confirmation">
+                                    <p><strong>実行するには「DELETE」と入力してください：</strong></p>
+                                    <input type="text" id="delete-confirmation" placeholder="DELETE" maxlength="6">
+                                </div>
+                            </div>
+
+                            <div class="modal-actions">
+                                <button id="cancel-clear-btn" class="cancel-btn">キャンセル</button>
+                                <button id="execute-clear-btn" class="danger-btn" disabled>
+                                    <span class="btn-icon">🗑️</span>
+                                    データを削除する
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

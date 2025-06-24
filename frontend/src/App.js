@@ -75,6 +75,37 @@ const INDICATOR_CONVERSION = {
   'Crop Yield': 1 / 1000 // kg → ton（例）
 };
 
+// 🔧 数据完整性验证函数
+const validateSimulationData = (data, cycleNumber) => {
+  if (!data || data.length === 0) {
+    console.error(`❌ Cycle ${cycleNumber}: simulationData为空`);
+    return {
+      isValid: false,
+      message: 'simulationData为空',
+      missingYears: [2050, 2075, 2100]
+    };
+  }
+
+  const years = data.map(d => d.Year);
+  const targetYears = [2050, 2075, 2100];
+  const missingYears = targetYears.filter(year => !years.includes(year));
+  const hasAllTargetYears = missingYears.length === 0;
+
+  const result = {
+    isValid: hasAllTargetYears,
+    totalYears: data.length,
+    yearRange: `${Math.min(...years)}-${Math.max(...years)}`,
+    targetYears: targetYears.filter(year => years.includes(year)),
+    missingYears: missingYears,
+    message: hasAllTargetYears ?
+      `数据完整，包含所有目标年份` :
+      `缺少年份: ${missingYears.join(', ')}`
+  };
+
+  console.log(`🔍 Cycle ${cycleNumber} 数据验证:`, result);
+  return result;
+};
+
 // 日本語と英語のテキスト定義
 const texts = {
   ja: {
@@ -513,7 +544,7 @@ function App() {
     simulationDataRef.current = simulationData;
   }, [simulationData]);
 
-  // 修复模拟状态保存逻辑，确保所有相关状态变化都会触发保存
+  // 🔧 修复模拟状态保存逻辑，避免保存空的simulationData状态
   useEffect(() => {
     const simulationState = {
       chartPredictData,
@@ -522,11 +553,22 @@ function App() {
       cycleCompleted,
       inputCount,
       inputHistory,
-      simulationData
+      // 🔧 只在有数据时保存simulationData，避免保存空状态导致页面刷新后数据丢失
+      simulationData: simulationData.length > 0 ? simulationData : undefined
     };
+
     localStorage.setItem('simulationState', JSON.stringify(simulationState));
-    console.log('模拟状态已保存:', simulationState);
-  }, [chartPredictData, resultHistory, currentCycle, cycleCompleted, inputCount, inputHistory, simulationData]); // 修复：包含所有相关状态
+
+    // 🔍 调试日志：显示保存的状态信息
+    console.log('📦 模拟状态已保存:', {
+      currentCycle,
+      cycleCompleted,
+      inputCount,
+      simulationDataLength: simulationData.length,
+      resultHistoryLength: resultHistory.length,
+      savedSimulationData: simulationData.length > 0 ? '✅ 已保存' : '⚠️ 跳过空数据'
+    });
+  }, [chartPredictData, resultHistory, currentCycle, cycleCompleted, inputCount, inputHistory, simulationData]);
 
   useEffect(() => {
     // 開発中のみ userName を強制リセット（コメントアウト - Bug修正）
@@ -723,9 +765,27 @@ function App() {
     
     // 3回の入力が完了した場合、サイクル完了処理
     if (inputCount >= 2) { // 0ベースなので2で3回目
-      // 最新のsimulationDataを取得
-      latestSimulationData = [...simulationDataRef.current];
-      
+      // 🔧 修復：使用当前完整的simulationData状态而不是ref
+      const completeSimulationData = [...simulationData];
+
+      // 🔍 使用验证函数检查数据完整性
+      const validation = validateSimulationData(completeSimulationData, currentCycle);
+
+      if (!validation.isValid) {
+        console.error(`❌ Cycle ${currentCycle} 数据不完整: ${validation.message}`);
+        console.error(`这可能导致散点图无法正确显示该cycle的数据点`);
+      } else {
+        console.log(`✅ Cycle ${currentCycle} 数据验证通过: ${validation.message}`);
+
+        // 显示关键年份的具体数据
+        validation.targetYears.forEach(year => {
+          const yearData = completeSimulationData.find(d => d.Year === year);
+          if (yearData) {
+            console.log(`- ${year}年数据: Crop Yield=${yearData['Crop Yield']}, Flood Damage=${yearData['Flood Damage']}`);
+          }
+        });
+      }
+
       // サイクルの結果をresultHistoryに保存
       const cycleResult = {
         cycleNumber: currentCycle,
@@ -733,9 +793,10 @@ function App() {
         endYear: 2100,
         inputHistory: [...inputHistory, currentInput], // 全3回の入力を含む
         finalValues: { ...currentValues },
-        simulationData: latestSimulationData // 最新のシミュレーションデータを使用
+        simulationData: completeSimulationData // 🔧 修复：使用完整的状态数据
       };
-      
+
+      console.log(`✅ Cycle ${currentCycle} 结果已保存到resultHistory`);
       setResultHistory(prev => [...prev, cycleResult]);
       setCycleCompleted(true);
       setShowResultButton(true);
@@ -910,22 +971,32 @@ function App() {
     }
     // ------------------------------------------------------
 
+    // 🔍 调试日志：记录cycle切换过程
+    console.log(`🔄 开始切换到下一个cycle:`);
+    console.log(`- 当前cycle: ${currentCycle} → 下一个cycle: ${currentCycle + 1}`);
+    console.log(`- 当前simulationData长度: ${simulationData.length}`);
+    console.log(`- resultHistory中的cycle数: ${resultHistory.length}`);
+
     // 新しいサイクルの準備
     setCurrentCycle(prev => prev + 1);
     setCycleCompleted(false);
     setShowResultButton(false);
     setInputCount(0); // 入力カウントをリセット
     setInputHistory([]); // 入力履歴をリセット
-    
+
     // 年を2026年にリセット
     updateDecisionVar("year", 2026);
-    
+
+    // 🔍 调试日志：记录数据清空操作
+    console.log(`🧹 清空当前cycle的数据，为新cycle做准备`);
+    console.log(`- simulationData: ${simulationData.length} → 0`);
+
     // シミュレーションデータをクリア（新しいサイクルのため）
     setSimulationData([]);
-    
+
     // 予測データもクリア
     setChartPredictData([[], []]);
-    
+
     // 現在の値を初期状態にリセット（必要に応じて調整）
     setCurrentValues(prev => ({
       ...prev,
@@ -951,6 +1022,8 @@ function App() {
       resident_burden: 5.379 * 10**8,
       biodiversity_level: 100,
     }));
+
+    console.log(`✅ Cycle ${currentCycle + 1} 初始化完成`);
   };
 
   // (B) グラフ描画用データ作成
@@ -1614,15 +1687,25 @@ function App() {
                     series={resultHistory.map((cycle, cycleIndex) => {
                       const colors = ['rgba(25, 118, 210, 0.6)', 'rgba(220, 0, 78, 0.6)', 'rgba(56, 142, 60, 0.6)', 'rgba(245, 124, 0, 0.6)', 'rgba(123, 31, 162, 0.6)', 'rgba(211, 47, 47, 0.6)'];
                       const color = colors[cycleIndex % colors.length];
-                      
+
+                      // 🔍 调试日志：检查每个cycle的数据状态
+                      console.log(`🎯 散点图渲染 - Cycle ${cycle.cycleNumber}:`);
+                      console.log(`- simulationData长度: ${cycle.simulationData?.length || 0}`);
+                      if (cycle.simulationData && cycle.simulationData.length > 0) {
+                        const years = cycle.simulationData.map(d => d.Year);
+                        console.log(`- 年份范围: ${Math.min(...years)} - ${Math.max(...years)}`);
+                      }
+
                       // 2050年、2075年、2100年のデータを抽出
                       const targetYears = [2050, 2075, 2100];
-                      
+
                       return targetYears.map((year) => {
                         const yearData = cycle.simulationData.find(data => data.Year === year);
                         if (!yearData) {
-                          console.log(`サイクル${cycle.cycleNumber}の${year}年のデータが見つかりません`);
+                          console.warn(`❌ 散点图: Cycle ${cycle.cycleNumber} 缺少 ${year}年数据`);
                           return null;
+                        } else {
+                          console.log(`✅ 散点图: Cycle ${cycle.cycleNumber} 找到 ${year}年数据`);
                         }
                         
                         // 年ごとに異なるマーカーサイズと透明度を設定

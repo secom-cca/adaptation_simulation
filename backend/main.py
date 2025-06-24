@@ -535,6 +535,186 @@ async def download_scores(admin: str = Depends(authenticate_admin)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"評価データのダウンロードに失敗しました: {str(e)}")
 
+@app.get("/admin/data-stats")
+async def get_data_stats(admin: str = Depends(authenticate_admin)):
+    """获取数据统计信息，用于清空前确认"""
+    try:
+        data_dir = Path(__file__).parent / "data"
+
+        # 统计用户日志
+        user_log_file = data_dir / "user_log.jsonl"
+        user_logs = []
+        unique_users = set()
+
+        if user_log_file.exists():
+            with open(user_log_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if line.strip():
+                        try:
+                            log = json.loads(line.strip())
+                            user_logs.append(log)
+                            if 'user_name' in log:
+                                unique_users.add(log['user_name'])
+                        except json.JSONDecodeError:
+                            continue
+
+        # 统计评分数据
+        block_scores = []
+        simulation_periods = set()
+
+        if RANK_FILE.exists():
+            df = pd.read_csv(RANK_FILE, sep='\t')
+            block_scores = df.to_dict('records')
+            simulation_periods = set(df['period'].unique()) if 'period' in df.columns else set()
+
+        # 统计决策日志
+        decision_logs = []
+        if ACTION_LOG_FILE.exists():
+            df_log = pd.read_csv(ACTION_LOG_FILE)
+            decision_logs = df_log.to_dict('records')
+
+        # 计算文件大小
+        file_sizes = {}
+        data_files = [
+            ("user_log.jsonl", user_log_file),
+            ("block_scores.tsv", RANK_FILE),
+            ("decision_log.csv", ACTION_LOG_FILE),
+            ("your_name.csv", YOUR_NAME_FILE)
+        ]
+
+        total_size = 0
+        for file_name, file_path in data_files:
+            if file_path.exists():
+                size = file_path.stat().st_size
+                file_sizes[file_name] = {
+                    "size_bytes": size,
+                    "size_mb": round(size / (1024 * 1024), 2),
+                    "exists": True
+                }
+                total_size += size
+            else:
+                file_sizes[file_name] = {
+                    "size_bytes": 0,
+                    "size_mb": 0,
+                    "exists": False
+                }
+
+        # 获取最早和最新的活动时间
+        earliest_activity = None
+        latest_activity = None
+
+        if user_logs:
+            timestamps = [log.get('timestamp') for log in user_logs if log.get('timestamp')]
+            if timestamps:
+                earliest_activity = min(timestamps)
+                latest_activity = max(timestamps)
+
+        stats = {
+            "summary": {
+                "total_users": len(unique_users),
+                "total_logs": len(user_logs),
+                "total_simulations": len(block_scores),
+                "total_decision_logs": len(decision_logs),
+                "simulation_periods": len(simulation_periods),
+                "earliest_activity": earliest_activity,
+                "latest_activity": latest_activity,
+                "total_size_mb": round(total_size / (1024 * 1024), 2)
+            },
+            "files": file_sizes,
+            "users": list(unique_users),
+            "periods": list(simulation_periods)
+        }
+
+        return stats
+
+    except Exception as e:
+        print(f"❌ [Admin] 数据统计获取失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"データ統計の取得に失敗しました: {str(e)}")
+
+@app.post("/admin/clear-data")
+async def clear_all_data(admin: str = Depends(authenticate_admin)):
+    """清空所有数据文件内容（保留文件但清空内容）"""
+    try:
+        data_dir = Path(__file__).parent / "data"
+
+        # 获取清空前的统计信息
+        stats_before = await get_data_stats(admin)
+
+        # 定义需要清空的文件
+        files_to_clear = [
+            ("user_log.jsonl", data_dir / "user_log.jsonl"),
+            ("block_scores.tsv", RANK_FILE),
+            ("decision_log.csv", ACTION_LOG_FILE),
+            ("your_name.csv", YOUR_NAME_FILE)
+        ]
+
+        cleared_files = []
+        errors = []
+
+        # 清空每个文件的内容
+        for file_name, file_path in files_to_clear:
+            try:
+                if file_path.exists():
+                    # 获取文件原始大小
+                    original_size = file_path.stat().st_size
+
+                    # 清空文件内容但保留文件
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        # 对于TSV和CSV文件，保留表头
+                        if file_name == "block_scores.tsv":
+                            f.write("user_name\tscenario_name\tperiod\ttotal_score\ttimestamp\n")
+                        elif file_name == "decision_log.csv":
+                            f.write("year,planting_trees_amount,house_migration_amount,dam_levee_construction_cost,paddy_dam_construction_cost,capacity_building_cost,transportation_invest,agricultural_RnD_cost,cp_climate_params,user_name,scenario_name,timestamp\n")
+                        elif file_name == "your_name.csv":
+                            f.write("user_name\n")
+                        # user_log.jsonl 完全清空
+
+                    cleared_files.append({
+                        "file": file_name,
+                        "original_size_bytes": original_size,
+                        "original_size_mb": round(original_size / (1024 * 1024), 2),
+                        "status": "cleared"
+                    })
+                    print(f"✅ [Admin] 已清空文件: {file_name} (原大小: {original_size} bytes)")
+                else:
+                    cleared_files.append({
+                        "file": file_name,
+                        "original_size_bytes": 0,
+                        "original_size_mb": 0,
+                        "status": "not_existed"
+                    })
+                    print(f"ℹ️ [Admin] 文件不存在，跳过: {file_name}")
+
+            except Exception as file_error:
+                error_msg = f"文件 {file_name} 清空失败: {str(file_error)}"
+                errors.append(error_msg)
+                print(f"❌ [Admin] {error_msg}")
+
+        # 清空内存中的scenarios_data
+        global scenarios_data
+        scenarios_data.clear()
+        print("✅ [Admin] 已清空内存中的scenarios_data")
+
+        # 准备响应
+        result = {
+            "success": len(errors) == 0,
+            "message": "データクリアが完了しました" if len(errors) == 0 else f"一部のファイルでエラーが発生しました: {len(errors)}件",
+            "stats_before": stats_before["summary"],
+            "cleared_files": cleared_files,
+            "errors": errors,
+            "timestamp": datetime.now().isoformat(),
+            "total_files_processed": len(files_to_clear),
+            "successful_clears": len(cleared_files) - len(errors)
+        }
+
+        print(f"🧹 [Admin] 数据清空操作完成: 成功 {result['successful_clears']}/{result['total_files_processed']} 个文件")
+
+        return result
+
+    except Exception as e:
+        print(f"❌ [Admin] 数据清空操作失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"データクリアに失敗しました: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

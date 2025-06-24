@@ -405,6 +405,322 @@ body {
     100% { transform: rotate(360deg); }
 }
 
+/* データ管理セクション */
+.data-management {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.data-management h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.management-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+}
+
+.management-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.management-card.danger-zone {
+    border-color: #fecaca;
+    background: linear-gradient(135deg, #fff 0%, #fef2f2 100%);
+}
+
+.management-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.card-icon {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.card-header h3 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.card-content p {
+    color: #6b7280;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.warning-box {
+    background: #fef3cd;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.warning-icon {
+    font-size: 18px;
+    margin-right: 8px;
+}
+
+.danger-btn {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(220, 38, 38, 0.3);
+}
+
+.danger-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(220, 38, 38, 0.4);
+}
+
+.danger-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 確認モーダル */
+.confirm-modal {
+    max-width: 600px;
+    width: 90%;
+}
+
+.confirm-content {
+    padding: 20px 0;
+}
+
+.warning-section {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.warning-icon-large {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.warning-section h4 {
+    color: #dc2626;
+    font-size: 24px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.warning-section p {
+    color: #6b7280;
+    font-size: 16px;
+}
+
+.stats-section {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #dc2626;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.confirmation-section {
+    margin-bottom: 30px;
+}
+
+.checkbox-group {
+    margin-bottom: 20px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #374151;
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.final-confirmation {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+}
+
+.final-confirmation p {
+    margin-bottom: 12px;
+    color: #374151;
+    font-weight: 600;
+}
+
+.final-confirmation input {
+    padding: 12px;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 16px;
+    text-align: center;
+    width: 120px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.final-confirmation input:focus {
+    outline: none;
+    border-color: #dc2626;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.cancel-btn {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background: #e5e7eb;
+}
+
+/* 成功消息动画 */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.success-message {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* 文件详情和用户列表样式 */
+.file-details, .users-details, .activity-period {
+    margin-top: 20px;
+    padding: 16px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.file-details h5, .users-details h5, .activity-period h5 {
+    margin-bottom: 12px;
+    color: #374151;
+    font-size: 16px;
+}
+
+.file-details ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.file-details li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+    color: #6b7280;
+}
+
+.file-details li:last-child {
+    border-bottom: none;
+}
+
+.users-list {
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 14px;
+    color: #374151;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.activity-period p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .dashboard-header {
@@ -412,22 +728,34 @@ body {
         gap: 15px;
         text-align: center;
     }
-    
+
     .header-actions {
         flex-wrap: wrap;
         justify-content: center;
     }
-    
+
     .stats-overview {
         grid-template-columns: 1fr;
     }
-    
+
     .action-grid {
         grid-template-columns: 1fr;
     }
-    
+
+    .management-grid {
+        grid-template-columns: 1fr;
+    }
+
     .modal-content {
         width: 95%;
         margin: 10% auto;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-actions {
+        flex-direction: column;
     }
 }
