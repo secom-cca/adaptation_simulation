@@ -123,8 +123,8 @@ def run_simulation(req: SimulationRequest):
             df_sim["Simulation"] = sim_index
             return df_sim
 
-        # 使用所有可用CPU核心进行并行计算
-        max_workers = min(multiprocessing.cpu_count(), req.num_simulations)
+        # 限制并行度以避免资源过载（Railway环境优化）
+        max_workers = min(2, multiprocessing.cpu_count(), req.num_simulations)
         print(f"🚀 [Monte Carlo] 使用 {max_workers} 个CPU核心并行计算 {req.num_simulations} 次仿真")
 
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -136,6 +136,11 @@ def run_simulation(req: SimulationRequest):
         all_df = pd.concat(results, ignore_index=True)
         block_scores = []
         print(f"✅ [Monte Carlo] 并行计算完成，共处理 {len(all_df)} 行数据")
+
+        # 清理内存以避免资源过载
+        import gc
+        del results
+        gc.collect()
 
     elif mode == "Sequential Decision-Making Mode":
         sim_years = np.arange(req.decision_vars[0].year, req.decision_vars[0].year + 1)
