@@ -119,6 +119,11 @@ class AdminDashboard {
                     this.filesData = await filesResponse.json();
                     this.showDashboard();
                     this.updateDashboard();
+                } else if (filesResponse.status === 404) {
+                    // 新端点还未部署，显示提示信息
+                    this.showError('新機能をデプロイ中です。数分後に再試行してください。');
+                    this.showDashboard();
+                    this.showDeploymentMessage();
                 } else {
                     this.showError('データファイルの取得に失敗しました');
                 }
@@ -1068,6 +1073,27 @@ class AdminDashboard {
     showDashboard() {
         document.getElementById('auth-section').style.display = 'none';
         document.getElementById('dashboard-section').style.display = 'block';
+    }
+
+    showDeploymentMessage() {
+        const filesGrid = document.getElementById('files-grid');
+        filesGrid.innerHTML = `
+            <div class="deployment-message">
+                <div class="deployment-icon">🚀</div>
+                <h3>新機能をデプロイ中</h3>
+                <p>データファイルブラウザ機能を展開しています。</p>
+                <p>数分後に自動的に利用可能になります。</p>
+                <button class="refresh-btn" onclick="adminApp.loadDashboard()">
+                    🔄 再試行
+                </button>
+            </div>
+        `;
+
+        // 设置统计数据为部署中状态
+        document.getElementById('total-files').textContent = '--';
+        document.getElementById('total-size').textContent = '--';
+        document.getElementById('total-records').textContent = '--';
+        document.getElementById('last-modified').textContent = 'デプロイ中';
     }
 
     logout() {
