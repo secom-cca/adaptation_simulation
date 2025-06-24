@@ -321,24 +321,17 @@
         const BACKEND_URL = "https://web-production-5fb04.up.railway.app";
         let authCredentials = null;
 
-        // ページ読み込み時にログイン状態をチェック
+        // ページ読み込み時は常にログイン画面を表示
         window.addEventListener('load', function() {
-            checkLoginStatus();
+            // セキュリティのため、毎回ログインが必要
+            clearStoredCredentials();
+            showLoginForm();
         });
 
-        function checkLoginStatus() {
-            const savedCredentials = localStorage.getItem('adminCredentials');
-            if (savedCredentials) {
-                authCredentials = savedCredentials;
-                showAdminContent();
-
-                // DOM要素が確実に表示されるまで少し待つ
-                setTimeout(() => {
-                    loadData();
-                }, 100);
-            } else {
-                showLoginForm();
-            }
+        function clearStoredCredentials() {
+            // 既存の認証情報をクリア
+            authCredentials = null;
+            localStorage.removeItem('adminCredentials');
         }
 
         function showLoginForm() {
@@ -360,9 +353,8 @@
 
             // 認証情報をチェック
             if (username === 'admin' && password === 'climate2025') {
-                // 認証成功
+                // 認証成功（セッション中のみ有効、localStorage保存なし）
                 authCredentials = btoa(`${username}:${password}`);
-                localStorage.setItem('adminCredentials', authCredentials);
 
                 errorDiv.style.display = 'none';
                 showAdminContent();
@@ -383,8 +375,8 @@
 
         function logout() {
             if (confirm('ログアウトしますか？')) {
+                // 認証情報をクリア
                 authCredentials = null;
-                localStorage.removeItem('adminCredentials');
                 showLoginForm();
 
                 // フォームをクリア
@@ -395,6 +387,7 @@
 
         async function loadData() {
             if (!authCredentials) {
+                alert('認証が必要です。再度ログインしてください。');
                 showLoginForm();
                 return;
             }
@@ -521,6 +514,12 @@
         }
 
         function downloadFile(filename) {
+            if (!authCredentials) {
+                alert('認証が必要です。再度ログインしてください。');
+                showLoginForm();
+                return;
+            }
+
             const url = `${BACKEND_URL}/admin/download/file/${filename}`;
             const link = document.createElement('a');
             link.href = url;
@@ -553,6 +552,12 @@
         }
 
         function downloadAllData() {
+            if (!authCredentials) {
+                alert('認証が必要です。再度ログインしてください。');
+                showLoginForm();
+                return;
+            }
+
             const url = `${BACKEND_URL}/admin/download/all`;
 
             fetch(url, {
@@ -581,6 +586,12 @@
         }
 
         function previewFile(filename) {
+            if (!authCredentials) {
+                alert('認証が必要です。再度ログインしてください。');
+                showLoginForm();
+                return;
+            }
+
             const url = `${BACKEND_URL}/admin/preview-file/${filename}`;
 
             fetch(url, {
@@ -660,6 +671,12 @@
         }
 
         function clearAllData() {
+            if (!authCredentials) {
+                alert('認証が必要です。再度ログインしてください。');
+                showLoginForm();
+                return;
+            }
+
             if (!confirm('⚠️ 警告: 全てのデータファイルの内容が消去されます。\n\nファイル自体は残りますが、中身は空になります。\nテストデータの削除などに使用してください。\n\nこの操作は元に戻せません。続行しますか？')) {
                 return;
             }
