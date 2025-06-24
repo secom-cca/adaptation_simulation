@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Dashboard</title>
+    <title>管理者ダッシュボード</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .stat { background: #f0f0f0; padding: 20px; margin: 10px; border-radius: 5px; }
@@ -12,127 +12,90 @@
     </style>
 </head>
 <body>
-    <h1>Admin Dashboard</h1>
-    <button onclick="loadData()">刷新数据</button>
-    
+    <h1>管理者ダッシュボード</h1>
+    <button onclick="loadData()">データを更新</button>
+
     <div class="stat">
-        <h3>统计信息</h3>
-        <p>用户数: <span id="user-count">--</span></p>
-        <p>日志数: <span id="log-count">--</span></p>
-        <p>评分数: <span id="score-count">--</span></p>
-        <p>决策数: <span id="decision-count">--</span></p>
+        <h3>統計情報</h3>
+        <p>ユーザー数: <span id="user-count">--</span></p>
+        <p>ログ数: <span id="log-count">--</span></p>
+        <p>評価数: <span id="score-count">--</span></p>
+        <p>決定数: <span id="decision-count">--</span></p>
     </div>
-    
+
     <div id="users-section">
-        <h3>用户列表</h3>
-        <div id="users-data">加载中...</div>
+        <h3>ユーザーリスト</h3>
+        <div id="users-data">読み込み中...</div>
     </div>
-    
+
     <div id="logs-section">
-        <h3>最新日志</h3>
-        <div id="logs-data">加载中...</div>
+        <h3>最新ログ</h3>
+        <div id="logs-data">読み込み中...</div>
     </div>
     
     <script>
         const BACKEND_URL = "https://web-production-5fb04.up.railway.app";
         
         async function loadData() {
-            console.log("开始加载数据...");
+            console.log("データ読み込み開始...");
 
             try {
-                // 加载用户数据
+                // 管理者ダッシュボードデータを取得
                 try {
-                    const usersResponse = await fetch(`${BACKEND_URL}/your_name`);
-                    if (usersResponse.ok) {
-                        const users = await usersResponse.json();
-                        console.log("用户数据:", users);
+                    const dashboardResponse = await fetch(`${BACKEND_URL}/admin/dashboard`, {
+                        headers: {
+                            'Authorization': 'Basic ' + btoa('admin:climate2025')
+                        }
+                    });
 
-                        // 确保users是数组
-                        if (Array.isArray(users)) {
-                            document.getElementById("user-count").textContent = users.length;
+                    if (dashboardResponse.ok) {
+                        const dashboardData = await dashboardResponse.json();
+                        console.log("ダッシュボードデータ:", dashboardData);
 
+                        // 統計情報を更新
+                        document.getElementById("user-count").textContent = dashboardData.summary?.total_users || 0;
+                        document.getElementById("log-count").textContent = dashboardData.summary?.total_logs || 0;
+                        document.getElementById("score-count").textContent = dashboardData.summary?.total_simulations || 0;
+                        document.getElementById("decision-count").textContent = "N/A";
+
+                        // ユーザーリストを表示
+                        if (dashboardData.users && Array.isArray(dashboardData.users)) {
                             let usersHtml = "<ul>";
-                            users.forEach(user => {
-                                usersHtml += `<li>${user.user_name || user}</li>`;
+                            dashboardData.users.forEach(user => {
+                                usersHtml += `<li>${user}</li>`;
                             });
                             usersHtml += "</ul>";
                             document.getElementById("users-data").innerHTML = usersHtml;
                         } else {
-                            document.getElementById("user-count").textContent = "0";
-                            document.getElementById("users-data").innerHTML = "<p>用户数据格式错误</p>";
+                            document.getElementById("users-data").innerHTML = "<p>ユーザーデータなし</p>";
                         }
-                    } else {
-                        throw new Error(`用户数据API错误: ${usersResponse.status}`);
-                    }
-                } catch (error) {
-                    console.error("用户数据加载失败:", error);
-                    document.getElementById("user-count").textContent = "0";
-                    document.getElementById("users-data").innerHTML = `<div class="error">用户数据加载失败: ${error.message}</div>`;
-                }
 
-                // 加载日志数据
-                try {
-                    const logsResponse = await fetch(`${BACKEND_URL}/user_logs`);
-                    if (logsResponse.ok) {
-                        const logs = await logsResponse.json();
-                        console.log("日志数据:", logs);
-
-                        if (Array.isArray(logs)) {
-                            document.getElementById("log-count").textContent = logs.length;
-
-                            let logsHtml = "<table><tr><th>用户</th><th>类型</th><th>时间</th></tr>";
-                            logs.slice(-10).forEach(log => {
+                        // 最新アクティビティを表示
+                        if (dashboardData.recent_activity && Array.isArray(dashboardData.recent_activity)) {
+                            let logsHtml = "<table><tr><th>ユーザー</th><th>タイプ</th><th>時間</th></tr>";
+                            dashboardData.recent_activity.slice(0, 10).forEach(log => {
                                 logsHtml += `<tr><td>${log.user_name || 'N/A'}</td><td>${log.type || 'N/A'}</td><td>${log.timestamp || 'N/A'}</td></tr>`;
                             });
                             logsHtml += "</table>";
                             document.getElementById("logs-data").innerHTML = logsHtml;
                         } else {
-                            document.getElementById("log-count").textContent = "0";
-                            document.getElementById("logs-data").innerHTML = "<p>日志数据格式错误</p>";
+                            document.getElementById("logs-data").innerHTML = "<p>ログデータなし</p>";
                         }
+
                     } else {
-                        throw new Error(`日志API错误: ${logsResponse.status}`);
+                        throw new Error(`ダッシュボードAPI エラー: ${dashboardResponse.status}`);
                     }
                 } catch (error) {
-                    console.error("日志数据加载失败:", error);
-                    document.getElementById("log-count").textContent = "0";
-                    document.getElementById("logs-data").innerHTML = `<div class="error">日志数据加载失败: ${error.message}</div>`;
+                    console.error("ダッシュボードデータ読み込み失敗:", error);
+                    document.getElementById("user-count").textContent = "0";
+                    document.getElementById("users-data").innerHTML = `<div class="error">データ読み込み失敗: ${error.message}</div>`;
+                    document.getElementById("logs-data").innerHTML = `<div class="error">データ読み込み失敗: ${error.message}</div>`;
                 }
 
-                // 加载评分数据
-                try {
-                    const scoresResponse = await fetch(`${BACKEND_URL}/block_scores`);
-                    if (scoresResponse.ok) {
-                        const scores = await scoresResponse.json();
-                        console.log("评分数据:", scores);
-                        document.getElementById("score-count").textContent = Array.isArray(scores) ? scores.length : "0";
-                    } else {
-                        throw new Error(`评分API错误: ${scoresResponse.status}`);
-                    }
-                } catch (error) {
-                    console.error("评分数据加载失败:", error);
-                    document.getElementById("score-count").textContent = "0";
-                }
-
-                // 加载决策数据
-                try {
-                    const decisionsResponse = await fetch(`${BACKEND_URL}/decision_log`);
-                    if (decisionsResponse.ok) {
-                        const decisions = await decisionsResponse.json();
-                        console.log("决策数据:", decisions);
-                        document.getElementById("decision-count").textContent = Array.isArray(decisions) ? decisions.length : "0";
-                    } else {
-                        throw new Error(`决策API错误: ${decisionsResponse.status}`);
-                    }
-                } catch (error) {
-                    console.error("决策数据加载失败:", error);
-                    document.getElementById("decision-count").textContent = "0";
-                }
-
-                console.log("数据加载完成");
+                console.log("データ読み込み完了");
 
             } catch (error) {
-                console.error("整体加载失败:", error);
+                console.error("全体読み込み失敗:", error);
             }
         }
         
