@@ -153,6 +153,13 @@ function convert_dataCSVtoArray(str){
     }
     console.log('玩家数据总数:', your_data.length);
 
+    // 🔧 数据完整性检查
+    if (your_data.length < 3) {
+        console.error(`❌ 数据不完整: 需要3个时期的数据，但只找到 ${your_data.length} 个`);
+        showErrorMessage(`データが不完全です。3期間のデータが必要ですが、${your_data.length}期間のデータのみ見つかりました。`);
+        return; // 提前返回，避免后续处理
+    }
+
     // 2050年
     var jsonStr2050score = your_data[0][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''); // numpy型を除去
     var obj2050score = JSON.parse(jsonStr2050score);
