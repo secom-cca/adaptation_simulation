@@ -29,8 +29,15 @@ ChartJS.register(
   Legend
 );
 
-// バックエンドの URL を環境変数や直書きなどで指定
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+// バックエンドの URL を統一配置から取得
+const BACKEND_URL = (function() {
+  // 全局配置优先
+  if (window.APP_CONFIG) {
+    return window.APP_CONFIG.getBackendUrl();
+  }
+  // 降级到环境变量
+  return process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+})();
 
 // 各種設定
 
@@ -436,10 +443,14 @@ function App() {
 
   // ここでuseEffectを定義
   useEffect(() => {
-    const wsUrl = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
-    wsLogRef.current = new WebSocket(`${wsUrl}/ws/log`);
+    // 使用统一配置获取WebSocket URL
+    const wsUrl = window.APP_CONFIG ?
+      `${window.APP_CONFIG.getWebSocketUrl()}/ws/log` :
+      BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://') + '/ws/log';
+
+    wsLogRef.current = new WebSocket(wsUrl);
     wsLogRef.current.onopen = () => {
-      console.log("✅ Log WebSocket connected");
+      console.log("✅ Log WebSocket connected to:", wsUrl);
     };
     wsLogRef.current.onerror = (e) => {
       console.error("Log WebSocket error", e);
@@ -538,7 +549,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:3001");
+    // 使用统一配置获取外部WebSocket URL
+    const externalWsUrl = window.APP_CONFIG ?
+      window.APP_CONFIG.getExternalWebSocketUrl() :
+      "ws://localhost:3001";
+
+    const ws = new WebSocket(externalWsUrl);
 
     ws.onopen = () => {
       console.log("✅ WebSocket connected");

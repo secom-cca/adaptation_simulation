@@ -21,9 +21,14 @@ var ctx2 = document.getElementById("Chart2075");
 var ctx3 = document.getElementById("Chart2100");
 
 
-// 获取后端URL的函数
+// 获取后端URL的函数 - 使用统一配置
 function getBackendUrl() {
-    // 检测当前环境
+    // 优先使用全局配置
+    if (window.APP_CONFIG) {
+        return window.APP_CONFIG.getBackendUrl();
+    }
+
+    // 降级方案：检测当前环境
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         return 'http://localhost:8000';
     } else {
