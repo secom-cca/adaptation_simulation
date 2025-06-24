@@ -331,7 +331,11 @@
             if (savedCredentials) {
                 authCredentials = savedCredentials;
                 showAdminContent();
-                loadData();
+
+                // DOM要素が確実に表示されるまで少し待つ
+                setTimeout(() => {
+                    loadData();
+                }, 100);
             } else {
                 showLoginForm();
             }
@@ -362,7 +366,11 @@
 
                 errorDiv.style.display = 'none';
                 showAdminContent();
-                loadData();
+
+                // DOM要素が確実に表示されるまで少し待つ
+                setTimeout(() => {
+                    loadData();
+                }, 100);
             } else {
                 // 認証失敗
                 errorDiv.textContent = 'ユーザー名またはパスワードが正しくありません';
@@ -406,10 +414,10 @@
                         console.log("ダッシュボードデータ:", dashboardData);
 
                         // 統計情報を更新
-                        document.getElementById("user-count").textContent = dashboardData.summary?.total_users || 0;
-                        document.getElementById("log-count").textContent = dashboardData.summary?.total_logs || 0;
-                        document.getElementById("score-count").textContent = dashboardData.summary?.total_simulations || 0;
-                        document.getElementById("decision-count").textContent = "N/A";
+                        document.getElementById("total-users").textContent = dashboardData.summary?.total_users || 0;
+                        document.getElementById("total-logs").textContent = dashboardData.summary?.total_logs || 0;
+                        document.getElementById("total-scores").textContent = dashboardData.summary?.total_simulations || 0;
+                        document.getElementById("total-decisions").textContent = "N/A";
 
                         // ユーザーリストを表示
                         if (dashboardData.users && Array.isArray(dashboardData.users)) {
@@ -418,9 +426,9 @@
                                 usersHtml += `<li>${user}</li>`;
                             });
                             usersHtml += "</ul>";
-                            document.getElementById("users-data").innerHTML = usersHtml;
+                            document.getElementById("users-container").innerHTML = usersHtml;
                         } else {
-                            document.getElementById("users-data").innerHTML = "<p>ユーザーデータなし</p>";
+                            document.getElementById("users-container").innerHTML = "<p>ユーザーデータなし</p>";
                         }
 
                         // 最新アクティビティを表示
@@ -430,9 +438,9 @@
                                 logsHtml += `<tr><td>${log.user_name || 'N/A'}</td><td>${log.type || 'N/A'}</td><td>${log.timestamp || 'N/A'}</td></tr>`;
                             });
                             logsHtml += "</table>";
-                            document.getElementById("logs-data").innerHTML = logsHtml;
+                            document.getElementById("logs-container").innerHTML = logsHtml;
                         } else {
-                            document.getElementById("logs-data").innerHTML = "<p>ログデータなし</p>";
+                            document.getElementById("logs-container").innerHTML = "<p>ログデータなし</p>";
                         }
 
                     } else {
@@ -440,9 +448,9 @@
                     }
                 } catch (error) {
                     console.error("ダッシュボードデータ読み込み失敗:", error);
-                    document.getElementById("user-count").textContent = "0";
-                    document.getElementById("users-data").innerHTML = `<div class="error">データ読み込み失敗: ${error.message}</div>`;
-                    document.getElementById("logs-data").innerHTML = `<div class="error">データ読み込み失敗: ${error.message}</div>`;
+                    document.getElementById("total-users").textContent = "0";
+                    document.getElementById("users-container").innerHTML = `<div class="error">データ読み込み失敗: ${error.message}</div>`;
+                    document.getElementById("logs-container").innerHTML = `<div class="error">データ読み込み失敗: ${error.message}</div>`;
                 }
 
                 // データファイルリストを取得
