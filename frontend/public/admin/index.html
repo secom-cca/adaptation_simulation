@@ -38,48 +38,101 @@
         
         async function loadData() {
             console.log("开始加载数据...");
-            
+
             try {
                 // 加载用户数据
-                const usersResponse = await fetch(`${BACKEND_URL}/your_name`);
-                const users = await usersResponse.json();
-                document.getElementById("user-count").textContent = users.length;
-                
-                let usersHtml = "<ul>";
-                users.forEach(user => {
-                    usersHtml += `<li>${user.user_name}</li>`;
-                });
-                usersHtml += "</ul>";
-                document.getElementById("users-data").innerHTML = usersHtml;
-                
+                try {
+                    const usersResponse = await fetch(`${BACKEND_URL}/your_name`);
+                    if (usersResponse.ok) {
+                        const users = await usersResponse.json();
+                        console.log("用户数据:", users);
+
+                        // 确保users是数组
+                        if (Array.isArray(users)) {
+                            document.getElementById("user-count").textContent = users.length;
+
+                            let usersHtml = "<ul>";
+                            users.forEach(user => {
+                                usersHtml += `<li>${user.user_name || user}</li>`;
+                            });
+                            usersHtml += "</ul>";
+                            document.getElementById("users-data").innerHTML = usersHtml;
+                        } else {
+                            document.getElementById("user-count").textContent = "0";
+                            document.getElementById("users-data").innerHTML = "<p>用户数据格式错误</p>";
+                        }
+                    } else {
+                        throw new Error(`用户数据API错误: ${usersResponse.status}`);
+                    }
+                } catch (error) {
+                    console.error("用户数据加载失败:", error);
+                    document.getElementById("user-count").textContent = "0";
+                    document.getElementById("users-data").innerHTML = `<div class="error">用户数据加载失败: ${error.message}</div>`;
+                }
+
                 // 加载日志数据
-                const logsResponse = await fetch(`${BACKEND_URL}/user_logs`);
-                const logs = await logsResponse.json();
-                document.getElementById("log-count").textContent = logs.length;
-                
-                let logsHtml = "<table><tr><th>用户</th><th>类型</th><th>时间</th></tr>";
-                logs.slice(-10).forEach(log => {
-                    logsHtml += `<tr><td>${log.user_name}</td><td>${log.type}</td><td>${log.timestamp}</td></tr>`;
-                });
-                logsHtml += "</table>";
-                document.getElementById("logs-data").innerHTML = logsHtml;
-                
+                try {
+                    const logsResponse = await fetch(`${BACKEND_URL}/user_logs`);
+                    if (logsResponse.ok) {
+                        const logs = await logsResponse.json();
+                        console.log("日志数据:", logs);
+
+                        if (Array.isArray(logs)) {
+                            document.getElementById("log-count").textContent = logs.length;
+
+                            let logsHtml = "<table><tr><th>用户</th><th>类型</th><th>时间</th></tr>";
+                            logs.slice(-10).forEach(log => {
+                                logsHtml += `<tr><td>${log.user_name || 'N/A'}</td><td>${log.type || 'N/A'}</td><td>${log.timestamp || 'N/A'}</td></tr>`;
+                            });
+                            logsHtml += "</table>";
+                            document.getElementById("logs-data").innerHTML = logsHtml;
+                        } else {
+                            document.getElementById("log-count").textContent = "0";
+                            document.getElementById("logs-data").innerHTML = "<p>日志数据格式错误</p>";
+                        }
+                    } else {
+                        throw new Error(`日志API错误: ${logsResponse.status}`);
+                    }
+                } catch (error) {
+                    console.error("日志数据加载失败:", error);
+                    document.getElementById("log-count").textContent = "0";
+                    document.getElementById("logs-data").innerHTML = `<div class="error">日志数据加载失败: ${error.message}</div>`;
+                }
+
                 // 加载评分数据
-                const scoresResponse = await fetch(`${BACKEND_URL}/block_scores`);
-                const scores = await scoresResponse.json();
-                document.getElementById("score-count").textContent = scores.length;
-                
+                try {
+                    const scoresResponse = await fetch(`${BACKEND_URL}/block_scores`);
+                    if (scoresResponse.ok) {
+                        const scores = await scoresResponse.json();
+                        console.log("评分数据:", scores);
+                        document.getElementById("score-count").textContent = Array.isArray(scores) ? scores.length : "0";
+                    } else {
+                        throw new Error(`评分API错误: ${scoresResponse.status}`);
+                    }
+                } catch (error) {
+                    console.error("评分数据加载失败:", error);
+                    document.getElementById("score-count").textContent = "0";
+                }
+
                 // 加载决策数据
-                const decisionsResponse = await fetch(`${BACKEND_URL}/decision_log`);
-                const decisions = await decisionsResponse.json();
-                document.getElementById("decision-count").textContent = decisions.length;
-                
+                try {
+                    const decisionsResponse = await fetch(`${BACKEND_URL}/decision_log`);
+                    if (decisionsResponse.ok) {
+                        const decisions = await decisionsResponse.json();
+                        console.log("决策数据:", decisions);
+                        document.getElementById("decision-count").textContent = Array.isArray(decisions) ? decisions.length : "0";
+                    } else {
+                        throw new Error(`决策API错误: ${decisionsResponse.status}`);
+                    }
+                } catch (error) {
+                    console.error("决策数据加载失败:", error);
+                    document.getElementById("decision-count").textContent = "0";
+                }
+
                 console.log("数据加载完成");
-                
+
             } catch (error) {
-                console.error("加载失败:", error);
-                document.getElementById("users-data").innerHTML = `<div class="error">加载失败: ${error.message}</div>`;
-                document.getElementById("logs-data").innerHTML = `<div class="error">加载失败: ${error.message}</div>`;
+                console.error("整体加载失败:", error);
             }
         }
         
