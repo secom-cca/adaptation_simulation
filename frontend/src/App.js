@@ -388,16 +388,12 @@ function App() {
   const handleLineChartChange = (event) => {
     setSelectedIndicator(event.target.value);
 
-    // --- 縦軸選択変更ログをWebSocketで送信 ---
-    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
-      wsLogRef.current.send(JSON.stringify({
-        user_name: userName,
-        mode: chartPredictMode,
-        type: "GraphSelect",
-        name: event.target.value,
-        timestamp: new Date().toISOString()
-      }));
-    }
+    // --- 縦軸選択変更ログを队列に追加 ---
+    addLogToQueue({
+      type: "GraphSelect",
+      name: event.target.value
+    });
+    console.log(`📊 图表Y轴选择: ${event.target.value}`);
   };
 
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
@@ -410,15 +406,62 @@ function App() {
 
   // ここでuseRefを定義
   const wsLogRef = useRef(null);
+  const [logQueue, setLogQueue] = useState([]); // 前端log缓存队列
+  const [logStatus, setLogStatus] = useState('disconnected'); // WebSocket连接状态
+
+  // 添加log到队列的函数
+  const addLogToQueue = (logData) => {
+    const timestamp = new Date().toISOString();
+    const logEntry = {
+      ...logData,
+      timestamp,
+      user_name: userName,
+      mode: chartPredictMode
+    };
+
+    setLogQueue(prev => [...prev, logEntry]);
+    console.log(`📝 Log添加到队列: ${logData.type} - ${logData.name || ''}`);
+  };
+
+  // 发送log队列到后端
+  const sendLogQueue = async () => {
+    if (logQueue.length === 0) return;
+
+    try {
+      const response = await axios.post(`${BACKEND_URL}/logs/batch`, {
+        logs: logQueue
+      });
+
+      if (response.status === 200) {
+        console.log(`✅ 成功发送 ${logQueue.length} 条log到后端`);
+        setLogQueue([]); // 清空队列
+      }
+    } catch (error) {
+      console.error(`❌ 发送log失败:`, error);
+      console.log(`📦 保留 ${logQueue.length} 条log在队列中，等待下次发送`);
+    }
+  };
+
+  // 每5秒发送一次log队列
+  useEffect(() => {
+    const interval = setInterval(sendLogQueue, 5000);
+    return () => clearInterval(interval);
+  }, [logQueue]);
 
   // ここでuseEffectを定義
   useEffect(() => {
     wsLogRef.current = new WebSocket("wss://web-production-5fb04.up.railway.app/ws/log");
     wsLogRef.current.onopen = () => {
       console.log("✅ Log WebSocket connected");
+      setLogStatus('connected');
     };
     wsLogRef.current.onerror = (e) => {
       console.error("Log WebSocket error", e);
+      setLogStatus('error');
+    };
+    wsLogRef.current.onclose = () => {
+      console.log("⚠️ Log WebSocket closed");
+      setLogStatus('disconnected');
     };
     return () => {
       wsLogRef.current && wsLogRef.current.close();
@@ -444,16 +487,12 @@ function App() {
         setOpenNameDialog(false);
         setUserNameError(""); // エラー解除
 
-        // --- ユーザ名をWebSocketで送信 ---
-        if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
-          wsLogRef.current.send(JSON.stringify({
-            user_name: userName,
-            mode: chartPredictMode,
-            type: "Register",
-            timestamp: new Date().toISOString()
-          }));
-        }
-        // ------------------------------------------------------
+        // --- ユーザ名登録ログを队列に追加 ---
+        addLogToQueue({
+          type: "Register",
+          name: userName.trim()
+        });
+        console.log(`👤 用户注册: ${userName.trim()}`);
       }    
     } catch (err) {
       console.error("ユーザー名チェックエラー", err);
@@ -612,18 +651,13 @@ function App() {
   };
 
   const handleClickCalc = async () => {
-    // --- 「25年進める」押下ログをWebSocketで送信 ---
-    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
-      wsLogRef.current.send(JSON.stringify({
-        user_name: userName,
-        mode: chartPredictMode,
-        type: "Next",
-        name: decisionVar.year,
-        cycle: currentCycle,
-        timestamp: new Date().toISOString()
-      }));
-    }
-    // ------------------------------------------------------
+    // --- 「25年進める」押下ログを队列に追加 ---
+    addLogToQueue({
+      type: "Next",
+      name: decisionVar.year,
+      cycle: currentCycle
+    });
+    console.log(`⏭️ 25年进める按钮点击: 年份${decisionVar.year}, 周期${currentCycle}`);
 
     if (isRunningRef.current) return;
     isRunningRef.current = true;
@@ -801,18 +835,13 @@ function App() {
 
   // 次のサイクルに移る処理
   const handleNextCycle = () => {
-    // --- 「次のサイクル」押下ログをWebSocketで送信 ---
-    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
-      wsLogRef.current.send(JSON.stringify({
-        user_name: userName,
-        mode: chartPredictMode,
-        type: "EndCycle",
-        name: decisionVar.year,
-        cycle: currentCycle,
-        timestamp: new Date().toISOString()
-      }));
-    }
-    // ------------------------------------------------------
+    // --- 「次のサイクル」押下ログを队列に追加 ---
+    addLogToQueue({
+      type: "EndCycle",
+      name: decisionVar.year,
+      cycle: currentCycle
+    });
+    console.log(`🔄 下一个周期按钮点击: 结束周期${currentCycle}`);
 
     // 新しいサイクルの準備
     setCurrentCycle(prev => prev + 1);

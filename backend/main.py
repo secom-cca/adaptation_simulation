@@ -413,6 +413,36 @@ async def websocket_log_endpoint(websocket: WebSocket):
             # クライアント切断などでエラーが出たら終了
             break
 
+# 批量接收前端log数据的API端点
+@app.post("/logs/batch")
+async def receive_batch_logs(request: dict):
+    """批量接收前端log数据"""
+    try:
+        logs = request.get("logs", [])
+        if not logs:
+            return {"status": "success", "message": "No logs to process"}
+
+        log_path = Path(__file__).parent / "data" / "user_log.jsonl"
+
+        # 确保data目录存在
+        log_path.parent.mkdir(exist_ok=True)
+
+        # 批量写入log数据
+        with open(log_path, "a", encoding="utf-8") as f:
+            for log_entry in logs:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+        print(f"✅ [API] 批量接收 {len(logs)} 条log数据")
+        return {
+            "status": "success",
+            "message": f"Successfully received {len(logs)} logs",
+            "count": len(logs)
+        }
+
+    except Exception as e:
+        print(f"❌ [API] 批量log接收失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to save logs: {str(e)}")
+
 # 管理员路由
 @app.get("/admin/dashboard")
 async def get_admin_dashboard(admin: str = Depends(authenticate_admin)):
