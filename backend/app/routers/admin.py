@@ -90,46 +90,115 @@ async def get_admin_dashboard(admin: str = Depends(authenticate_admin)):
 
 @router.get("/users/{user_name}")
 async def get_user_detail(user_name: str, admin: str = Depends(authenticate_admin)):
-    """获取特定用户的详细数据"""
+    """获取特定用户的详细数据 - 包含所有数据文件"""
     try:
         data_dir = Path(settings.DATA_DIR)
-        
-        # 用户日志
+
+        # 1. 用户操作日志 (user_log.jsonl)
         user_log_file = data_dir / "user_log.jsonl"
         user_logs = []
         if user_log_file.exists():
             with open(user_log_file, 'r', encoding='utf-8') as f:
                 for line in f:
                     if line.strip():
-                        log = json.loads(line.strip())
-                        if log.get('user_name') == user_name:
-                            user_logs.append(log)
-        
-        # 用户评分
+                        try:
+                            log = json.loads(line.strip())
+                            if log.get('user_name') == user_name:
+                                user_logs.append(log)
+                        except json.JSONDecodeError:
+                            continue
+
+        # 2. 仿真评分数据 (block_scores.tsv)
         block_scores_file = data_dir / "block_scores.tsv"
         user_scores = []
         if block_scores_file.exists():
-            df = pd.read_csv(block_scores_file, sep='\t')
-            user_data = df[df['user_name'] == user_name]
-            user_scores = user_data.to_dict('records')
-        
-        if not user_logs and not user_scores:
-            raise HTTPException(status_code=404, detail="用户不存在")
-        
+            try:
+                df = pd.read_csv(block_scores_file, sep='\t')
+                user_data = df[df['user_name'] == user_name]
+                user_scores = user_data.to_dict('records')
+            except Exception as e:
+                print(f"读取block_scores.tsv失败: {e}")
+
+        # 3. 决策记录 (decision_log.csv)
+        decision_log_file = data_dir / "decision_log.csv"
+        user_decisions = []
+        if decision_log_file.exists():
+            try:
+                df = pd.read_csv(decision_log_file)
+                if not df.empty and 'user_name' in df.columns:
+                    user_data = df[df['user_name'] == user_name]
+                    user_decisions = user_data.to_dict('records')
+            except Exception as e:
+                print(f"读取decision_log.csv失败: {e}")
+
+        # 4. 参数区域配置 (parameter_zones.csv)
+        parameter_zones_file = data_dir / "parameter_zones.csv"
+        parameter_zones = []
+        if parameter_zones_file.exists():
+            try:
+                df = pd.read_csv(parameter_zones_file)
+                parameter_zones = df.to_dict('records')
+            except Exception as e:
+                print(f"读取parameter_zones.csv失败: {e}")
+
+        # 5. 用户名记录 (your_name.csv)
+        your_name_file = data_dir / "your_name.csv"
+        user_info = {"registered": False}
+        if your_name_file.exists():
+            try:
+                df = pd.read_csv(your_name_file)
+                if not df.empty and 'user_name' in df.columns:
+                    if user_name in df['user_name'].values:
+                        user_info["registered"] = True
+            except Exception as e:
+                print(f"读取your_name.csv失败: {e}")
+
+        # 检查用户是否存在
+        if not user_logs and not user_scores and not user_decisions:
+            raise HTTPException(status_code=404, detail="用户不存在或无数据")
+
+        # 统计信息
+        timestamps = []
+        if user_logs:
+            timestamps.extend([log.get('timestamp') for log in user_logs if log.get('timestamp')])
+        if user_scores:
+            timestamps.extend([score.get('timestamp') for score in user_scores if score.get('timestamp')])
+        if user_decisions:
+            timestamps.extend([decision.get('timestamp') for decision in user_decisions if decision.get('timestamp')])
+
+        # 操作类型统计
+        action_types = {}
+        for log in user_logs:
+            action_type = log.get('type', 'Unknown')
+            action_types[action_type] = action_types.get(action_type, 0) + 1
+
         return {
             "user_name": user_name,
-            "logs": user_logs,
-            "scores": user_scores,
+            "user_logs": user_logs,
+            "block_scores": user_scores,
+            "decision_log": user_decisions,
+            "parameter_zones": parameter_zones,
+            "user_info": user_info,
             "statistics": {
                 "total_actions": len(user_logs),
+                "total_decisions": len(user_decisions),
                 "simulation_periods": len(user_scores),
-                "first_activity": min([log['timestamp'] for log in user_logs]) if user_logs else None,
-                "last_activity": max([log['timestamp'] for log in user_logs]) if user_logs else None
+                "action_types": action_types,
+                "first_activity": min(timestamps) if timestamps else None,
+                "last_activity": max(timestamps) if timestamps else None,
+                "data_files_found": {
+                    "user_logs": len(user_logs) > 0,
+                    "block_scores": len(user_scores) > 0,
+                    "decision_log": len(user_decisions) > 0,
+                    "parameter_zones": len(parameter_zones) > 0,
+                    "user_registered": user_info["registered"]
+                }
             }
         }
     except HTTPException:
         raise
     except Exception as e:
+        print(f"获取用户详细数据失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"获取用户数据失败: {str(e)}")
 
 @router.get("/download/all")
