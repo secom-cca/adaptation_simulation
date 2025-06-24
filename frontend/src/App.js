@@ -41,9 +41,9 @@ const getLineChartIndicators = (language) => {
       'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton/ha' },
       'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
-      'Temperature (℃)': { labelTitle: '【気候要因】年平均気温', max: 20, min: 12, unit: '℃' },
-      'Precipitation (mm)': { labelTitle: '【気候要因】年降水量', max: 3000, min: 0, unit: 'mm' },
-      'Available Water': { labelTitle: '【気候要因】利用可能な水量', max: 3000, min: 0, unit: 'mm' }
+      'Temperature (℃)': { labelTitle: '【気候要素】年平均気温', max: 20, min: 12, unit: '℃' },
+      'Precipitation (mm)': { labelTitle: '【気候要素】年降水量', max: 3000, min: 0, unit: 'mm' },
+      'Available Water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' }
     },
     en: {
       'Flood Damage': { labelTitle: 'Flood Damage', max: 20000, min: 0, unit: '10k yen' },
@@ -52,7 +52,7 @@ const getLineChartIndicators = (language) => {
       'Municipal Cost': { labelTitle: 'Municipal Cost', max: 100000, min: 0, unit: '10k yen' },
       'Temperature (℃)': { labelTitle: '[Climate Factor] Average Temperature', max: 20, min: 12, unit: '°C' },
       'Precipitation (mm)': { labelTitle: '[Climate Factor] Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
-      'Available Water': { labelTitle: '[Climate Factor] Available Water', max: 3000, min: 0, unit: 'mm' }
+      'Available Water': { labelTitle: '[Intermediate Factor] Available Water', max: 3000, min: 0, unit: 'mm' }
     }
   };
   return indicators[language] || indicators.ja;
@@ -143,7 +143,7 @@ const texts = {
       startNext: ') を開始',
       cycleComplete: 'サイクル',
       completed: 'が完了しました！',
-      viewResults: '結果を見る',
+      // viewResults: '結果を見る',
     },
     rcp: {
       scenario: 'RCPシナリオ'
@@ -259,7 +259,7 @@ const texts = {
       startNext: ') Start',
       cycleComplete: 'Cycle',
       completed: 'completed!',
-      viewResults: 'View Results',
+      // viewResults: 'View Results',
     },
     rcp: {
       scenario: 'RCP Scenario'
@@ -1218,7 +1218,7 @@ function App() {
           />
         </Box>
         
-        {showResultButton && (
+        {/* {showResultButton && (
         <Box sx={{ textAlign: 'center', mt: 0 }}>
           <Button
             variant="contained"
@@ -1229,7 +1229,7 @@ function App() {
             {t.buttons.viewResults}
           </Button>
         </Box>
-      )}
+      )} */}
         <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
           <IconButton color="primary" onClick={handleOpenSettings} sx={{ ml: 1 }}>
             <SettingsIcon />
