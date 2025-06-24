@@ -290,19 +290,19 @@ class AdminDashboard {
                     <h4>📊 データ概要</h4>
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <div class="stat-number">${userData.statistics.total_actions}</div>
+                            <div class="stat-number">${userData.statistics.total_actions || 0}</div>
                             <div class="stat-label">総操作数</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number">${userData.statistics.total_decisions}</div>
+                            <div class="stat-number">${userData.statistics.total_decisions || 0}</div>
                             <div class="stat-label">決定記録</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number">${userData.statistics.simulation_periods}</div>
+                            <div class="stat-number">${userData.statistics.simulation_periods || 0}</div>
                             <div class="stat-label">シミュレーション期間</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number">${Object.keys(userData.statistics.action_types).length}</div>
+                            <div class="stat-number">${Object.keys(userData.statistics.action_types || {}).length}</div>
                             <div class="stat-label">操作タイプ</div>
                         </div>
                     </div>
@@ -321,18 +321,18 @@ class AdminDashboard {
                     <!-- 操作日志标签页 -->
                     <div class="tab-content active" id="user-logs">
                         <div class="tab-header">
-                            <h5>📋 ユーザー操作ログ (${userData.user_logs.length}件)</h5>
+                            <h5>📋 ユーザー操作ログ (${(userData.user_logs || []).length}件)</h5>
                             <button class="export-btn" onclick="adminApp.exportUserData('${userData.user_name}', 'user_logs')">
                                 💾 エクスポート
                             </button>
                         </div>
-                        ${this.renderUserLogsTab(userData.user_logs, userData.statistics.action_types)}
+                        ${this.renderUserLogsTab(userData.user_logs, userData.statistics.action_types || {})}
                     </div>
 
                     <!-- 评分数据标签页 -->
                     <div class="tab-content" id="block-scores">
                         <div class="tab-header">
-                            <h5>📊 シミュレーション評価データ (${userData.block_scores.length}件)</h5>
+                            <h5>📊 シミュレーション評価データ (${(userData.block_scores || []).length}件)</h5>
                             <button class="export-btn" onclick="adminApp.exportUserData('${userData.user_name}', 'block_scores')">
                                 💾 エクスポート
                             </button>
@@ -343,7 +343,7 @@ class AdminDashboard {
                     <!-- 决策记录标签页 -->
                     <div class="tab-content" id="decision-log">
                         <div class="tab-header">
-                            <h5>📝 決定記録 (${userData.decision_log.length}件)</h5>
+                            <h5>📝 決定記録 (${(userData.decision_log || []).length}件)</h5>
                             <button class="export-btn" onclick="adminApp.exportUserData('${userData.user_name}', 'decision_log')">
                                 💾 エクスポート
                             </button>
@@ -354,7 +354,7 @@ class AdminDashboard {
                     <!-- 参数配置标签页 -->
                     <div class="tab-content" id="parameter-zones">
                         <div class="tab-header">
-                            <h5>🎯 パラメータ設定 (${userData.parameter_zones.length}件)</h5>
+                            <h5>🎯 パラメータ設定 (${(userData.parameter_zones || []).length}件)</h5>
                         </div>
                         ${this.renderParameterZonesTab(userData.parameter_zones)}
                     </div>
@@ -407,12 +407,12 @@ class AdminDashboard {
         }
 
         // 操作类型统计图表
-        const actionTypesChart = Object.entries(actionTypes).map(([type, count]) => `
+        const actionTypesChart = Object.entries(actionTypes || {}).map(([type, count]) => `
             <div class="action-type-item">
                 <span class="action-type">${this.getActivityIcon(type)} ${type}</span>
                 <span class="action-count">${count}回</span>
                 <div class="action-bar">
-                    <div class="action-fill" style="width: ${(count / Math.max(...Object.values(actionTypes))) * 100}%"></div>
+                    <div class="action-fill" style="width: ${(count / Math.max(...Object.values(actionTypes || {}))) * 100}%"></div>
                 </div>
             </div>
         `).join('');
@@ -655,7 +655,7 @@ class AdminDashboard {
                             </div>
                             <div class="info-item">
                                 <span class="info-label">操作タイプ数:</span>
-                                <span class="info-value">${Object.keys(userData.statistics.action_types).length}</span>
+                                <span class="info-value">${Object.keys(userData.statistics.action_types || {}).length}</span>
                             </div>
                         </div>
                     </div>
