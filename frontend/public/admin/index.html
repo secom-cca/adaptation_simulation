@@ -42,6 +42,102 @@
             margin: 10px 0;
         }
         .download-all-btn:hover { background: #0056b3; }
+        .clear-data-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+        }
+        .clear-data-btn:hover { background: #c82333; }
+        .preview-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        .preview-btn:hover { background: #138496; }
+
+        /* モーダルスタイル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover { color: black; }
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .preview-table th,
+        .preview-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .preview-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+        .json-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .text-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -69,7 +165,21 @@
     <div id="files-section">
         <h3>データファイル</h3>
         <button class="download-all-btn" onclick="downloadAllData()">📦 全データをダウンロード</button>
+        <button class="clear-data-btn" onclick="clearAllData()">🗑️ 全データを消去</button>
         <div id="files-data">読み込み中...</div>
+    </div>
+
+    <!-- プレビューモーダル -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">ファイルプレビュー</h3>
+                <span class="close" onclick="closePreviewModal()">&times;</span>
+            </div>
+            <div id="modalBody">
+                <!-- プレビュー内容がここに表示される -->
+            </div>
+        </div>
     </div>
     
     <script>
@@ -165,9 +275,14 @@
                                         <div class="file-name">${file.name}</div>
                                         <div class="file-details">サイズ: ${fileSize} | 更新: ${modifiedDate}</div>
                                     </div>
-                                    <button class="download-btn" onclick="downloadFile('${file.name}')">
-                                        📥 ダウンロード
-                                    </button>
+                                    <div>
+                                        <button class="preview-btn" onclick="previewFile('${file.name}')">
+                                            👁️ プレビュー
+                                        </button>
+                                        <button class="download-btn" onclick="downloadFile('${file.name}')">
+                                            📥 ダウンロード
+                                        </button>
+                                    </div>
                                 </div>
                             `;
                         });
@@ -251,6 +366,126 @@
                 console.error('全データダウンロードエラー:', error);
                 alert(`全データのダウンロードに失敗しました: ${error.message}`);
             });
+        }
+
+        function previewFile(filename) {
+            const url = `${BACKEND_URL}/admin/preview-file/${filename}`;
+
+            fetch(url, {
+                headers: {
+                    'Authorization': 'Basic ' + btoa('admin:climate2025')
+                }
+            }).then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`プレビュー失敗: ${response.status}`);
+                }
+            }).then(data => {
+                showPreviewModal(data);
+            }).catch(error => {
+                console.error('プレビューエラー:', error);
+                alert(`ファイルプレビューに失敗しました: ${error.message}`);
+            });
+        }
+
+        function showPreviewModal(data) {
+            const modal = document.getElementById('previewModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+
+            modalTitle.textContent = `${data.filename} - プレビュー`;
+
+            let content = '';
+
+            if (data.type === 'table') {
+                // テーブル形式で表示
+                content = `
+                    <p><strong>総行数:</strong> ${data.total_rows} 行 (最初の100行を表示)</p>
+                    <div style="overflow-x: auto;">
+                        <table class="preview-table">
+                            <thead>
+                                <tr>
+                                    ${data.columns.map(col => `<th>${col}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.data.map(row => `
+                                    <tr>
+                                        ${data.columns.map(col => `<td title="${row[col] || ''}">${row[col] || ''}</td>`).join('')}
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else if (data.type === 'json') {
+                // JSON形式で表示
+                content = `
+                    <p><strong>総行数:</strong> ${data.total_rows} 行 (最初の100行を表示)</p>
+                    <div class="json-preview">${JSON.stringify(data.data, null, 2)}</div>
+                `;
+            } else if (data.type === 'text') {
+                // テキスト形式で表示
+                content = `
+                    <p><strong>ファイルサイズ:</strong> ${data.total_size ? formatFileSize(data.total_size) : 'N/A'}</p>
+                    ${data.error ? `<p style="color: red;"><strong>注意:</strong> ${data.error}</p>` : ''}
+                    <div class="text-preview">${data.data}</div>
+                `;
+            } else if (data.type === 'error') {
+                // エラー表示
+                content = `
+                    <p style="color: red;"><strong>エラー:</strong> ${data.message}</p>
+                `;
+            }
+
+            modalBody.innerHTML = content;
+            modal.style.display = 'block';
+        }
+
+        function closePreviewModal() {
+            document.getElementById('previewModal').style.display = 'none';
+        }
+
+        function clearAllData() {
+            if (!confirm('⚠️ 警告: 全てのデータファイルの内容が消去されます。\n\nファイル自体は残りますが、中身は空になります。\nテストデータの削除などに使用してください。\n\nこの操作は元に戻せません。続行しますか？')) {
+                return;
+            }
+
+            if (!confirm('本当に実行しますか？この操作は取り消せません。')) {
+                return;
+            }
+
+            const url = `${BACKEND_URL}/admin/clear-data`;
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Basic ' + btoa('admin:climate2025'),
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`データ消去失敗: ${response.status}`);
+                }
+            }).then(result => {
+                alert(`データ消去完了！\n\n処理ファイル数: ${result.total_files_processed}\n成功: ${result.successful_clears}\nエラー: ${result.errors ? result.errors.length : 0}`);
+                // データを再読み込み
+                loadData();
+            }).catch(error => {
+                console.error('データ消去エラー:', error);
+                alert(`データ消去に失敗しました: ${error.message}`);
+            });
+        }
+
+        // モーダルの外側をクリックしたら閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('previewModal');
+            if (event.target === modal) {
+                closePreviewModal();
+            }
         }
 
         // 页面加载时自动加载数据

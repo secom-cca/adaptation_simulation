@@ -596,6 +596,108 @@ async def list_data_files(admin: str = Depends(authenticate_admin)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"ファイルリストの取得に失敗しました: {str(e)}")
 
+@app.get("/admin/preview-file/{filename}")
+async def preview_file_content(filename: str, admin: str = Depends(authenticate_admin)):
+    """ファイル内容をプレビュー用に取得"""
+    try:
+        data_dir = Path(__file__).parent / "data"
+        file_path = data_dir / filename
+
+        # セキュリティチェック
+        if not file_path.resolve().is_relative_to(data_dir.resolve()):
+            raise HTTPException(status_code=400, detail="無効なファイルパスです")
+
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="ファイルが見つかりません")
+
+        file_extension = file_path.suffix.lower()
+
+        # ファイルサイズチェック（大きすぎる場合は制限）
+        max_size = 5 * 1024 * 1024  # 5MB
+        if file_path.stat().st_size > max_size:
+            return {
+                "filename": filename,
+                "type": "error",
+                "message": "ファイルサイズが大きすぎます（5MB以上）",
+                "data": []
+            }
+
+        try:
+            if file_extension in ['.csv']:
+                # CSV ファイルの処理
+                df = pd.read_csv(file_path)
+                return {
+                    "filename": filename,
+                    "type": "table",
+                    "columns": df.columns.tolist(),
+                    "data": df.head(100).to_dict('records'),  # 最初の100行のみ
+                    "total_rows": len(df)
+                }
+
+            elif file_extension in ['.tsv']:
+                # TSV ファイルの処理
+                df = pd.read_csv(file_path, sep='\t')
+                return {
+                    "filename": filename,
+                    "type": "table",
+                    "columns": df.columns.tolist(),
+                    "data": df.head(100).to_dict('records'),
+                    "total_rows": len(df)
+                }
+
+            elif file_extension in ['.jsonl']:
+                # JSONL ファイルの処理
+                import json
+                lines = []
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    for i, line in enumerate(f):
+                        if i >= 100:  # 最初の100行のみ
+                            break
+                        if line.strip():
+                            try:
+                                lines.append(json.loads(line.strip()))
+                            except json.JSONDecodeError:
+                                continue
+
+                # 総行数を取得
+                total_lines = sum(1 for line in open(file_path, 'r', encoding='utf-8') if line.strip())
+
+                return {
+                    "filename": filename,
+                    "type": "json",
+                    "data": lines,
+                    "total_rows": total_lines
+                }
+
+            else:
+                # その他のテキストファイル
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read(10000)  # 最初の10KB
+
+                return {
+                    "filename": filename,
+                    "type": "text",
+                    "data": content,
+                    "total_size": file_path.stat().st_size
+                }
+
+        except Exception as parse_error:
+            # ファイル解析エラーの場合、生テキストとして表示
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read(10000)
+
+            return {
+                "filename": filename,
+                "type": "text",
+                "data": content,
+                "error": f"解析エラー: {str(parse_error)}"
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"ファイルプレビューに失敗しました: {str(e)}")
+
 @app.get("/admin/download/file/{filename}")
 async def download_single_file(filename: str, admin: str = Depends(authenticate_admin)):
     """指定されたファイルをダウンロード"""
