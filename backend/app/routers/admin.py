@@ -201,6 +201,157 @@ async def get_user_detail(user_name: str, admin: str = Depends(authenticate_admi
         print(f"获取用户详细数据失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"获取用户数据失败: {str(e)}")
 
+@router.get("/data-files")
+async def get_data_files(admin: str = Depends(authenticate_admin)):
+    """获取data文件夹中的所有数据文件列表"""
+    try:
+        data_dir = Path(settings.DATA_DIR)
+
+        if not data_dir.exists():
+            return {"files": [], "total_count": 0}
+
+        files = []
+        for file_path in data_dir.iterdir():
+            if file_path.is_file() and not file_path.name.startswith('.'):
+                # 获取文件信息
+                stat = file_path.stat()
+                file_size = stat.st_size
+                modified_time = datetime.fromtimestamp(stat.st_mtime).isoformat()
+
+                # 确定文件类型
+                file_extension = file_path.suffix.lower()
+                if file_extension == '.csv':
+                    file_type = 'CSV'
+                elif file_extension == '.tsv':
+                    file_type = 'TSV'
+                elif file_extension == '.jsonl':
+                    file_type = 'JSONL'
+                elif file_extension == '.json':
+                    file_type = 'JSON'
+                elif file_extension == '.txt':
+                    file_type = 'TEXT'
+                else:
+                    file_type = 'OTHER'
+
+                # 计算行数（对于文本文件）
+                row_count = 0
+                if file_extension in ['.csv', '.tsv', '.jsonl', '.txt']:
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            row_count = sum(1 for line in f if line.strip())
+                    except:
+                        row_count = 0
+
+                files.append({
+                    "filename": file_path.name,
+                    "file_type": file_type,
+                    "file_size": file_size,
+                    "file_size_mb": round(file_size / 1024 / 1024, 2),
+                    "row_count": row_count,
+                    "modified_time": modified_time,
+                    "extension": file_extension
+                })
+
+        # 按文件名排序
+        files.sort(key=lambda x: x['filename'])
+
+        return {
+            "files": files,
+            "total_count": len(files),
+            "data_directory": str(data_dir)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取文件列表失败: {str(e)}")
+
+@router.get("/data-files/{filename}")
+async def get_file_content(filename: str, admin: str = Depends(authenticate_admin)):
+    """获取指定文件的内容"""
+    try:
+        data_dir = Path(settings.DATA_DIR)
+        file_path = data_dir / filename
+
+        if not file_path.exists() or not file_path.is_file():
+            raise HTTPException(status_code=404, detail="文件不存在")
+
+        # 安全检查：确保文件在data目录内
+        if not str(file_path.resolve()).startswith(str(data_dir.resolve())):
+            raise HTTPException(status_code=403, detail="访问被拒绝")
+
+        file_extension = file_path.suffix.lower()
+
+        # 根据文件类型处理内容
+        if file_extension == '.jsonl':
+            # JSONL文件：逐行解析JSON
+            content = []
+            with open(file_path, 'r', encoding='utf-8') as f:
+                for line_num, line in enumerate(f, 1):
+                    if line.strip():
+                        try:
+                            content.append(json.loads(line.strip()))
+                        except json.JSONDecodeError as e:
+                            content.append({
+                                "error": f"JSON解析错误 (行{line_num}): {str(e)}",
+                                "raw_line": line.strip()
+                            })
+            return {
+                "filename": filename,
+                "file_type": "JSONL",
+                "content": content,
+                "total_records": len(content)
+            }
+
+        elif file_extension in ['.csv', '.tsv']:
+            # CSV/TSV文件：使用pandas解析
+            separator = '\t' if file_extension == '.tsv' else ','
+            try:
+                df = pd.read_csv(file_path, sep=separator)
+                content = df.to_dict('records')
+                return {
+                    "filename": filename,
+                    "file_type": "CSV" if file_extension == '.csv' else "TSV",
+                    "content": content,
+                    "columns": list(df.columns),
+                    "total_records": len(content),
+                    "shape": df.shape
+                }
+            except Exception as e:
+                # 如果pandas解析失败，尝试作为文本文件读取
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    lines = [line.strip() for line in f.readlines() if line.strip()]
+                return {
+                    "filename": filename,
+                    "file_type": "TEXT",
+                    "content": lines,
+                    "total_records": len(lines),
+                    "error": f"CSV/TSV解析失败: {str(e)}"
+                }
+
+        elif file_extension == '.json':
+            # JSON文件
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = json.load(f)
+            return {
+                "filename": filename,
+                "file_type": "JSON",
+                "content": content
+            }
+
+        else:
+            # 其他文件类型：作为文本读取
+            with open(file_path, 'r', encoding='utf-8') as f:
+                lines = [line.rstrip() for line in f.readlines()]
+            return {
+                "filename": filename,
+                "file_type": "TEXT",
+                "content": lines,
+                "total_records": len(lines)
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"读取文件失败: {str(e)}")
+
 @router.get("/download/all")
 async def download_all_data(admin: str = Depends(authenticate_admin)):
     """下载所有数据的压缩包"""

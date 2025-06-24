@@ -78,7 +78,7 @@ class AdminDashboard {
         });
 
         window.addEventListener('click', (e) => {
-            if (e.target === document.getElementById('user-modal')) {
+            if (e.target === document.getElementById('file-modal')) {
                 this.closeModal();
             }
             if (e.target === document.getElementById('clear-confirm-modal')) {
@@ -100,14 +100,14 @@ class AdminDashboard {
         
         try {
             this.showLoading(true);
-            const response = await fetch(`${this.baseURL}/dashboard`, {
+            const response = await fetch(`${this.baseURL}/data-files`, {
                 headers: {
                     'Authorization': `Basic ${this.credentials}`
                 }
             });
 
             if (response.ok) {
-                this.dashboardData = await response.json();
+                this.filesData = await response.json();
                 this.showDashboard();
                 this.updateDashboard();
             } else {
@@ -128,73 +128,100 @@ class AdminDashboard {
 
         try {
             this.showLoading(true);
-            const response = await fetch(`${this.baseURL}/dashboard`, {
+            const response = await fetch(`${this.baseURL}/data-files`, {
                 headers: {
                     'Authorization': `Basic ${this.credentials}`
                 }
             });
 
             if (response.ok) {
-                this.dashboardData = await response.json();
+                this.filesData = await response.json();
                 this.updateDashboard();
                 document.getElementById('last-update').textContent =
                     `最終更新: ${new Date().toLocaleString()}`;
             } else {
-                this.showError('データの取得に失敗しました');
+                this.showError('データファイルの取得に失敗しました');
             }
         } catch (error) {
-            console.error('データ読み込みエラー:', error);
-            this.showError('データの読み込みに失敗しました');
+            console.error('ファイル読み込みエラー:', error);
+            this.showError('ファイルの読み込みに失敗しました');
         } finally {
             this.showLoading(false);
         }
     }
 
     updateDashboard() {
-        if (!this.dashboardData) return;
+        if (!this.filesData) return;
 
-        const { summary, users, user_scores, recent_activity } = this.dashboardData;
+        const { files, total_count } = this.filesData;
+
+        // 计算统计数据
+        const totalSize = files.reduce((sum, file) => sum + file.file_size_mb, 0);
+        const totalRecords = files.reduce((sum, file) => sum + file.row_count, 0);
+        const lastModified = files.length > 0 ?
+            Math.max(...files.map(f => new Date(f.modified_time).getTime())) : null;
 
         // 更新统计数据
-        document.getElementById('total-users').textContent = summary.total_users;
-        document.getElementById('total-logs').textContent = summary.total_logs.toLocaleString();
-        document.getElementById('total-simulations').textContent = summary.total_simulations;
-        
-        const lastActivity = summary.last_activity ?
-            new Date(summary.last_activity).toLocaleString() : 'なし';
-        document.getElementById('last-activity').textContent = lastActivity;
+        document.getElementById('total-files').textContent = total_count;
+        document.getElementById('total-size').textContent = totalSize.toFixed(2);
+        document.getElementById('total-records').textContent = totalRecords.toLocaleString();
 
-        // 更新用户列表
-        this.updateUsersList(users, user_scores);
+        const lastModifiedText = lastModified ?
+            new Date(lastModified).toLocaleString() : 'なし';
+        document.getElementById('last-modified').textContent = lastModifiedText;
 
-        // 更新最近活动
-        this.updateRecentActivity(recent_activity);
+        // 更新文件列表
+        this.updateFilesList(files);
     }
 
-    updateUsersList(users, userScores) {
-        const usersGrid = document.getElementById('users-grid');
-        usersGrid.innerHTML = '';
+    updateFilesList(files) {
+        const filesGrid = document.getElementById('files-grid');
+        filesGrid.innerHTML = '';
 
-        users.forEach(userName => {
-            const userCard = document.createElement('div');
-            userCard.className = 'user-card';
-            userCard.onclick = () => this.showUserDetail(userName);
+        files.forEach(file => {
+            const fileCard = document.createElement('div');
+            fileCard.className = 'file-card';
+            fileCard.onclick = () => this.showFileContent(file.filename);
 
-            const scores = userScores[userName] || [];
-            const simulationCount = scores.length;
-            const avgScore = scores.length > 0 ? 
-                (scores.reduce((sum, s) => sum + parseFloat(s.total_score), 0) / scores.length).toFixed(1) : 'N/A';
+            // 文件类型图标
+            const typeIcon = this.getFileTypeIcon(file.file_type);
 
-            userCard.innerHTML = `
-                <div class="user-name">${userName}</div>
-                <div class="user-stats">
-                    <div>シミュレーション回数: ${simulationCount}</div>
-                    <div>平均スコア: ${avgScore}</div>
+            fileCard.innerHTML = `
+                <div class="file-header">
+                    <div class="file-icon">${typeIcon}</div>
+                    <div class="file-type">${file.file_type}</div>
+                </div>
+                <div class="file-name">${file.filename}</div>
+                <div class="file-stats">
+                    <div class="file-stat">
+                        <span class="stat-label">サイズ:</span>
+                        <span class="stat-value">${file.file_size_mb} MB</span>
+                    </div>
+                    <div class="file-stat">
+                        <span class="stat-label">レコード数:</span>
+                        <span class="stat-value">${file.row_count.toLocaleString()}</span>
+                    </div>
+                    <div class="file-stat">
+                        <span class="stat-label">更新日時:</span>
+                        <span class="stat-value">${new Date(file.modified_time).toLocaleDateString()}</span>
+                    </div>
                 </div>
             `;
 
-            usersGrid.appendChild(userCard);
+            filesGrid.appendChild(fileCard);
         });
+    }
+
+    getFileTypeIcon(fileType) {
+        const icons = {
+            'CSV': '📊',
+            'TSV': '📋',
+            'JSONL': '📝',
+            'JSON': '🔧',
+            'TEXT': '📄',
+            'OTHER': '📁'
+        };
+        return icons[fileType] || '📁';
     }
 
     updateRecentActivity(activities) {
@@ -252,132 +279,196 @@ class AdminDashboard {
         return texts[activity.type] || `${activity.type}を実行しました`;
     }
 
-    async showUserDetail(userName) {
+    async showFileContent(filename) {
         try {
             this.showLoading(true);
-            const response = await fetch(`${this.baseURL}/users/${userName}`, {
+            const response = await fetch(`${this.baseURL}/data-files/${filename}`, {
                 headers: {
                     'Authorization': `Basic ${this.credentials}`
                 }
             });
 
             if (response.ok) {
-                const userData = await response.json();
-                this.currentUserData = userData; // 保存当前用户数据供导出使用
-                this.displayUserModal(userData);
+                const fileData = await response.json();
+                this.currentFileData = fileData; // 保存当前文件数据供导出使用
+                this.displayFileModal(fileData);
             } else {
-                this.showError('ユーザー詳細の取得に失敗しました');
+                this.showError('ファイル内容の取得に失敗しました');
             }
         } catch (error) {
-            console.error('ユーザー詳細取得エラー:', error);
-            this.showError('ユーザー詳細の取得に失敗しました');
+            console.error('ファイル内容取得エラー:', error);
+            this.showError('ファイル内容の取得に失敗しました');
         } finally {
             this.showLoading(false);
         }
     }
 
-    displayUserModal(userData) {
-        const modal = document.getElementById('user-modal');
-        const modalUserName = document.getElementById('modal-user-name');
-        const modalBody = document.getElementById('modal-body');
+    displayFileModal(fileData) {
+        const modal = document.getElementById('file-modal');
+        const modalFileName = document.getElementById('modal-file-name');
+        const modalBody = document.getElementById('modal-file-body');
 
-        modalUserName.textContent = `ユーザー詳細 - ${userData.user_name}`;
+        modalFileName.textContent = `📁 ${fileData.filename} (${fileData.file_type})`;
+
+        // 根据文件类型渲染内容
+        let contentHtml = '';
+
+        if (fileData.file_type === 'JSONL') {
+            contentHtml = this.renderJSONLContent(fileData);
+        } else if (fileData.file_type === 'CSV' || fileData.file_type === 'TSV') {
+            contentHtml = this.renderTableContent(fileData);
+        } else if (fileData.file_type === 'JSON') {
+            contentHtml = this.renderJSONContent(fileData);
+        } else {
+            contentHtml = this.renderTextContent(fileData);
+        }
 
         modalBody.innerHTML = `
-            <div class="user-detail-content">
-                <!-- 数据概览 -->
-                <div class="data-overview">
-                    <h4>📊 データ概要</h4>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number">${userData.statistics.total_actions || 0}</div>
-                            <div class="stat-label">総操作数</div>
+            <div class="file-content">
+                <div class="file-info">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">ファイル名:</span>
+                            <span class="info-value">${fileData.filename}</span>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-number">${userData.statistics.total_decisions || 0}</div>
-                            <div class="stat-label">決定記録</div>
+                        <div class="info-item">
+                            <span class="info-label">ファイルタイプ:</span>
+                            <span class="info-value">${fileData.file_type}</span>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-number">${userData.statistics.simulation_periods || 0}</div>
-                            <div class="stat-label">シミュレーション期間</div>
+                        <div class="info-item">
+                            <span class="info-label">レコード数:</span>
+                            <span class="info-value">${(fileData.total_records || 0).toLocaleString()}</span>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-number">${Object.keys(userData.statistics.action_types || {}).length}</div>
-                            <div class="stat-label">操作タイプ</div>
+                        <div class="info-item">
+                            <button class="export-btn" onclick="adminApp.exportFileData('${fileData.filename}')">
+                                💾 ダウンロード
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 数据选择标签页 -->
-                <div class="data-tabs">
-                    <div class="tab-buttons">
-                        <button class="tab-btn active" data-tab="user-logs">📋 操作ログ</button>
-                        <button class="tab-btn" data-tab="block-scores">📊 評価データ</button>
-                        <button class="tab-btn" data-tab="decision-log">📝 決定記録</button>
-                        <button class="tab-btn" data-tab="parameter-zones">🎯 パラメータ設定</button>
-                        <button class="tab-btn" data-tab="user-info">👤 ユーザー情報</button>
-                    </div>
-
-                    <!-- 操作日志标签页 -->
-                    <div class="tab-content active" id="user-logs">
-                        <div class="tab-header">
-                            <h5>📋 ユーザー操作ログ (${(userData.user_logs || []).length}件)</h5>
-                            <button class="export-btn" onclick="adminApp.exportUserData('${userData.user_name}', 'user_logs')">
-                                💾 エクスポート
-                            </button>
-                        </div>
-                        ${this.renderUserLogsTab(userData.user_logs, userData.statistics.action_types || {})}
-                    </div>
-
-                    <!-- 评分数据标签页 -->
-                    <div class="tab-content" id="block-scores">
-                        <div class="tab-header">
-                            <h5>📊 シミュレーション評価データ (${(userData.block_scores || []).length}件)</h5>
-                            <button class="export-btn" onclick="adminApp.exportUserData('${userData.user_name}', 'block_scores')">
-                                💾 エクスポート
-                            </button>
-                        </div>
-                        ${this.renderBlockScoresTab(userData.block_scores)}
-                    </div>
-
-                    <!-- 决策记录标签页 -->
-                    <div class="tab-content" id="decision-log">
-                        <div class="tab-header">
-                            <h5>📝 決定記録 (${(userData.decision_log || []).length}件)</h5>
-                            <button class="export-btn" onclick="adminApp.exportUserData('${userData.user_name}', 'decision_log')">
-                                💾 エクスポート
-                            </button>
-                        </div>
-                        ${this.renderDecisionLogTab(userData.decision_log)}
-                    </div>
-
-                    <!-- 参数配置标签页 -->
-                    <div class="tab-content" id="parameter-zones">
-                        <div class="tab-header">
-                            <h5>🎯 パラメータ設定 (${(userData.parameter_zones || []).length}件)</h5>
-                        </div>
-                        ${this.renderParameterZonesTab(userData.parameter_zones)}
-                    </div>
-
-                    <!-- 用户信息标签页 -->
-                    <div class="tab-content" id="user-info">
-                        <div class="tab-header">
-                            <h5>👤 ユーザー情報</h5>
-                        </div>
-                        ${this.renderUserInfoTab(userData)}
-                    </div>
+                <div class="file-data">
+                    ${contentHtml}
                 </div>
             </div>
         `;
-
-        // 添加标签页切换事件
-        this.initTabSwitching();
 
         modal.style.display = 'block';
     }
 
     closeModal() {
-        document.getElementById('user-modal').style.display = 'none';
+        document.getElementById('file-modal').style.display = 'none';
+    }
+
+    // 渲染JSONL文件内容
+    renderJSONLContent(fileData) {
+        const records = fileData.content || [];
+        if (records.length === 0) {
+            return '<div class="no-data">📭 データがありません</div>';
+        }
+
+        // 显示前50条记录
+        const displayRecords = records.slice(0, 50);
+        const recordsHtml = displayRecords.map((record, index) => `
+            <div class="json-record">
+                <div class="record-header">レコード ${index + 1}</div>
+                <pre class="json-content">${JSON.stringify(record, null, 2)}</pre>
+            </div>
+        `).join('');
+
+        return `
+            <div class="jsonl-content">
+                <div class="content-header">
+                    <h4>📝 JSONL データ (最初の50件を表示)</h4>
+                    <div class="record-count">総レコード数: ${records.length}</div>
+                </div>
+                <div class="records-list">
+                    ${recordsHtml}
+                </div>
+                ${records.length > 50 ? '<div class="more-records">...他 ' + (records.length - 50) + ' 件のレコード</div>' : ''}
+            </div>
+        `;
+    }
+
+    // 渲染表格文件内容 (CSV/TSV)
+    renderTableContent(fileData) {
+        const records = fileData.content || [];
+        const columns = fileData.columns || [];
+
+        if (records.length === 0) {
+            return '<div class="no-data">📭 データがありません</div>';
+        }
+
+        // 显示前100行
+        const displayRecords = records.slice(0, 100);
+
+        const headerHtml = columns.map(col => `<th>${col}</th>`).join('');
+        const rowsHtml = displayRecords.map(record => {
+            const cellsHtml = columns.map(col => `<td>${record[col] || ''}</td>`).join('');
+            return `<tr>${cellsHtml}</tr>`;
+        }).join('');
+
+        return `
+            <div class="table-content">
+                <div class="content-header">
+                    <h4>📊 ${fileData.file_type} データ (最初の100行を表示)</h4>
+                    <div class="table-info">
+                        <span>行数: ${records.length}</span>
+                        <span>列数: ${columns.length}</span>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>${headerHtml}</tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+                ${records.length > 100 ? '<div class="more-records">...他 ' + (records.length - 100) + ' 行</div>' : ''}
+            </div>
+        `;
+    }
+
+    // 渲染JSON文件内容
+    renderJSONContent(fileData) {
+        return `
+            <div class="json-content">
+                <div class="content-header">
+                    <h4>🔧 JSON データ</h4>
+                </div>
+                <pre class="json-display">${JSON.stringify(fileData.content, null, 2)}</pre>
+            </div>
+        `;
+    }
+
+    // 渲染文本文件内容
+    renderTextContent(fileData) {
+        const lines = fileData.content || [];
+        if (lines.length === 0) {
+            return '<div class="no-data">📭 データがありません</div>';
+        }
+
+        // 显示前200行
+        const displayLines = lines.slice(0, 200);
+        const linesHtml = displayLines.map((line, index) =>
+            `<div class="text-line"><span class="line-number">${index + 1}</span><span class="line-content">${line}</span></div>`
+        ).join('');
+
+        return `
+            <div class="text-content">
+                <div class="content-header">
+                    <h4>📄 テキストデータ (最初の200行を表示)</h4>
+                    <div class="line-count">総行数: ${lines.length}</div>
+                </div>
+                <div class="text-display">
+                    ${linesHtml}
+                </div>
+                ${lines.length > 200 ? '<div class="more-records">...他 ' + (lines.length - 200) + ' 行</div>' : ''}
+            </div>
+        `;
     }
 
     // 初始化标签页切换功能
@@ -702,55 +793,33 @@ class AdminDashboard {
         `;
     }
 
-    // 导出用户数据功能
-    exportUserData(userName, dataType) {
+    // 导出文件数据功能
+    exportFileData(filename) {
         try {
-            const modal = document.getElementById('user-modal');
-            const userData = this.currentUserData; // 需要保存当前用户数据
+            const fileData = this.currentFileData;
 
-            if (!userData) {
-                this.showError('ユーザーデータが見つかりません');
+            if (!fileData) {
+                this.showError('ファイルデータが見つかりません');
                 return;
             }
 
-            let dataToExport = [];
-            let filename = '';
-
-            switch (dataType) {
-                case 'user_logs':
-                    dataToExport = userData.user_logs;
-                    filename = `${userName}_user_logs_${new Date().toISOString().slice(0, 10)}.json`;
-                    break;
-                case 'block_scores':
-                    dataToExport = userData.block_scores;
-                    filename = `${userName}_block_scores_${new Date().toISOString().slice(0, 10)}.json`;
-                    break;
-                case 'decision_log':
-                    dataToExport = userData.decision_log;
-                    filename = `${userName}_decision_log_${new Date().toISOString().slice(0, 10)}.json`;
-                    break;
-                default:
-                    this.showError('不明なデータタイプです');
-                    return;
-            }
-
             // 创建下载链接
-            const dataStr = JSON.stringify(dataToExport, null, 2);
+            const dataStr = JSON.stringify(fileData.content, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(dataBlob);
 
             const link = document.createElement('a');
             link.href = url;
-            link.download = filename;
+            link.download = `${filename}_export_${new Date().toISOString().slice(0, 10)}.json`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
 
-            console.log(`✅ ${dataType} データをエクスポートしました: ${filename}`);
+            console.log(`✅ ファイルデータをエクスポートしました: ${filename}`);
         } catch (error) {
-            console.error('データエクスポートエラー:', error);
-            this.showError('データのエクスポートに失敗しました');
+            console.error('ファイルエクスポートエラー:', error);
+            this.showError('ファイルのエクスポートに失敗しました');
         }
     }
 

@@ -44,31 +44,31 @@
             <!-- 統計概要 -->
             <section class="stats-overview">
                 <div class="stat-card">
-                    <div class="stat-icon">👥</div>
+                    <div class="stat-icon">�</div>
                     <div class="stat-content">
-                        <div class="stat-number" id="total-users">--</div>
-                        <div class="stat-label">総ユーザー数</div>
+                        <div class="stat-number" id="total-files">--</div>
+                        <div class="stat-label">データファイル数</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">📝</div>
+                    <div class="stat-icon">�</div>
                     <div class="stat-content">
-                        <div class="stat-number" id="total-logs">--</div>
-                        <div class="stat-label">操作ログ</div>
+                        <div class="stat-number" id="total-size">--</div>
+                        <div class="stat-label">総データサイズ (MB)</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">🎯</div>
+                    <div class="stat-icon">📊</div>
                     <div class="stat-content">
-                        <div class="stat-number" id="total-simulations">--</div>
-                        <div class="stat-label">シミュレーション記録</div>
+                        <div class="stat-number" id="total-records">--</div>
+                        <div class="stat-label">総レコード数</div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">⏰</div>
                     <div class="stat-content">
-                        <div class="stat-number" id="last-activity">--</div>
-                        <div class="stat-label">最終活動</div>
+                        <div class="stat-number" id="last-modified">--</div>
+                        <div class="stat-label">最終更新</div>
                     </div>
                 </div>
             </section>
@@ -119,31 +119,23 @@
                 </div>
             </section>
 
-            <!-- ユーザーリスト -->
-            <section class="users-section">
-                <h2>👥 ユーザーリスト</h2>
-                <div class="users-grid" id="users-grid">
-                    <!-- ユーザーカードはJavaScriptで動的に生成されます -->
+            <!-- データファイルリスト -->
+            <section class="files-section">
+                <h2>� データファイル一覧</h2>
+                <div class="files-grid" id="files-grid">
+                    <!-- ファイルカードはJavaScriptで動的に生成されます -->
                 </div>
             </section>
 
-            <!-- 最近のアクティビティ -->
-            <section class="activity-section">
-                <h2>📈 最近のアクティビティ</h2>
-                <div class="activity-list" id="activity-list">
-                    <!-- アクティビティ記録はJavaScriptで動的に生成されます -->
-                </div>
-            </section>
-
-            <!-- ユーザー詳細モーダル -->
-            <div id="user-modal" class="modal">
+            <!-- ファイル内容モーダル -->
+            <div id="file-modal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3 id="modal-user-name">ユーザー詳細</h3>
+                        <h3 id="modal-file-name">ファイル内容</h3>
                         <span class="close">&times;</span>
                     </div>
-                    <div class="modal-body" id="modal-body">
-                        <!-- ユーザー詳細内容 -->
+                    <div class="modal-body" id="modal-file-body">
+                        <!-- ファイル内容 -->
                     </div>
                 </div>
             </div>
