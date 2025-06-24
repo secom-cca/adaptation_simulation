@@ -907,19 +907,44 @@ function App() {
   // 結果を保存し、リザルト画面へ
   const handleShowResult = async () => {
     try {
+      // 🔍 详细调试：检查resultHistory状态
+      console.log("🔍 开始分析resultHistory数据:");
+      console.log(`- resultHistory总数: ${resultHistory.length} 个cycle`);
+
+      resultHistory.forEach((cycle, index) => {
+        console.log(`🔍 Cycle ${cycle.cycleNumber} (索引${index}):`);
+        console.log(`  - simulationData存在: ${!!cycle.simulationData}`);
+        console.log(`  - simulationData长度: ${cycle.simulationData?.length || 0}`);
+        if (cycle.simulationData && cycle.simulationData.length > 0) {
+          const years = cycle.simulationData.map(d => d.Year);
+          console.log(`  - 年份范围: ${Math.min(...years)} - ${Math.max(...years)}`);
+          console.log(`  ✅ 此cycle数据将被包含`);
+        } else {
+          console.log(`  ❌ 此cycle数据将被跳过 - simulationData为空或长度为0`);
+        }
+      });
+
       // 合并所有周期的仿真数据
       const allSimulationData = [];
+      let includedCycles = 0;
       resultHistory.forEach(cycle => {
         if (cycle.simulationData && cycle.simulationData.length > 0) {
           allSimulationData.push(...cycle.simulationData);
+          includedCycles++;
         }
       });
+
+      console.log("🔍 数据合并结果:");
+      console.log(`- 包含的cycle数: ${includedCycles}/${resultHistory.length}`);
+      console.log(`- 总数据条数: ${allSimulationData.length}`);
 
       console.log("发送数据到后端:", {
         scenario_name: scenarioName,
         user_name: userName,
         mode: "Record Results Mode",
-        simulation_data_length: allSimulationData.length
+        simulation_data_length: allSimulationData.length,
+        included_cycles: includedCycles,
+        total_cycles: resultHistory.length
       });
 
       // Record Results Mode で /simulate にPOST - 发送完整的仿真数据
