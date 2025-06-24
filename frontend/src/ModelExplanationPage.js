@@ -1,204 +1,154 @@
-import React from 'react';
-import { Box, Typography, Paper, Button } from '@mui/material';
-import { MathJaxContext, MathJax } from 'better-react-mathjax';
+import React, { useState } from 'react';
+import { Box, Typography, Slider, Paper, Button, Grid } from '@mui/material';
+// import { Link } from 'react-router-dom';
+import 'katex/dist/katex.min.css';
+import { BlockMath, InlineMath } from 'react-katex';
 
-const ModelExplanationPage = ({ onBack }) => {
-  // MathJax配置
-  const mathJaxConfig = {
-    loader: { load: ['[tex]/html'] },
-    tex: {
-      packages: { '[+]': ['html'] },
-      inlineMath: [['$', '$'], ['\\(', '\\)']],
-      displayMath: [['$$', '$$'], ['\\[', '\\]']],
-      processEscapes: true,
-      processEnvironments: true
-    },
-    options: {
-      ignoreHtmlClass: 'tex2jax_ignore',
-      processHtmlClass: 'tex2jax_process'
-    }
-  };
+function FormulaPage() {
+  const [startYear, setStartYear] = useState(2026);
+  const [year, setYear] = useState(2040);
+  const dt = year - startYear;
+
+  // Temperature constants
+  const [T0, setT0] = useState(15.5);
+  const [aT, setAT] = useState(0.04);
+  const [sigT, setSigT] = useState(0.5);
+
+  // Precipitation constants
+  const [P0, setP0] = useState(1700);
+  const [aP, setAP] = useState(0);
+  const [sigPTrend, setSigPTrend] = useState(5);
+
+  // Extreme Precip constants
+  const [lam0, setLam0] = useState(0.1);
+  const [aLam, setALam] = useState(0.05);
+  const [mu0, setMu0] = useState(180);
+  const [aMu, setAMu] = useState(0.2);
+  const [beta0, setBeta0] = useState(20);
+  const [aBeta, setABeta] = useState(0.05);
+
+  // Forest constants
+  const [r_f0, setRf0] = useState(0.5);
+  const [alphaFlood, setAlphaFlood] = useState(0.4);
+  const [alphaWater, setAlphaWater] = useState(2.0);
+
+  // Agriculture constants
+  const [T_tol, setT_tol] = useState(0.0);
+  const [T_thr, setT_thr] = useState(22.0);
+  const [T_crit, setT_crit] = useState(30.0);
+
+  // Infrastructure constants
+  const [rhoD, setRhoD] = useState(100000);
+  const [rhoY, setRhoY] = useState(0.00001);
+
+  // Ecosystem constants
+  const [betaT, setBetaT] = useState(0.05);
+  const [betaP, setBetaP] = useState(0.03);
+  const [betaL, setBetaL] = useState(0.01);
 
   return (
-    <MathJaxContext config={mathJaxConfig}>
-      <Box sx={{ p: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          シミュレーション数式とパラメータ調整
-        </Typography>
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h4" gutterBottom>Model Equations & Tunable Parameters</Typography>
+      {/* <Box sx={{ mb: 3 }}>
+        <Link to="/" style={{ textDecoration: 'none' }}><Button variant="contained">Back</Button></Link>
+      </Box> */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          {/* (1) Temperature */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6">(1) Temperature</Typography>
+            <Typography variant="body2">This module simulates long-term changes in mean annual temperature using linear trends (αT) based on RCP scenarios and annual stochastic variability (σT).</Typography>
+            <BlockMath math={"Temp_t = T_0 + \\alpha_T (t - t_0) + \\mathcal{N}(0, \\sigma_T)"} />
+            {[['T₀', T0, setT0, 20], ['αT', aT, setAT, 0.1], ['σT', sigT, setSigT, 2]].map(([label, val, setVal, max]) => (
+              <Grid item xs={12} key={label}><Typography variant="caption">{label}: {val}</Typography><Slider size="small" value={val} min={0} max={max} step={max / 100} onChange={(e, v) => setVal(v)} /></Grid>
+            ))}
+          </Paper>
 
-        <Box sx={{ mb: 3 }}>
-          <Button
-            variant="contained"
-            onClick={onBack}
-          >
-            戻る
-          </Button>
-        </Box>
+          {/* (2) Precipitation */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6">(2) Precipitation</Typography>
+            <Typography variant="body2">This module models average annual precipitation with an optional trend and increasing variability under climate change.</Typography>
+            <BlockMath math={"Precip_t = \\max(0, P_0 + \\alpha_P (t - t_0) + \\mathcal{N}(0, \\sigma_{P,t}))"} />
+            {[['P₀', P0, setP0, 3000], ['αP', aP, setAP, 20], ['σP,t', sigPTrend, setSigPTrend, 10]].map(([label, val, setVal, max]) => (
+              <Grid item xs={12} key={label}><Typography variant="caption">{label}: {val}</Typography><Slider size="small" value={val} min={0} max={max} step={max / 100} onChange={(e, v) => setVal(v)} /></Grid>
+            ))}
+          </Paper>
 
-        {/* ---------- 概要 ---------- */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6" gutterBottom>概要</Typography>
-          <Typography sx={{ mb: 2 }}>
-            本研究では、社会-環境システムの動態を年次タイムステップで再現・評価する
-            <strong>動的シミュレーションモデル</strong>を構築した。気象変動・住民行動・公共投資
-            など複数領域の相互作用を考慮し、気候変動適応策の効果を定量評価する。
-          </Typography>
-          <Typography>
-            各年において社会環境・自然環境の状態を更新し、政策介入（意思決定変数）
-            への応答をシミュレートする。閉じた世界を想定し、例えば品種改良の
-            他地域への波及効果は考慮していない。
-          </Typography>
-        </Paper>
+          {/* (3) Extreme Precipitation */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6">(3) Extreme Precipitation</Typography>
+            <Typography variant="body2">This module simulates the frequency and intensity of extreme rainfall events using Poisson and Gumbel distributions with climate-dependent parameters.</Typography>
+            <BlockMath math={"\\lambda_t = \\max(0, \\lambda_0 + \\alpha_\\lambda (t - t_0))"} />
+            <BlockMath math={"RainEvent_i \\sim \\text{Gumbel}(\\mu_t, \\beta_t)"} />
+            {[['λ₀', lam0, setLam0, 5], ['αλ', aLam, setALam, 0.2], ['μ₀', mu0, setMu0, 500], ['αμ', aMu, setAMu, 10], ['β₀', beta0, setBeta0, 100], ['αβ', aBeta, setABeta, 2]].map(([label, val, setVal, max]) => (
+              <Grid item xs={12} key={label}><Typography variant="caption">{label}: {val}</Typography><Slider size="small" value={val} min={0} max={max} step={max / 100} onChange={(e, v) => setVal(v)} /></Grid>
+            ))}
+          </Paper>
 
-        {/* ---------- (1) 気候パラメータ設定 ---------- */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6">(1) 気候パラメータ設定</Typography>
+          {/* (4) Forest */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6">(4) Forest</Typography>
+            <Typography variant="body2">This module quantifies the effects of forest coverage on flood mitigation and water retention, including natural growth and loss dynamics.</Typography>
+            <BlockMath math={"FloodReduction_t = \\alpha_{\\text{flood}} \\cdot (A_{f,t} - A_{\\text{total}} \\cdot r_{f,0}) / A_{\\text{total}}"} />
+            <BlockMath math={"WaterRetention_t = \\alpha_{\\text{water}} \\cdot A_{f,t} / A_{\\text{total}}"} />
+            {[['r_f,0', r_f0, setRf0, 1], ['α_flood', alphaFlood, setAlphaFlood, 3], ['α_water', alphaWater, setAlphaWater, 5]].map(([label, val, setVal, max]) => (
+              <Grid item xs={12} key={label}><Typography variant="caption">{label}: {val}</Typography><Slider size="small" value={val} min={0} max={max} step={max / 100} onChange={(e, v) => setVal(v)} /></Grid>
+            ))}
+          </Paper>
+        </Grid>
 
-          <Typography variant="subtitle1" sx={{ mt: 2 }}>年平均気温</Typography>
-          <MathJax>
-            {"$$\\mathrm{Temp}_t = T_0 + \\alpha_T(t - t_0) + \\mathcal{N}(0,\\sigma_T)$$"}
-          </MathJax>
+        <Grid item xs={12} md={6}>
+          {/* (5) Agriculture */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6">(5) Agriculture</Typography>
+            <Typography variant="body2">Simulates yield loss in rice due to elevated nighttime temperatures during the ripening phase, with R&D-based improvements in tolerance.</Typography>
+            <BlockMath math={"T_{\\text{ripening}} = Temp_t + 6"} />
+            {[['T_tol', T_tol, setT_tol, 2], ['T_thr', T_thr, setT_thr, 30], ['T_crit', T_crit, setT_crit, 40]].map(([label, val, setVal, max]) => (
+              <Grid item xs={12} key={label}>
+                <Typography variant="caption">{label}: {val}</Typography>
+                <Slider size="small" value={val} min={0} max={max} step={0.1} onChange={(e, v) => setVal(v)} />
+              </Grid>
+            ))}
+          </Paper>
 
-          <Typography variant="subtitle1" sx={{ mt: 2 }}>年平均降水量</Typography>
-          <MathJax>
-            {"$$\\mathrm{Precip}_t = \\max(0, P_0 + \\alpha_P(t - t_0) + \\mathcal{N}(0,\\sigma_{P,t}))$$"}
-          </MathJax>
+          {/* (6) Residential Relocation */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6">(6) Residential Relocation</Typography>
+            <Typography variant="body2">Evaluates the effect of household relocation from flood-prone areas on reducing vulnerability.</Typography>
+            <BlockMath math={"H_r = \\max(H_{r,t-1} - M_t, 0), \\quad H_s = H_{s,t-1} + M_t"} />
+            <BlockMath math={"R_t = \\frac{H_s}{H_r + H_s}"} />
+          </Paper>
 
-          <Typography variant="subtitle1" sx={{ mt: 2 }}>極端降水イベント</Typography>
-          <MathJax>
-            {"$$\\lambda_t = \\max(0, \\lambda_0 + \\alpha_\\lambda(t - t_0))$$"}
-          </MathJax>
-          <MathJax>
-            {"$$N_{\\text{extreme}} \\sim \\text{Poisson}(\\lambda_t)$$"}
-          </MathJax>
-          <MathJax>
-            {"$$\\text{RainEvent}_i \\sim \\text{Gumbel}(\\mu_t, \\beta_t), \\quad i=1,\\ldots,N_{\\text{extreme}}$$"}
-          </MathJax>
+          {/* (7) Infrastructure */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6">(7) Infrastructure & Flood</Typography>
+            <Typography variant="body2">Captures structural protection dynamics and stochastic threshold mechanisms for levee development, as well as flood damage estimation.</Typography>
+            <BlockMath math={"D_{\\text{flood}} = \\sum \\max(R_i - L_t - \\phi_{\\text{paddy-flood}}, 0) \\cdot (1 - \\text{FloodReduction}_t) \\cdot \\rho_D"} />
+            <BlockMath math={"D_{\\text{actual}} = D_{\\text{flood}} \\cdot (1 - R_t) \\cdot (1 - C_t)"} />
+            {[['ρD', rhoD, setRhoD, 500000], ['ρY', rhoY, setRhoY, 0.0001]].map(([label, val, setVal, max]) => (
+              <Grid item xs={12} key={label}>
+                <Typography variant="caption">{label}: {val}</Typography>
+                <Slider size="small" value={val} min={0} max={max} step={max / 100} onChange={(e, v) => setVal(v)} />
+              </Grid>
+            ))}
+          </Paper>
 
-          <Typography variant="subtitle2" sx={{ mt: 3 }}>► 年平均気温の予測（例）</Typography>
-          <MathJax>
-            {"$$\\text{Temp}(t) = T_0 + \\alpha_T(t - t_0)$$"}
-          </MathJax>
-          <Typography>例：気温上昇率 <MathJax inline>{"$\\alpha_T$"}</MathJax> = 0.03 ℃/年</Typography>
-          <Typography>計算結果（2035年）: 15.3 ℃</Typography>
-        </Paper>
-
-        {/* ---------- (2) 社会環境シナリオ ---------- */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6">(2) 社会環境シナリオ</Typography>
-          <MathJax>
-            {"$$\\mathrm{Demand}_t = \\mathrm{Demand}_{t-1}(1 + \\gamma + \\mathcal{N}(0,\\sigma_\\gamma))$$"}
-          </MathJax>
-          <Typography sx={{ mt: 2 }}>
-            年次成長率 <MathJax inline>{"$\\gamma$"}</MathJax> は一定、年々変動 <MathJax inline>{"$\\sigma_\\gamma$"}</MathJax> は 1 % と仮定。
-          </Typography>
-        </Paper>
-
-        {/* ---------- (3) 森林・生態系モジュール ---------- */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6">(3) 森林・生態系モジュール</Typography>
-          <MathJax>
-            {"$$\\mathrm{MaturedTrees}_t = \\mathrm{Planting}_{t-Y_g}$$"}
-          </MathJax>
-          <MathJax>
-            {"$$A_{f,t} = \\max(A_{f,t-1} + \\mathrm{MaturedTrees}_t - A_{f,t-1} \\cdot r_d, 0)$$"}
-          </MathJax>
-
-          <MathJax>
-            {"$$\\varphi_{\\text{flood}} = \\rho_f \\frac{A_{f,t}}{A_{\\text{total}}}$$"}
-          </MathJax>
-          <MathJax>
-            {"$$\\varphi_{\\text{retention}} = \\rho_w \\frac{A_{f,t}}{A_{\\text{total}}}$$"}
-          </MathJax>
-          <MathJax>
-            {"$$\\varphi_{\\text{ecosystem}} = \\min(\\rho_e \\cdot A_{f,t}, 5.0)$$"}
-          </MathJax>
-
-          <Typography variant="subtitle2" sx={{ mt: 3 }}>► 森林による洪水軽減効果（例）</Typography>
-          <MathJax>
-            {"$$\\text{FloodReduction} = \\rho_f \\cdot \\frac{A_{\\text{forest}}}{A_{\\text{total}}}$$"}
-          </MathJax>
-          <Typography>例：森林面積 = 3000 ha, 総面積 = 10000 ha, 軽減係数 = 0.4</Typography>
-          <Typography>洪水軽減割合: 12.0 %</Typography>
-        </Paper>
-
-        {/* ---------- (4) 水資源モジュール ---------- */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6">(4) 水資源モジュール</Typography>
-          <MathJax>
-            {"$$ET_t = ET_0(1 + 0.05(\\mathrm{Temp}_t - T_0))$$"}
-          </MathJax>
-          <MathJax>
-            {"$$W_t = \\min(\\max(W_{t-1} + \\mathrm{Precip}_t - ET_t - D_t - \\theta \\cdot \\mathrm{Precip}_t + \\varphi_{\\text{retention}} \\cdot \\mathrm{Precip}_t, 0), W_{\\max})$$"}
-          </MathJax>
-        </Paper>
-
-        {/* ---------- (5) 農業モジュール ---------- */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6">(5) 農業モジュール</Typography>
-          <MathJax>
-            {"$$L_T = \\min\\left(\\frac{\\max(0, T_{\\text{ripening}} - (T_{\\text{thresh}} + T_{\\text{tol}}))}{T_{\\text{crit}} - T_{\\text{thresh}}}, 1\\right)$$"}
-          </MathJax>
-          <MathJax>
-            {"$$Y_{t} = Y_{\\max} \\cdot (1 - L_T) \\cdot \\varphi_W \\cdot (1 - \\varphi_{\\text{paddy}})$$"}
-          </MathJax>
-
-          <Typography variant="subtitle2" sx={{ mt: 3 }}>► 作物収量の推定（例）</Typography>
-          <MathJax>
-            {"$$Y = Y_{\\max} \\cdot (1-L_T) \\cdot \\varphi_W \\cdot (1-\\varphi_{\\text{paddy}})$$"}
-          </MathJax>
-          <Typography>例：温度被害 <MathJax inline>{"$L_T$"}</MathJax> = 0.2 （20%の被害）</Typography>
-        </Paper>
-
-        {/* ---------- (6) 居住モジュール ---------- */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6">(6) 居住モジュール</Typography>
-          <MathJax>
-            {"$$R_t = \\frac{H_s}{H_r + H_s}$$"}
-          </MathJax>
-        </Paper>
-
-        {/* ---------- (7) インフラモジュール ---------- */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6">(7) インフラモジュール</Typography>
-          <MathJax>
-            {"$$I_{\\text{levee},t} = I_{\\text{levee},t-1} + C_{\\text{levee}}$$"}
-          </MathJax>
-          <MathJax>
-            {"$$D_{\\text{flood}} = \\sum_i \\max(R_i - L_t - \\varphi_{\\text{paddy-flood}}, 0) \\cdot (1-\\varphi_{\\text{flood}}) \\cdot \\rho_D$$"}
-          </MathJax>
-
-          <Typography variant="subtitle2" sx={{ mt: 3 }}>► 洪水被害の簡易推定（例）</Typography>
-          <MathJax>
-            {"$$D = \\sum(R_i - L - P) \\cdot (1-\\varphi_{\\text{flood}}) \\cdot \\rho_D$$"}
-          </MathJax>
-          <Typography>例：堤防高さ L = 100 mm</Typography>
-        </Paper>
-
-        {/* ---------- (8) 都市の居住可能性 ---------- */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6">(8) 都市の居住可能性</Typography>
-          <MathJax>
-            {"$$U_t = (1-R_t) \\cdot T_t - D_{\\text{actual}} \\cdot \\rho_U$$"}
-          </MathJax>
-        </Paper>
-
-        {/* ---------- (9) 住民意識 & 費用評価 ---------- */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6">(9) 住民意識 &amp; 費用評価</Typography>
-          <MathJax>
-            {"$$C_t = C_{t-1} \\cdot (1-\\delta_C) + C_{\\text{train}} \\cdot \\rho_C$$"}
-          </MathJax>
-          <MathJax>
-            {"$$C_{\\text{total}} = C_{\\text{levee}} \\times 10^6 + C_{\\text{R\\&D}} \\times 10^6 + \\dots$$"}
-          </MathJax>
-          <MathJax>
-            {"$$B_t = C_{\\text{total}} + D_{\\text{actual}} \\cdot \\rho_{\\text{recover}}$$"}
-          </MathJax>
-        </Paper>
-      </Box>
-    </MathJaxContext>
+          {/* (8) Ecosystem Evaluation */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6">(8) Ecosystem Evaluation</Typography>
+            <Typography variant="body2">Assesses ecosystem status based on forest and water availability (base), climate stressors (resistance), and human pressure from infrastructure.</Typography>
+            <BlockMath math={"E_t = 100(w_1 E_{\\text{base}} + w_2 E_{\\text{res}} + w_3 E_{\\text{human}})"} />
+            {[['βT', betaT, setBetaT, 0.1], ['βP', betaP, setBetaP, 0.1], ['βL', betaL, setBetaL, 0.05]].map(([lbl, val, setf, max]) => (
+              <Grid item xs={12} key={lbl}>
+                <Typography variant="caption">{lbl}: {val}</Typography>
+                <Slider size="small" value={val} min={0} max={max} step={max / 100} onChange={(e, v) => setf(v)} />
+              </Grid>
+            ))}
+          </Paper>
+        </Grid>
+      </Grid>
+    </Box>
   );
-};
+}
 
-export default ModelExplanationPage;
+export default FormulaPage;
