@@ -1,205 +1,90 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理者コンソール - 気候適応シミュレーション</title>
-    <link rel="stylesheet" href="admin_style.css">
-    <!-- 全局配置文件 -->
-    <script src="../config/app-config.js"></script>
+    <title>Admin Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .stat { background: #f0f0f0; padding: 20px; margin: 10px; border-radius: 5px; }
+        .error { color: red; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
 </head>
 <body>
-    <div class="admin-container">
-        <!-- 認証画面 -->
-        <div id="auth-section" class="auth-section">
-            <div class="auth-card">
-                <h1>🔐 管理者認証</h1>
-                <p>システムデータにアクセスするため、管理者認証情報を入力してください</p>
-                <form id="auth-form">
-                    <div class="form-group">
-                        <label for="username">ユーザー名:</label>
-                        <input type="text" id="username" name="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">パスワード:</label>
-                        <input type="password" id="password" name="password" required>
-                    </div>
-                    <button type="submit" class="auth-btn">ログイン</button>
-                </form>
-                <div id="auth-error" class="error-message"></div>
-            </div>
-        </div>
-
-        <!-- 管理者ダッシュボード -->
-        <div id="dashboard-section" class="dashboard-section" style="display: none;">
-            <header class="dashboard-header">
-                <h1>📊 気候適応シミュレーション - 管理者コンソール</h1>
-                <div class="header-actions">
-                    <span id="last-update">最終更新: --</span>
-                    <button id="refresh-btn" class="action-btn">🔄 更新</button>
-                    <button id="logout-btn" class="action-btn logout">🚪 ログアウト</button>
-                </div>
-            </header>
-
-            <!-- 統計概要 -->
-            <section class="stats-overview">
-                <div class="stat-card">
-                    <div class="stat-icon">�</div>
-                    <div class="stat-content">
-                        <div class="stat-number" id="total-files">--</div>
-                        <div class="stat-label">データファイル数</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">�</div>
-                    <div class="stat-content">
-                        <div class="stat-number" id="total-size">--</div>
-                        <div class="stat-label">総データサイズ (MB)</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-content">
-                        <div class="stat-number" id="total-records">--</div>
-                        <div class="stat-label">総レコード数</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">⏰</div>
-                    <div class="stat-content">
-                        <div class="stat-number" id="last-modified">--</div>
-                        <div class="stat-label">最終更新</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- クイックアクション -->
-            <section class="quick-actions">
-                <h2>📥 データダウンロード</h2>
-                <div class="action-grid">
-                    <button id="download-all-btn" class="download-btn">
-                        <span class="btn-icon">📦</span>
-                        <span class="btn-text">全データダウンロード</span>
-                        <span class="btn-desc">全ユーザーデータとログを含むZIPファイル</span>
-                    </button>
-                    <button id="download-logs-btn" class="download-btn">
-                        <span class="btn-icon">📋</span>
-                        <span class="btn-text">ユーザーログダウンロード</span>
-                        <span class="btn-desc">ユーザー操作ログファイル (JSONL)</span>
-                    </button>
-                    <button id="download-scores-btn" class="download-btn">
-                        <span class="btn-icon">🏆</span>
-                        <span class="btn-text">評価データダウンロード</span>
-                        <span class="btn-desc">シミュレーション結果と評価データ (TSV)</span>
-                    </button>
-                </div>
-            </section>
-
-            <!-- データ管理セクション -->
-            <section class="data-management">
-                <h2>🗂️ データ管理</h2>
-                <div class="management-grid">
-                    <div class="management-card danger-zone">
-                        <div class="card-header">
-                            <span class="card-icon">🧹</span>
-                            <h3>データクリア</h3>
-                        </div>
-                        <div class="card-content">
-                            <p>システム内の全データを削除します。この操作は取り消せません。</p>
-                            <div class="warning-box">
-                                <span class="warning-icon">⚠️</span>
-                                <span>実行前に必ずデータをダウンロードしてください</span>
-                            </div>
-                            <button id="clear-data-btn" class="danger-btn">
-                                <span class="btn-icon">🗑️</span>
-                                <span class="btn-text">全データクリア</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- データファイルリスト -->
-            <section class="files-section">
-                <h2>� データファイル一覧</h2>
-                <div class="files-grid" id="files-grid">
-                    <!-- ファイルカードはJavaScriptで動的に生成されます -->
-                </div>
-            </section>
-
-            <!-- ファイル内容モーダル -->
-            <div id="file-modal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 id="modal-file-name">ファイル内容</h3>
-                        <span class="close">&times;</span>
-                    </div>
-                    <div class="modal-body" id="modal-file-body">
-                        <!-- ファイル内容 -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- データクリア確認モーダル -->
-            <div id="clear-confirm-modal" class="modal">
-                <div class="modal-content confirm-modal">
-                    <div class="modal-header">
-                        <h3>🗑️ データクリア確認</h3>
-                        <span class="close" id="clear-modal-close">&times;</span>
-                    </div>
-                    <div class="modal-body">
-                        <div class="confirm-content">
-                            <div class="warning-section">
-                                <div class="warning-icon-large">⚠️</div>
-                                <h4>この操作は取り消せません</h4>
-                                <p>以下のデータが完全に削除されます：</p>
-                            </div>
-
-                            <div class="stats-section" id="clear-stats">
-                                <!-- 統計情報がJavaScriptで動的に挿入されます -->
-                            </div>
-
-                            <div class="confirmation-section">
-                                <div class="checkbox-group">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="confirm-backup">
-                                        <span class="checkmark"></span>
-                                        データのバックアップを取得済みです
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="confirm-understand">
-                                        <span class="checkmark"></span>
-                                        この操作が取り消せないことを理解しています
-                                    </label>
-                                </div>
-
-                                <div class="final-confirmation">
-                                    <p><strong>実行するには「DELETE」と入力してください：</strong></p>
-                                    <input type="text" id="delete-confirmation" placeholder="DELETE" maxlength="6">
-                                </div>
-                            </div>
-
-                            <div class="modal-actions">
-                                <button id="cancel-clear-btn" class="cancel-btn">キャンセル</button>
-                                <button id="execute-clear-btn" class="danger-btn" disabled>
-                                    <span class="btn-icon">🗑️</span>
-                                    データを削除する
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ローディングインジケーター -->
-            <div id="loading" class="loading" style="display: none;">
-                <div class="spinner"></div>
-                <p>データを読み込み中...</p>
-            </div>
-        </div>
+    <h1>Admin Dashboard</h1>
+    <button onclick="loadData()">刷新数据</button>
+    
+    <div class="stat">
+        <h3>统计信息</h3>
+        <p>用户数: <span id="user-count">--</span></p>
+        <p>日志数: <span id="log-count">--</span></p>
+        <p>评分数: <span id="score-count">--</span></p>
+        <p>决策数: <span id="decision-count">--</span></p>
     </div>
-
-    <script src="config.js"></script>
-    <script src="admin_script.js"></script>
+    
+    <div id="users-section">
+        <h3>用户列表</h3>
+        <div id="users-data">加载中...</div>
+    </div>
+    
+    <div id="logs-section">
+        <h3>最新日志</h3>
+        <div id="logs-data">加载中...</div>
+    </div>
+    
+    <script>
+        const BACKEND_URL = "https://web-production-5fb04.up.railway.app";
+        
+        async function loadData() {
+            console.log("开始加载数据...");
+            
+            try {
+                // 加载用户数据
+                const usersResponse = await fetch(`${BACKEND_URL}/your_name`);
+                const users = await usersResponse.json();
+                document.getElementById("user-count").textContent = users.length;
+                
+                let usersHtml = "<ul>";
+                users.forEach(user => {
+                    usersHtml += `<li>${user.user_name}</li>`;
+                });
+                usersHtml += "</ul>";
+                document.getElementById("users-data").innerHTML = usersHtml;
+                
+                // 加载日志数据
+                const logsResponse = await fetch(`${BACKEND_URL}/user_logs`);
+                const logs = await logsResponse.json();
+                document.getElementById("log-count").textContent = logs.length;
+                
+                let logsHtml = "<table><tr><th>用户</th><th>类型</th><th>时间</th></tr>";
+                logs.slice(-10).forEach(log => {
+                    logsHtml += `<tr><td>${log.user_name}</td><td>${log.type}</td><td>${log.timestamp}</td></tr>`;
+                });
+                logsHtml += "</table>";
+                document.getElementById("logs-data").innerHTML = logsHtml;
+                
+                // 加载评分数据
+                const scoresResponse = await fetch(`${BACKEND_URL}/block_scores`);
+                const scores = await scoresResponse.json();
+                document.getElementById("score-count").textContent = scores.length;
+                
+                // 加载决策数据
+                const decisionsResponse = await fetch(`${BACKEND_URL}/decision_log`);
+                const decisions = await decisionsResponse.json();
+                document.getElementById("decision-count").textContent = decisions.length;
+                
+                console.log("数据加载完成");
+                
+            } catch (error) {
+                console.error("加载失败:", error);
+                document.getElementById("users-data").innerHTML = `<div class="error">加载失败: ${error.message}</div>`;
+                document.getElementById("logs-data").innerHTML = `<div class="error">加载失败: ${error.message}</div>`;
+            }
+        }
+        
+        // 页面加载时自动加载数据
+        window.addEventListener("load", loadData);
+    </script>
 </body>
 </html>
