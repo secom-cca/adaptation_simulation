@@ -7,6 +7,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import axios from "axios";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import ModelExplanationPage from "./ModelExplanationPage"; // 模型解释页面
+import ThankYouPage from "./ThankYouPage"; // Thank You页面
 
 // ※ chart.js v4 の設定
 import {
@@ -308,6 +309,7 @@ function AppRouter() {
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/formula" element={<ModelExplanationPage />} />
+        <Route path="/thank-you" element={<ThankYouPage />} />
       </Routes>
     </Router>
   );
@@ -408,6 +410,36 @@ function App() {
   const wsLogRef = useRef(null);
   const [logQueue, setLogQueue] = useState([]); // 前端log缓存队列
   const [logStatus, setLogStatus] = useState('disconnected'); // WebSocket连接状态
+
+  // 结束实验功能
+  const handleEndExperiment = async () => {
+    try {
+      // 发送结束实验日志到队列
+      addLogToQueue({
+        type: "EndExperiment",
+        name: userName,
+        timestamp: new Date().toISOString()
+      });
+
+      // 立即发送所有队列中的日志
+      await sendLogQueue();
+
+      // 发送用户行为数据到后端
+      const allUserLogs = [...logQueue];
+      if (allUserLogs.length > 0) {
+        await axios.post(`${BACKEND_URL}/experiment/end`, {
+          user_name: userName,
+          logs: allUserLogs
+        });
+      }
+
+      // 跳转到Thank You页面
+      window.location.href = `/thank-you?user=${encodeURIComponent(userName)}`;
+    } catch (error) {
+      console.error('结束实验失败:', error);
+      alert('实验结束时发生错误，请重试');
+    }
+  };
 
   // 添加log到队列的函数
   const addLogToQueue = (logData) => {
@@ -1245,20 +1277,34 @@ function App() {
           />
         </Box>
         
-        {/* {showResultButton && (
-        <Box sx={{ textAlign: 'center', mt: 0 }}>
+        {/* WebSocket状态指示灯 - 左上方 */}
+        <Box sx={{ position: 'absolute', top: 16, left: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            sx={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              backgroundColor: logStatus === 'connected' ? '#4caf50' : '#f44336',
+              boxShadow: logStatus === 'connected' ? '0 0 8px rgba(76, 175, 80, 0.6)' : '0 0 8px rgba(244, 67, 54, 0.6)',
+            }}
+          />
+          <Typography variant="caption" color="text.secondary">
+            WebSocket
+          </Typography>
+        </Box>
+
+        {/* 右上方按钮组 */}
+        <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 1 }}>
           <Button
             variant="contained"
-            color="success"
-            size="large"
-            onClick={handleShowResult}
+            color="error"
+            size="small"
+            onClick={handleEndExperiment}
+            sx={{ fontSize: '0.75rem', px: 2 }}
           >
-            {t.buttons.viewResults}
+            {language === 'ja' ? '実験終了' : 'End Experiment'}
           </Button>
-        </Box>
-      )} */}
-        <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-          <IconButton color="primary" onClick={handleOpenSettings} sx={{ ml: 1 }}>
+          <IconButton color="primary" onClick={handleOpenSettings}>
             <SettingsIcon />
           </IconButton>
         </Box>
@@ -2246,4 +2292,4 @@ function App() {
   );
 }
 
-export default App;
+export default AppRouter;

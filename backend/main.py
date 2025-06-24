@@ -443,6 +443,80 @@ async def receive_batch_logs(request: dict):
         print(f"❌ [API] 批量log接收失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to save logs: {str(e)}")
 
+# 结束实验API端点
+@app.post("/experiment/end")
+async def end_experiment(request: dict):
+    """处理实验结束请求"""
+    try:
+        user_name = request.get("user_name")
+        logs = request.get("logs", [])
+
+        if not user_name:
+            raise HTTPException(status_code=400, detail="User name is required")
+
+        log_path = Path(__file__).parent / "data" / "user_log.jsonl"
+        log_path.parent.mkdir(exist_ok=True)
+
+        # 写入结束实验的日志
+        end_log = {
+            "type": "ExperimentEnd",
+            "user_name": user_name,
+            "timestamp": datetime.now().isoformat(),
+            "total_logs": len(logs)
+        }
+
+        with open(log_path, "a", encoding="utf-8") as f:
+            # 写入所有用户行为日志
+            for log_entry in logs:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+            # 写入实验结束标记
+            f.write(json.dumps(end_log, ensure_ascii=False) + "\n")
+
+        print(f"✅ [Experiment End] 用户 {user_name} 实验结束，保存 {len(logs)} 条日志")
+
+        return {
+            "status": "success",
+            "message": f"Experiment ended for user {user_name}",
+            "logs_saved": len(logs)
+        }
+
+    except Exception as e:
+        print(f"❌ [Experiment End] 处理失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to end experiment: {str(e)}")
+
+# 获取用户日志API端点
+@app.get("/user-logs/{user_name}")
+async def get_user_logs(user_name: str):
+    """获取指定用户的所有日志数据"""
+    try:
+        log_path = Path(__file__).parent / "data" / "user_log.jsonl"
+
+        if not log_path.exists():
+            return {"logs": [], "message": "No logs found"}
+
+        user_logs = []
+        with open(log_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        log = json.loads(line.strip())
+                        if log.get('user_name') == user_name:
+                            user_logs.append(log)
+                    except json.JSONDecodeError:
+                        continue
+
+        print(f"✅ [User Logs] 获取用户 {user_name} 的日志: {len(user_logs)} 条")
+
+        return {
+            "user_name": user_name,
+            "logs": user_logs,
+            "total_count": len(user_logs)
+        }
+
+    except Exception as e:
+        print(f"❌ [User Logs] 获取失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get user logs: {str(e)}")
+
 # 管理员路由
 @app.get("/admin/dashboard")
 async def get_admin_dashboard(admin: str = Depends(authenticate_admin)):
