@@ -1038,6 +1038,19 @@ function App() {
   // プロット属性変更時
   const handlePlotAttributeChange = (event) => {
     setSelectedPlotAttribute(event.target.value);
+
+    // --- 绘图属性选择ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "PlotAttribute",
+        name: event.target.value,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+    console.log(`🎨 绘图属性选择: ${event.target.value}`);
   };
 
   const handleOpenSettings = () => {
@@ -1248,7 +1261,16 @@ function App() {
         </Box>
 
         {/* Model Descriptionボタン */}
-        <Button variant="outlined" onClick={() => setOpenFormulaModal(true)}>
+        <Button variant="outlined" onClick={() => {
+          setOpenFormulaModal(true);
+          // --- 模型说明打开ログを队列に追加 ---
+          addLogToQueue({
+            type: "ModelExplanation",
+            name: "Open",
+            action: "open_model_description"
+          });
+          console.log(`📖 模型说明页面打开`);
+        }}>
           Model Description
         </Button>
         
@@ -1316,7 +1338,16 @@ function App() {
         <DialogContent>
           <ModelExplanationPage />
           <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Button variant="contained" onClick={() => setOpenFormulaModal(false)}>
+            <Button variant="contained" onClick={() => {
+              setOpenFormulaModal(false);
+              // --- 模型说明关闭ログを队列に追加 ---
+              addLogToQueue({
+                type: "ModelExplanation",
+                name: "Close",
+                action: "close_model_description"
+              });
+              console.log(`📖 模型说明页面关闭`);
+            }}>
               Close
             </Button>
           </Box>
@@ -1354,7 +1385,16 @@ function App() {
                 name="mode"
                 value="group"
                 checked={selectedMode === 'group'}
-                onChange={(e) => setSelectedMode(e.target.value)}
+                onChange={(e) => {
+                  setSelectedMode(e.target.value);
+                  // --- 流域选择ログを队列に追加 ---
+                  addLogToQueue({
+                    type: "ModeSelect",
+                    name: e.target.value,
+                    action: "watershed_selection"
+                  });
+                  console.log(`🏞️ 流域选择: ${e.target.value}`);
+                }}
               />
               <label htmlFor="mode-group" style={{ marginLeft: 8 }}>
                 <Typography variant="body1">
@@ -1370,7 +1410,16 @@ function App() {
                 name="mode"
                 value="upstream"
                 checked={selectedMode === 'upstream'}
-                onChange={(e) => setSelectedMode(e.target.value)}
+                onChange={(e) => {
+                  setSelectedMode(e.target.value);
+                  // --- 流域选择ログを队列に追加 ---
+                  addLogToQueue({
+                    type: "ModeSelect",
+                    name: e.target.value,
+                    action: "watershed_selection"
+                  });
+                  console.log(`🏞️ 流域选择: ${e.target.value}`);
+                }}
               />
               <label htmlFor="mode-upstream" style={{ marginLeft: 8 }}>
                 <Typography variant="body1">
@@ -1386,7 +1435,16 @@ function App() {
                 name="mode"
                 value="downstream"
                 checked={selectedMode === 'downstream'}
-                onChange={(e) => setSelectedMode(e.target.value)}
+                onChange={(e) => {
+                  setSelectedMode(e.target.value);
+                  // --- 流域选择ログを队列に追加 ---
+                  addLogToQueue({
+                    type: "ModeSelect",
+                    name: e.target.value,
+                    action: "watershed_selection"
+                  });
+                  console.log(`🏞️ 流域选择: ${e.target.value}`);
+                }}
               />
               <label htmlFor="mode-downstream" style={{ marginLeft: 8 }}>
                 <Typography variant="body1">
@@ -1427,6 +1485,13 @@ function App() {
                 onChange={(e) => {
                   setChartPredictMode(e.target.value);
                   localStorage.setItem('chartPredictMode', e.target.value);
+                  // --- 预测模式选择ログを队列に追加 ---
+                  addLogToQueue({
+                    type: "PredictModeSelect",
+                    name: e.target.value,
+                    action: "prediction_mode_change"
+                  });
+                  console.log(`🔮 预测模式选择: ${e.target.value}`);
                 }}
               />
               <label htmlFor="predict-best-worst" style={{ marginLeft: 8 }}>
@@ -1446,6 +1511,13 @@ function App() {
                 onChange={(e) => {
                   setChartPredictMode(e.target.value);
                   localStorage.setItem('chartPredictMode', e.target.value);
+                  // --- 预测模式选择ログを队列に追加 ---
+                  addLogToQueue({
+                    type: "PredictModeSelect",
+                    name: e.target.value,
+                    action: "prediction_mode_change"
+                  });
+                  console.log(`🔮 预测模式选择: ${e.target.value}`);
                 }}
               />
               <label htmlFor="predict-monte-carlo" style={{ marginLeft: 8 }}>
@@ -1465,6 +1537,13 @@ function App() {
                 onChange={(e) => {
                   setChartPredictMode(e.target.value);
                   localStorage.setItem('chartPredictMode', e.target.value);
+                  // --- 预测模式选择ログを队列に追加 ---
+                  addLogToQueue({
+                    type: "PredictModeSelect",
+                    name: e.target.value,
+                    action: "prediction_mode_change"
+                  });
+                  console.log(`🔮 预测模式选择: ${e.target.value}`);
                 }}
               />
               <label htmlFor="predict-none" style={{ marginLeft: 8 }}>
@@ -1493,6 +1572,13 @@ function App() {
                 onChange={(e) => {
                   setLanguage(e.target.value);
                   localStorage.setItem('language', e.target.value);
+                  // --- 语言切换ログを队列に追加 ---
+                  addLogToQueue({
+                    type: "LanguageSelect",
+                    name: e.target.value,
+                    action: "language_change"
+                  });
+                  console.log(`🌐 语言切换: ${e.target.value}`);
                 }}
               />
               <label htmlFor="lang-ja" style={{ marginLeft: 8 }}>
@@ -1511,6 +1597,13 @@ function App() {
                 onChange={(e) => {
                   setLanguage(e.target.value);
                   localStorage.setItem('language', e.target.value);
+                  // --- 语言切换ログを队列に追加 ---
+                  addLogToQueue({
+                    type: "LanguageSelect",
+                    name: e.target.value,
+                    action: "language_change"
+                  });
+                  console.log(`🌐 语言切换: ${e.target.value}`);
                 }}
               />
               <label htmlFor="lang-en" style={{ marginLeft: 8 }}>
@@ -1763,7 +1856,21 @@ function App() {
                     <Select
                       value={selectedYearFilter}
                       label={t.scatter.yearFilter}
-                      onChange={(event) => setSelectedYearFilter(event.target.value)}
+                      onChange={(event) => {
+                        setSelectedYearFilter(event.target.value);
+                        // --- 年份过滤ログをWebSocketで送信 ---
+                        if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+                          wsLogRef.current.send(JSON.stringify({
+                            user_name: userName,
+                            mode: chartPredictMode,
+                            type: "YearFilter",
+                            name: event.target.value,
+                            cycle: currentCycle,
+                            timestamp: new Date().toISOString()
+                          }));
+                        }
+                        console.log(`📅 年份过滤选择: ${event.target.value}`);
+                      }}
                     >
                       <MenuItem value="all">{t.scatter.allYears}</MenuItem>
                       {/* 年次リストを動的に生成 */}
@@ -1777,7 +1884,21 @@ function App() {
                     <Select
                       value={selectedCycleFilter}
                       label={t.scatter.cycleFilter}
-                      onChange={(event) => setSelectedCycleFilter(event.target.value)}
+                      onChange={(event) => {
+                        setSelectedCycleFilter(event.target.value);
+                        // --- 周期过滤ログをWebSocketで送信 ---
+                        if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+                          wsLogRef.current.send(JSON.stringify({
+                            user_name: userName,
+                            mode: chartPredictMode,
+                            type: "CycleFilter",
+                            name: event.target.value,
+                            cycle: currentCycle,
+                            timestamp: new Date().toISOString()
+                          }));
+                        }
+                        console.log(`🔄 周期过滤选择: ${event.target.value}`);
+                      }}
                     >
                       <MenuItem value="all">{t.scatter.allCycles}</MenuItem>
                       {/* サイクル番号リストを動的に生成 */}
@@ -1791,7 +1912,21 @@ function App() {
                     <Select
                       value={selectedHistorySort}
                       label={t.scatter.historySort}
-                      onChange={(event) => setSelectedHistorySort(event.target.value)}
+                      onChange={(event) => {
+                        setSelectedHistorySort(event.target.value);
+                        // --- 历史排序ログをWebSocketで送信 ---
+                        if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+                          wsLogRef.current.send(JSON.stringify({
+                            user_name: userName,
+                            mode: chartPredictMode,
+                            type: "HistorySort",
+                            name: event.target.value,
+                            cycle: currentCycle,
+                            timestamp: new Date().toISOString()
+                          }));
+                        }
+                        console.log(`📊 历史排序选择: ${event.target.value}`);
+                      }}
                     >
                       <MenuItem value="cycle">{t.scatter.sortByCycle}</MenuItem>
                       <MenuItem value="year">{t.scatter.sortByYear}</MenuItem>
