@@ -574,6 +574,52 @@ async def get_admin_dashboard(admin: str = Depends(authenticate_admin)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"データの取得に失敗しました: {str(e)}")
 
+@app.get("/admin/data-files")
+async def list_data_files(admin: str = Depends(authenticate_admin)):
+    """获取data文件夹下所有文件的列表和信息"""
+    try:
+        data_dir = Path(__file__).parent / "data"
+        files_info = []
+
+        if data_dir.exists():
+            for file_path in data_dir.iterdir():
+                if file_path.is_file():
+                    stat = file_path.stat()
+                    files_info.append({
+                        "name": file_path.name,
+                        "size": stat.st_size,
+                        "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                        "type": file_path.suffix.lower()
+                    })
+
+        return {"files": files_info}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"ファイルリストの取得に失敗しました: {str(e)}")
+
+@app.get("/admin/download/file/{filename}")
+async def download_single_file(filename: str, admin: str = Depends(authenticate_admin)):
+    """指定されたファイルをダウンロード"""
+    try:
+        data_dir = Path(__file__).parent / "data"
+        file_path = data_dir / filename
+
+        # セキュリティチェック：パストラバーサル攻撃を防ぐ
+        if not file_path.resolve().is_relative_to(data_dir.resolve()):
+            raise HTTPException(status_code=400, detail="無効なファイルパスです")
+
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="ファイルが見つかりません")
+
+        return FileResponse(
+            path=file_path,
+            filename=filename,
+            media_type="application/octet-stream"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"ファイルのダウンロードに失敗しました: {str(e)}")
+
 @app.get("/admin/download/all")
 async def download_all_data(admin: str = Depends(authenticate_admin)):
     """下载所有数据的压缩包"""

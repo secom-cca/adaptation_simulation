@@ -9,6 +9,39 @@
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
+        .file-list { margin: 20px 0; }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        .file-info { flex-grow: 1; }
+        .file-name { font-weight: bold; }
+        .file-details { font-size: 0.9em; color: #666; }
+        .download-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .download-btn:hover { background: #218838; }
+        .download-all-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .download-all-btn:hover { background: #0056b3; }
     </style>
 </head>
 <body>
@@ -31,6 +64,12 @@
     <div id="logs-section">
         <h3>最新ログ</h3>
         <div id="logs-data">読み込み中...</div>
+    </div>
+
+    <div id="files-section">
+        <h3>データファイル</h3>
+        <button class="download-all-btn" onclick="downloadAllData()">📦 全データをダウンロード</button>
+        <div id="files-data">読み込み中...</div>
     </div>
     
     <script>
@@ -92,13 +131,128 @@
                     document.getElementById("logs-data").innerHTML = `<div class="error">データ読み込み失敗: ${error.message}</div>`;
                 }
 
+                // データファイルリストを取得
+                await loadDataFiles();
+
                 console.log("データ読み込み完了");
 
             } catch (error) {
                 console.error("全体読み込み失敗:", error);
             }
         }
-        
+
+        async function loadDataFiles() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/admin/data-files`, {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa('admin:climate2025')
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log("ファイルデータ:", data);
+
+                    if (data.files && Array.isArray(data.files)) {
+                        let filesHtml = '<div class="file-list">';
+                        data.files.forEach(file => {
+                            const fileSize = formatFileSize(file.size);
+                            const modifiedDate = new Date(file.modified).toLocaleString('ja-JP');
+
+                            filesHtml += `
+                                <div class="file-item">
+                                    <div class="file-info">
+                                        <div class="file-name">${file.name}</div>
+                                        <div class="file-details">サイズ: ${fileSize} | 更新: ${modifiedDate}</div>
+                                    </div>
+                                    <button class="download-btn" onclick="downloadFile('${file.name}')">
+                                        📥 ダウンロード
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        filesHtml += '</div>';
+                        document.getElementById("files-data").innerHTML = filesHtml;
+                    } else {
+                        document.getElementById("files-data").innerHTML = "<p>ファイルが見つかりません</p>";
+                    }
+                } else {
+                    throw new Error(`ファイルリストAPI エラー: ${response.status}`);
+                }
+            } catch (error) {
+                console.error("ファイルリスト読み込み失敗:", error);
+                document.getElementById("files-data").innerHTML = `<div class="error">ファイルリスト読み込み失敗: ${error.message}</div>`;
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function downloadFile(filename) {
+            const url = `${BACKEND_URL}/admin/download/file/${filename}`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+
+            // Basic認証のヘッダーを設定
+            fetch(url, {
+                headers: {
+                    'Authorization': 'Basic ' + btoa('admin:climate2025')
+                }
+            }).then(response => {
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    throw new Error(`ダウンロード失敗: ${response.status}`);
+                }
+            }).then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            }).catch(error => {
+                console.error('ダウンロードエラー:', error);
+                alert(`ファイルのダウンロードに失敗しました: ${error.message}`);
+            });
+        }
+
+        function downloadAllData() {
+            const url = `${BACKEND_URL}/admin/download/all`;
+
+            fetch(url, {
+                headers: {
+                    'Authorization': 'Basic ' + btoa('admin:climate2025')
+                }
+            }).then(response => {
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    throw new Error(`ダウンロード失敗: ${response.status}`);
+                }
+            }).then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `climate_simulation_data_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            }).catch(error => {
+                console.error('全データダウンロードエラー:', error);
+                alert(`全データのダウンロードに失敗しました: ${error.message}`);
+            });
+        }
+
         // 页面加载时自动加载数据
         window.addEventListener("load", loadData);
     </script>
