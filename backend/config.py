@@ -125,21 +125,21 @@ rcp_climate_params = {
     },
     4.5: {
         'temp_trend': 0.035,
-        'precip_uncertainty_trend': 0.002,
+        'precip_uncertainty_trend': 1.5,
         'extreme_precip_freq_trend': 0.1,
         'extreme_precip_intensity_trend': 0.8,
         'extreme_precip_uncertainty_trend': 0.1
     },
     6.0: {
         'temp_trend': 0.045,
-        'precip_uncertainty_trend': 0.003,
+        'precip_uncertainty_trend': 2.0,
         'extreme_precip_freq_trend': 0.13,
         'extreme_precip_intensity_trend': 1.1,
         'extreme_precip_uncertainty_trend': 0.13
     },
     8.5: {
         'temp_trend': 0.06,
-        'precip_uncertainty_trend': 0.005,
+        'precip_uncertainty_trend': 3.0,
         'extreme_precip_freq_trend': 0.17,
         'extreme_precip_intensity_trend': 1.5,
         'extreme_precip_uncertainty_trend': 0.15
