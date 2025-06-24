@@ -100,16 +100,28 @@ class AdminDashboard {
         
         try {
             this.showLoading(true);
-            const response = await fetch(`${this.baseURL}/data-files`, {
+            // 先用dashboard端点验证认证
+            const authResponse = await fetch(`${this.baseURL}/dashboard`, {
                 headers: {
                     'Authorization': `Basic ${this.credentials}`
                 }
             });
 
-            if (response.ok) {
-                this.filesData = await response.json();
-                this.showDashboard();
-                this.updateDashboard();
+            if (authResponse.ok) {
+                // 认证成功后获取文件数据
+                const filesResponse = await fetch(`${this.baseURL}/data-files`, {
+                    headers: {
+                        'Authorization': `Basic ${this.credentials}`
+                    }
+                });
+
+                if (filesResponse.ok) {
+                    this.filesData = await filesResponse.json();
+                    this.showDashboard();
+                    this.updateDashboard();
+                } else {
+                    this.showError('データファイルの取得に失敗しました');
+                }
             } else {
                 this.showError('認証に失敗しました。ユーザー名とパスワードを確認してください');
                 this.credentials = null;
