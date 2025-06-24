@@ -475,12 +475,10 @@ function App() {
   }, [simulationData]);
 
   useEffect(() => {
-    // 開発中のみ userName を強制リセット
-    if (process.env.NODE_ENV === 'development') {
-      localStorage.removeItem('userName');
-      localStorage.removeItem('selectedMode'); // モードもリセット
-      localStorage.removeItem('chartPredictMode'); // 予測モードもリセット
-    }
+    // 每次访问都清除用户名，确保弹窗显示
+    localStorage.removeItem('userName');
+    localStorage.removeItem('selectedMode');
+    localStorage.removeItem('chartPredictMode');
   
     const storedName = localStorage.getItem('userName');
     const storedMode = localStorage.getItem('selectedMode');
