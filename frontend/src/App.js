@@ -37,24 +37,22 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"
 const getLineChartIndicators = (language) => {
   const indicators = {
     ja: {
-      'Flood Damage': { labelTitle: '洪水被害', max: 10000, min: 0, unit: '万円' },
+      'Flood Damage': { labelTitle: '洪水被害', max: 20000, min: 0, unit: '万円' },
       'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton/ha' },
       'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
-      // 'Urban Level': { labelTitle: '都市利便性', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
-      'Temperature (℃)': { labelTitle: '年平均気温', max: 20, min: 12, unit: '℃' },
-      'Precipitation (mm)': { labelTitle: '年降水量', max: 3000, min: 0, unit: 'mm' },
-      'Available Water': { labelTitle: '利用可能な水量', max: 3000, min: 0, unit: 'mm' }
+      'Temperature (℃)': { labelTitle: '【気候要因】年平均気温', max: 20, min: 12, unit: '℃' },
+      'Precipitation (mm)': { labelTitle: '【気候要因】年降水量', max: 3000, min: 0, unit: 'mm' },
+      'Available Water': { labelTitle: '【気候要因】利用可能な水量', max: 3000, min: 0, unit: 'mm' }
     },
     en: {
-      'Flood Damage': { labelTitle: 'Flood Damage', max: 10000, min: 0, unit: '10k yen' },
+      'Flood Damage': { labelTitle: 'Flood Damage', max: 20000, min: 0, unit: '10k yen' },
       'Crop Yield': { labelTitle: 'Crop Yield', max: 5, min: 0, unit: 'ton/ha' },
       'Ecosystem Level': { labelTitle: 'Ecosystem Level', max: 100, min: 0, unit: '-' },
-      // 'Urban Level': { labelTitle: 'Urban Level', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: 'Municipal Cost', max: 100000, min: 0, unit: '10k yen' },
-      'Temperature (℃)': { labelTitle: 'Average Temperature', max: 20, min: 12, unit: '°C' },
-      'Precipitation (mm)': { labelTitle: 'Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
-      'Available Water': { labelTitle: 'Available Water', max: 3000, min: 0, unit: 'mm' }
+      'Temperature (℃)': { labelTitle: '[Climate Factor] Average Temperature', max: 20, min: 12, unit: '°C' },
+      'Precipitation (mm)': { labelTitle: '[Climate Factor] Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
+      'Available Water': { labelTitle: '[Climate Factor] Available Water', max: 3000, min: 0, unit: 'mm' }
     }
   };
   return indicators[language] || indicators.ja;
@@ -77,7 +75,6 @@ const texts = {
     cropYield: '収穫量',
     floodDamage: '洪水被害',
     ecosystemLevel: '生態系',
-    // urbanLevel: '都市利便性',
     municipalCost: '予算',
     temperature: '年平均気温',
     precipitation: '年降水量',
@@ -87,7 +84,8 @@ const texts = {
       manYen: '万円',
       none: '-',
       celsius: '℃',
-      mm: 'mm'
+      mm: 'mm',
+      frequency: '回/年'
     },
     mode: {
       group: '（１）グループモード',
@@ -117,7 +115,6 @@ const texts = {
     },
     sliders: {
       plantingTrees: '植林・森林保全',
-      // transportation: '公共バス',
       damLevee: '河川堤防',
       agriculturalRnD: '高温耐性品種',
       houseMigration: '住宅移転',
@@ -153,19 +150,38 @@ const texts = {
     },
     scatter: {
       title: 'サイクルの比較',
-      description: '各サイクルの2050年、2075年、2100年の評価を比較',
-      xAxis: 'X軸（横軸）',
-      yAxis: 'Y軸（縦軸）',
+      description: '各サイクルを比較',
+      xAxis: 'X軸',
+      yAxis: 'Y軸',
+      plotAttribute: 'プロット属性',
+      average: '平均値',
+      year2050: '2050年',
+      year2075: '2075年', 
+      year2100: '2100年',
+      allDisplay: '全て表示',
       markerSize: 'マーカーサイズと透明度（時点）:',
       small: '2050年',
       medium: '2075年',
       large: '2100年',
-      cycleColor: 'サイクル色:',
+      cycleColor: 'サイクルの色:',
       inputHistory: '各サイクルの入力履歴',
       cycle: 'サイクル',
       inputCount: '入力回数',
       inputYear: '入力年',
-      noCompletedCycles: '完了したサイクルがありません。サイクルを完了すると結果が表示されます。'
+      noCompletedCycles: '完了したサイクルがありません。サイクルが完了すると結果が表示されます。',
+      historyFilter: 'フィルター',
+      historySort: 'ソート',
+      filterAll: 'すべて',
+      filterCycle1: 'サイクル1',
+      filterCycle2: 'サイクル2',
+      filterCycle3: 'サイクル3',
+      sortByCycle: 'サイクル順',
+      sortByYear: '年順',
+      sortByInput: '入力回数順',
+      yearFilter: '年次選択',
+      cycleFilter: 'サイクル選択',
+      allYears: 'すべての年次',
+      allCycles: 'すべてのサイクル'
     }
   },
   en: {
@@ -175,7 +191,6 @@ const texts = {
     cropYield: 'Crop Yield',
     floodDamage: 'Flood Damage',
     ecosystemLevel: 'Ecosystem Level',
-    // urbanLevel: 'Urban Level',
     municipalCost: 'Municipal Cost',
     temperature: 'Average Temperature',
     precipitation: 'Annual Precipitation',
@@ -185,7 +200,8 @@ const texts = {
       manYen: '10k yen',
       none: '-',
       celsius: '°C',
-      mm: 'mm'
+      mm: 'mm',
+      frequency: 'times/year'
     },
     mode: {
       group: '(1) Group Mode',
@@ -215,7 +231,6 @@ const texts = {
     },
     sliders: {
       plantingTrees: 'Forest Conservation',
-      // transportation: 'Public Transportation',
       damLevee: 'River Levee',
       agriculturalRnD: 'Heat-resistant Varieties',
       houseMigration: 'House Migration',
@@ -251,9 +266,15 @@ const texts = {
     },
     scatter: {
       title: 'Cycle Comparison',
-      description: 'Compare evaluations of 2050, 2075, and 2100 for each cycle',
+      description: 'Compare cycles',
       xAxis: 'X-axis',
       yAxis: 'Y-axis',
+      plotAttribute: 'Plot Attribute',
+      average: 'Average',
+      year2050: '2050',
+      year2075: '2075',
+      year2100: '2100',
+      allDisplay: 'All',
       markerSize: 'Marker Size and Opacity (Time Point):',
       small: '2050',
       medium: '2075',
@@ -263,7 +284,20 @@ const texts = {
       cycle: 'Cycle',
       inputCount: 'Input Count',
       inputYear: 'Input Year',
-      noCompletedCycles: 'No completed cycles. Results will be displayed when cycles are completed.'
+      noCompletedCycles: 'No completed cycles. Results will be displayed when cycles are completed.',
+      historyFilter: 'Filter',
+      historySort: 'Sort',
+      filterAll: 'All',
+      filterCycle1: 'Cycle 1',
+      filterCycle2: 'Cycle 2',
+      filterCycle3: 'Cycle 3',
+      sortByCycle: 'By Cycle',
+      sortByYear: 'By Year',
+      sortByInput: 'By Input Count',
+      yearFilter: 'Year Selection',
+      cycleFilter: 'Cycle Selection',
+      allYears: 'All Years',
+      allCycles: 'All Cycles'
     }
   }
 };
@@ -294,6 +328,11 @@ function App() {
   const [openSettingsDialog, setOpenSettingsDialog] = useState(false); // 設定ダイアログ
   const [selectedXAxis, setSelectedXAxis] = useState('Crop Yield'); // 散布図X軸選択
   const [selectedYAxis, setSelectedYAxis] = useState('Flood Damage'); // 散布図Y軸選択
+  const [selectedPlotAttribute, setSelectedPlotAttribute] = useState('average'); // プロット属性選択: 'average', '2050', '2075', '2100', 'all'
+  const [selectedHistoryFilter, setSelectedHistoryFilter] = useState('all'); // 入力履歴フィルター選択
+  const [selectedHistorySort, setSelectedHistorySort] = useState('cycle'); // 入力履歴ソート選択
+  const [selectedYearFilter, setSelectedYearFilter] = useState('all'); // 年次フィルター選択
+  const [selectedCycleFilter, setSelectedCycleFilter] = useState('all'); // サイクルフィルター選択
   const [chartPredictMode, setChartPredictMode] = useState(localStorage.getItem('chartPredictMode') || 'monte-carlo'); // 予測データ表示モード: 'best-worst', 'monte-carlo', 'none'
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'ja'); // 言語モード: 'ja', 'en'
   const [decisionVar, setDecisionVar] = useState({
@@ -937,6 +976,10 @@ function App() {
     }
   };
 
+  // プロット属性変更時
+  const handlePlotAttributeChange = (event) => {
+    setSelectedPlotAttribute(event.target.value);
+  };
 
   const handleOpenSettings = () => {
     setOpenSettingsDialog(true);
@@ -949,8 +992,11 @@ function App() {
   // (F) パラメータ周りの変更処理
   const updateDecisionVar = (key, value) => {
     setDecisionVar(prev => {
-      const updated = { ...prev, [key]: value };
+      // スライダーの場合は表示値をバックエンド値に変換して保存
+      const backendValue = convertDisplayToBackendValue(key, value);
+      const updated = { ...prev, [key]: backendValue };
       decisionVarRef.current = updated;
+      
       // --- スライダー操作ログをWebSocketで送信 ---
       if (key != "year" && wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
         wsLogRef.current.send(JSON.stringify({
@@ -958,7 +1004,7 @@ function App() {
           mode: chartPredictMode,
           type: "Slider",
           name: key,
-          value: value,
+          value: backendValue, // バックエンド値で送信
           timestamp: new Date().toISOString()
         }));
       }
@@ -1075,6 +1121,43 @@ function App() {
     console.log('decisionVar更新:', decisionVar);
   }, [decisionVar]);
 
+  // スライダーの表示値をバックエンド送信値に変換する関数
+  const convertDisplayToBackendValue = (key, displayValue) => {
+    const conversionMap = {
+      'planting_trees_amount': [0, 100, 200],
+      'dam_levee_construction_cost': [0, 1, 2], // 既に3段階
+      'agricultural_RnD_cost': [0, 5, 10],
+      'house_migration_amount': [0, 5, 10],
+      'paddy_dam_construction_cost': [0, 5, 10],
+      'capacity_building_cost': [0, 5, 10]
+    };
+    
+    const backendValues = conversionMap[key];
+    if (backendValues && displayValue >= 0 && displayValue <= 2) {
+      return backendValues[displayValue];
+    }
+    return displayValue; // 変換できない場合はそのまま返す
+  };
+
+  // バックエンド送信値を表示値に変換する関数
+  const convertBackendToDisplayValue = (key, backendValue) => {
+    const conversionMap = {
+      'planting_trees_amount': [0, 100, 200],
+      'dam_levee_construction_cost': [0, 1, 2],
+      'agricultural_RnD_cost': [0, 5, 10],
+      'house_migration_amount': [0, 5, 10],
+      'paddy_dam_construction_cost': [0, 5, 10],
+      'capacity_building_cost': [0, 5, 10]
+    };
+    
+    const backendValues = conversionMap[key];
+    if (backendValues) {
+      const index = backendValues.indexOf(backendValue);
+      return index >= 0 ? index : 0;
+    }
+    return backendValue; // 変換できない場合はそのまま返す
+  };
+
   return (
     <Box sx={{ padding: 2, backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
 
@@ -1105,11 +1188,10 @@ function App() {
           </Typography>
         </Box>
 
-        <Link to="/formula">
-          <Button variant="outlined">
-            {t.buttons.viewModel}
-          </Button>
-        </Link>
+        {/* Model Descriptionボタン */}
+        <Button variant="outlined" onClick={() => setOpenFormulaModal(true)}>
+          Model Description
+        </Button>
         
         {/* RCPの不確実性シナリオ選択スライダー */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
@@ -1155,35 +1237,15 @@ function App() {
         </Box>
       </Box>
 
-      <Box sx={{ p: 3 }}>
-        <Button variant="outlined" onClick={() => setOpenFormulaModal(true)}>
-          Model Description
-        </Button>
-
-        <Dialog
-          open={openFormulaModal}
-          onClose={() => setOpenFormulaModal(false)}
-          fullWidth
-          maxWidth="xl"
-        >
-          <DialogTitle>Model Description</DialogTitle>
-          <DialogContent>
-            <FormulaPage />
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Button variant="contained" onClick={() => setOpenFormulaModal(false)}>
-                Close
-              </Button>
-            </Box>
-          </DialogContent>
-        </Dialog>
-      </Box>
-
+      {/* Model Description Dialog */}
       <Dialog open={openFormulaModal} onClose={() => setOpenFormulaModal(false)} maxWidth="xl" fullWidth>
         <DialogTitle>Model Description</DialogTitle>
         <DialogContent>
           <FormulaPage />
           <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Button variant="contained" onClick={() => setOpenFormulaModal(false)}>Close</Button>
+            <Button variant="contained" onClick={() => setOpenFormulaModal(false)}>
+              Close
+            </Button>
           </Box>
         </DialogContent>
       </Dialog>
@@ -1398,18 +1460,20 @@ function App() {
       </Dialog>
 
       {/* 結果表示ダイアログ */}
-      <Dialog open={openResultUI} onClose={handleCloseResultUI} maxWidth="xl" fullWidth>
-        <DialogTitle>{t.scatter.title}</DialogTitle>
+      <Dialog open={openResultUI} onClose={handleCloseResultUI} maxWidth={false} fullWidth
+        PaperProps={{ sx: { width: '90vw', height: '90vh', maxWidth: '1600px' } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {t.scatter.title}
+          <Button onClick={handleCloseResultUI} color="primary" variant="outlined">
+            {language === 'ja' ? '戻る' : 'Back'}
+          </Button>
+        </DialogTitle>
         <DialogContent>
           {resultHistory.length > 0 ? (
             <Box sx={{ display: 'flex', gap: 4, height: '70vh' }}>
               {/* 左側：散布図セクション */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="h6" gutterBottom>
-                  {t.scatter.description}
-                </Typography>
-                
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   {t.scatter.description}
                 </Typography>
                 
@@ -1444,6 +1508,21 @@ function App() {
                       ))}
                     </Select>
                   </FormControl>
+                  
+                  <FormControl sx={{ minWidth: 200 }}>
+                    <InputLabel>{t.scatter.plotAttribute}</InputLabel>
+                    <Select
+                      value={selectedPlotAttribute}
+                      label={t.scatter.plotAttribute}
+                      onChange={handlePlotAttributeChange}
+                    >
+                      <MenuItem value="average">{t.scatter.average}</MenuItem>
+                      <MenuItem value="2050">{t.scatter.year2050}</MenuItem>
+                      <MenuItem value="2075">{t.scatter.year2075}</MenuItem>
+                      <MenuItem value="2100">{t.scatter.year2100}</MenuItem>
+                      <MenuItem value="all">{t.scatter.allDisplay}</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Box>
                 
                 {/* 散布図 */}
@@ -1455,11 +1534,35 @@ function App() {
                       const colors = ['rgba(25, 118, 210, 0.6)', 'rgba(220, 0, 78, 0.6)', 'rgba(56, 142, 60, 0.6)', 'rgba(245, 124, 0, 0.6)', 'rgba(123, 31, 162, 0.6)', 'rgba(211, 47, 47, 0.6)'];
                       const color = colors[cycleIndex % colors.length];
                       
-                      // 2050年、2075年、2100年のデータを抽出
-                      const targetYears = [2050, 2075, 2100];
+                      // 選択されたプロット属性に応じて対象年を決定
+                      let targetYears;
+                      if (selectedPlotAttribute === 'all') {
+                        targetYears = [2050, 2075, 2100];
+                      } else if (selectedPlotAttribute === 'average') {
+                        targetYears = ['average'];
+                      } else {
+                        targetYears = [parseInt(selectedPlotAttribute)];
+                      }
                       
                       return targetYears.map((year) => {
-                        const yearData = cycle.simulationData.find(data => data.Year === year);
+                        let yearData;
+                        
+                        if (year === 'average') {
+                          // 2026年～2100年の全データの平均値を計算
+                          const validData = cycle.simulationData.filter(data =>
+                            typeof data[selectedXAxis] === 'number' && typeof data[selectedYAxis] === 'number'
+                          );
+                          if (validData.length === 0) return null;
+                          const avgX = validData.reduce((sum, d) => sum + d[selectedXAxis], 0) / validData.length;
+                          const avgY = validData.reduce((sum, d) => sum + d[selectedYAxis], 0) / validData.length;
+                          yearData = {
+                            [selectedXAxis]: avgX,
+                            [selectedYAxis]: avgY
+                          };
+                        } else {
+                          yearData = cycle.simulationData.find(data => data.Year === year);
+                        }
+                        
                         if (!yearData) {
                           console.log(`サイクル${cycle.cycleNumber}の${year}年のデータが見つかりません`);
                           return null;
@@ -1467,26 +1570,30 @@ function App() {
                         
                         // 年ごとに異なるマーカーサイズと透明度を設定
                         let markerSize, opacity;
-                        switch (year) {
-                          case 2050:
-                            markerSize = 6;
-                            opacity = 0.8;
-                            break;
-                          case 2075:
-                            markerSize = 8;
-                            opacity = 0.6;
-                            break;
-                          case 2100:
-                            markerSize = 10;
-                            opacity = 0.4;
-                            break;
-                          default:
-                            markerSize = 6;
-                            opacity = 0.8;
+                        if (year === 'average') {
+                          markerSize = 10;
+                          opacity = 0.7;
+                        } else {
+                          switch (year) {
+                            case 2050:
+                              markerSize = 6;
+                              opacity = 0.8;
+                              break;
+                            case 2075:
+                              markerSize = 8;
+                              opacity = 0.6;
+                              break;
+                            case 2100:
+                              markerSize = 10;
+                              opacity = 0.4;
+                              break;
+                            default:
+                              markerSize = 6;
+                              opacity = 0.8;
+                          }
                         }
                         
                         return {
-                          // label: `サイクル${cycle.cycleNumber} - ${year}年`,
                           data: [{
                             x: yearData[selectedXAxis] || 0,
                             y: yearData[selectedYAxis] || 0,
@@ -1498,14 +1605,14 @@ function App() {
                       }).filter(Boolean);
                     }).flat()}
                     xAxis={[{
-                      label: '', // ラベル非表示
+                      label: getLineChartIndicators(language)[selectedXAxis]?.labelTitle || '',
                       min: 0,
                       max: Math.max(...resultHistory.flatMap(cycle => 
                         cycle.simulationData.map(data => data[selectedXAxis] || 0)
                       )) * 1.1
                     }]}
                     yAxis={[{
-                      label: '', // ラベル非表示
+                      label: getLineChartIndicators(language)[selectedYAxis]?.labelTitle || '',
                       min: 0,
                       max: Math.max(...resultHistory.flatMap(cycle => 
                         cycle.simulationData.map(data => data[selectedYAxis] || 0)
@@ -1521,18 +1628,34 @@ function App() {
                     <Typography variant="body2" fontWeight="bold" gutterBottom>
                       {t.scatter.markerSize}
                     </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#666', opacity: 0.8, display: 'inline-block' }}></Box>
-                      <Typography variant="caption">{t.scatter.small}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#666', opacity: 0.6, display: 'inline-block' }}></Box>
-                      <Typography variant="caption">{t.scatter.medium}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#666', opacity: 0.4, display: 'inline-block' }}></Box>
-                      <Typography variant="caption">{t.scatter.large}</Typography>
-                    </Box>
+                    {selectedPlotAttribute === 'all' && (
+                      <>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                          <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#666', opacity: 0.8, display: 'inline-block' }}></Box>
+                          <Typography variant="caption">{t.scatter.small}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#666', opacity: 0.6, display: 'inline-block' }}></Box>
+                          <Typography variant="caption">{t.scatter.medium}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                          <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#666', opacity: 0.4, display: 'inline-block' }}></Box>
+                          <Typography variant="caption">{t.scatter.large}</Typography>
+                        </Box>
+                      </>
+                    )}
+                    {selectedPlotAttribute === 'average' && (
+                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#666', opacity: 0.5, display: 'inline-block' }}></Box>
+                        <Typography variant="caption">{t.scatter.average}</Typography>
+                      </Box>
+                    )}
+                    {['2050', '2075', '2100'].includes(selectedPlotAttribute) && (
+                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#666', opacity: 0.7, display: 'inline-block' }}></Box>
+                        <Typography variant="caption">{t.scatter[`year${selectedPlotAttribute}`]}</Typography>
+                      </Box>
+                    )}
                   </Box>
                   
                   <Box>
@@ -1560,6 +1683,50 @@ function App() {
                   {t.scatter.inputHistory}
                 </Typography>
                 
+                {/* 年次・サイクル・ソートセレクトバー */}
+                <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+                  <FormControl sx={{ minWidth: 120 }}>
+                    <InputLabel>{t.scatter.yearFilter}</InputLabel>
+                    <Select
+                      value={selectedYearFilter}
+                      label={t.scatter.yearFilter}
+                      onChange={(event) => setSelectedYearFilter(event.target.value)}
+                    >
+                      <MenuItem value="all">{t.scatter.allYears}</MenuItem>
+                      {/* 年次リストを動的に生成 */}
+                      {Array.from(new Set(resultHistory.flatMap(cycle => cycle.inputHistory.map(input => input.year)))).sort((a, b) => a - b).map(year => (
+                        <MenuItem key={year} value={year}>{year}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl sx={{ minWidth: 120 }}>
+                    <InputLabel>{t.scatter.cycleFilter}</InputLabel>
+                    <Select
+                      value={selectedCycleFilter}
+                      label={t.scatter.cycleFilter}
+                      onChange={(event) => setSelectedCycleFilter(event.target.value)}
+                    >
+                      <MenuItem value="all">{t.scatter.allCycles}</MenuItem>
+                      {/* サイクル番号リストを動的に生成 */}
+                      {resultHistory.map(cycle => (
+                        <MenuItem key={cycle.cycleNumber} value={cycle.cycleNumber}>{t.scatter.cycle} {cycle.cycleNumber}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl sx={{ minWidth: 120 }}>
+                    <InputLabel>{t.scatter.historySort}</InputLabel>
+                    <Select
+                      value={selectedHistorySort}
+                      label={t.scatter.historySort}
+                      onChange={(event) => setSelectedHistorySort(event.target.value)}
+                    >
+                      <MenuItem value="cycle">{t.scatter.sortByCycle}</MenuItem>
+                      <MenuItem value="year">{t.scatter.sortByYear}</MenuItem>
+                      <MenuItem value="input">{t.scatter.sortByInput}</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                
                 <Box sx={{ flex: 1, overflow: 'auto' }}>
                   <TableContainer component={Paper} sx={{ maxHeight: '100%' }}>
                     <Table size="small" aria-label={t.scatter.inputHistory} stickyHeader>
@@ -1568,6 +1735,7 @@ function App() {
                           <TableCell>{t.scatter.cycle}</TableCell>
                           <TableCell>{t.scatter.inputCount}</TableCell>
                           <TableCell>{t.scatter.inputYear}</TableCell>
+                          <TableCell>{t.rcp.scenario}</TableCell>
                           <TableCell>{t.sliders.plantingTrees}</TableCell>
                           <TableCell>{t.sliders.houseMigration}</TableCell>
                           <TableCell>{t.sliders.damLevee}</TableCell>
@@ -1578,21 +1746,37 @@ function App() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {resultHistory.map((cycle, cycleIndex) => 
-                          cycle.inputHistory.map((input, inputIndex) => (
-                            <TableRow key={`${cycleIndex}-${inputIndex}`}>
-                              <TableCell>{cycle.cycleNumber}</TableCell>
-                              <TableCell>{input.inputNumber}回目</TableCell>
-                              <TableCell>{input.year}年</TableCell>
-                              <TableCell>{input.decisionVariables.planting_trees_amount}</TableCell>
-                              <TableCell>{input.decisionVariables.house_migration_amount}</TableCell>
-                              <TableCell>{input.decisionVariables.dam_levee_construction_cost}</TableCell>
-                              <TableCell>{input.decisionVariables.paddy_dam_construction_cost}</TableCell>
-                              <TableCell>{input.decisionVariables.capacity_building_cost}</TableCell>
-                              {/* <TableCell>{input.decisionVariables.transportation_invest}</TableCell> */}
-                              <TableCell>{input.decisionVariables.agricultural_RnD_cost}</TableCell>
-                            </TableRow>
-                          ))
+                        {resultHistory.flatMap((cycle, cycleIndex) =>
+                          cycle.inputHistory
+                            .filter(input =>
+                              (selectedYearFilter === 'all' || input.year === Number(selectedYearFilter)) &&
+                              (selectedCycleFilter === 'all' || cycle.cycleNumber === Number(selectedCycleFilter))
+                            )
+                            .sort((a, b) => {
+                              if (selectedHistorySort === 'cycle') {
+                                return cycle.cycleNumber - cycle.cycleNumber;
+                              } else if (selectedHistorySort === 'year') {
+                                return a.year - b.year;
+                              } else if (selectedHistorySort === 'input') {
+                                return a.inputNumber - b.inputNumber;
+                              }
+                              return 0;
+                            })
+                            .map((input, inputIndex) => (
+                              <TableRow key={`${cycleIndex}-${inputIndex}`}>
+                                <TableCell>{cycle.cycleNumber}</TableCell>
+                                <TableCell>{input.inputNumber}回目</TableCell>
+                                <TableCell>{input.year}年</TableCell>
+                                <TableCell>{input.decisionVariables.cp_climate_params}</TableCell>
+                                <TableCell>{convertBackendToDisplayValue('planting_trees_amount', input.decisionVariables.planting_trees_amount)}</TableCell>
+                                <TableCell>{convertBackendToDisplayValue('house_migration_amount', input.decisionVariables.house_migration_amount)}</TableCell>
+                                <TableCell>{convertBackendToDisplayValue('dam_levee_construction_cost', input.decisionVariables.dam_levee_construction_cost)}</TableCell>
+                                <TableCell>{convertBackendToDisplayValue('paddy_dam_construction_cost', input.decisionVariables.paddy_dam_construction_cost)}</TableCell>
+                                <TableCell>{convertBackendToDisplayValue('capacity_building_cost', input.decisionVariables.capacity_building_cost)}</TableCell>
+                                {/* <TableCell>{input.decisionVariables.transportation_invest}</TableCell> */}
+                                <TableCell>{convertBackendToDisplayValue('agricultural_RnD_cost', input.decisionVariables.agricultural_RnD_cost)}</TableCell>
+                              </TableRow>
+                            ))
                         )}
                       </TableBody>
                     </Table>
@@ -1832,10 +2016,14 @@ function App() {
               <Forest color="success" />
               {t.sliders.plantingTrees}
               <Slider
-                value={decisionVar.planting_trees_amount}
+                value={convertBackendToDisplayValue('planting_trees_amount', decisionVar.planting_trees_amount)}
                 min={0}
-                max={200}
-                marks={[{ value: 0 }, { value: 100 }, { value: 200 }]}
+                max={2}
+                marks={[
+                  { value: 0, label: '0' },
+                  { value: 1, label: '1' },
+                  { value: 2, label: '2' }
+                ]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -1886,10 +2074,14 @@ function App() {
               <Flood color="info"  />
               {t.sliders.damLevee}
               <Slider
-                value={decisionVar.dam_levee_construction_cost}
+                value={convertBackendToDisplayValue('dam_levee_construction_cost', decisionVar.dam_levee_construction_cost)}
                 min={0}
                 max={2}
-                marks={[{ value: 0 }, { value: 1 }, { value: 2 }]}
+                marks={[
+                  { value: 0, label: '0' },
+                  { value: 1, label: '1' },
+                  { value: 2, label: '2' }
+                ]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -1912,10 +2104,14 @@ function App() {
               <Biotech color="success"  />
               {t.sliders.agriculturalRnD}
               <Slider
-                value={decisionVar.agricultural_RnD_cost}
+                value={convertBackendToDisplayValue('agricultural_RnD_cost', decisionVar.agricultural_RnD_cost)}
                 min={0}
-                max={10}
-                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
+                max={2}
+                marks={[
+                  { value: 0, label: '0' },
+                  { value: 1, label: '1' },
+                  { value: 2, label: '2' }
+                ]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -1938,10 +2134,14 @@ function App() {
               <Houseboat color={"info"} />
               {t.sliders.houseMigration}
               <Slider
-                value={decisionVar.house_migration_amount}
+                value={convertBackendToDisplayValue('house_migration_amount', decisionVar.house_migration_amount)}
                 min={0}
-                max={10}
-                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
+                max={2}
+                marks={[
+                  { value: 0, label: '0' },
+                  { value: 1, label: '1' },
+                  { value: 2, label: '2' }
+                ]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -1964,10 +2164,14 @@ function App() {
               <Agriculture color={"success"} />
               {t.sliders.paddyDam}
               <Slider
-                value={decisionVar.paddy_dam_construction_cost}
+                value={convertBackendToDisplayValue('paddy_dam_construction_cost', decisionVar.paddy_dam_construction_cost)}
                 min={0}
-                max={10}
-                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
+                max={2}
+                marks={[
+                  { value: 0, label: '0' },
+                  { value: 1, label: '1' },
+                  { value: 2, label: '2' }
+                ]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
@@ -1990,10 +2194,14 @@ function App() {
               <LocalLibrary color="action" />
               {t.sliders.capacityBuilding}
               <Slider
-                value={decisionVar.capacity_building_cost}
+                value={convertBackendToDisplayValue('capacity_building_cost', decisionVar.capacity_building_cost)}
                 min={0}
-                max={10}
-                marks={[{ value: 0 }, { value: 5 }, { value: 10 }]}
+                max={2}
+                marks={[
+                  { value: 0, label: '0' },
+                  { value: 1, label: '1' },
+                  { value: 2, label: '2' }
+                ]}
                 step={null}
                 aria-label="画像スライダー"
                 size="small"
