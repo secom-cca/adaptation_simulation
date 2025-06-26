@@ -1,10 +1,14 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent / "backend"))
+
 import numpy as np
 import pandas as pd
 import streamlit as st
 from io import BytesIO
-from backend.src.simulation import simulate_simulation
-from backend.src.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly, BENCHMARK, BLOCKS
-from backend.config import DEFAULT_PARAMS, rcp_climate_params
+from src.simulation import simulate_simulation
+from src.utils import create_line_chart, compare_scenarios, compare_scenarios_yearly, BENCHMARK, BLOCKS
+from config import DEFAULT_PARAMS, rcp_climate_params
 
 # RCPシナリオ選択
 rcp_options = {'RCP1.9': 1.9, 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 'RCP8.5': 8.5}
