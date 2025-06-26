@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import gumbel_r
-from utils import estimate_rice_yield_loss
+from backend.src.utils import estimate_rice_yield_loss
 
 def simulate_year(year, prev_values, decision_vars, params):
     # --- 前年の値を展開（初期値を定義していない変数は追って調整） ---
