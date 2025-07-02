@@ -196,14 +196,32 @@ def get_block_scores():
 @app.websocket("/ws/log")
 async def websocket_log_endpoint(websocket: WebSocket):
     await websocket.accept()
-    log_path = Path(__file__).parent / "data" / "user_log.jsonl"
+    log_path = Path(__file__).parent / "data" / "user_log.json"
+    import json
+
+    # 既存のログファイルを読み込む（なければ空リスト）
+    if log_path.exists():
+        with open(log_path, "r", encoding="utf-8") as f:
+            try:
+                logs = json.load(f)
+            except Exception:
+                logs = []
+    else:
+        logs = []
+
     while True:
         try:
             data = await websocket.receive_text()
-            with open(log_path, "a", encoding="utf-8") as f:
-                f.write(data + "\n")
+            # 受信データをJSONとしてパース
+            try:
+                log_obj = json.loads(data)
+            except Exception:
+                log_obj = {"raw": data}
+            logs.append(log_obj)
+            # ファイルに全件書き込み
+            with open(log_path, "w", encoding="utf-8") as f:
+                json.dump(logs, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            # クライアント切断などでエラーが出たら終了
             break
 
 if __name__ == "__main__":

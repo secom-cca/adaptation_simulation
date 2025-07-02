@@ -52,3 +52,784 @@
 {"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:09.084Z"}
 {"user_name":"ABCDE","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-20T07:43:09.085Z"}
 {"user_name":"BCDE","mode":"best-worst","type":"Register","timestamp":"2025-06-20T07:45:15.912Z"}
+{"user_name":"test100","mode":"best-worst","type":"Register","timestamp":"2025-06-22T07:42:31.981Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T07:42:39.233Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T07:42:39.233Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-22T07:42:40.183Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-22T07:42:40.184Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"transportation_invest","value":5,"timestamp":"2025-06-22T07:42:41.526Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"transportation_invest","value":5,"timestamp":"2025-06-22T07:42:41.526Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-22T07:42:42.441Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-22T07:42:42.441Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-22T07:42:43.381Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-22T07:42:43.381Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-22T07:42:46.155Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T07:42:52.323Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T07:42:52.324Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-22T07:42:53.607Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-22T07:42:53.607Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T07:42:54.228Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T07:42:54.228Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-22T07:42:56.851Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-22T07:42:56.852Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-22T07:42:57.416Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-22T07:42:57.416Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":0,"timestamp":"2025-06-22T07:42:59.380Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":0,"timestamp":"2025-06-22T07:42:59.380Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-22T07:42:59.871Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-22T07:42:59.871Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-22T07:43:01.451Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-22T07:43:01.452Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T07:43:03.914Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-22T07:43:03.914Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-22T07:43:06.236Z"}
+{"user_name":"test100","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-22T07:43:06.236Z"}
+{"user_name":"test100","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-22T07:43:08.519Z"}
+{"user_name":"test100","mode":"best-worst","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-22T07:43:13.500Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-22T07:43:18.650Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Urban Level","timestamp":"2025-06-22T07:43:21.024Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-22T07:43:26.312Z"}
+{"user_name":"test100","mode":"best-worst","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-22T07:43:28.620Z"}
+{"user_name":"test100","mode":"best-worst","type":"StartCompare","timestamp":"2025-06-22T07:43:34.841Z"}
+{"user_name":"test100","mode":"best-worst","type":"ScatterY","name":"Urban Level","cycle":1,"timestamp":"2025-06-22T07:43:38.401Z"}
+{"user_name":"test100","mode":"best-worst","type":"ScatterY","name":"Flood Damage","cycle":1,"timestamp":"2025-06-22T07:43:40.012Z"}
+{"user_name":"test100","mode":"best-worst","type":"EndCompare","timestamp":"2025-06-22T07:44:29.479Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Available Water","timestamp":"2025-06-22T07:54:42.991Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Precipitation (mm)","timestamp":"2025-06-22T07:54:45.611Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Temperature (℃)","timestamp":"2025-06-22T07:54:47.344Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-22T07:54:49.356Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Urban Level","timestamp":"2025-06-22T07:54:52.890Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-22T07:54:57.544Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-22T07:55:01.303Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Temperature (℃)","timestamp":"2025-06-22T07:57:45.725Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Precipitation (mm)","timestamp":"2025-06-22T07:57:47.408Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Available Water","timestamp":"2025-06-22T07:57:49.107Z"}
+{"user_name":"test100","mode":"best-worst","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-22T07:57:50.406Z"}
+{"user_name":"test102","mode":"best-worst","type":"Register","timestamp":"2025-06-22T08:59:29.088Z"}
+{"user_name":"test104","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:00:53.388Z"}
+{"user_name":"test104","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:01:03.791Z"}
+{"user_name":"test104","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:02:57.873Z"}
+{"user_name":"test104","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-22T16:03:00.333Z"}
+{"user_name":"test111","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:07:17.581Z"}
+{"user_name":"test112","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:09:26.271Z"}
+{"user_name":"test113","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:10:37.268Z"}
+{"user_name":"test114","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:13:36.364Z"}
+{"user_name":"test114","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-22T16:13:43.744Z"}
+{"user_name":"test114","mode":"best-worst","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-22T16:13:48.375Z"}
+{"user_name":"test114","mode":"best-worst","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-22T16:13:52.773Z"}
+{"user_name":"test114","mode":"best-worst","type":"EndCycle","name":2101,"cycle":1,"timestamp":"2025-06-22T16:14:02.449Z"}
+{"user_name":"test114","mode":"best-worst","type":"StartCompare","timestamp":"2025-06-22T16:14:03.885Z"}
+{"user_name":"test114","mode":"best-worst","type":"EndCompare","timestamp":"2025-06-22T16:14:06.784Z"}
+{"user_name":"test115","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:16:32.178Z"}
+{"user_name":"test116","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:17:56.756Z"}
+{"user_name":"test116","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-22T16:18:08.383Z"}
+{"user_name":"test116","mode":"best-worst","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-22T16:18:12.418Z"}
+{"user_name":"test117","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:20:43.831Z"}
+{"user_name":"test117","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-22T16:20:46.238Z"}
+{"user_name":"test118","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:21:59.310Z"}
+{"user_name":"test119","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:23:18.552Z"}
+{"user_name":"test119","mode":"best-worst","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-22T16:23:55.865Z"}
+{"user_name":"test119","mode":"best-worst","type":"GraphSelect","name":"Temperature (℃)","timestamp":"2025-06-22T16:23:58.102Z"}
+{"user_name":"test119","mode":"best-worst","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-22T16:24:50.222Z"}
+{"user_name":"test119","mode":"best-worst","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-22T16:24:52.165Z"}
+{"user_name":"test119","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-22T16:25:03.255Z"}
+{"user_name":"test120","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:27:14.295Z"}
+{"user_name":"test120","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-22T16:27:16.497Z"}
+{"user_name":"test121","mode":"best-worst","type":"Register","timestamp":"2025-06-22T16:27:37.863Z"}
+{"user_name":"test121","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-22T16:27:39.903Z"}
+{"user_name":"test121","mode":"best-worst","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-22T16:27:49.817Z"}
+{"user_name":"test121","mode":"best-worst","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-22T16:37:19.545Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Register","timestamp":"2025-06-23T06:33:51.046Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:33:53.108Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:33:53.108Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:33:53.686Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:33:53.687Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:33:54.328Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:33:54.328Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:33:54.795Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:33:54.796Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:33:55.262Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:33:55.263Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:33:55.703Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:33:55.704Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:33:56.345Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:33:56.345Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:33:56.866Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:33:56.866Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:33:57.399Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:33:57.400Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:33:57.815Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:33:57.816Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:33:58.098Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:33:58.099Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:33:58.490Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:33:58.491Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:33:58.940Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:33:58.941Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:33:59.345Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:33:59.346Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:33:59.653Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:33:59.654Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:00.045Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:00.046Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:00.578Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:00.579Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:01.053Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:01.054Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:01.403Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:01.404Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:01.853Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:01.854Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:02.282Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:02.283Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:02.637Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:02.638Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:02.944Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:02.945Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:03.222Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:03.223Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:03.511Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:03.512Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:03.719Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:03.720Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:04.061Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:04.062Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:04.286Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:04.287Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:04.528Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:04.529Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:04.785Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:04.786Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:05.461Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:05.461Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:05.611Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:05.611Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:05.719Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:05.720Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:05.778Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:05.778Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:06.315Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:06.316Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:06.316Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:06.316Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:06.369Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:06.370Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:06.461Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:06.462Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:06.536Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:06.537Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:06.869Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:06.871Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:06.903Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:06.904Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:06.921Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:06.922Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:06.940Z"}
+{"user_name":"test122","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:06.941Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Register","timestamp":"2025-06-23T06:34:17.231Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:22.278Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:22.278Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:22.394Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:22.395Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:22.671Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:22.671Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:22.727Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:22.728Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:22.753Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:22.753Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:22.789Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:22.789Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:23.219Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:23.219Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:23.269Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:23.270Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:23.352Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:23.353Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:23.544Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:23.545Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:23.806Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:23.806Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:23.852Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:23.852Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:23.880Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:23.880Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:23.910Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:23.911Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:24.223Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:24.224Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:24.236Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:24.236Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:24.264Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:24.265Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:24.297Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T06:34:24.299Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:24.614Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T06:34:24.615Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:24.648Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T06:34:24.649Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:24.681Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T06:34:24.682Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:24.731Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T06:34:24.732Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T06:34:42.838Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T06:34:42.839Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T06:34:43.608Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T06:34:43.608Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T06:34:44.224Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T06:34:44.224Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T06:34:44.877Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T06:34:44.877Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-23T06:34:45.618Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-23T06:34:45.618Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T06:34:46.128Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T06:34:46.128Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T06:34:47.026Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T06:34:47.026Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":10,"timestamp":"2025-06-23T06:34:47.742Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":10,"timestamp":"2025-06-23T06:34:47.742Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T06:34:48.805Z"}
+{"user_name":"test123","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T06:34:48.805Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Register","timestamp":"2025-06-23T07:05:11.862Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-23T07:05:15.004Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-23T07:05:16.434Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-23T07:05:17.913Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-23T07:05:19.424Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Temperature (℃)","timestamp":"2025-06-23T07:05:21.132Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-23T07:05:22.791Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-23T07:05:27.620Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T07:05:29.477Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T07:05:29.477Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-23T07:05:32.174Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-23T07:05:34.174Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:05:35.669Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:05:35.669Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:05:37.834Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:05:37.834Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T07:05:41.362Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T07:05:41.362Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:05:42.940Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:05:42.940Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":0,"timestamp":"2025-06-23T07:05:45.544Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":0,"timestamp":"2025-06-23T07:05:45.544Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:05:47.924Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:05:47.924Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-23T07:05:50.457Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-23T07:05:50.457Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-23T07:05:51.763Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-23T07:05:51.764Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:05:53.348Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:05:53.348Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-23T07:05:58.253Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:06:00.107Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:06:00.107Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:06:02.403Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:06:02.403Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:06:03.538Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:06:03.538Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:06:10.656Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:06:10.656Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:06:10.677Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:06:10.678Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:06:12.829Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:06:12.829Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T07:06:14.473Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T07:06:14.473Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T07:06:15.313Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T07:06:15.313Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:06:19.170Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:06:19.170Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:06:19.839Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:06:19.840Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:06:21.001Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:06:21.001Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":0,"timestamp":"2025-06-23T07:06:23.387Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":0,"timestamp":"2025-06-23T07:06:23.388Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T07:06:24.408Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T07:06:24.409Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:06:26.265Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:06:26.265Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:06:28.357Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:06:28.357Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Municipal Cost","timestamp":"2025-06-23T07:06:30.054Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-23T07:06:31.861Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":0,"timestamp":"2025-06-23T07:06:35.603Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":0,"timestamp":"2025-06-23T07:06:35.603Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:06:37.989Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:06:37.990Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:06:39.851Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:06:39.851Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:06:41.282Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:06:41.282Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-23T07:06:42.957Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-23T07:06:44.640Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T07:06:46.446Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T07:06:46.446Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-23T07:06:48.881Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:06:50.974Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:06:50.974Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:06:51.609Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:06:51.609Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-23T07:06:55.703Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:07:07.901Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:07:07.901Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:07:08.954Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:07:08.954Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T07:07:09.511Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T07:07:09.512Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-23T07:07:14.969Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:07:17.509Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:07:17.509Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-23T07:07:19.799Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-23T07:07:19.799Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-23T07:07:21.022Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:07:22.606Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:07:22.606Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-23T07:07:27.192Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-23T07:07:33.053Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Ecosystem Level","cycle":1,"timestamp":"2025-06-23T07:07:36.788Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Crop Yield","cycle":1,"timestamp":"2025-06-23T07:07:38.512Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Available Water","cycle":1,"timestamp":"2025-06-23T07:08:00.338Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Precipitation (mm)","cycle":1,"timestamp":"2025-06-23T07:08:02.518Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Municipal Cost","cycle":1,"timestamp":"2025-06-23T07:08:04.364Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Ecosystem Level","cycle":1,"timestamp":"2025-06-23T07:08:07.576Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-23T07:08:46.032Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:08:50.332Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:08:50.333Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:08:51.901Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:08:51.901Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T07:08:52.620Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T07:08:52.620Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:09:04.585Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:09:04.585Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:09:06.962Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:09:06.962Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":0,"timestamp":"2025-06-23T07:09:08.066Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":0,"timestamp":"2025-06-23T07:09:08.066Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":0,"timestamp":"2025-06-23T07:09:09.078Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":0,"timestamp":"2025-06-23T07:09:09.078Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-23T07:09:10.058Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-23T07:09:10.059Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":0,"timestamp":"2025-06-23T07:09:10.811Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":0,"timestamp":"2025-06-23T07:09:10.811Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:09:12.094Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:09:12.094Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":1,"timestamp":"2025-06-23T07:09:13.090Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2026,"cycle":2,"timestamp":"2025-06-23T07:09:14.284Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":2,"timestamp":"2025-06-23T07:09:23.671Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-23T07:09:25.343Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-23T07:09:26.962Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:09:29.775Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:09:29.775Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2076,"cycle":2,"timestamp":"2025-06-23T07:09:30.552Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:09:32.478Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:09:32.478Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":2,"timestamp":"2025-06-23T07:09:36.702Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:09:38.215Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:09:38.215Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":0,"timestamp":"2025-06-23T07:09:38.974Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":0,"timestamp":"2025-06-23T07:09:38.974Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:09:40.013Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:09:40.013Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:09:41.188Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:09:41.189Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-23T07:09:41.850Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-23T07:09:41.850Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2026,"cycle":3,"timestamp":"2025-06-23T07:09:43.806Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":3,"timestamp":"2025-06-23T07:09:52.027Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2076,"cycle":3,"timestamp":"2025-06-23T07:09:58.313Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":3,"timestamp":"2025-06-23T07:10:03.189Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:10:04.610Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:10:04.610Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2026,"cycle":4,"timestamp":"2025-06-23T07:10:06.349Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":4,"timestamp":"2025-06-23T07:10:14.043Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:10:45.109Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:10:45.109Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:10:45.803Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:10:45.803Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:10:46.866Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:10:46.866Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2076,"cycle":4,"timestamp":"2025-06-23T07:10:51.850Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-23T07:10:57.437Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Flood Damage","cycle":4,"timestamp":"2025-06-23T07:11:01.319Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Crop Yield","cycle":4,"timestamp":"2025-06-23T07:11:16.336Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Flood Damage","cycle":4,"timestamp":"2025-06-23T07:11:18.192Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Crop Yield","cycle":4,"timestamp":"2025-06-23T07:11:20.324Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-23T07:11:46.799Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-23T07:12:43.238Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:12:45.944Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:12:45.944Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:12:46.720Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:12:46.720Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:12:47.774Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:12:47.774Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T07:12:49.914Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T07:12:49.915Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T07:12:51.369Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T07:12:51.370Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-23T07:12:53.795Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":4,"timestamp":"2025-06-23T07:12:55.658Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:12:58.388Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:12:58.388Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2026,"cycle":5,"timestamp":"2025-06-23T07:13:00.037Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":5,"timestamp":"2025-06-23T07:13:07.658Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2076,"cycle":5,"timestamp":"2025-06-23T07:13:12.999Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-23T07:13:18.001Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-23T07:14:26.074Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:14:28.102Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:14:28.102Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:14:32.302Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:14:32.302Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-23T07:14:33.168Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-23T07:14:33.169Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-23T07:14:33.870Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-23T07:14:33.870Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":10,"timestamp":"2025-06-23T07:14:34.704Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":10,"timestamp":"2025-06-23T07:14:34.704Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":10,"timestamp":"2025-06-23T07:14:35.310Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":10,"timestamp":"2025-06-23T07:14:35.310Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:14:36.199Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:14:36.200Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":10,"timestamp":"2025-06-23T07:14:36.797Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":10,"timestamp":"2025-06-23T07:14:36.797Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":5,"timestamp":"2025-06-23T07:14:37.898Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2026,"cycle":6,"timestamp":"2025-06-23T07:14:41.305Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":6,"timestamp":"2025-06-23T07:15:57.694Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2076,"cycle":6,"timestamp":"2025-06-23T07:16:14.935Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-23T07:16:22.944Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Flood Damage","cycle":6,"timestamp":"2025-06-23T07:16:31.498Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Ecosystem Level","cycle":6,"timestamp":"2025-06-23T07:16:33.631Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Crop Yield","cycle":6,"timestamp":"2025-06-23T07:16:36.647Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-23T07:16:48.305Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:17:08.860Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:17:08.860Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":6,"timestamp":"2025-06-23T07:17:15.414Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2026,"cycle":7,"timestamp":"2025-06-23T07:17:16.474Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":7,"timestamp":"2025-06-23T07:17:24.435Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2076,"cycle":7,"timestamp":"2025-06-23T07:17:29.930Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-23T07:17:35.149Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-23T07:17:40.518Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:17:41.934Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:17:41.934Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:17:42.790Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:17:42.790Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:17:43.353Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:17:43.354Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":0,"timestamp":"2025-06-23T07:17:43.983Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":0,"timestamp":"2025-06-23T07:17:43.983Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T07:17:44.915Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T07:17:44.915Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T07:17:45.774Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T07:17:45.774Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:17:46.525Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:17:46.525Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-23T07:17:47.375Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-23T07:17:47.375Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-23T07:17:48.217Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-23T07:17:48.217Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:17:59.893Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:17:59.893Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:18:02.433Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:18:02.433Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":10,"timestamp":"2025-06-23T07:18:04.926Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":10,"timestamp":"2025-06-23T07:18:04.926Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-23T07:18:06.047Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Crop Yield","cycle":7,"timestamp":"2025-06-23T07:18:08.505Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Flood Damage","cycle":7,"timestamp":"2025-06-23T07:18:09.699Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Municipal Cost","cycle":7,"timestamp":"2025-06-23T07:18:11.864Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Crop Yield","cycle":7,"timestamp":"2025-06-23T07:18:16.227Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Ecosystem Level","cycle":7,"timestamp":"2025-06-23T07:18:19.055Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Ecosystem Level","cycle":7,"timestamp":"2025-06-23T07:18:49.287Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Municipal Cost","cycle":7,"timestamp":"2025-06-23T07:18:50.717Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-23T07:19:12.758Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T07:19:15.644Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-23T07:19:15.644Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:19:16.264Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:19:16.264Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:19:16.885Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:19:16.885Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Temperature (℃)","timestamp":"2025-06-23T07:19:20.497Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Available Water","timestamp":"2025-06-23T07:19:22.426Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Precipitation (mm)","timestamp":"2025-06-23T07:19:24.909Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Available Water","timestamp":"2025-06-23T07:19:26.742Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Precipitation (mm)","timestamp":"2025-06-23T07:19:31.620Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":7,"timestamp":"2025-06-23T07:19:33.529Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:19:35.459Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:19:35.459Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:19:39.153Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:19:39.153Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T07:19:40.371Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-23T07:19:40.371Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:19:40.981Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:19:40.981Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:19:41.644Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:19:41.644Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:19:54.582Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:19:54.583Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:19:55.374Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:19:55.374Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:19:56.412Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-23T07:19:56.412Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:19:57.891Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:19:57.892Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:19:59.468Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:19:59.468Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:20:01.520Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T07:20:01.520Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2026,"cycle":8,"timestamp":"2025-06-23T07:20:02.310Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-23T07:20:29.128Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-23T07:20:29.128Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:20:29.985Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T07:20:29.985Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:20:30.548Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":0,"timestamp":"2025-06-23T07:20:30.548Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":0,"timestamp":"2025-06-23T07:20:31.783Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":0,"timestamp":"2025-06-23T07:20:31.783Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:20:32.517Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T07:20:32.518Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":10,"timestamp":"2025-06-23T07:20:33.204Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":10,"timestamp":"2025-06-23T07:20:33.204Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:20:34.576Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:20:34.577Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:20:35.451Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-23T07:20:35.451Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T07:20:36.211Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-23T07:20:36.211Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":8,"timestamp":"2025-06-23T07:20:42.010Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-23T07:20:46.247Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-23T07:20:50.425Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2076,"cycle":8,"timestamp":"2025-06-23T07:20:51.078Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-23T07:21:03.417Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Flood Damage","cycle":8,"timestamp":"2025-06-23T07:21:08.001Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Crop Yield","cycle":8,"timestamp":"2025-06-23T07:21:09.938Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Crop Yield","cycle":8,"timestamp":"2025-06-23T07:21:11.599Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Ecosystem Level","cycle":8,"timestamp":"2025-06-23T07:21:13.149Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-23T07:21:30.416Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:21:39.673Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-23T07:21:39.673Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":0,"timestamp":"2025-06-23T07:21:40.359Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":0,"timestamp":"2025-06-23T07:21:40.359Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":8,"timestamp":"2025-06-23T07:21:42.720Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2026,"cycle":9,"timestamp":"2025-06-23T07:21:43.703Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":0,"timestamp":"2025-06-23T07:21:45.489Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":0,"timestamp":"2025-06-23T07:21:45.489Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":0,"timestamp":"2025-06-23T07:21:47.282Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":0,"timestamp":"2025-06-23T07:21:47.282Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-23T07:21:49.632Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":0,"timestamp":"2025-06-23T07:21:49.632Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":9,"timestamp":"2025-06-23T07:21:51.102Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":9,"timestamp":"2025-06-23T07:21:52.348Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Flood Damage","timestamp":"2025-06-23T07:21:54.869Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-23T07:21:56.667Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2076,"cycle":9,"timestamp":"2025-06-23T07:22:02.232Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-23T07:22:08.192Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Flood Damage","cycle":9,"timestamp":"2025-06-23T07:22:48.444Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterX","name":"Municipal Cost","cycle":9,"timestamp":"2025-06-23T07:23:31.531Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Crop Yield","cycle":9,"timestamp":"2025-06-23T07:26:19.563Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Flood Damage","cycle":9,"timestamp":"2025-06-23T07:26:22.826Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"ScatterY","name":"Ecosystem Level","cycle":9,"timestamp":"2025-06-23T07:38:03.660Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-23T07:39:44.780Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Temperature (℃)","timestamp":"2025-06-23T07:39:47.658Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"GraphSelect","name":"Precipitation (mm)","timestamp":"2025-06-23T07:39:51.254Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":9,"timestamp":"2025-06-23T07:39:53.712Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:39:57.668Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-23T07:39:57.669Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:40:04.579Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-23T07:40:04.579Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2026,"cycle":10,"timestamp":"2025-06-23T08:28:18.865Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T08:28:21.735Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-23T08:28:21.735Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-23T08:28:23.505Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-23T08:28:23.505Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T08:28:25.360Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-23T08:28:25.360Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T08:28:26.424Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-23T08:28:26.424Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T08:28:34.954Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-23T08:28:34.954Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2051,"cycle":10,"timestamp":"2025-06-23T08:28:36.431Z"}
+{"user_name":"test_20mins","mode":"monte-carlo","type":"Next","name":2076,"cycle":10,"timestamp":"2025-06-23T08:28:42.121Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Register","timestamp":"2025-06-23T08:30:36.969Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Register","timestamp":"2025-06-24T00:29:35.848Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"GraphSelect","name":"Precipitation (mm)","timestamp":"2025-06-24T00:29:38.035Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-24T00:29:40.153Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-24T00:29:40.153Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-24T00:29:42.274Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-24T00:29:42.274Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-24T00:29:42.928Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-24T00:29:42.928Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-24T00:29:43.622Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-24T00:29:43.622Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-24T00:29:45.217Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-24T00:29:45.217Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-24T00:29:46.180Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-24T00:29:46.180Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-24T00:29:50.505Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"GraphSelect","name":"Available Water","timestamp":"2025-06-24T00:29:53.397Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-24T00:29:59.932Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-24T00:29:59.932Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-24T00:30:00.683Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-24T00:30:00.683Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-24T00:30:01.385Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-24T00:30:08.088Z"}
+{"user_name":"test_20minss","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-24T00:30:13.064Z"}
+{"user_name":"test_20minsss","mode":"monte-carlo","type":"Register","timestamp":"2025-06-24T00:33:07.614Z"}
+{"user_name":"test61","mode":"monte-carlo","type":"Register","timestamp":"2025-06-24T00:49:45.027Z"}
+{"user_name":"test61","mode":"monte-carlo","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-24T00:49:46.849Z"}
+{"user_name":"test61","mode":"none","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-24T00:51:24.850Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Register","timestamp":"2025-06-24T01:00:13.559Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-24T01:00:15.936Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-24T01:00:25.982Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-24T01:11:53.081Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-24T01:11:58.932Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-24T01:26:59.061Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":8.5,"timestamp":"2025-06-24T01:26:59.061Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":7,"timestamp":"2025-06-24T01:26:59.633Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":7,"timestamp":"2025-06-24T01:26:59.633Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-24T01:27:00.093Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-24T01:27:00.093Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-24T01:27:00.638Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-24T01:27:00.638Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-24T01:27:01.250Z"}
+{"user_name":"test_20minsse","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":1.9,"timestamp":"2025-06-24T01:27:01.251Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Register","timestamp":"2025-06-24T08:57:01.256Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-24T08:57:04.190Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-24T08:57:04.190Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-24T08:57:04.958Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-24T08:57:04.958Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-24T08:57:05.739Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-24T08:57:05.740Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-24T08:57:06.543Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-24T08:57:06.544Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-24T08:57:07.867Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-24T08:57:07.867Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-24T08:57:08.605Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-24T08:57:08.605Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-24T08:57:09.805Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-24T08:57:17.091Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":6,"timestamp":"2025-06-24T08:57:17.091Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-24T08:57:17.794Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":2.6,"timestamp":"2025-06-24T08:57:17.794Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-24T08:57:18.365Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Slider","name":"cp_climate_params","value":4.5,"timestamp":"2025-06-24T08:57:18.365Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-24T08:57:20.346Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-24T08:57:52.684Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"GraphSelect","name":"Crop Yield","timestamp":"2025-06-24T08:58:01.805Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-24T08:58:29.161Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":1,"timestamp":"2025-06-24T08:58:53.405Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-24T08:58:55.598Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"ScatterY","name":"Temperature (℃)","cycle":2,"timestamp":"2025-06-24T08:59:05.860Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"ScatterX","name":"Municipal Cost","cycle":2,"timestamp":"2025-06-24T08:59:19.634Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-24T08:59:43.835Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-24T09:01:27.620Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-24T09:02:12.868Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-24T09:07:49.722Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-24T09:10:17.904Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-24T09:12:07.775Z"}
+{"user_name":"Ojima3","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-24T09:12:09.522Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"Register","timestamp":"2025-06-24T09:18:19.740Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-24T09:18:20.850Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-24T09:18:22.581Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-24T09:18:22.715Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-24T09:18:24.251Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"OpenModelDescription","timestamp":"2025-06-24T09:18:25.711Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"OpenModelDescription","timestamp":"2025-06-24T09:18:38.105Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-24T09:19:58.837Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"OpenModelDescription","timestamp":"2025-06-24T09:21:26.550Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"CloseModelDescription","timestamp":"2025-06-24T09:21:27.748Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-24T09:21:49.789Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":1,"timestamp":"2025-06-24T09:22:07.135Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-24T09:22:07.742Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"ScatterAttribute","name":"2100","cycle":2,"timestamp":"2025-06-24T09:22:09.452Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"ScatterX","name":"Municipal Cost","cycle":2,"timestamp":"2025-06-24T09:22:10.522Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"ScatterY","name":"Temperature (℃)","cycle":2,"timestamp":"2025-06-24T09:22:11.560Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"InputHistoryCycleFilter","value":1,"cycle":2,"timestamp":"2025-06-24T09:27:34.900Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"InputHistorySort","value":"year","cycle":2,"timestamp":"2025-06-24T09:27:36.016Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"InputHistorySort","value":"cycle","cycle":2,"timestamp":"2025-06-24T09:27:37.289Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"InputHistorySort","value":"input","cycle":2,"timestamp":"2025-06-24T09:27:38.487Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"InputHistorySort","value":"year","cycle":2,"timestamp":"2025-06-24T09:27:52.253Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"InputHistorySort","value":"cycle","cycle":2,"timestamp":"2025-06-24T09:27:53.382Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"InputHistoryCycleFilter","value":"all","cycle":2,"timestamp":"2025-06-24T09:27:58.421Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"InputHistoryYearFilter","value":2076,"cycle":2,"timestamp":"2025-06-24T09:28:02.671Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"InputHistoryYearFilter","value":2026,"cycle":2,"timestamp":"2025-06-24T09:28:03.841Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"InputHistoryYearFilter","value":"all","cycle":2,"timestamp":"2025-06-24T09:28:05.141Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"ScatterAttribute","name":"2050","cycle":2,"timestamp":"2025-06-24T09:28:12.167Z"}
+{"user_name":"Ojima4","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-24T09:28:19.056Z"}
+{"user_name":"Ojima5","mode":"monte-carlo","type":"Register","timestamp":"2025-06-24T09:28:54.584Z"}
+{"user_name":"Ojima5","mode":"monte-carlo","type":"StartCompare","timestamp":"2025-06-24T09:29:04.445Z"}
+{"user_name":"Ojima5","mode":"monte-carlo","type":"EndCompare","timestamp":"2025-06-24T09:29:05.959Z"}
+{"user_name":"Ojima5","mode":"monte-carlo","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-24T09:29:10.734Z"}
+{"user_name":"Ojima6","mode":"best-worst","type":"Register","timestamp":"2025-06-24T09:29:56.677Z"}
+{"user_name":"Ojima6","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-24T09:30:03.345Z"}
+{"user_name":"Ojima6","mode":"best-worst","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-24T09:30:21.759Z"}
+{"user_name":"Ojima6","mode":"best-worst","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-24T09:30:43.178Z"}
+{"user_name":"Ojima6","mode":"best-worst","type":"EndCycle","name":2101,"cycle":1,"timestamp":"2025-06-24T09:30:58.973Z"}
+{"user_name":"Ojima6","mode":"best-worst","type":"StartCompare","timestamp":"2025-06-24T09:31:08.255Z"}
+{"user_name":"Ojima6","mode":"best-worst","type":"EndCompare","timestamp":"2025-06-24T09:31:21.082Z"}
+{"user_name":"Ojima6","mode":"best-worst","type":"StartCompare","timestamp":"2025-06-24T09:31:32.796Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Register","timestamp":"2025-06-24T09:33:45.034Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-24T09:33:46.339Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-24T09:34:01.711Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-24T09:34:03.037Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-24T09:34:22.520Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"EndCycle","name":2101,"cycle":1,"timestamp":"2025-06-24T09:34:39.519Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"StartCompare","timestamp":"2025-06-24T09:34:40.481Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"InputHistorySort","value":"input","cycle":2,"timestamp":"2025-06-24T09:34:47.182Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"InputHistoryCycleFilter","value":1,"cycle":2,"timestamp":"2025-06-24T09:34:48.824Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"InputHistoryYearFilter","value":2051,"cycle":2,"timestamp":"2025-06-24T09:34:50.448Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"EndCompare","timestamp":"2025-06-24T09:34:58.965Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"StartCompare","timestamp":"2025-06-24T09:36:39.584Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"EndCompare","timestamp":"2025-06-24T09:39:26.365Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-24T09:45:03.793Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-24T09:45:03.793Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-24T09:45:07.761Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-24T09:45:07.761Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"house_migration_amount","value":10,"timestamp":"2025-06-24T09:45:09.401Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"house_migration_amount","value":10,"timestamp":"2025-06-24T09:45:09.401Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-24T09:45:10.985Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-24T09:45:10.985Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"capacity_building_cost","value":10,"timestamp":"2025-06-24T09:45:15.744Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"capacity_building_cost","value":10,"timestamp":"2025-06-24T09:45:15.744Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":10,"timestamp":"2025-06-24T09:45:17.447Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":10,"timestamp":"2025-06-24T09:45:17.447Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-24T09:45:26.658Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-24T09:45:26.659Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-24T09:45:28.037Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"planting_trees_amount","value":100,"timestamp":"2025-06-24T09:45:28.038Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-24T09:45:29.167Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"house_migration_amount","value":5,"timestamp":"2025-06-24T09:45:29.167Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-24T09:45:30.160Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-24T09:45:30.160Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-24T09:45:31.418Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-24T09:45:31.418Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-24T09:45:32.294Z"}
+{"user_name":"Ojima7","mode":"best-worst","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-24T09:45:32.295Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Register","timestamp":"2025-06-24T09:47:18.556Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-24T09:47:24.028Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":5,"timestamp":"2025-06-24T09:47:25.262Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"GraphSelect","name":"Ecosystem Level","timestamp":"2025-06-24T09:47:35.090Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-24T09:47:46.314Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Next","name":2051,"cycle":1,"timestamp":"2025-06-24T09:47:54.154Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Next","name":2072,"cycle":1,"timestamp":"2025-06-24T09:48:01.211Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Next","name":2076,"cycle":1,"timestamp":"2025-06-24T09:48:20.410Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"EndCycle","name":2101,"cycle":1,"timestamp":"2025-06-24T09:48:36.777Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Slider","name":"agricultural_RnD_cost","value":10,"timestamp":"2025-06-24T09:48:43.318Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Slider","name":"capacity_building_cost","value":5,"timestamp":"2025-06-24T09:48:43.987Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-24T09:48:45.168Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-24T09:48:45.747Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Slider","name":"planting_trees_amount","value":200,"timestamp":"2025-06-24T09:48:46.438Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Slider","name":"house_migration_amount","value":10,"timestamp":"2025-06-24T09:48:47.166Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Next","name":2026,"cycle":2,"timestamp":"2025-06-24T09:48:48.063Z"}
+{"user_name":"ojima","mode":"monte-carlo","type":"Next","name":2051,"cycle":2,"timestamp":"2025-06-24T09:50:56.900Z"}
+{"user_name":"Ojima7","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-24T09:57:11.945Z"}
+{"user_name":"Ojima7","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-24T09:57:11.946Z"}
+{"user_name":"Ojima7","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-24T09:57:13.462Z"}
+{"user_name":"Ojima7","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":10,"timestamp":"2025-06-24T09:57:13.462Z"}
+{"user_name":"o","mode":"monte-carlo","type":"Register","timestamp":"2025-06-24T10:47:33.498Z"}
+{"user_name":"oss","mode":"monte-carlo","type":"Register","timestamp":"2025-06-24T10:51:11.545Z"}
+{"user_name":"oss","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-24T10:51:13.730Z"}
+{"user_name":"oss","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":1,"timestamp":"2025-06-24T10:51:13.730Z"}
+{"user_name":"oss","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-24T10:51:14.335Z"}
+{"user_name":"oss","mode":"monte-carlo","type":"Slider","name":"paddy_dam_construction_cost","value":5,"timestamp":"2025-06-24T10:51:14.335Z"}
+{"user_name":"oss","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-24T10:51:16.618Z"}
+{"user_name":"oss","mode":"monte-carlo","type":"Slider","name":"dam_levee_construction_cost","value":2,"timestamp":"2025-06-24T10:51:16.618Z"}
+{"user_name":"oss","mode":"monte-carlo","type":"Next","name":2026,"cycle":1,"timestamp":"2025-06-24T10:51:18.699Z"}

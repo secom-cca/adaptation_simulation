@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from itertools import product
 from backend.src.simulation import simulate_simulation
 from backend.config import DEFAULT_PARAMS, rcp_climate_params
+from adjustText import adjust_text
 
 # パラメータ設定
 timestep_year = 25
@@ -23,15 +24,25 @@ decision_items = [
     'capacity_building_cost'
 ]
 
-# 意思決定の値（0, 1, 2 → 実際の値へ変換する）
-decision_levels = [0, 1, 2]
+# # 意思決定の値（0, 1, 2 → 実際の値へ変換する）
+# decision_levels = [0, 1, 2]
+# value_map = {
+#     'planting_trees_amount': [0, 50, 100],
+#     'house_migration_amount': [0, 50, 100],
+#     'dam_levee_construction_cost': [0.0, 1.0, 2.0],
+#     # 'paddy_dam_construction_cost': [0.0, 5.0, 10.0],
+#     'capacity_building_cost': [0.0, 5.0, 10.0],
+# }
+
+decision_levels = [0, 1]
 value_map = {
-    'planting_trees_amount': [0, 50, 100],
-    'house_migration_amount': [0, 50, 100],
-    'dam_levee_construction_cost': [0.0, 1.0, 2.0],
-    # 'paddy_dam_construction_cost': [0.0, 5.0, 10.0],
-    'capacity_building_cost': [0.0, 5.0, 10.0],
+    'planting_trees_amount': [0, 100],
+    'house_migration_amount': [0, 100],
+    'dam_levee_construction_cost': [0.0, 2.0],
+    'paddy_dam_construction_cost': [0.0, 10.0],
+    # 'capacity_building_cost': [0.0, 10.0],
 }
+
 
 # RCP設定とMonte Carlo回数
 rcps = {'RCP1.9': 1.9, 'RCP8.5': 8.5} # 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 
@@ -44,7 +55,6 @@ decision_combos = list(product(decision_levels, repeat=len(decision_items)))
 summary_results = []
 
 for combo_idx, decision_values in enumerate(decision_combos):
-    # 意思決定データを構築
     decision_df = pd.DataFrame({'Year': decision_years})
     for i, item in enumerate(decision_items):
         mapped_values = [value_map[item][decision_values[i]]] * len(decision_years)
@@ -57,32 +67,28 @@ for combo_idx, decision_values in enumerate(decision_combos):
         params = DEFAULT_PARAMS.copy()
         params.update(rcp_climate_params[rcp_val])
 
-        # シミュレーション実行
         sim_results = []
-        for sim in range(num_simulations):
-            initial_values = {}
-            sim_data = simulate_simulation(years, initial_values, decision_df, params)
+        for _ in range(num_simulations):
+            sim_data = simulate_simulation(years, {}, decision_df, params)
             df = pd.DataFrame(sim_data)
             sim_results.append(df)
 
-        # 世代ごとの年範囲を定義（25年ごと）
         generations = {
             'Gen1': (2026, 2050),
             'Gen2': (2051, 2075),
             'Gen3': (2076, 2100),
         }
 
-        # 指標と出力用列の初期化
-        # indicators = ['Flood Damage', 'Ecosystem Level', 'Crop Yield', 'Resident Burden']
         indicators = ['Flood Damage', 'Ecosystem Level', 'Municipal Cost']
         avg_data = {'Decision_ID': combo_idx, 'RCP': rcp_name}
 
+        df_all = pd.concat(sim_results, keys=range(num_simulations), names=["Sim", "Row"])
         for gen_label, (start, end) in generations.items():
-            df_concat = pd.concat(sim_results)
-            df_gen = df_concat[(df_concat['Year'] >= start) & (df_concat['Year'] <= end)]
+            df_gen = df_all[(df_all['Year'] >= start) & (df_all['Year'] <= end)]
             for ind in indicators:
-                avg_val = df_gen[ind].mean()
-                avg_data[f'{ind}_{gen_label}'] = avg_val
+                mean = df_gen.groupby("Sim")[ind].mean()
+                avg_data[f'{ind}_{gen_label}'] = mean.mean()
+                avg_data[f'{ind}_{gen_label}_std'] = mean.std()
 
         summary_results.append(avg_data)
 
@@ -93,7 +99,6 @@ for i, item in enumerate(decision_items):
     summary_df[item] = summary_df['Decision_ID'].apply(
         lambda idx: value_map[item][decision_combos[idx][i]]
     )
-summary_df.to_csv('output/summary_results.csv', index=False)
 
 def find_best_decisions(summary_df):
     results = []
@@ -192,6 +197,15 @@ def compact_decision_label(decision_id):
 summary_df['Decision_Label'] = summary_df['Decision_ID'].apply(compact_decision_label)
 pareto_df['Decision_Label'] = pareto_df['Decision_ID'].apply(compact_decision_label)
 
+def decision_id_to_label(decision_id):
+    combo = decision_combos[decision_id]
+    return ''.join(str(d) for d in combo)
+
+summary_df['Decision_Label'] = summary_df['Decision_ID'].apply(decision_id_to_label)
+pareto_df['Decision_Label'] = pareto_df['Decision_ID'].apply(decision_id_to_label)
+
+summary_df.to_csv('output/summary_results.csv', index=False)
+
 # パレート判定関数（Flood Damage, Cost 小 / Ecosystem 大）
 def extract_gen_pareto(df, gen_idx):
     gen_df = df.copy()
@@ -219,56 +233,56 @@ def extract_gen_pareto(df, gen_idx):
         pareto_mask.append(not dominated)
     return gen_df[pareto_mask]['Decision_ID'].tolist()
 
-# 描画
-for rcp in summary_df['RCP'].unique():
-    df = summary_df[summary_df['RCP'] == rcp]
+# # 描画
+# for rcp in summary_df['RCP'].unique():
+#     df = summary_df[summary_df['RCP'] == rcp]
 
-    # 世代ごとのパレートフロント取得
-    pareto_ids_by_gen = {
-        f'Gen{i+1}': extract_gen_pareto(df, i)
-        for i in range(3)
-    }
+#     # 世代ごとのパレートフロント取得
+#     pareto_ids_by_gen = {
+#         f'Gen{i+1}': extract_gen_pareto(df, i)
+#         for i in range(3)
+#     }
 
-    plt.figure(figsize=(10, 8))
-    plt.title(f'Trade-off Trajectories Across Generations (All) - {rcp}')
-    plt.xlabel('Flood Damage')
-    plt.ylabel('Ecosystem Level')
-    plt.grid(True)
+#     plt.figure(figsize=(10, 8))
+#     plt.title(f'Trade-off Trajectories Across Generations (All) - {rcp}')
+#     plt.xlabel('Flood Damage')
+#     plt.ylabel('Ecosystem Level')
+#     plt.grid(True)
 
-    for _, row in df.iterrows():
-        x_vals = [row[col] for col in gen_cols['Flood Damage']]
-        y_vals = [row[col] for col in gen_cols['Ecosystem Level']]
-        costs_vals = [row[col] for col in gen_cols['Municipal Cost']]
+#     for _, row in df.iterrows():
+#         x_vals = [row[col] for col in gen_cols['Flood Damage']]
+#         y_vals = [row[col] for col in gen_cols['Ecosystem Level']]
+#         costs_vals = [row[col] for col in gen_cols['Municipal Cost']]
 
-        # 各世代の点をプロット（コストを色に）
-        for i in range(3):
-            color_value = (costs_vals[i] - df[gen_cols['Municipal Cost'][i]].min()) / \
-                          (df[gen_cols['Municipal Cost'][i]].max() - df[gen_cols['Municipal Cost'][i]].min() + 1e-6)
-            color = plt.cm.viridis(color_value)
-            marker_edge = 'red' if row['Decision_ID'] in pareto_ids_by_gen[f'Gen{i+1}'] else 'none'
-            sc = plt.scatter(x_vals[i], y_vals[i], color=color, s=60, edgecolors=marker_edge, linewidths=1.2, zorder=3)
+#         # 各世代の点をプロット（コストを色に）
+#         for i in range(3):
+#             color_value = (costs_vals[i] - df[gen_cols['Municipal Cost'][i]].min()) / \
+#                           (df[gen_cols['Municipal Cost'][i]].max() - df[gen_cols['Municipal Cost'][i]].min() + 1e-6)
+#             color = plt.cm.viridis(color_value)
+#             marker_edge = 'red' if row['Decision_ID'] in pareto_ids_by_gen[f'Gen{i+1}'] else 'none'
+#             sc = plt.scatter(x_vals[i], y_vals[i], color=color, s=60, edgecolors=marker_edge, linewidths=1.2, zorder=3)
 
-        # 矢印で軌跡を可視化
-        for i in range(2):
-            plt.arrow(
-                x_vals[i], y_vals[i],
-                x_vals[i+1] - x_vals[i],
-                y_vals[i+1] - y_vals[i],
-                head_width=0.2, head_length=0.2, fc='gray', ec='gray', alpha=0.3
-            )
+#         # 矢印で軌跡を可視化
+#         for i in range(2):
+#             plt.arrow(
+#                 x_vals[i], y_vals[i],
+#                 x_vals[i+1] - x_vals[i],
+#                 y_vals[i+1] - y_vals[i],
+#                 head_width=0.2, head_length=0.2, fc='gray', ec='gray', alpha=0.3
+#             )
 
-    # カラーバー（Municipal Cost）
-        # ✅ カラーバーに scatter (sc) を明示的に渡す
-    cbar = plt.colorbar(sc, label='Municipal Cost')
+#     # カラーバー（Municipal Cost）
+#         # ✅ カラーバーに scatter (sc) を明示的に渡す
+#     cbar = plt.colorbar(sc, label='Municipal Cost')
 
-    # sm = plt.cm.ScalarMappable(cmap='viridis',
-    #                            norm=plt.Normalize(vmin=df[gen_cols['Municipal Cost'][2]].min(),
-    #                                               vmax=df[gen_cols['Municipal Cost'][2]].max()))
-    # sm.set_array([])
-    # cbar = plt.colorbar(sm, label='Municipal Cost')
+#     # sm = plt.cm.ScalarMappable(cmap='viridis',
+#     #                            norm=plt.Normalize(vmin=df[gen_cols['Municipal Cost'][2]].min(),
+#     #                                               vmax=df[gen_cols['Municipal Cost'][2]].max()))
+#     # sm.set_array([])
+#     # cbar = plt.colorbar(sm, label='Municipal Cost')
 
-    plt.tight_layout()
-    plt.show()
+#     plt.tight_layout()
+#     plt.show()
 
 # ===========================================================
 # for rcp in pareto_df['RCP'].unique():
@@ -322,76 +336,235 @@ import matplotlib.pyplot as plt
 os.makedirs('figures', exist_ok=True)
 
 for rcp in summary_df['RCP'].unique():
+    texts = []
     df = summary_df[summary_df['RCP'] == rcp]
     pareto = pareto_df[pareto_df['RCP'] == rcp]
 
-    # パレート解にだけ黒縁、それ以外は縁なし
+    # パレート解にだけ赤縁、それ以外は縁なし
     df = df.copy()
-    df['edgecolor'] = df['Decision_ID'].apply(lambda x: 'k' if x in pareto['Decision_ID'].values else 'none')
+    df['edgecolor'] = df['Decision_ID'].apply(lambda x: 'r' if x in pareto['Decision_ID'].values else 'none')
 
     # プロット
     plt.figure(figsize=(8, 6))
     scatter = plt.scatter(
         df['Flood Damage_Gen3'], 
-        df['Municipal Cost_Gen3'], 
-        c=df['Ecosystem Level_Gen3'], 
-        cmap='viridis',
+        df['Ecosystem Level_Gen3'], 
+        c=df['Municipal Cost_Gen3'], 
+        cmap='gray',
         s=100,
         edgecolors=df['edgecolor']
     )
 
-    plt.colorbar(scatter, label='Ecosystem Level (Gen3)')
+    plt.colorbar(scatter, label='Municipal Cost (2076-2100)')
     plt.xlabel('Flood Damage (2076-2100)')
-    plt.ylabel('Municipal Cost (2076-2100)')
+    plt.ylabel('Ecosystem Level (2076-2100)')
     plt.title(f'Tradespace Analysis at 2076–2100 - {rcp}')
     plt.grid(True)
 
-    # パレート解にのみラベルを表示
-    # for _, row in df.iterrows():
-    #     if row['edgecolor'] == 'k':
-    #         plt.text(
-    #             row['Flood Damage_Gen3'], 
-    #             row['Municipal Cost_Gen3'], 
-    #             str(row['Decision_ID']), 
-    #             fontsize=8, 
-    #             ha='right', 
-    #             va='bottom'
-    #         )
+    for _, row in df.iterrows():
+        texts.append(
+            plt.text(
+                row['Flood Damage_Gen3'], 
+                row['Ecosystem Level_Gen3'], 
+                str(row['Decision_Label']), 
+                fontsize=8, 
+                ha='right', 
+                va='bottom'
+            )
+        )
+
+    plt.errorbar(
+        df['Flood Damage_Gen3'],
+        df['Ecosystem Level_Gen3'],
+        xerr=df['Flood Damage_Gen3_std'],
+        yerr=df['Ecosystem Level_Gen3_std'],
+        fmt='none',
+        ecolor='gray',
+        alpha=0.5,
+        capsize=3
+    )
 
     plt.tight_layout()
+    adjust_text(texts, only_move={'points': 'y', 'texts': 'y'}, arrowprops=dict(arrowstyle='-', color='gray'))
 
     # ファイル保存
     save_path = f'figures/tradespace_{rcp.replace(".", "_")}.png'
     plt.savefig(save_path, dpi=300)
     plt.close()
 
+# ===============================================================================
+# 異なるRCPのものを1つの図にしたもの
+# ===============================================================================
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.colors as colors
+from adjustText import adjust_text
+
+# マーカーの定義
+rcp_marker_map = {
+    'RCP1.9': 'o',
+    'RCP2.6': 'v',
+    'RCP4.5': '^',
+    'RCP6.0': 'D',
+    'RCP8.5': 's',
+}
+used_rcps = summary_df['RCP'].unique()
+markers = {rcp: rcp_marker_map.get(rcp, 'o') for rcp in used_rcps}
+
+# 色スケーリング
+vmin = summary_df['Municipal Cost_Gen3'].min()
+vmax = summary_df['Municipal Cost_Gen3'].max()
+norm = colors.Normalize(vmin=vmin, vmax=vmax)
+cmap = cm.gray
+
+plt.figure(figsize=(12, 8))
+texts = []
+
+# プロット本体
+for rcp in used_rcps:
+    df_rcp = summary_df[summary_df['RCP'] == rcp].copy()
+    pareto_rcp = pareto_df[pareto_df['RCP'] == rcp]
+
+    # 赤縁はパレートのみ、それ以外は黒縁
+    df_rcp['edgecolor'] = df_rcp['Decision_ID'].apply(
+        lambda x: 'r' if x in pareto_rcp['Decision_ID'].values else 'k'
+    )
+
+    scatter = plt.scatter(
+        df_rcp['Flood Damage_Gen3'],
+        df_rcp['Ecosystem Level_Gen3'],
+        c=df_rcp['Municipal Cost_Gen3'],
+        cmap=cmap,
+        norm=norm,
+        marker=markers[rcp],
+        s=100,
+        edgecolors=df_rcp['edgecolor'],
+        alpha=0.8,
+        label=f'{rcp}'
+    )
+
+    # エラーバー
+    plt.errorbar(
+        df_rcp['Flood Damage_Gen3'],
+        df_rcp['Ecosystem Level_Gen3'],
+        xerr=df_rcp['Flood Damage_Gen3_std'],
+        yerr=df_rcp['Ecosystem Level_Gen3_std'],
+        fmt='none',
+        ecolor='gray',
+        elinewidth=1,
+        capsize=3,
+        alpha=0.6
+    )
+
+    # ラベル
+    for _, row in df_rcp.iterrows():
+        texts.append(
+            plt.text(
+                row['Flood Damage_Gen3'],
+                row['Ecosystem Level_Gen3'],
+                row['Decision_Label'],
+                fontsize=8,
+                ha='right',
+                va='bottom'
+            )
+        )
+
+# ラベル調整（重なり除去）
+adjust_text(texts, only_move={'points': 'y', 'texts': 'y'}, arrowprops=dict(arrowstyle='-', color='gray'))
+
+# カラーバー
+cbar = plt.colorbar(scatter, label='Municipal Cost', ax=plt.gca())
+
+# 凡例（RCPごとの marker + 説明用パッチ）
+from matplotlib.lines import Line2D
+legend_elements = [
+    Line2D([0], [0], marker=rcp_marker_map[rcp], color='w',
+           markerfacecolor='gray', markeredgecolor='k', markersize=10, label=rcp)
+    for rcp in used_rcps
+] + [
+    Line2D([0], [0], marker='o', color='w',
+           markerfacecolor='white', markeredgecolor='r', markersize=10, label='Pareto Optimal')
+]
+plt.legend(handles=legend_elements, title='RCP & Pareto Status', loc='best')
+
+# 軸ラベル・タイトル
+plt.xlabel('Flood Damage (2076-2100)')
+plt.ylabel('Ecosystem Level (2076-2100)')
+plt.title('Tradespace with RCP Markers and Pareto Highlighting')
+plt.grid(True)
+plt.tight_layout()
+
+# 保存
+plt.savefig('figures/tradespace_allRCP_Gen3_pareto_edgecolor.png', dpi=300)
+plt.close()
+
+
 
 # ===============================================================================
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
-fig = plt.figure(figsize=(10, 8))
-ax = fig.add_subplot(111, projection='3d')
+for rcp in summary_df['RCP'].unique():
+    df_rcp = summary_df[summary_df['RCP'] == rcp]
 
-ax.set_title('Policy Impact Trajectories Across Generations (Pareto Front)')
-ax.set_xlabel('Flood Damage')
-ax.set_ylabel('Municipal Cost')
-ax.set_zlabel('Ecosystem Level')
+    plt.figure(figsize=(10, 7))
 
-for _, row in pareto_df.iterrows():
-    # 各世代の3軸データを取得
-    x_vals = [row['Flood Damage_Gen1'], row['Flood Damage_Gen2'], row['Flood Damage_Gen3']]
-    y_vals = [row['Municipal Cost_Gen1'], row['Municipal Cost_Gen2'], row['Municipal Cost_Gen3']]
-    z_vals = [row['Ecosystem Level_Gen1'], row['Ecosystem Level_Gen2'], row['Ecosystem Level_Gen3']]
+    for _, row in df_rcp.iterrows():
+        # 各Genの値を時系列順に並べる
+        flood = [row['Flood Damage_Gen1'], row['Flood Damage_Gen2'], row['Flood Damage_Gen3']]
+        eco = [row['Ecosystem Level_Gen1'], row['Ecosystem Level_Gen2'], row['Ecosystem Level_Gen3']]
+        cost = row['Municipal Cost_Gen3']  # Gen3のコストで色付け
+        label = row['Decision_Label']
 
-    # ラインプロットで各世代の推移を描画
-    ax.plot(x_vals, y_vals, z_vals, color='gray', alpha=0.7)
+        # 色は Gen3 の Municipal Cost を使用（正規化して colormap に渡す）
+        norm = plt.Normalize(df_rcp['Municipal Cost_Gen3'].min(), df_rcp['Municipal Cost_Gen3'].max())
+        color = plt.cm.viridis(norm(cost))
+
+        # 線と点を描画
+        plt.plot(flood, eco, color=color, alpha=0.6, marker='o', linewidth=1)
+        plt.text(flood[-1], eco[-1], label, fontsize=8, ha='left', va='center')
+
+    # 軸ラベル・色凡例など
+    plt.xlabel('Flood Damage')
+    plt.ylabel('Ecosystem Level')
+    plt.title(f'Tradespace Evolution over Generations ({rcp})')
+
+    sm = plt.cm.ScalarMappable(cmap='gray', norm=norm)
+    sm.set_array([])
+    plt.colorbar(sm, label='Municipal Cost', ax=plt.gca())
+
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(f'figures/tradespace_evolution_FEcolor_{rcp.replace(".", "_")}.png', dpi=300)
+    plt.close()
+
+# ===============================================================================
+
+
+# from mpl_toolkits.mplot3d import Axes3D
+# import matplotlib.pyplot as plt
+
+# fig = plt.figure(figsize=(10, 8))
+# ax = fig.add_subplot(111, projection='3d')
+
+# ax.set_title('Policy Impact Trajectories Across Generations (Pareto Front)')
+# ax.set_xlabel('Flood Damage')
+# ax.set_ylabel('Municipal Cost')
+# ax.set_zlabel('Ecosystem Level')
+
+# for _, row in pareto_df.iterrows():
+#     # 各世代の3軸データを取得
+#     x_vals = [row['Flood Damage_Gen1'], row['Flood Damage_Gen2'], row['Flood Damage_Gen3']]
+#     y_vals = [row['Municipal Cost_Gen1'], row['Municipal Cost_Gen2'], row['Municipal Cost_Gen3']]
+#     z_vals = [row['Ecosystem Level_Gen1'], row['Ecosystem Level_Gen2'], row['Ecosystem Level_Gen3']]
+
+#     # ラインプロットで各世代の推移を描画
+#     ax.plot(x_vals, y_vals, z_vals, color='gray', alpha=0.7)
     
-    # 始点にラベル（Decision_ID）
-    ax.text(x_vals[0], y_vals[0], z_vals[0], str(row['Decision_ID']), fontsize=7)
+#     # 始点にラベル（Decision_ID）
+#     ax.text(x_vals[0], y_vals[0], z_vals[0], str(row['Decision_ID']), fontsize=7)
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
 
 # # ---------------------------------------------

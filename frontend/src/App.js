@@ -41,9 +41,9 @@ const getLineChartIndicators = (language) => {
       'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton/ha' },
       'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
-      'Temperature (℃)': { labelTitle: '【気候要因】年平均気温', max: 20, min: 12, unit: '℃' },
-      'Precipitation (mm)': { labelTitle: '【気候要因】年降水量', max: 3000, min: 0, unit: 'mm' },
-      'Available Water': { labelTitle: '【気候要因】利用可能な水量', max: 3000, min: 0, unit: 'mm' }
+      'Temperature (℃)': { labelTitle: '【気候要素】年平均気温', max: 20, min: 12, unit: '℃' },
+      'Precipitation (mm)': { labelTitle: '【気候要素】年降水量', max: 3000, min: 0, unit: 'mm' },
+      'Available Water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' }
     },
     en: {
       'Flood Damage': { labelTitle: 'Flood Damage', max: 20000, min: 0, unit: '10k yen' },
@@ -52,7 +52,7 @@ const getLineChartIndicators = (language) => {
       'Municipal Cost': { labelTitle: 'Municipal Cost', max: 100000, min: 0, unit: '10k yen' },
       'Temperature (℃)': { labelTitle: '[Climate Factor] Average Temperature', max: 20, min: 12, unit: '°C' },
       'Precipitation (mm)': { labelTitle: '[Climate Factor] Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
-      'Available Water': { labelTitle: '[Climate Factor] Available Water', max: 3000, min: 0, unit: 'mm' }
+      'Available Water': { labelTitle: '[Intermediate Factor] Available Water', max: 3000, min: 0, unit: 'mm' }
     }
   };
   return indicators[language] || indicators.ja;
@@ -143,7 +143,7 @@ const texts = {
       startNext: ') を開始',
       cycleComplete: 'サイクル',
       completed: 'が完了しました！',
-      viewResults: '結果を見る',
+      // viewResults: '結果を見る',
     },
     rcp: {
       scenario: 'RCPシナリオ'
@@ -259,7 +259,7 @@ const texts = {
       startNext: ') Start',
       cycleComplete: 'Cycle',
       completed: 'completed!',
-      viewResults: 'View Results',
+      // viewResults: 'View Results',
     },
     rcp: {
       scenario: 'RCP Scenario'
@@ -979,6 +979,18 @@ function App() {
   // プロット属性変更時
   const handlePlotAttributeChange = (event) => {
     setSelectedPlotAttribute(event.target.value);
+
+    // --- プロット属性変更ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "ScatterAttribute",
+        name: event.target.value,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
   };
 
   const handleOpenSettings = () => {
@@ -987,6 +999,56 @@ function App() {
 
   const handleCloseSettings = () => {
     setOpenSettingsDialog(false);
+  };
+
+  // 年次選択（入力履歴テーブルの年次フィルター）変更時のハンドラ
+  const handleYearFilterChange = (event) => {
+    setSelectedYearFilter(event.target.value);
+
+    // --- 年次選択変更ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "InputHistoryYearFilter",
+        value: event.target.value,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  };
+  // サイクル選択（入力履歴テーブルのサイクルフィルター）変更時のハンドラ
+  const handleCycleFilterChange = (event) => {
+    setSelectedCycleFilter(event.target.value);
+
+    // --- サイクル選択変更ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "InputHistoryCycleFilter",
+        value: event.target.value,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  };
+
+  // ソート選択（入力履歴テーブルのソート）変更時のハンドラ
+  const handleHistorySortChange = (event) => {
+    setSelectedHistorySort(event.target.value);
+
+    // --- ソート選択変更ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "InputHistorySort",
+        value: event.target.value,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
   };
 
   // (F) パラメータ周りの変更処理
@@ -1013,6 +1075,34 @@ function App() {
     });
   };
 
+  // Model Descriptionボタン押下時のハンドラ
+  const handleOpenFormulaModal = () => {
+    setOpenFormulaModal(true);
+    // --- 「MODEL DESCRIPTION」ボタン押下ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "OpenModelDescription",
+        timestamp: new Date().toISOString()
+      }));
+    }
+    // -------------------------------------------------------------
+  };
+  // Model Descriptionダイアログを閉じたときのハンドラ
+  const handleCloseFormulaModal = () => {
+    setOpenFormulaModal(false);
+    // --- 「MODEL DESCRIPTION」ダイアログを閉じたログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "CloseModelDescription",
+        timestamp: new Date().toISOString()
+      }));
+    }
+    // -------------------------------------------------------------
+  };
 
 
   const updateCurrentValues = (newDict) => {
@@ -1189,7 +1279,7 @@ function App() {
         </Box>
 
         {/* Model Descriptionボタン */}
-        <Button variant="outlined" onClick={() => setOpenFormulaModal(true)}>
+        <Button variant="outlined" onClick={handleOpenFormulaModal}>
           Model Description
         </Button>
         
@@ -1218,7 +1308,7 @@ function App() {
           />
         </Box>
         
-        {showResultButton && (
+        {/* {showResultButton && (
         <Box sx={{ textAlign: 'center', mt: 0 }}>
           <Button
             variant="contained"
@@ -1229,7 +1319,7 @@ function App() {
             {t.buttons.viewResults}
           </Button>
         </Box>
-      )}
+      )} */}
         <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
           <IconButton color="primary" onClick={handleOpenSettings} sx={{ ml: 1 }}>
             <SettingsIcon />
@@ -1238,12 +1328,12 @@ function App() {
       </Box>
 
       {/* Model Description Dialog */}
-      <Dialog open={openFormulaModal} onClose={() => setOpenFormulaModal(false)} maxWidth="xl" fullWidth>
+      <Dialog open={openFormulaModal} onClose={handleCloseFormulaModal} maxWidth="xl" fullWidth>
         <DialogTitle>Model Description</DialogTitle>
         <DialogContent>
           <FormulaPage />
           <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Button variant="contained" onClick={() => setOpenFormulaModal(false)}>
+            <Button variant="contained" onClick={handleCloseFormulaModal}>
               Close
             </Button>
           </Box>
@@ -1690,7 +1780,7 @@ function App() {
                     <Select
                       value={selectedYearFilter}
                       label={t.scatter.yearFilter}
-                      onChange={(event) => setSelectedYearFilter(event.target.value)}
+                      onChange={handleYearFilterChange}
                     >
                       <MenuItem value="all">{t.scatter.allYears}</MenuItem>
                       {/* 年次リストを動的に生成 */}
@@ -1704,7 +1794,7 @@ function App() {
                     <Select
                       value={selectedCycleFilter}
                       label={t.scatter.cycleFilter}
-                      onChange={(event) => setSelectedCycleFilter(event.target.value)}
+                      onChange={handleCycleFilterChange}
                     >
                       <MenuItem value="all">{t.scatter.allCycles}</MenuItem>
                       {/* サイクル番号リストを動的に生成 */}
@@ -1718,7 +1808,7 @@ function App() {
                     <Select
                       value={selectedHistorySort}
                       label={t.scatter.historySort}
-                      onChange={(event) => setSelectedHistorySort(event.target.value)}
+                      onChange={handleHistorySortChange}
                     >
                       <MenuItem value="cycle">{t.scatter.sortByCycle}</MenuItem>
                       <MenuItem value="year">{t.scatter.sortByYear}</MenuItem>
@@ -1740,9 +1830,9 @@ function App() {
                           <TableCell>{t.sliders.houseMigration}</TableCell>
                           <TableCell>{t.sliders.damLevee}</TableCell>
                           <TableCell>{t.sliders.paddyDam}</TableCell>
-                          <TableCell>{t.sliders.capacityBuilding}</TableCell>
                           {/* <TableCell>{t.sliders.transportation}</TableCell> */}
                           <TableCell>{t.sliders.agriculturalRnD}</TableCell>
+                          <TableCell>{t.sliders.capacityBuilding}</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -1831,7 +1921,7 @@ function App() {
           {/* ゲージセクション */}
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h6" gutterBottom>
-              {t.year} {decisionVar.year - 1} {t.chart.weatherCondition}
+              {decisionVar.year - 1} {t.chart.weatherCondition}
             </Typography>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 2 }}>
