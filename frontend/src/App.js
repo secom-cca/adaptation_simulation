@@ -7,6 +7,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import axios from "axios";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import FormulaPage from "./FormulaPage"; // 新ページ
+import { texts } from "./texts"; // テキスト定義をインポート
 
 // ※ chart.js v4 の設定
 import {
@@ -66,241 +67,7 @@ const INDICATOR_CONVERSION = {
   'Crop Yield': 1 / 1000 // kg → ton（例）
 };
 
-// 日本語と英語のテキスト定義
-const texts = {
-  ja: {
-    title: '気候変動適応策検討シミュレーション',
-    cycle: 'サイクル',
-    year: '年',
-    cropYield: '収穫量',
-    floodDamage: '洪水被害',
-    ecosystemLevel: '生態系',
-    municipalCost: '予算',
-    temperature: '年平均気温',
-    precipitation: '年降水量',
-    availableWater: '利用可能な水量',
-    unit: {
-      tonHa: 'ton/ha',
-      manYen: '万円',
-      none: '-',
-      celsius: '℃',
-      mm: 'mm',
-      frequency: '回/年'
-    },
-    mode: {
-      group: '（１）グループモード',
-      upstream: '（２）上流モード',
-      downstream: '（３）下流モード',
-      groupDesc: '全ての項目を操作可能',
-      upstreamDesc: '植林・河川堤防・田んぼダムのみ',
-      downstreamDesc: '田んぼダム・住宅移転・防災訓練のみ'
-    },
-    predictMode: {
-      bestWorst: 'モード（１）：ベストケース・ワーストケース',
-      monteCarlo: 'モード（２）：モンテカルロシミュレーション（10回）',
-      none: 'モード（３）：予測結果を表示しない'
-    },
-    settings: {
-      title: '設定',
-      predictDataMode: '折れ線グラフの予測データ表示モード',
-      languageMode: '言語設定',
-      close: '閉じる'
-    },
-    dialog: {
-      nameTitle: 'お名前とモードを入力してください',
-      nameLabel: 'お名前',
-      modeTitle: 'モードを選択してください',
-      register: '登録',
-      nameError: 'この名前は既に使用されています。別の名前を入力してください。'
-    },
-    sliders: {
-      plantingTrees: '植林・森林保全',
-      damLevee: '河川堤防',
-      agriculturalRnD: '高温耐性品種',
-      houseMigration: '住宅移転',
-      paddyDam: '田んぼダム',
-      capacityBuilding: '防災訓練・啓発'
-    },
-    chart: {
-      measuredValue: '実測値',
-      upperLimit: '上限値予測',
-      lowerLimit: '下限値予測',
-      monteCarlo: 'モンテカルロ',
-      selectYAxis: '縦軸を選択',
-      years: 'Years',
-      weatherCondition: '年の気象条件と将来影響予測',
-      averageTemp: '年平均気温',
-      annualPrecip: '年降水量',
-      heavyRainFreq: '大雨の頻度',
-      residentBurden: '住民の負担',
-      biodiversity: '生物多様性',
-      frequency: '回/年'
-    },
-    buttons: {
-      advanceYears: '25年進める',
-      inputComplete: '回の入力完了',
-      nextCycle: '次のサイクル (',
-      startNext: ') を開始',
-      cycleComplete: 'サイクル',
-      completed: 'が完了しました！',
-      // viewResults: '結果を見る',
-    },
-    rcp: {
-      scenario: 'RCPシナリオ'
-    },
-    scatter: {
-      title: 'サイクルの比較',
-      description: '各サイクルを比較',
-      xAxis: 'X軸',
-      yAxis: 'Y軸',
-      plotAttribute: 'プロット属性',
-      average: '平均値',
-      year2050: '2050年',
-      year2075: '2075年', 
-      year2100: '2100年',
-      allDisplay: '全て表示',
-      markerSize: 'マーカーサイズと透明度（時点）:',
-      small: '2050年',
-      medium: '2075年',
-      large: '2100年',
-      cycleColor: 'サイクルの色:',
-      inputHistory: '各サイクルの入力履歴',
-      cycle: 'サイクル',
-      inputCount: '入力回数',
-      inputYear: '入力年',
-      noCompletedCycles: '完了したサイクルがありません。サイクルが完了すると結果が表示されます。',
-      historyFilter: 'フィルター',
-      historySort: 'ソート',
-      filterAll: 'すべて',
-      filterCycle1: 'サイクル1',
-      filterCycle2: 'サイクル2',
-      filterCycle3: 'サイクル3',
-      sortByCycle: 'サイクル順',
-      sortByYear: '年順',
-      sortByInput: '入力回数順',
-      yearFilter: '年次選択',
-      cycleFilter: 'サイクル選択',
-      allYears: 'すべての年次',
-      allCycles: 'すべてのサイクル'
-    }
-  },
-  en: {
-    title: 'Climate Change Adaptation Strategy Simulation',
-    cycle: 'Cycle',
-    year: 'Year',
-    cropYield: 'Crop Yield',
-    floodDamage: 'Flood Damage',
-    ecosystemLevel: 'Ecosystem Level',
-    municipalCost: 'Municipal Cost',
-    temperature: 'Average Temperature',
-    precipitation: 'Annual Precipitation',
-    availableWater: 'Available Water',
-    unit: {
-      tonHa: 'ton/ha',
-      manYen: '10k yen',
-      none: '-',
-      celsius: '°C',
-      mm: 'mm',
-      frequency: 'times/year'
-    },
-    mode: {
-      group: '(1) Group Mode',
-      upstream: '(2) Upstream Mode',
-      downstream: '(3) Downstream Mode',
-      groupDesc: 'All items can be operated',
-      upstreamDesc: 'Forest conservation, river levee, paddy dam only',
-      downstreamDesc: 'Paddy dam, house migration, disaster training only'
-    },
-    predictMode: {
-      bestWorst: 'Mode (1): Best Case - Worst Case',
-      monteCarlo: 'Mode (2): Monte Carlo Simulation (10 times)',
-      none: 'Mode (3): No prediction display'
-    },
-    settings: {
-      title: 'Settings',
-      predictDataMode: 'Line Chart Prediction Data Display Mode',
-      languageMode: 'Language Settings',
-      close: 'Close'
-    },
-    dialog: {
-      nameTitle: 'Enter your name and select mode',
-      nameLabel: 'Name',
-      modeTitle: 'Please select a mode',
-      register: 'Register',
-      nameError: 'This name is already in use. Please enter a different name.'
-    },
-    sliders: {
-      plantingTrees: 'Forest Conservation',
-      damLevee: 'River Levee',
-      agriculturalRnD: 'Heat-resistant Varieties',
-      houseMigration: 'House Migration',
-      paddyDam: 'Paddy Dam',
-      capacityBuilding: 'Disaster Training'
-    },
-    chart: {
-      measuredValue: 'Measured Value',
-      upperLimit: 'Upper Limit Prediction',
-      lowerLimit: 'Lower Limit Prediction',
-      monteCarlo: 'Monte Carlo',
-      selectYAxis: 'Select Y-axis',
-      years: 'Years',
-      weatherCondition: 'Weather Conditions and Future Impact Predictions',
-      averageTemp: 'Average Temperature',
-      annualPrecip: 'Annual Precipitation',
-      heavyRainFreq: 'Heavy Rain Frequency',
-      residentBurden: 'Resident Burden',
-      biodiversity: 'Biodiversity',
-      frequency: 'times/year'
-    },
-    buttons: {
-      advanceYears: '25 years advance',
-      inputComplete: 'inputs completed',
-      nextCycle: 'Next Cycle (',
-      startNext: ') Start',
-      cycleComplete: 'Cycle',
-      completed: 'completed!',
-      // viewResults: 'View Results',
-    },
-    rcp: {
-      scenario: 'RCP Scenario'
-    },
-    scatter: {
-      title: 'Cycle Comparison',
-      description: 'Compare cycles',
-      xAxis: 'X-axis',
-      yAxis: 'Y-axis',
-      plotAttribute: 'Plot Attribute',
-      average: 'Average',
-      year2050: '2050',
-      year2075: '2075',
-      year2100: '2100',
-      allDisplay: 'All',
-      markerSize: 'Marker Size and Opacity (Time Point):',
-      small: '2050',
-      medium: '2075',
-      large: '2100',
-      cycleColor: 'Cycle Color:',
-      inputHistory: 'Input History for Each Cycle',
-      cycle: 'Cycle',
-      inputCount: 'Input Count',
-      inputYear: 'Input Year',
-      noCompletedCycles: 'No completed cycles. Results will be displayed when cycles are completed.',
-      historyFilter: 'Filter',
-      historySort: 'Sort',
-      filterAll: 'All',
-      filterCycle1: 'Cycle 1',
-      filterCycle2: 'Cycle 2',
-      filterCycle3: 'Cycle 3',
-      sortByCycle: 'By Cycle',
-      sortByYear: 'By Year',
-      sortByInput: 'By Input Count',
-      yearFilter: 'Year Selection',
-      cycleFilter: 'Cycle Selection',
-      allYears: 'All Years',
-      allCycles: 'All Cycles'
-    }
-  }
-};
+
 
 function AppRouter() {
   return (
@@ -330,11 +97,11 @@ function App() {
   const [selectedYAxis, setSelectedYAxis] = useState('Flood Damage'); // 散布図Y軸選択
   const [selectedPlotAttribute, setSelectedPlotAttribute] = useState('average'); // プロット属性選択: 'average', '2050', '2075', '2100', 'all'
   const [selectedHistoryFilter, setSelectedHistoryFilter] = useState('all'); // 入力履歴フィルター選択
-  const [selectedHistorySort, setSelectedHistorySort] = useState('cycle'); // 入力履歴ソート選択
   const [selectedYearFilter, setSelectedYearFilter] = useState('all'); // 年次フィルター選択
   const [selectedCycleFilter, setSelectedCycleFilter] = useState('all'); // サイクルフィルター選択
   const [chartPredictMode, setChartPredictMode] = useState(localStorage.getItem('chartPredictMode') || 'monte-carlo'); // 予測データ表示モード: 'best-worst', 'monte-carlo', 'none'
-  const [language, setLanguage] = useState(localStorage.getItem('language') || 'ja'); // 言語モード: 'ja', 'en'
+  const [language, setLanguage] = useState(localStorage.getItem('language') || 'en'); // 言語モード: 'ja', 'en'
+  const [visibleCycles, setVisibleCycles] = useState(new Set()); // 表示するサイクルのセット
   const [decisionVar, setDecisionVar] = useState({
     year: 2026,
     planting_trees_amount: 0.,   // 植林・森林保全
@@ -859,6 +626,31 @@ function App() {
     }));
   };
 
+  // サイクル表示/非表示の切り替え
+  const handleCycleVisibilityChange = (cycleNumber, isVisible) => {
+    setVisibleCycles(prev => {
+      const newSet = new Set(prev);
+      if (isVisible) {
+        newSet.add(cycleNumber);
+      } else {
+        newSet.delete(cycleNumber);
+      }
+      return newSet;
+    });
+  };
+
+  // 新しいサイクルが完了した時に自動的に表示リストに追加
+  useEffect(() => {
+    if (resultHistory.length > 0) {
+      const latestCycle = resultHistory[resultHistory.length - 1];
+      setVisibleCycles(prev => {
+        const newSet = new Set(prev);
+        newSet.add(latestCycle.cycleNumber);
+        return newSet;
+      });
+    }
+  }, [resultHistory]);
+
   // (B) グラフ描画用データ作成
   // 例として "Temperature (℃)" をシミュレーション1本分だけ描画する
   // 本来は複数Simulation のデータをまとめたりする必要あり
@@ -1027,23 +819,6 @@ function App() {
         user_name: userName,
         mode: chartPredictMode,
         type: "InputHistoryCycleFilter",
-        value: event.target.value,
-        cycle: currentCycle,
-        timestamp: new Date().toISOString()
-      }));
-    }
-  };
-
-  // ソート選択（入力履歴テーブルのソート）変更時のハンドラ
-  const handleHistorySortChange = (event) => {
-    setSelectedHistorySort(event.target.value);
-
-    // --- ソート選択変更ログをWebSocketで送信 ---
-    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
-      wsLogRef.current.send(JSON.stringify({
-        user_name: userName,
-        mode: chartPredictMode,
-        type: "InputHistorySort",
         value: event.target.value,
         cycle: currentCycle,
         timestamp: new Date().toISOString()
@@ -1620,7 +1395,9 @@ function App() {
                   <ScatterChart
                     width={600}
                     height={400}
-                    series={resultHistory.map((cycle, cycleIndex) => {
+                    series={resultHistory
+                      .filter(cycle => visibleCycles.has(cycle.cycleNumber))
+                      .map((cycle, cycleIndex) => {
                       const colors = ['rgba(25, 118, 210, 0.6)', 'rgba(220, 0, 78, 0.6)', 'rgba(56, 142, 60, 0.6)', 'rgba(245, 124, 0, 0.6)', 'rgba(123, 31, 162, 0.6)', 'rgba(211, 47, 47, 0.6)'];
                       const color = colors[cycleIndex % colors.length];
                       
@@ -1650,7 +1427,20 @@ function App() {
                             [selectedYAxis]: avgY
                           };
                         } else {
-                          yearData = cycle.simulationData.find(data => data.Year === year);
+                          // 選択された年の過去25年分の平均値を計算
+                          const startYear = year - 25;
+                          const endYear = year;
+                          const validData = cycle.simulationData.filter(data =>
+                            data.Year >= startYear && data.Year <= endYear &&
+                            typeof data[selectedXAxis] === 'number' && typeof data[selectedYAxis] === 'number'
+                          );
+                          if (validData.length === 0) return null;
+                          const avgX = validData.reduce((sum, d) => sum + d[selectedXAxis], 0) / validData.length;
+                          const avgY = validData.reduce((sum, d) => sum + d[selectedYAxis], 0) / validData.length;
+                          yearData = {
+                            [selectedXAxis]: avgX,
+                            [selectedYAxis]: avgY
+                          };
                         }
                         
                         if (!yearData) {
@@ -1661,7 +1451,7 @@ function App() {
                         // 年ごとに異なるマーカーサイズと透明度を設定
                         let markerSize, opacity;
                         if (year === 'average') {
-                          markerSize = 10;
+                          markerSize = 6;
                           opacity = 0.7;
                         } else {
                           switch (year) {
@@ -1670,11 +1460,11 @@ function App() {
                               opacity = 0.8;
                               break;
                             case 2075:
-                              markerSize = 8;
+                              markerSize = 7;
                               opacity = 0.6;
                               break;
                             case 2100:
-                              markerSize = 10;
+                              markerSize = 8;
                               opacity = 0.4;
                               break;
                             default:
@@ -1691,6 +1481,7 @@ function App() {
                           color: color.replace('0.6', opacity.toString()),
                           markerSize: markerSize,
                           showMark: true,
+                          label: `${t.scatter.cycle} ${cycle.cycleNumber}`,
                         };
                       }).filter(Boolean);
                     }).flat()}
@@ -1712,6 +1503,54 @@ function App() {
                   />
                 </Box>
                 
+                {/* サイクル表示制御 */}
+                <Box sx={{ mt: 2, border: '1px solid #ddd', borderRadius: 1, p: 2 }}>
+                  <Typography variant="body2" fontWeight="bold" gutterBottom>
+                    {t.scatter.cycleDisplayControl}
+                  </Typography>
+                  <Box sx={{ 
+                    maxHeight: 150, 
+                    overflowY: 'auto', 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: 1 
+                  }}>
+                    {resultHistory.map((cycle, index) => {
+                      const colors = ['#1976d2', '#dc004e', '#388e3c', '#f57c00', '#7b1fa2', '#d32f2f', '#00796b', '#c2185b', '#ffa000', '#0097a7'];
+                      const color = colors[index % colors.length];
+                      const isVisible = visibleCycles.has(cycle.cycleNumber);
+                      
+                      return (
+                        <Box key={cycle.cycleNumber} sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1,
+                          p: 0.5,
+                          borderRadius: 1,
+                          backgroundColor: isVisible ? 'rgba(25, 118, 210, 0.1)' : 'transparent'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={isVisible}
+                            onChange={(e) => handleCycleVisibilityChange(cycle.cycleNumber, e.target.checked)}
+                            style={{ margin: 0 }}
+                          />
+                          <Box sx={{ 
+                            width: 12, 
+                            height: 12, 
+                            backgroundColor: color, 
+                            display: 'inline-block',
+                            borderRadius: '50%'
+                          }}></Box>
+                          <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>
+                            {t.scatter.cycle} {cycle.cycleNumber}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
+
                 {/* 凡例の説明 */}
                 <Box sx={{ mt: 2, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <Box>
@@ -1746,23 +1585,6 @@ function App() {
                         <Typography variant="caption">{t.scatter[`year${selectedPlotAttribute}`]}</Typography>
                       </Box>
                     )}
-                  </Box>
-                  
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold" gutterBottom>
-                      {t.scatter.cycleColor}
-                    </Typography>
-                    {resultHistory.map((cycle, index) => {
-                      const colors = ['#1976d2', '#dc004e', '#388e3c', '#f57c00', '#7b1fa2', '#d32f2f', '#00796b', '#c2185b', '#ffa000', '#0097a7'];
-                      const color = colors[index % colors.length];
-                      
-                      return (
-                        <Box key={index} sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                          <Box sx={{ width: 12, height: 12, backgroundColor: color, display: 'inline-block' }}></Box>
-                          <Typography variant="caption">{t.scatter.cycle} {cycle.cycleNumber}</Typography>
-                        </Box>
-                      );
-                    })}
                   </Box>
                 </Box>
               </Box>
@@ -1803,18 +1625,7 @@ function App() {
                       ))}
                     </Select>
                   </FormControl>
-                  <FormControl sx={{ minWidth: 120 }}>
-                    <InputLabel>{t.scatter.historySort}</InputLabel>
-                    <Select
-                      value={selectedHistorySort}
-                      label={t.scatter.historySort}
-                      onChange={handleHistorySortChange}
-                    >
-                      <MenuItem value="cycle">{t.scatter.sortByCycle}</MenuItem>
-                      <MenuItem value="year">{t.scatter.sortByYear}</MenuItem>
-                      <MenuItem value="input">{t.scatter.sortByInput}</MenuItem>
-                    </Select>
-                  </FormControl>
+
                 </Box>
                 
                 <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -1842,16 +1653,7 @@ function App() {
                               (selectedYearFilter === 'all' || input.year === Number(selectedYearFilter)) &&
                               (selectedCycleFilter === 'all' || cycle.cycleNumber === Number(selectedCycleFilter))
                             )
-                            .sort((a, b) => {
-                              if (selectedHistorySort === 'cycle') {
-                                return cycle.cycleNumber - cycle.cycleNumber;
-                              } else if (selectedHistorySort === 'year') {
-                                return a.year - b.year;
-                              } else if (selectedHistorySort === 'input') {
-                                return a.inputNumber - b.inputNumber;
-                              }
-                              return 0;
-                            })
+
                             .map((input, inputIndex) => (
                               <TableRow key={`${cycleIndex}-${inputIndex}`}>
                                 <TableCell>{cycle.cycleNumber}</TableCell>
