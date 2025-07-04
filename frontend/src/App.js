@@ -459,6 +459,23 @@ function App() {
       setResultHistory(prev => [...prev, cycleResult]);
       setCycleCompleted(true);
       setShowResultButton(true);
+      
+      // --- 25年進めた後の最終値をWebSocketで送信 ---
+      if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+        wsLogRef.current.send(JSON.stringify({
+          user_name: userName,
+          mode: chartPredictMode,
+          type: "Result",
+          cycle: currentCycle,
+          finalValues: { ...currentValues },
+          // (i)全データを抽出する場合
+          // simulationData: latestSimulationData,
+          // (ii)25, 50, 75年目のみ抽出する場合
+          simulationData: [latestSimulationData[24], latestSimulationData[49], latestSimulationData[74]],
+          timestamp: new Date().toISOString()
+        }));
+      }
+      // ------------------------------------------------------
     }
     
   };
