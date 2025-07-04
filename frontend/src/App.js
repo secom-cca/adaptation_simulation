@@ -49,6 +49,7 @@ const getLineChartIndicators = (language) => {
       'Forest Area': { labelTitle: '【中間要素】森林面積', max: 7000, min: 0, unit: 'ha' },
       'risky_house_total': { labelTitle: '【中間要素】高リスク地域住民', max: 15000, min: 0, unit: 'person' },
       'Resident capacity': { labelTitle: '【中間要素】住民防災能力レベル', max: 1, min: 0, unit: '-' },
+      'paddy_dam_area': { labelTitle: '【中間要素】田んぼダムの面積', max: 500, min: 0, unit: 'ha' },
       'Available Water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' },
     },
     en: {
@@ -63,6 +64,7 @@ const getLineChartIndicators = (language) => {
       'Forest Area': { labelTitle: '[Intermediate] Forest Area', max: 7000, min: 0, unit: 'ha' },
       'risky_house_total': { labelTitle: '[Intermediate] High Risk Area Residents', max: 15000, min: 0, unit: 'person' },
       'Resident capacity': { labelTitle: '[Intermediate] Residents\' Capacity', max: 1, min: 0, unit: '-' },
+      'paddy_dam_area': { labelTitle: '[Intermediate] Paddy Dam Area', max: 500, min: 0, unit: 'ha' },
       'Available Water': { labelTitle: '[Intermediate] Available Water', max: 3000, min: 0, unit: 'mm' },
     }
   };
@@ -126,7 +128,7 @@ function App() {
     cp_climate_params: 4.5 //RCPの不確実性シナリオ
   })
   const [currentValues, setCurrentValues] = useState({
-    temp: 15,
+    temp: 15.5,
     precip: 1700,
     municipal_demand: 100,
     available_water: 1000,
@@ -134,9 +136,9 @@ function App() {
     hot_days: 30,
     extreme_precip_freq: 0.1,
     ecosystem_level: 100,
-    levee_level: 0.5,
+    levee_level: 100,
     high_temp_tolerance_level: 0,
-    forest_area: 0,
+    forest_area: 5000,
     planting_history: {},
     urban_level: 100,
     resident_capacity: 0,
@@ -145,8 +147,9 @@ function App() {
     RnD_investment_total: 0,
     risky_house_total: 15000,
     non_risky_house_total: 0,
-    resident_burden: 5.379 * 10**8,
+    resident_burden: 0,
     biodiversity_level: 100,
+    paddy_dam_area:0
   })
   const [simulationData, setSimulationData] = useState([]); // 結果格納
 
@@ -212,7 +215,7 @@ function App() {
       const existingUsers = new Set(res.data.map(row => row.user_name));
       
       if (existingUsers.has(userName.trim())) {
-        setUserNameError("この名前は既に使用されています。別の名前を入力してください。");
+        setUserNameError(t.dialog.nameError);
       } else {
         localStorage.setItem('userName', userName.trim());
         localStorage.setItem('selectedMode', selectedMode); // 選択されたモードも保存
@@ -629,7 +632,7 @@ function App() {
     // 現在の値を初期状態にリセット（必要に応じて調整）
     setCurrentValues(prev => ({
       ...prev,
-      temp: 15,
+      temp: 15.5,
       precip: 1700,
       municipal_demand: 100,
       available_water: 1000,
@@ -637,19 +640,20 @@ function App() {
       hot_days: 30,
       extreme_precip_freq: 0.1,
       ecosystem_level: 100,
-      levee_level: 0.5,
+      levee_level: 100,
       high_temp_tolerance_level: 0,
-      forest_area: 0,
+      forest_area: 5000,
       planting_history: {},
       urban_level: 100,
       resident_capacity: 0,
       transportation_level: 0,
       levee_investment_total: 0,
       RnD_investment_total: 0,
-      risky_house_total: 10000,
+      risky_house_total: 15000,
       non_risky_house_total: 0,
-      resident_burden: 5.379 * 10**8,
+      resident_burden: 0,
       biodiversity_level: 100,
+      paddy_dam_area:0
     }));
   };
 

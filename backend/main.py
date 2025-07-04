@@ -13,7 +13,7 @@ from models import (
     SimulationRequest, SimulationResponse, CompareRequest, CompareResponse,
     DecisionVar, CurrentValues, BlockRaw
 )
-from simulation import simulate_simulation
+from simulation import simulate_simulation, simulate_year
 from utils import calculate_scenario_indicators, aggregate_blocks
 
 app = FastAPI()
@@ -70,13 +70,19 @@ def run_simulation(req: SimulationRequest):
         block_scores = []
 
     elif mode == "Sequential Decision-Making Mode":
-        sim_years = np.arange(req.decision_vars[0].year, req.decision_vars[0].year + 1)
-        result = simulate_simulation(
-            years=sim_years,
-            initial_values=req.current_year_index_seq.model_dump(),
-            decision_vars_list=decision_df,
+        year = req.decision_vars[0].year
+        current_values_input = req.current_year_index_seq.model_dump()
+        decision_vars = decision_df.iloc[0].to_dict()
+        
+        # simulate_yearを1年分だけ回す
+        current_values_output, outputs = simulate_year(
+            year=year,
+            prev_values=current_values_input,
+            decision_vars=decision_vars,
             params=params
         )
+        result = [outputs]  # simulate_simulation と同じ形式で返すためリストに
+
         all_df = pd.DataFrame(result)
         block_scores = aggregate_blocks(all_df)
 
@@ -141,11 +147,19 @@ def run_simulation(req: SimulationRequest):
     if mode != "Predict Simulation Mode":
         scenarios_data[scenario_name] = all_df.copy()
 
-    return SimulationResponse(
-        scenario_name=scenario_name,
-        data=all_df.to_dict(orient="records"),
-        block_scores=block_scores
-    )
+    if mode == "Sequential Decision-Making Mode":
+        return {
+            "scenario_name": scenario_name,
+            "data": result,
+            "current_values": current_values_output,
+            "block_scores": block_scores
+        }
+    else:
+        return SimulationResponse(
+            scenario_name=scenario_name,
+            data=all_df.to_dict(orient="records"),
+            block_scores=block_scores
+        )
 
 @app.get("/ranking")
 def get_ranking():

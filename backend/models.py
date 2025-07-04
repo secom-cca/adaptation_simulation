@@ -34,6 +34,7 @@ class CurrentValues(BaseModel):
     non_risky_house_total: Optional[float] = 0.0
     resident_burden: Optional[float] = 0.0
     biodiversity_level: Optional[float] = 0.0
+    paddy_dam_area: float = 0.0
 
 class BlockRaw(BaseModel):
     period: str

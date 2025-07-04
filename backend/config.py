@@ -25,7 +25,7 @@ DEFAULT_PARAMS = {
     # 'max_forest_area': 7000, 
 
     # 気温・降水・高温日数
-    'base_temp': 15.0,
+    'base_temp': 15.5,
     'temp_trend': 0.04,
     'temp_uncertainty': 0.5,
 
