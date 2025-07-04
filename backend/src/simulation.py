@@ -3,11 +3,11 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import gumbel_r
-from backend.src.utils import estimate_rice_yield_loss
+from src.utils import estimate_rice_yield_loss
 
 def simulate_year(year, prev_values, decision_vars, params):
     # --- 前年の値を展開（初期値を定義していない変数は追って調整） ---
-    prev_levee_level = prev_values.get('levee_level', 0.0)
+    prev_levee_level = prev_values.get('levee_level', 100.0)
     high_temp_tolerance_level = prev_values.get('high_temp_tolerance_level', 0.0)
     ecosystem_level = prev_values.get('ecosystem_level', 100)
     prev_forest_area = prev_values.get('forest_area', params['total_area'] * params['initial_forest_area']) ##################
@@ -206,7 +206,8 @@ def simulate_year(year, prev_values, decision_vars, params):
         overflow_amount = max(rain - current_levee_level - paddy_dam_level, 0) * (1 - flood_reduction)
         flood_impact = overflow_amount * flood_damage_coefficient
         # 対策効果は災害規模により段階的に変化（S字カーブ）
-        response_factor = 1 / (1 + np.exp(-0.1 * (overflow_amount - 400)))  # 400mm超過で能力無効に近づく
+        # response_factor = 1 / (1 + np.exp(-0.1 * (overflow_amount - 400)))  # 400mm超過で能力無効に近づく
+        response_factor = 1 / (1 + np.exp(-0.02 * (overflow_amount - 200)))  # 400mm超過で能力無効に近づく
         effective_protection = (1 - resident_capacity * (1 - response_factor)) * (1 - migration_ratio * (1 - response_factor))
         flood_impact += flood_impact * effective_protection
     
