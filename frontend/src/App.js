@@ -324,7 +324,7 @@ function App() {
                 transportation_invest: 5,
                 agricultural_RnD_cost: 5,
                 planting_trees_amount: 100,
-                house_migration_amount: 5,
+                house_migration_amount: 50,
                 dam_levee_construction_cost: 1,
                 paddy_dam_construction_cost: 5,
                 capacity_building_cost: 5,
@@ -950,7 +950,8 @@ function App() {
       non_risky_house_total: newDict['non_risky_house_total'],  
       resident_burden: newDict['Resident Burden'],
       biodiversity_level: newDict['biodiversity_level'],
-
+      planting_history: newDict['planting_history'],
+      paddy_dam_area: newDict['paddy_dam_area'],
     };
     console.log("更新されるcurrentValues:", updated);
     setCurrentValues(prev => ({ ...prev, ...updated }));
@@ -1040,7 +1041,7 @@ function App() {
       'planting_trees_amount': [0, 100, 200],
       'dam_levee_construction_cost': [0, 1, 2], // 既に3段階
       'agricultural_RnD_cost': [0, 5, 10],
-      'house_migration_amount': [0, 5, 10],
+      'house_migration_amount': [0, 50, 100],
       'paddy_dam_construction_cost': [0, 5, 10],
       'capacity_building_cost': [0, 5, 10]
     };
@@ -1058,7 +1059,7 @@ function App() {
       'planting_trees_amount': [0, 100, 200],
       'dam_levee_construction_cost': [0, 1, 2],
       'agricultural_RnD_cost': [0, 5, 10],
-      'house_migration_amount': [0, 5, 10],
+      'house_migration_amount': [0, 50, 100],
       'paddy_dam_construction_cost': [0, 5, 10],
       'capacity_building_cost': [0, 5, 10]
     };
