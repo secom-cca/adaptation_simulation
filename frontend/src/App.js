@@ -44,16 +44,26 @@ const getLineChartIndicators = (language) => {
       'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
       'Temperature (℃)': { labelTitle: '【気候要素】年平均気温', max: 20, min: 12, unit: '℃' },
       'Precipitation (mm)': { labelTitle: '【気候要素】年降水量', max: 3000, min: 0, unit: 'mm' },
-      'Available Water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' }
+      'Extreme Precip Frequency': { labelTitle: '【気候要素】極端降水頻度', max: 20, min: 0, unit: 'times/year' },
+      'Levee Level': { labelTitle: '【中間要素】堤防レベル', max: 400, min: 0, unit: 'mm' },
+      'Forest Area': { labelTitle: '【中間要素】森林面積', max: 7000, min: 0, unit: 'ha' },
+      'risky_house_total': { labelTitle: '【中間要素】高リスク地域住民', max: 15000, min: 0, unit: 'person' },
+      'Resident capacity': { labelTitle: '【中間要素】住民防災能力レベル', max: 1, min: 0, unit: '-' },
+      'Available Water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' },
     },
     en: {
       'Flood Damage': { labelTitle: 'Flood Damage', max: 20000, min: 0, unit: '10k yen' },
       'Crop Yield': { labelTitle: 'Crop Yield', max: 5, min: 0, unit: 'ton/ha' },
       'Ecosystem Level': { labelTitle: 'Ecosystem Level', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: 'Municipal Cost', max: 100000, min: 0, unit: '10k yen' },
-      'Temperature (℃)': { labelTitle: '[Climate Factor] Average Temperature', max: 20, min: 12, unit: '°C' },
-      'Precipitation (mm)': { labelTitle: '[Climate Factor] Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
-      'Available Water': { labelTitle: '[Intermediate Factor] Available Water', max: 3000, min: 0, unit: 'mm' }
+      'Temperature (℃)': { labelTitle: '[Climate] Average Temperature', max: 20, min: 12, unit: '°C' },
+      'Precipitation (mm)': { labelTitle: '[Climate] Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
+      'Extreme Precip Frequency': { labelTitle: '[Climate] Extreme Precip Frequency', max: 20, min: 0, unit: 'times/year' },
+      'Levee Level': { labelTitle: '[Intermediate] Levee Level', max: 400, min: 0, unit: 'mm' },
+      'Forest Area': { labelTitle: '[Intermediate] Forest Area', max: 7000, min: 0, unit: 'ha' },
+      'risky_house_total': { labelTitle: '[Intermediate] High Risk Area Residents', max: 15000, min: 0, unit: 'person' },
+      'Resident capacity': { labelTitle: '[Intermediate] Residents\' Capacity', max: 1, min: 0, unit: '-' },
+      'Available Water': { labelTitle: '[Intermediate] Available Water', max: 3000, min: 0, unit: 'mm' },
     }
   };
   return indicators[language] || indicators.ja;
@@ -133,7 +143,7 @@ function App() {
     transportation_level: 0,
     levee_investment_total: 0,
     RnD_investment_total: 0,
-    risky_house_total: 10000,
+    risky_house_total: 15000,
     non_risky_house_total: 0,
     resident_burden: 5.379 * 10**8,
     biodiversity_level: 100,
@@ -449,6 +459,23 @@ function App() {
       setResultHistory(prev => [...prev, cycleResult]);
       setCycleCompleted(true);
       setShowResultButton(true);
+      
+      // --- 25年進めた後の最終値をWebSocketで送信 ---
+      if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+        wsLogRef.current.send(JSON.stringify({
+          user_name: userName,
+          mode: chartPredictMode,
+          type: "Result",
+          cycle: currentCycle,
+          finalValues: { ...currentValues },
+          // (i)全データを抽出する場合
+          // simulationData: latestSimulationData,
+          // (ii)25, 50, 75年目のみ抽出する場合
+          simulationData: [latestSimulationData[24], latestSimulationData[49], latestSimulationData[74]],
+          timestamp: new Date().toISOString()
+        }));
+      }
+      // ------------------------------------------------------
     }
     
   };
@@ -850,6 +877,27 @@ function App() {
     });
   };
 
+  // Planting Historyの更新（追加）
+  const updatePlantingHistory = (year, amount) => {
+    setCurrentValues(prev => {
+      const updatedHistory = {
+        ...(prev.planting_history || {}),  // 以前の履歴を残す
+        [year]: amount                     // 新しい年を追加または更新
+      };
+      const updated = {
+        ...prev,
+        planting_history: updatedHistory
+      };
+
+      console.log("🌱 planting_history 更新:", updatedHistory);
+      console.log("🔁 全currentValuesRef:", updated);
+
+      currentValuesRef.current = updated;
+      return updated;
+    });
+  };
+
+
   // Model Descriptionボタン押下時のハンドラ
   const handleOpenFormulaModal = () => {
     setOpenFormulaModal(true);
@@ -893,7 +941,7 @@ function App() {
       ecosystem_level: newDict['Ecosystem Level'],
       levee_level: newDict['Levee Level'],                       
       high_temp_tolerance_level: newDict['High Temp Tolerance Level'],
-      forest_area: newDict['Forest area'],                      
+      forest_area: newDict['Forest Area'],                      
       resident_capacity: newDict['Resident capacity'],          
       transportation_level: newDict['transportation_level'],    
       levee_investment_total: newDict['Levee investment total'],
@@ -1921,7 +1969,10 @@ function App() {
                 size="small"
                 valueLabelDisplay="auto"
                 color="secondary"
-                onChange={(event, newValue) => updateDecisionVar('planting_trees_amount', newValue)}
+                onChange={(event, newValue) => {
+                  updateDecisionVar('planting_trees_amount', newValue);
+                  updatePlantingHistory(decisionVar.year, convertDisplayToBackendValue('planting_trees_amount', newValue));
+                }}
                 disabled={!isSliderEnabled('planting_trees_amount')}
               />
             </Box>
