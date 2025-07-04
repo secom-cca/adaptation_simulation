@@ -212,7 +212,7 @@ function App() {
       const existingUsers = new Set(res.data.map(row => row.user_name));
       
       if (existingUsers.has(userName.trim())) {
-        setUserNameError("この名前は既に使用されています。別の名前を入力してください。");
+        setUserNameError(t.dialog.nameError);
       } else {
         localStorage.setItem('userName', userName.trim());
         localStorage.setItem('selectedMode', selectedMode); // 選択されたモードも保存
