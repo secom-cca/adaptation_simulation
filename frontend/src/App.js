@@ -39,7 +39,7 @@ const getLineChartIndicators = (language) => {
   const indicators = {
     ja: {
       'Flood Damage': { labelTitle: '洪水被害', max: 20000, min: 0, unit: '万円' },
-      'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton/ha' },
+      'Crop Yield': { labelTitle: '収穫量', max: 6, min: 0, unit: 'ton/ha' },
       'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
       'Temperature (℃)': { labelTitle: '【気候要素】年平均気温', max: 20, min: 12, unit: '℃' },
@@ -50,11 +50,11 @@ const getLineChartIndicators = (language) => {
       'risky_house_total': { labelTitle: '【中間要素】高リスク地域住民', max: 20000, min: 0, unit: 'person' },
       'Resident capacity': { labelTitle: '【中間要素】住民防災能力レベル', max: 1, min: 0, unit: '-' },
       'paddy_dam_area': { labelTitle: '【中間要素】田んぼダムの面積', max: 500, min: 0, unit: 'ha' },
-      'Available Water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' },
+      'available_water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' },
     },
     en: {
       'Flood Damage': { labelTitle: 'Flood Damage', max: 20000, min: 0, unit: '10k yen' },
-      'Crop Yield': { labelTitle: 'Crop Yield', max: 5, min: 0, unit: 'ton/ha' },
+      'Crop Yield': { labelTitle: 'Crop Yield', max: 6, min: 0, unit: 'ton/ha' },
       'Ecosystem Level': { labelTitle: 'Ecosystem Level', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: 'Municipal Cost', max: 100000, min: 0, unit: '10k yen' },
       'Temperature (℃)': { labelTitle: '[Climate] Average Temperature', max: 20, min: 12, unit: '°C' },
@@ -65,7 +65,7 @@ const getLineChartIndicators = (language) => {
       'risky_house_total': { labelTitle: '[Intermediate] High Risk Area Residents', max: 20000, min: 0, unit: 'person' },
       'Resident capacity': { labelTitle: '[Intermediate] Residents\' Capacity', max: 1, min: 0, unit: '-' },
       'paddy_dam_area': { labelTitle: '[Intermediate] Paddy Dam Area', max: 500, min: 0, unit: 'ha' },
-      'Available Water': { labelTitle: '[Intermediate] Available Water', max: 3000, min: 0, unit: 'mm' },
+      'available_water': { labelTitle: '[Intermediate] Available Water', max: 3000, min: 0, unit: 'mm' },
     }
   };
   return indicators[language] || indicators.ja;
@@ -938,7 +938,7 @@ function App() {
       temp: newDict['Temperature (℃)'],
       precip: newDict['Precipitation (mm)'],
       municipal_demand: newDict['Municipal Demand'],
-      available_water: newDict['Available Water'],
+      available_water: newDict['available_water'],
       crop_yield: newDict['Crop Yield'],
       hot_days: newDict['Hot Days'],
       extreme_precip_freq: newDict['Extreme Precip Frequency'],
@@ -1042,7 +1042,7 @@ function App() {
   // スライダーの表示値をバックエンド送信値に変換する関数
   const convertDisplayToBackendValue = (key, displayValue) => {
     const conversionMap = {
-      'planting_trees_amount': [0, 100, 200],
+      'planting_trees_amount': [0, 75, 150],
       'dam_levee_construction_cost': [0, 1, 2], // 既に3段階
       'agricultural_RnD_cost': [0, 5, 10],
       'house_migration_amount': [0, 50, 100],
@@ -1060,7 +1060,7 @@ function App() {
   // バックエンド送信値を表示値に変換する関数
   const convertBackendToDisplayValue = (key, backendValue) => {
     const conversionMap = {
-      'planting_trees_amount': [0, 100, 200],
+      'planting_trees_amount': [0, 75, 150],
       'dam_levee_construction_cost': [0, 1, 2],
       'agricultural_RnD_cost': [0, 5, 10],
       'house_migration_amount': [0, 50, 100],

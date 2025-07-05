@@ -52,7 +52,7 @@ function FormulaPage() {
   const [betaL, setBetaL] = useState(0.01);
 
   // Water constants
-  const [theta, setTheta] = useState(0.55);
+  const [theta, setTheta] = useState(0.6);
   const [Wmax, setWmax] = useState(3000);
   const [gamma, setGamma] = useState(0.0);
   const [sigmaGamma, setSigmaGamma] = useState(0.01);
@@ -251,7 +251,7 @@ function FormulaPage() {
 
             {/* Ecological Base */}
             <Typography variant="subtitle2">Ecological Base</Typography>
-            <BlockMath math={"\\text{EcologicalBase}_t = 0.5 \\cdot \\min\\left(\\frac{A_{f,t}}{A_{\\text{total}}}, 1.0\\right) + 0.5 \\cdot \\min\\left(\\frac{W_t}{W_{\\text{threshold}}}, 1.0\\right)"} />
+            <BlockMath math={"\\text{EcologicalBase}_t = 0.5 \\cdot \\min\\left(\\frac{A_{f,t}}{A_{\\text{ftotal}}}, 1.0\\right) + 0.5 \\cdot \\min\\left(\\frac{W_t}{W_{\\text{threshold}}}, 1.0\\right)"} />
 
             {/* Resistance */}
             <Typography variant="subtitle2">Disturbance Resistance</Typography>
@@ -265,7 +265,7 @@ function FormulaPage() {
             <Typography variant="subtitle2">Final Ecosystem Score</Typography>
             <BlockMath math={"\\text{EcosystemLevel}_t = 100 \\cdot (w_1 \\cdot \\text{EcologicalBase} + w_2 \\cdot \\text{Resistance} + w_3 \\cdot \\text{HumanPressure})"} />
             <Typography variant="body2">
-              Weights \((w_1, w_2, w_3)\) are drawn from a Dirichlet distribution to reflect varying importance across simulation runs.
+              Weights \((w_1, w_2, w_3)\) are set as 0.5, 0.25 and 0.25, respectively.
             </Typography>
 
             {/* Parameter sliders */}

@@ -15,7 +15,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     resident_capacity = prev_values.get('resident_capacity', 0.0) ##################
     transportation_level = prev_values.get('transportation_level', 0.0) ##################
     prev_municipal_demand = prev_values.get('municipal_demand', params['initial_municipal_demand'])##################
-    prev_available_water = prev_values.get('available_water', 0.0)
+    available_water = prev_values.get('available_water', 0.0)
     levee_investment_total = prev_values.get('levee_investment_total', 0.0)
     RnD_investment_total = prev_values.get('RnD_investment_total', 0.0)
     risky_house_total = prev_values.get('risky_house_total', params['house_total'])
@@ -94,8 +94,8 @@ def simulate_year(year, prev_values, decision_vars, params):
     transport_level_coef = params['transport_level_coef']
     distance_urban_level_coef = params['distance_urban_level_coef']
     # 領域横断影響
-    forest_flood_reduction_coef = params['forest_flood_reduction_coef'] ### 0.4-2.8 [%/%]
-    forest_water_retention_coef = params['forest_water_retention_coef'] ### 2-4 [mm/%]
+    # forest_flood_reduction_coef = params['forest_flood_reduction_coef'] ### 0.4-2.8 [%/%]
+    # forest_water_retention_coef = params['forest_water_retention_coef'] ### 2-4 [mm/%]
     forest_flood_reduction_coef = np.random.uniform(0.4,2.8)
     forest_water_retention_coef = np.random.uniform(2,4)
     # forest_ecosystem_boost_coef = params['forest_ecosystem_boost_coef'] 
@@ -144,15 +144,15 @@ def simulate_year(year, prev_values, decision_vars, params):
 
     # #forest_area の効果発現 ---
     flood_reduction = forest_flood_reduction_coef * ((current_forest_area - total_area * params['initial_forest_area']) / total_area)
-    water_retention_boost = forest_water_retention_coef * current_forest_area / total_area # 水源涵養効果
+    water_retention_boost = forest_water_retention_coef * current_forest_area / total_area * 100 # 水源涵養効果
     co2_absorbed = current_forest_area * co2_absorption_per_ha  # tCO2
 
     # ---------------------------------------------------------
     # 4. 利用可能水量（System Dynamicsには未導入）
     evapotranspiration_amount = evapotranspiration_amount * (1 + (temp - base_temp) * 0.05) # クラウジウス・クラペイロン
-    current_available_water = min(
+    available_water = min(
         max(
-            prev_available_water + precip - evapotranspiration_amount - current_municipal_demand - runoff_coef * precip + water_retention_boost * precip,
+            available_water + precip - evapotranspiration_amount - current_municipal_demand - runoff_coef * precip + water_retention_boost,
             0
         ),
         max_available_water
@@ -167,11 +167,11 @@ def simulate_year(year, prev_values, decision_vars, params):
     paddy_dam_area += paddy_dam_construction_cost / paddy_dam_cost_per_ha
     paddy_dam_yield_impact = paddy_dam_yield_coef * min(paddy_dam_area / paddy_field_area, 1)
 
-    water_impact = min(current_available_water/necessary_water_for_crops, 1.0)
+    water_impact = min(available_water/necessary_water_for_crops, 1.0)
     current_crop_yield = max((max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact),0) # * paddy_field_area [haあたり]
 
     # (4. 農業利用水を利用可能水から引く（System Dynamicsには未導入）)
-    current_available_water = max(current_available_water - necessary_water_for_crops, 0)
+    available_water = max(available_water - necessary_water_for_crops, 0)
 
     # 5.2 農業R&D：累積投資で耐熱性向上（確率的閾値）
     RnD_investment_total += agricultural_RnD_cost
@@ -220,7 +220,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     # ---------------------------------------------------------
     # 8. 損害・生態系の評価
     # Natural resource base (0–1)
-    ecological_base = 0.5 * min(current_forest_area / total_area, 1.0) + 0.5 * min(current_available_water / ecosystem_threshold, 1.0)
+    ecological_base = 0.5 * min(current_forest_area / total_area * 0.7, 1.0) + 0.5 * min(available_water / ecosystem_threshold, 1.0)
 
     # Disturbance resistance
     temp_diff = abs(temp - base_temp)
@@ -228,13 +228,13 @@ def simulate_year(year, prev_values, decision_vars, params):
     disturbance_resistance = max(0, 1.0 - 0.05 * temp_diff - 0.03 * extreme_factor) 
 
     # Human pressure
-    human_pressure_raw = min(0.01 * current_levee_level, 1.0)
+    human_pressure_raw = min(0.01 * current_levee_level - 1, 1.0)
     human_pressure = 1.0 - human_pressure_raw
 
     # Weighted ecosystem score
-    # w1, w2, w3 = 1/3, 1/3, 1/3
-    weights = np.random.dirichlet([1, 1, 1])
-    w1, w2, w3 = weights
+    w1, w2, w3 = 1/2, 1/4, 1/4
+    # weights = np.random.dirichlet([1, 1, 1])
+    # w1, w2, w3 = weights
 
     ecosystem_level = (w1 * ecological_base + w2 * disturbance_resistance + w3 * human_pressure) * 100
 
@@ -271,14 +271,14 @@ def simulate_year(year, prev_values, decision_vars, params):
         'Year': year,
         'Temperature (℃)': temp,
         'Precipitation (mm)': precip,
-        'Available Water': current_available_water,
+        'available_water': available_water,
         'Crop Yield': current_crop_yield,
         'Municipal Demand': current_municipal_demand,
         'Flood Damage': current_flood_damage,
         'Levee Level': current_levee_level,
         'High Temp Tolerance Level': high_temp_tolerance_level,
         'Hot Days': hot_days,
-        'Extreme Precip Frequency': extreme_precip_freq,
+        'Extreme Precip Frequency': extreme_precip_events,
         'Extreme Precip Events': extreme_precip_events,
         'Ecosystem Level': ecosystem_level,
         'Municipal Cost': municipal_cost, # resident_burdenと重複
@@ -308,12 +308,12 @@ def simulate_year(year, prev_values, decision_vars, params):
         'temp': temp,
         'precip': precip,
         'municipal_demand': current_municipal_demand,
-        'available_water': current_available_water,
+        'available_water': available_water,
         'crop_yield': current_crop_yield,
         'levee_level': current_levee_level,
         'high_temp_tolerance_level': high_temp_tolerance_level,
         'hot_days': hot_days,
-        'extreme_precip_freq': extreme_precip_freq,
+        'extreme_precip_freq': extreme_precip_events,
         'ecosystem_level': ecosystem_level,
         'urban_level': urban_level,
         'levee_investment_total': levee_investment_total,

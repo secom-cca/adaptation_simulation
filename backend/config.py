@@ -87,7 +87,7 @@ DEFAULT_PARAMS = {
     'levee_investment_threshold': 2.0, #########
     'levee_investment_required_years': 10, ###########
     'flood_recovery_cost_coef': 0.1,
-    'runoff_coef': 0.55,
+    'runoff_coef': 0.6,
 
     # 交通
     'transport_level_coef': 1.0,
