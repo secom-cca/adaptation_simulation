@@ -43,19 +43,17 @@ value_map = {
 
 # decision_levels = [0, 1]
 # value_map = {
-#     'planting_trees_amount': [0, 100],
+#     'planting_trees_amount': [0, 150],
 #     'house_migration_amount': [0, 100],
 #     'dam_levee_construction_cost': [0.0, 2.0],
-#     'paddy_dam_construction_cost': [0.0, 10.0],
 #     'capacity_building_cost': [0.0, 10.0],
 # }
 
 
 # RCP設定とMonte Carlo回数
 rcps = {'RCP1.9': 1.9, 'RCP8.5': 8.5} # 'RCP2.6': 2.6, 'RCP4.5': 4.5, 'RCP6.0': 6.0, 
-num_simulations = 10  # 本番では50や100に上げると良い
+num_simulations = 5  # 本番では50や100に上げると良い
 
-# すべての決定の組み合わせ（3^5 = 243通り）
 decision_combos = list(product(decision_levels, repeat=len(decision_items)))
 
 # 結果を集めるリスト
@@ -86,7 +84,8 @@ for combo_idx, decision_values in enumerate(decision_combos):
             'Gen3': (2076, 2100),
         }
 
-        indicators = ['Flood Damage', 'Ecosystem Level', 'Municipal Cost', 'Crop Yield']
+        # indicators = ['Flood Damage', 'Ecosystem Level', 'Municipal Cost', 'Crop Yield']
+        indicators = ['Flood Damage', 'Ecosystem Level', 'Municipal Cost']
         avg_data = {'Decision_ID': combo_idx, 'RCP': rcp_name}
 
         df_all = pd.concat(sim_results, keys=range(num_simulations), names=["Sim", "Row"])
@@ -222,7 +221,7 @@ def extract_gen_pareto(df, gen_idx):
         gen_cols['Flood Damage'][gen_idx],
         gen_cols['Municipal Cost'][gen_idx],
         gen_cols['Ecosystem Level'][gen_idx],
-        gen_cols['Crop Yield'][gen_idx],
+        # gen_cols['Crop Yield'][gen_idx],
     ]
     gen_df = gen_df[cols + ['Decision_ID']].rename(columns={
         cols[0]: 'FD', cols[1]: 'Cost', cols[2]: 'Eco', cols[3]: 'Crop'
@@ -236,8 +235,9 @@ def extract_gen_pareto(df, gen_idx):
                 other['FD'] <= row['FD'] and
                 other['Cost'] <= row['Cost'] and
                 other['Eco'] >= row['Eco'] and
-                other['Crop'] >= row['Crop'] and
-                (other['FD'] < row['FD'] or other['Cost'] < row['Cost'] or other['Eco'] > row['Eco'] or other['Crop'] > row['Crop'])
+                # other['Crop'] >= row['Crop'] and
+                # (other['FD'] < row['FD'] or other['Cost'] < row['Cost'] or other['Eco'] > row['Eco'] or other['Crop'] > row['Crop'])
+                (other['FD'] < row['FD'] or other['Cost'] < row['Cost'] or other['Eco'] > row['Eco'])
             ):
                 dominated = True
                 break
@@ -404,62 +404,62 @@ for rcp in summary_df['RCP'].unique():
     plt.close()
 
 
-for rcp in summary_df['RCP'].unique():
-    texts = []
-    df = summary_df[summary_df['RCP'] == rcp]
-    pareto = pareto_df[pareto_df['RCP'] == rcp]
+# for rcp in summary_df['RCP'].unique():
+#     texts = []
+#     df = summary_df[summary_df['RCP'] == rcp]
+#     pareto = pareto_df[pareto_df['RCP'] == rcp]
 
-    # パレート解にだけ赤縁、それ以外は縁なし
-    df = df.copy()
-    df['edgecolor'] = df['Decision_ID'].apply(lambda x: 'r' if x in pareto['Decision_ID'].values else 'none')
+#     # パレート解にだけ赤縁、それ以外は縁なし
+#     df = df.copy()
+#     df['edgecolor'] = df['Decision_ID'].apply(lambda x: 'r' if x in pareto['Decision_ID'].values else 'none')
 
-    # プロット
-    plt.figure(figsize=(8, 6))
-    scatter = plt.scatter(
-        df['Flood Damage_Gen3'], 
-        df['Crop Yield_Gen3'], 
-        c=df['Municipal Cost_Gen3'], 
-        cmap='gray',
-        s=100,
-        edgecolors=df['edgecolor']
-    )
+#     # プロット
+#     plt.figure(figsize=(8, 6))
+#     scatter = plt.scatter(
+#         df['Flood Damage_Gen3'], 
+#         df['Crop Yield_Gen3'], 
+#         c=df['Municipal Cost_Gen3'], 
+#         cmap='gray',
+#         s=100,
+#         edgecolors=df['edgecolor']
+#     )
 
-    plt.colorbar(scatter, label='Municipal Cost (2076-2100)')
-    plt.xlabel('Flood Damage (2076-2100)')
-    plt.ylabel('Crop Yield (2076-2100)')
-    plt.title(f'Tradespace Analysis at 2076–2100 - {rcp}')
-    plt.grid(True)
+#     plt.colorbar(scatter, label='Municipal Cost (2076-2100)')
+#     plt.xlabel('Flood Damage (2076-2100)')
+#     plt.ylabel('Crop Yield (2076-2100)')
+#     plt.title(f'Tradespace Analysis at 2076–2100 - {rcp}')
+#     plt.grid(True)
 
-    # for _, row in df.iterrows():
-    #     texts.append(
-    #         plt.text(
-    #             row['Flood Damage_Gen3'], 
-    #             row['Crop Yield_Gen3'], 
-    #             str(row['Decision_Label']), 
-    #             fontsize=8, 
-    #             ha='right', 
-    #             va='bottom'
-    #         )
-    #     )
+#     # for _, row in df.iterrows():
+#     #     texts.append(
+#     #         plt.text(
+#     #             row['Flood Damage_Gen3'], 
+#     #             row['Crop Yield_Gen3'], 
+#     #             str(row['Decision_Label']), 
+#     #             fontsize=8, 
+#     #             ha='right', 
+#     #             va='bottom'
+#     #         )
+#     #     )
 
-    plt.errorbar(
-        df['Flood Damage_Gen3'],
-        df['Crop Yield_Gen3'],
-        xerr=df['Flood Damage_Gen3_std'],
-        yerr=df['Crop Yield_Gen3_std'],
-        fmt='none',
-        ecolor='gray',
-        alpha=0.5,
-        capsize=3
-    )
+#     plt.errorbar(
+#         df['Flood Damage_Gen3'],
+#         df['Crop Yield_Gen3'],
+#         xerr=df['Flood Damage_Gen3_std'],
+#         yerr=df['Crop Yield_Gen3_std'],
+#         fmt='none',
+#         ecolor='gray',
+#         alpha=0.5,
+#         capsize=3
+#     )
 
-    plt.tight_layout()
-    # adjust_text(texts, only_move={'points': 'y', 'texts': 'y'}, arrowprops=dict(arrowstyle='-', color='gray'))
+#     plt.tight_layout()
+#     # adjust_text(texts, only_move={'points': 'y', 'texts': 'y'}, arrowprops=dict(arrowstyle='-', color='gray'))
 
-    # ファイル保存
-    save_path = f'figures/tradespace_{rcp.replace(".", "_")}_2.png'
-    plt.savefig(save_path, dpi=300)
-    plt.close()
+#     # ファイル保存
+#     save_path = f'figures/tradespace_{rcp.replace(".", "_")}_2.png'
+#     plt.savefig(save_path, dpi=300)
+#     plt.close()
 
 # ===============================================================================
 # 異なるRCPのものを1つの図にしたもの
