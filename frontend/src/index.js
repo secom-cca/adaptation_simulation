@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import FormulaPage from './FormulaPage'; // ← 追加
+import ExpertApp from './ExpertApp';
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'; // ← 追加
 
@@ -13,6 +14,7 @@ root.render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/formula" element={<FormulaPage />} />
+        <Route path="/analyze" element={<ExpertApp />} />
       </Routes>
     </Router>
   </React.StrictMode>
