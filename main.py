@@ -98,7 +98,7 @@ if simulation_mode == 'Sequential Decision-Making Mode':
                 'temp': sim_results[-1]['Temperature (℃)'],
                 'precip': sim_results[-1]['Precipitation (mm)'],
                 'municipal_demand': sim_results[-1]['Municipal Demand'],
-                'available_water': sim_results[-1]['Available Water'],
+                'available_water': sim_results[-1]['available_water'],
                 'crop_yield': sim_results[-1]['Crop Yield'],
                 'levee_level': sim_results[-1]['Levee Level'],
                 'high_temp_tolerance_level': sim_results[-1]['High Temp Tolerance Level'],
@@ -150,7 +150,7 @@ if simulation_mode == 'Sequential Decision-Making Mode':
         create_line_chart(
             df=df_results_seq,
             x_column='Year',
-            y_column='Available Water',
+            y_column='available_water',
             title='Available Water Over Time',
             x_title='Year',
             y_title='Available Water'
