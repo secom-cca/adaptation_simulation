@@ -8,7 +8,9 @@ This simulation platform allows you to explore future climate adaptation scenari
 
 ```
 .
-├── main.py                          ← Streamlit entry point
+├── main.py                          ← Run each by streamlit 
+├── dapp_app.py                      ← Run DAPP by streamlit 
+entry point
 ├── backend/
 │   ├── main.py                      ← FastAPI backend entry point
 │   └── src/
@@ -171,6 +173,69 @@ npm install
 * Use **React + FastAPI** for more interactive, customizable deployments.
 * RealSense is entirely **optional**, and not required for core simulations.
 * Make sure to keep the backend server running when using React.
+
+---
+
+## 🚀 DAPP Pathway Builder Simulator
+
+This project implements a Dynamic Adaptive Policy Pathways (DAPP) tool for climate adaptation planning, based on a long-term simulation of socio-environmental systems. It uses:
++ backend/src/simulation.py: simulation engine (yearly climate, agriculture, flood, ecosystem, migration, R&D, etc.)
++ backend/config.py: configuration of parameters, default values, RCP climate scenarios
++ backend/src/utils.py: utilities for indicators, scaling, plots
++ dapp_app.py: Streamlit front-end for interactively constructing and visualizing adaptive pathways
+
+### Features
+
+* Monte Carlo simulation of policies under uncertainty (temperature, precipitation, flood events, demand, etc.)
+* Adaptive pathway detection using threshold exceedance (ATP: Adaptation Tipping Points)
+* Candidate strategy definition as a ladder of policies with trigger maps
+* Multi-scenario evaluation with scorecards (robustness, NPV of costs/damages, ecosystem levels, yields, etc.)
+* Visualization suite:
+> * Pathway composition (stacked policy share over time)
+> * Radar charts for candidate comparison (normalized 0–100)
+> * Metro map: policy sequences across time buckets, showing transitions as subway-like lines
+>> * Export of per-scenario and aggregated scorecards to CSV
+>> * Session persistence: simulation results survive UI changes (e.g. changing dropdowns) until explicitly reset
+
+### Usage
+
+```bash
+streamlit run dapp_app.py
+```
+
+In the web UI:
+1. Configure thresholds for evaluation metrics
+2. Define candidate pathways (e.g., Nature-first, Engineering-first, etc.)
+3. Select RCP scenario and simulation settings
+4. Run ▶️ Run DAPP (Monte Carlo)
+5. Explore results in visualizations:
+- Pathway composition
+- Radar chart
+- Metro map
+6. Export results to CSV if needed
+
+Note: Results are cached in st.session_state. They remain visible until you press 🧹 Clear results.
+
+---
+
+### Next to do
+#### High-priority
+* Highlight ATP (Adaptation Tipping Point) years in pathway visualizations (e.g., markers in Metro map)
+* Scenario grouping & filtering in the UI (e.g., by RCP, by cost level)
+* Improve Metro map readability: allow Sankey/alluvial diagrams for policy flows
+* User-defined candidates via UI (currently defined in code as CANDIDATES list)
+
+#### Medium-term
+
+* Add Monte Carlo distribution visualizations (uncertainty bands in radar, violin plots)
+* Incorporate multi-criteria decision analysis (MCDA) scoring schemes
+* Add export to PDF/LaTeX with pathway diagrams and scorecards
+
+#### Long-term
+
+* Integrate with external databases (JMA, Suimon DB, etc.) for real hydrological data
+* Support interactive workshops with multiple participants selecting strategies live
+* Link with Bayesian causal models for uncertainty propagation
 
 ---
 
