@@ -32,9 +32,17 @@ decision_items = [
     'house_migration_amount',       # M
     'dam_levee_construction_cost',  # D
     'paddy_dam_construction_cost',  # P
+    # 'agricultural_RnD_cost',        # R
+    # 'capacity_building_cost',       # C
 ]
-short_keys = {'planting_trees_amount':'F','house_migration_amount':'M',
-              'dam_levee_construction_cost':'D','paddy_dam_construction_cost':'P'}
+short_keys = {
+    'planting_trees_amount':'F',
+    'house_migration_amount':'M',
+    'dam_levee_construction_cost':'D',
+    'paddy_dam_construction_cost':'P',
+    # 'agricultural_RnD_cost':'R',
+    # 'capacity_building_cost':'C',
+}
 
 # 0/1/2 -> 実値マッピング（既存値を流用）
 value_map = {
@@ -42,17 +50,19 @@ value_map = {
     'house_migration_amount': [0, 50, 100],
     'dam_levee_construction_cost': [0.0, 1.0, 2.0],
     'paddy_dam_construction_cost': [0.0, 5.0, 10.0],
+    # 'agricultural_RnD_cost': [0.0, 5.0, 10.0],
+    # 'capacity_building_cost': [0.0, 5.0, 10.0],
 }
 
 # その他の投資は今回固定（0）
 FIXED_DECISIONS = {
     'agricultural_RnD_cost': 0.0,
-    'capacity_building_cost': 0.0,
+    'capacity_building_cost': 0.0, 
     'transportation_invest': 0.0,
 }
 
 # RCP設定とMonte Carlo回数
-rcps = {'RCP1.9': 1.9, 'RCP8.5': 8.5}
+rcps = {'RCP2.6': 2.6, 'RCP6.0': 6.0}
 num_simulations = 100
 
 # 不確実性として揺らすパラメータ（各回で 0.5～2.0 を掛ける）
@@ -164,7 +174,7 @@ for combo_idx, level_tuple in enumerate(decision_combos):
 # CSV書き出し
 # =========================
 panel_df = pd.concat(panel_rows, ignore_index=True)
-panel_path = OUTPUT_DIR / "dmdu_panel.csv"
+panel_path = OUTPUT_DIR / "dmdu_panel_4option_1scenario.csv"
 panel_df.to_csv(panel_path, index=False)
 
 # 要約（各 Scenario×RCP×Sim の世代平均→それをさらにSim方向に平均/標準偏差）
@@ -202,7 +212,7 @@ for (sid, slabel, rcp), g in sim_level.groupby(['ScenarioID','ScenarioLabel','RC
     agg_parts.append(row)
 
 summary_df = pd.DataFrame(agg_parts)
-summary_path = OUTPUT_DIR / "dmdu_summary.csv"
+summary_path = OUTPUT_DIR / "dmdu_summary_4option_1scinario.csv"
 summary_df.to_csv(summary_path, index=False)
 
 print(f"[OK] Saved panel:   {panel_path}")
