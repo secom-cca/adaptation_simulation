@@ -6,6 +6,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import SettingsIcon from '@mui/icons-material/Settings';
 import axios from "axios";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import ExpertApp from './ExpertApp';
 import FormulaPage from "./FormulaPage"; // 新ページ
 import { texts } from "./texts"; // テキスト定義をインポート
 
@@ -87,6 +88,7 @@ function AppRouter() {
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/formula" element={<FormulaPage />} />
+        <Route path="/analyze" element={<ExpertApp />} />
       </Routes>
     </Router>
   );
