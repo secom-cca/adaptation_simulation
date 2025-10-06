@@ -21,7 +21,7 @@ DEFAULT_PARAMS = {
 
     # 地形
     'total_area': 10000,
-    'paddy_field_area': 1000,
+    'paddy_field_area': 1700,
     # 'max_forest_area': 7000, 
 
     # 気温・降水・高温日数
@@ -30,9 +30,9 @@ DEFAULT_PARAMS = {
     'temp_uncertainty': 0.5,
 
     'base_precip': 1700.0,
-    'precip_trend': 0,
+    'precip_trend': 0.0,
     'base_precip_uncertainty': 50,
-    'precip_uncertainty_trend': 5,
+    'precip_uncertainty_trend': 0,
 
     'base_extreme_precip_freq': 0.1,
     'extreme_precip_freq_trend': 0.05,
@@ -112,29 +112,29 @@ rcp_climate_params = {
     1.9: {
         'temp_trend': 0.02,
         'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.05,
-        'extreme_precip_intensity_trend': 0.2,
+        'extreme_precip_freq_trend': 0.01,
+        'extreme_precip_intensity_trend': 0.02,
         'extreme_precip_uncertainty_trend': 0.05
     },
     2.6: {
         'temp_trend': 0.025,
         'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.07,
-        'extreme_precip_intensity_trend': 0.4,
+        'extreme_precip_freq_trend': 0.015,
+        'extreme_precip_intensity_trend': 0.025,
         'extreme_precip_uncertainty_trend': 0.07
     },
     4.5: {
         'temp_trend': 0.035,
-        'precip_uncertainty_trend': 1.5,
-        'extreme_precip_freq_trend': 0.1,
-        'extreme_precip_intensity_trend': 0.8,
+        'precip_uncertainty_trend': 0,
+        'extreme_precip_freq_trend': 0.02,
+        'extreme_precip_intensity_trend': 0.035,
         'extreme_precip_uncertainty_trend': 0.1
     },
     6.0: {
         'temp_trend': 0.045,
-        'precip_uncertainty_trend': 2.0,
-        'extreme_precip_freq_trend': 0.13,
-        'extreme_precip_intensity_trend': 1.1,
+        'precip_uncertainty_trend': 0,
+        'extreme_precip_freq_trend': 0.03,
+        'extreme_precip_intensity_trend': 0.045,
         'extreme_precip_uncertainty_trend': 0.13
     },
     # 7.0: {
@@ -146,9 +146,9 @@ rcp_climate_params = {
     # },
     8.5: {
         'temp_trend': 0.06,
-        'precip_uncertainty_trend': 3.0,
-        'extreme_precip_freq_trend': 0.17,
-        'extreme_precip_intensity_trend': 1.5,
+        'precip_uncertainty_trend': 0,
+        'extreme_precip_freq_trend': 0.04,
+        'extreme_precip_intensity_trend': 0.06,
         'extreme_precip_uncertainty_trend': 0.15
     }
 }

@@ -39,7 +39,7 @@ if 'scenarios' not in st.session_state:
     st.session_state['scenarios'] = {}
 
 if simulation_mode == 'Sequential Decision-Making Mode':
-    np.random.seed(255)
+    # np.random.seed(255)
     # セッション状態の初期化
     if 'current_year_index_seq' not in st.session_state:
         st.session_state['current_year_index_seq'] = 0

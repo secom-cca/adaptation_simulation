@@ -187,39 +187,56 @@ def compare_scenarios_yearly(scenarios_data, variables, x_axis_label='X軸', y_a
         )
         st.plotly_chart(fig_scatter_seq)
 
-def estimate_rice_yield_loss(temp_mean_annual,
-                            high_temp_tolerance_level,
-                            base_min_temp=20.0,
-                            base_opt_temp=22.0,
-                            base_turn_point_temp=30.0):
+def estimate_rice_yield_loss(
+    temp_mean_annual: float,
+    high_temp_tolerance_level: float,
+    base_min_temp: float = 20.0,
+    base_opt_temp: float = 22.0,
+    base_turn_point_temp: float = 30.0,
+    irrigation_mm: float = 0.0,          # mm/yr（掛け流し）
+    I50: float = 200.0,                  # mm/yr
+    k_cool: float = 0.004,               # °C per (mm/yr)
+    water_supply_ratio: float = 1.0,
+    cooling_cap_degC: float = 2.0,
+):
     """
-    temp_mean_annual: 年平均気温（℃）
-    high_temp_tolerance_level: 品種などによる高温耐性（℃）
-    戻り値: 収量損失率（0〜1）
-    # based on https://doi.org/10.1016/j.scitotenv.2023.165256
+    - 掛け流しは「高温時のみ」発動：opt_temp以下では効果0、
+      opt_temp〜turn_pointで線形に立ち上げ、turn_point以上で最大。
     """
-    # 登熟期夜間気温の推定（簡易モデル）
+    # 1) 登熟期夜間気温（簡易）
     temp_ripening = temp_mean_annual + 6.0
 
-    # 耐性レベルに応じてしきい値を調整
-    opt_temp = base_opt_temp + high_temp_tolerance_level  # 22°Cが基準（最大収量）
-    turn_point_temp = base_turn_point_temp + high_temp_tolerance_level  # 30°Cが変曲点
+    # 2) 耐熱性で閾値シフト
+    opt_temp = base_opt_temp + high_temp_tolerance_level
+    turn_point_temp = base_turn_point_temp + high_temp_tolerance_level
 
-    if temp_ripening <= base_min_temp:
-        # 20°C未満：急激な減収（10%/°C）
-        loss = (base_min_temp - temp_ripening) * 0.10
-
-    elif base_min_temp < temp_ripening <= opt_temp:
-        # 20〜22°C（または耐性で調整された範囲）：最大収量
-        loss = 0.0
-
-    elif opt_temp < temp_ripening <= turn_point_temp:
-        # 22〜30°C（調整可）：4%/°C 減収
-        loss = (temp_ripening - opt_temp) * 0.04
-
+    # 3) 温度アクティベーション（0〜1）
+    if temp_ripening <= opt_temp:
+        act = 0.0                         # 低温〜至適：掛け流しはしない
+    elif temp_ripening >= turn_point_temp:
+        act = 1.0                         # 変曲点以上：フル発動
     else:
-        # 30°C超（調整可）：変曲点までの損失 + 10%/°C で追加損失
-        loss = (turn_point_temp - opt_temp) * 0.04 + (temp_ripening - turn_point_temp) * 0.10
+        # 線形立ち上げ（必要ならシグモイドに置換可）
+        act = (temp_ripening - opt_temp) / max(1e-9, (turn_point_temp - opt_temp))
 
-    # 最大100%損失でクリップ
-    return min(loss, 1.0)
+    # 4) 冷却量（飽和 × 供給比 × 発動率）
+    if irrigation_mm > 0 and water_supply_ratio > 0 and act > 0:
+        sat = irrigation_mm / (irrigation_mm + I50)
+        deltaT_cool = k_cool * sat * max(0.0, min(1.0, water_supply_ratio)) * act
+        deltaT_cool = max(0.0, min(deltaT_cool, cooling_cap_degC))
+    else:
+        deltaT_cool = 0.0
+
+    # 5) 実効温度で損失計算（既存ロジック）
+    T_eff = temp_ripening - deltaT_cool
+
+    if T_eff <= base_min_temp:
+        loss = (base_min_temp - T_eff) * 0.10
+    elif base_min_temp < T_eff <= opt_temp:
+        loss = 0.0
+    elif opt_temp < T_eff <= turn_point_temp:
+        loss = (T_eff - opt_temp) * 0.04
+    else:
+        loss = (turn_point_temp - opt_temp) * 0.04 + (T_eff - turn_point_temp) * 0.10
+
+    return max(0.0, min(loss, 1.0)), act

@@ -15,7 +15,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     resident_capacity = prev_values.get('resident_capacity', 0.0) ##################
     transportation_level = prev_values.get('transportation_level', 0.0) ##################
     prev_municipal_demand = prev_values.get('municipal_demand', params['initial_municipal_demand'])##################
-    available_water = prev_values.get('available_water', 0.0)
+    available_water = prev_values.get('available_water', params['max_available_water'])
     levee_investment_total = prev_values.get('levee_investment_total', 0.0)
     RnD_investment_total = prev_values.get('RnD_investment_total', 0.0)
     risky_house_total = prev_values.get('risky_house_total', params['house_total'])
@@ -32,6 +32,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     capacity_building_cost       = decision_vars.get('capacity_building_cost', 0)
     agricultural_RnD_cost        = decision_vars.get('agricultural_RnD_cost', 0)
     transportation_invest        = decision_vars.get('transportation_invest', 0)
+    flow_irrigation_level        = decision_vars.get('flow_irrigation_level', 0)
 
     # --- パラメータを展開 ---
     start_year                    = params['start_year']
@@ -82,7 +83,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     runoff_coef = params['runoff_coef']
     # 森林
     cost_per_1000trees = params['cost_per_1000trees']
-    forest_degradation_rate = params['forest_degradation_rate']
+    forest_degradation_rate_base = params['forest_degradation_rate']
     tree_growup_year = params['tree_growup_year']
     co2_absorption_per_ha = params['co2_absorption_per_ha']
     # 住宅
@@ -96,8 +97,8 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 領域横断影響
     # forest_flood_reduction_coef = params['forest_flood_reduction_coef'] ### 0.4-2.8 [%/%]
     # forest_water_retention_coef = params['forest_water_retention_coef'] ### 2-4 [mm/%]
-    forest_flood_reduction_coef = np.random.uniform(0.4,2.8)
-    forest_water_retention_coef = np.random.uniform(2,4)
+    forest_flood_reduction_coef = 1.6 # np.random.uniform(0.4,2.8)
+    forest_water_retention_coef = 3 # np.random.uniform(2,4)
     # forest_ecosystem_boost_coef = params['forest_ecosystem_boost_coef'] 
     flood_crop_damage_coef = params['flood_crop_damage_coef']
     # levee_ecosystem_damage_coef = params['levee_ecosystem_damage_coef']
@@ -122,12 +123,23 @@ def simulate_year(year, prev_values, decision_vars, params):
     hot_days = initial_hot_days + (temp - base_temp) * temp_to_hot_days_coeff + np.random.normal(0, hot_days_uncertainty)
     hot_days = max(hot_days, 0)
     
-    extreme_precip_freq = max(base_extreme_precip_freq + extreme_precip_freq_trend * (year - start_year), 0)
+    # --- 極端降水の「強度」スケーリング（最重要） ---
+    # 1 K あたり 6.5% の倍率で Gumbel の scale(β) を増加させる
+    # simulation.py は β(t) = base_beta + extreme_precip_intensity_trend * (t - start_year)
+    # なので、 dβ/dt = (dβ/dT) * (dT/dt) = (0.065 * base_beta) * temp_trend
+    # cc_per_K = 0.065  # 6.5%/K  … 2℃で+13%、4℃で+26%
+    # extreme_precip_intensity_trend = base_beta * cc_per_K * temp_trend
+    # # --- 極端降水の「頻度」スケーリング（基本はゼロでOK） ---
+    # # 50 mm/h 超の頻度倍率（2℃:×1.8, 4℃:×3.0）は β の増加だけでほぼ再現できるため 0 のままで可。
+    # extreme_precip_intensity_trend = base_beta * cc_per_K * temp_trend
+
+    extreme_precip_freq = max(base_extreme_precip_freq * (1 + extreme_precip_freq_trend * (year - start_year)), 0)
     extreme_precip_events = np.random.poisson(extreme_precip_freq)
-    
-    mu = max(base_mu + extreme_precip_intensity_trend * (year - start_year), 0)
-    beta = max(base_beta + extreme_precip_intensity_trend * (year - start_year), 0) 
-    
+
+    # mu = max(base_mu + extreme_precip_intensity_trend * (year - start_year), 0)
+    mu = max(base_mu, 0)
+    beta = max(base_beta + extreme_precip_intensity_trend * (year - start_year), 0)
+
     rain_events = gumbel_r.rvs(loc=mu, scale=beta, size=extreme_precip_events)
 
     # ---------------------------------------------------------
@@ -139,6 +151,8 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 3. 森林面積（植林 - 自然減衰） ---
     planting_history[year] = planting_trees_amount # assume 1000 trees = 1ha
     matured_trees = planting_history.get(year - tree_growup_year, 0)
+    forest_degredation_coef = 0.1
+    forest_degradation_rate = forest_degradation_rate_base * (1 + temp_trend * forest_degredation_coef * (year - start_year)) # assume 50% increase in 2100
     natural_loss = prev_forest_area * forest_degradation_rate
     current_forest_area = max(prev_forest_area + matured_trees - natural_loss, 0)
 
@@ -149,29 +163,61 @@ def simulate_year(year, prev_values, decision_vars, params):
 
     # ---------------------------------------------------------
     # 4. 利用可能水量（System Dynamicsには未導入）
-    evapotranspiration_amount = evapotranspiration_amount * (1 + (temp - base_temp) * 0.05) # クラウジウス・クラペイロン
-    available_water = min(
-        max(
-            available_water + precip - evapotranspiration_amount - current_municipal_demand - runoff_coef * precip + water_retention_boost,
-            0
-        ),
-        max_available_water
+
+    et_base = evapotranspiration_amount
+    et = et_base * (1 + 0.05 * max(0, (temp - base_temp)))  # ローカル
+
+    # 森林の降水起因の保水（降水依存に変更）
+    forest_retention_ratio = forest_water_retention_coef * (current_forest_area / total_area) * 0.1  # 例：0～0.1 程度を想定
+    infiltration = precip * forest_retention_ratio
+
+    # 即時流出
+    runoff = runoff_coef * precip * (1 - forest_retention_ratio)
+
+    # 農業需要と戻り水
+    ag_demand = necessary_water_for_crops
+    return_flow_ratio = 0.2
+    return_flow = ag_demand * return_flow_ratio
+
+    available_water = np.clip(
+        available_water + precip - et - current_municipal_demand - ag_demand - runoff + infiltration + return_flow,
+        0, max_available_water
     )
+    # evapotranspiration_amount = evapotranspiration_amount * (1 + (temp - base_temp) * 0.05) # クラウジウス・クラペイロン
+    # available_water = min(
+    #     max(
+    #         available_water + precip - evapotranspiration_amount - current_municipal_demand - runoff_coef * precip + water_retention_boost,
+    #         0
+    #     ),
+    #     max_available_water
+    # )
 
     # ---------------------------------------------------------
     # 5. 農業生産量
     # temp_ripening = temp + 6.0 # 仮設定：登熟期の気温の計算
     # excess = max(temp_ripening - (temp_threshold_crop + high_temp_tolerance_level), 0)
     # loss = excess * temp_crop_decrease_coef
-    temp_impact = estimate_rice_yield_loss(temp, high_temp_tolerance_level)
+
     paddy_dam_area += paddy_dam_construction_cost / paddy_dam_cost_per_ha
     paddy_dam_yield_impact = paddy_dam_yield_coef * min(paddy_dam_area / paddy_field_area, 1)
 
-    water_impact = min(available_water/necessary_water_for_crops, 1.0)
-    current_crop_yield = max((max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact),0) # * paddy_field_area [haあたり]
+    water_impact = max(available_water/necessary_water_for_crops, 1.0)
 
-    # (4. 農業利用水を利用可能水から引く（System Dynamicsには未導入）)
-    available_water = max(available_water - necessary_water_for_crops, 0)
+    # temp_impact = estimate_rice_yield_loss(temp, high_temp_tolerance_level)
+    temp_impact, act = estimate_rice_yield_loss(
+        temp_mean_annual=temp,
+        high_temp_tolerance_level=high_temp_tolerance_level,
+        irrigation_mm=flow_irrigation_level,  # 掛け流しの追加取水量（mm/yr）
+        I50=100.0,                # 半飽和点
+        k_cool=3.0,             # 効率（0.002〜0.01で調整）
+        water_supply_ratio=water_impact,  # その年に実際どれだけ水が回ったか
+        cooling_cap_degC=3.0
+    )
+
+    flow_irrigation_actual = flow_irrigation_level * act * (1 - return_flow_ratio)
+    available_water = max(available_water - flow_irrigation_actual, 0)
+
+    current_crop_yield = max((max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact),0) # * paddy_field_area [haあたり]
 
     # 5.2 農業R&D：累積投資で耐熱性向上（確率的閾値）
     RnD_investment_total += agricultural_RnD_cost
@@ -202,41 +248,58 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 7.2 水害
     flood_impact = 0
     paddy_dam_level = paddy_dam_flood_coef * min(paddy_dam_area / paddy_field_area, 1)
+    # for rain in rain_events:
+    #     overflow_amount = max(rain - current_levee_level - paddy_dam_level, 0) * (1 - flood_reduction)
+    #     flood_impact = overflow_amount * flood_damage_coefficient
+    #     # 対策効果は災害規模により段階的に変化（S字カーブ）
+    #     # response_factor = 1 / (1 + np.exp(-0.1 * (overflow_amount - 400)))  # 400mm超過で能力無効に近づく
+    #     response_factor = 1 / (1 + np.exp(-0.02 * (overflow_amount - 200)))  # 400mm超過で能力無効に近づく
+    #     effective_protection = (1 - resident_capacity * (1 - response_factor)) * (1 - migration_ratio * (1 - response_factor))
+    #     flood_impact += flood_impact * effective_protection
+
+    flood_impact_total = 0.0
+    max_rain = 0.0
     for rain in rain_events:
-        overflow_amount = max(rain - current_levee_level - paddy_dam_level, 0) * (1 - flood_reduction)
-        flood_impact = overflow_amount * flood_damage_coefficient
-        # 対策効果は災害規模により段階的に変化（S字カーブ）
-        # response_factor = 1 / (1 + np.exp(-0.1 * (overflow_amount - 400)))  # 400mm超過で能力無効に近づく
-        response_factor = 1 / (1 + np.exp(-0.02 * (overflow_amount - 200)))  # 400mm超過で能力無効に近づく
-        effective_protection = (1 - resident_capacity * (1 - response_factor)) * (1 - migration_ratio * (1 - response_factor))
-        flood_impact += flood_impact * effective_protection
+        overflow = max(rain - current_levee_level - paddy_dam_level, 0) * (1 - flood_reduction)
+        base_damage = overflow * flood_damage_coefficient
+        # 小規模時=対策効く（mult<1）、大規模時=効きにくい（→mult→1）
+        response = 1 / (1 + np.exp(-0.02 * (overflow - 200)))
+        mitigation_mult = (1 - resident_capacity*(1 - response))*(1 - migration_ratio*(1 - response))
+        flood_impact_total += base_damage * mitigation_mult
+        if rain > max_rain:
+            max_rain = rain
+    current_flood_damage = max(flood_impact_total, 0.0)
+
     
     # # current_flood_damage = extreme_precip_events * flood_impact
     # current_flood_damage = flood_impact * (1 - resident_capacity) * (1 - migration_ratio)
-    current_flood_damage = max(flood_impact,0.0)
-    current_crop_yield -= current_flood_damage * flood_crop_damage_coef
+    # current_flood_damage = max(flood_impact,0.0)
+    current_crop_yield = max(current_crop_yield - current_flood_damage * flood_crop_damage_coef, 0)
 
 
     # ---------------------------------------------------------
     # 8. 損害・生態系の評価
     # Natural resource base (0–1)
-    ecological_base = 0.5 * min(current_forest_area / total_area * 0.7, 1.0) + 0.5 * min(available_water / ecosystem_threshold, 1.0)
+    ecological_base = min(current_forest_area / total_area * 0.7, 1.0) 
+    water_base = min(available_water / ecosystem_threshold, 1.0)
 
-    # Disturbance resistance
-    temp_diff = abs(temp - base_temp)
-    extreme_factor = extreme_precip_events
-    disturbance_resistance = max(0, 1.0 - 0.05 * temp_diff - 0.03 * extreme_factor) 
+    # # Disturbance resistance
+    # temp_diff = abs(temp - base_temp)
+    # extreme_factor = extreme_precip_events
+    # disturbance_resistance = max(0, 1.0 - 0.05 * temp_diff - 0.03 * extreme_factor) 
 
     # Human pressure
     human_pressure_raw = min(0.01 * current_levee_level - 1, 1.0)
     human_pressure = 1.0 - human_pressure_raw
 
     # Weighted ecosystem score
-    w1, w2, w3 = 1/2, 1/4, 1/4
-    # weights = np.random.dirichlet([1, 1, 1])
+    # weights = np.random.dirichlet([1/4, 1/4, 1/4])
     # w1, w2, w3 = weights
+    # w1, w2, w3 = w1+1/4, w2+1/4, w3+1/4
+    w1, w2, w3 = 1/3, 1/3, 1/3
 
-    ecosystem_level = (w1 * ecological_base + w2 * disturbance_resistance + w3 * human_pressure) * 100
+    # ecosystem_level = (w1 * ecological_base + w2 * disturbance_resistance + w3 * human_pressure) * 100
+    ecosystem_level = (w1 * ecological_base + w2 * water_base + w3 * human_pressure) * 100
 
     # ---------------------------------------------------------
     # 9. 都市の居住可能性の評価（交通面のみ）→ 一旦，土地のすみやすさ，ばらつきを表現
@@ -279,7 +342,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         'High Temp Tolerance Level': high_temp_tolerance_level,
         'Hot Days': hot_days,
         'Extreme Precip Frequency': extreme_precip_events,
-        'Extreme Precip Events': extreme_precip_events,
+        'Extreme Precip Events': max_rain,
         'Ecosystem Level': ecosystem_level,
         'Municipal Cost': municipal_cost, # resident_burdenと重複
         'Urban Level': urban_level,
@@ -302,6 +365,7 @@ def simulate_year(year, prev_values, decision_vars, params):
         'capacity_building_cost': capacity_building_cost,
         'agricultural_RnD_cost': agricultural_RnD_cost,
         'transportation_invest': transportation_invest,
+        'flow_irrigation_level': flow_irrigation_level,
     }
 
     current_values = {
