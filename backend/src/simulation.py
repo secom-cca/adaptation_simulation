@@ -201,14 +201,14 @@ def simulate_year(year, prev_values, decision_vars, params):
     paddy_dam_area += paddy_dam_construction_cost / paddy_dam_cost_per_ha
     paddy_dam_yield_impact = paddy_dam_yield_coef * min(paddy_dam_area / paddy_field_area, 1)
 
-    water_impact = max(available_water/necessary_water_for_crops, 1.0)
+    water_impact = min(available_water/necessary_water_for_crops, 1.0)
 
     # temp_impact = estimate_rice_yield_loss(temp, high_temp_tolerance_level)
     temp_impact, act = estimate_rice_yield_loss(
         temp_mean_annual=temp,
         high_temp_tolerance_level=high_temp_tolerance_level,
         irrigation_mm=flow_irrigation_level,  # 掛け流しの追加取水量（mm/yr）
-        I50=100.0,                # 半飽和点
+        I50=150.0,                # 半飽和点
         k_cool=3.0,             # 効率（0.002〜0.01で調整）
         water_supply_ratio=water_impact,  # その年に実際どれだけ水が回ったか
         cooling_cap_degC=3.0
@@ -319,15 +319,16 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 11. コスト・住民負担算出
     planting_trees_cost = planting_trees_amount * cost_per_1000trees
     migration_cost = house_migration_amount * cost_per_migration
-    municipal_cost = dam_levee_construction_cost * 100_000_000 \
+    municipal_cost = (dam_levee_construction_cost * 100_000_000 \
                    + agricultural_RnD_cost * 10_000_000 \
                    + paddy_dam_construction_cost * 1_000_000 \
                    + capacity_building_cost * 1_000_000 \
                    + planting_trees_cost \
                    + migration_cost \
-                   + transportation_invest * 10_000_000
+                   + transportation_invest * 10_000_000) / 100  # [USD]
     resident_burden = municipal_cost / total_house
     resident_burden += current_flood_damage * flood_recovery_cost_coef / total_house # added
+    current_flood_damage /= 100 # [USD]
 
     # --- 出力 ---
     outputs = {

@@ -45,7 +45,7 @@ short_keys = {
 value_map = {
     'planting_trees_amount': [0, 50, 100],
     'house_migration_amount': [0, 50, 100],
-    'dam_levee_construction_cost': [0.0, 0.5, 1.0],
+    'dam_levee_construction_cost': [0.0, 1.0, 2.0],
     # 'paddy_dam_construction_cost': [0.0, 10.0, 20.0],
     'flow_irrigation_level': [0.0, 150, 300],
 }

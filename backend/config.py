@@ -21,7 +21,7 @@ DEFAULT_PARAMS = {
 
     # 地形
     'total_area': 10000,
-    'paddy_field_area': 1700,
+    'paddy_field_area': 2000, # [ha]
     # 'max_forest_area': 7000, 
 
     # 気温・降水・高温日数
@@ -52,7 +52,7 @@ DEFAULT_PARAMS = {
 
     # 住宅
     'house_total': 15000,
-    'cost_per_migration': 975000,
+    'cost_per_migration': 975000, # [JPY/house]
 
     # 水循環
     'max_available_water': 3000.0,
@@ -60,7 +60,7 @@ DEFAULT_PARAMS = {
     'ecosystem_threshold': 800.0,
 
     # 森林
-    'cost_per_1000trees': 2310000,
+    'cost_per_1000trees': 2310000, # [JPY/1000 trees]
     'forest_degradation_rate': 0.01,
     'tree_growup_year': 30,
     'initial_forest_area': 0.5,
@@ -68,7 +68,7 @@ DEFAULT_PARAMS = {
 
     # 農業
     'temp_coefficient': 1.0,
-    'max_potential_yield': 5000.0,
+    'max_potential_yield': 5000.0, # [kg/ha]
     'optimal_irrigation_amount': 30.0,
     'necessary_water_for_crops': 330, # [m3/ha]
     'paddy_dam_cost_per_ha': 1.5,

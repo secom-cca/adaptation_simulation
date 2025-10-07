@@ -39,13 +39,13 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"
 const getLineChartIndicators = (language) => {
   const indicators = {
     ja: {
-      'Flood Damage': { labelTitle: '洪水被害', max: 20000, min: 0, unit: '万円' },
-      'Crop Yield': { labelTitle: '収穫量', max: 6, min: 0, unit: 'ton/ha' },
+      'Flood Damage': { labelTitle: '洪水被害', max: 1000000, min: 0, unit: 'ドル' },
+      'Crop Yield': { labelTitle: '収穫量', max: 6000, min: 0, unit: 'kg/ha' },
       'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
-      'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
+      'Municipal Cost': { labelTitle: '予算', max: 10000000, min: 0, unit: 'ドル' },
       'Temperature (℃)': { labelTitle: '【気候要素】年平均気温', max: 20, min: 12, unit: '℃' },
       'Precipitation (mm)': { labelTitle: '【気候要素】年降水量', max: 3000, min: 0, unit: 'mm' },
-      'Extreme Precip Frequency': { labelTitle: '【気候要素】極端降水頻度', max: 20, min: 0, unit: 'times/year' },
+      'Extreme Precip Frequency': { labelTitle: '【気候要素】極端降水頻度', max: 3, min: 0, unit: 'times/year' },
       'Levee Level': { labelTitle: '【中間要素】堤防レベル', max: 400, min: 0, unit: 'mm' },
       'Forest Area': { labelTitle: '【中間要素】森林面積', max: 7000, min: 0, unit: 'ha' },
       'risky_house_total': { labelTitle: '【中間要素】高リスク地域住民', max: 20000, min: 0, unit: 'person' },
@@ -54,13 +54,13 @@ const getLineChartIndicators = (language) => {
       'available_water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' },
     },
     en: {
-      'Flood Damage': { labelTitle: 'Flood Damage', max: 20000, min: 0, unit: '10k yen' },
-      'Crop Yield': { labelTitle: 'Crop Yield', max: 6, min: 0, unit: 'ton/ha' },
+      'Flood Damage': { labelTitle: 'Flood Damage', max: 1000000, min: 0, unit: 'USD' },
+      'Crop Yield': { labelTitle: 'Crop Yield', max: 6000, min: 0, unit: 'kg/ha' },
       'Ecosystem Level': { labelTitle: 'Ecosystem Level', max: 100, min: 0, unit: '-' },
-      'Municipal Cost': { labelTitle: 'Municipal Cost', max: 100000, min: 0, unit: '10k yen' },
+      'Municipal Cost': { labelTitle: 'Municipal Cost', max: 10000000, min: 0, unit: 'USD' },
       'Temperature (℃)': { labelTitle: '[Climate] Average Temperature', max: 20, min: 12, unit: '°C' },
       'Precipitation (mm)': { labelTitle: '[Climate] Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
-      'Extreme Precip Frequency': { labelTitle: '[Climate] Extreme Precip Frequency', max: 20, min: 0, unit: 'times/year' },
+      'Extreme Precip Frequency': { labelTitle: '[Climate] Extreme Precip Frequency', max: 3, min: 0, unit: 'times/year' },
       'Levee Level': { labelTitle: '[Intermediate] Levee Level', max: 400, min: 0, unit: 'mm' },
       'Forest Area': { labelTitle: '[Intermediate] Forest Area', max: 7000, min: 0, unit: 'ha' },
       'risky_house_total': { labelTitle: '[Intermediate] High Risk Area Residents', max: 20000, min: 0, unit: 'person' },
@@ -75,9 +75,9 @@ const getLineChartIndicators = (language) => {
 const SIMULATION_YEARS = 25 // 一回のシミュレーションで進める年数を決定する 
 const LINE_CHART_DISPLAY_INTERVAL = 100 // ms
 const INDICATOR_CONVERSION = {
-  'Municipal Cost': 1 / 10000, // 円 → 億円
-  'Flood Damage': 1 / 10000, // 円 → 万円
-  'Crop Yield': 1 / 1000 // kg → ton（例）
+  // 'Municipal Cost': 1 / 100, // USD → 万円
+  // 'Flood Damage': 1 / 100, // USD → 万円
+  // 'Crop Yield': 1 / 1000 // kg → ton（例）
 };
 
 
@@ -328,7 +328,7 @@ function App() {
               const increment = {
                 transportation_invest: 5,
                 agricultural_RnD_cost: 5,
-                planting_trees_amount: 100,
+                planting_trees_amount: 50,
                 house_migration_amount: 50,
                 dam_levee_construction_cost: 1,
                 paddy_dam_construction_cost: 5,
