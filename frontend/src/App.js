@@ -540,10 +540,10 @@ function App() {
           });
         }
       } else if (chartPredictMode === 'monte-carlo') {
-        // モード（２）：１０回のモンテカルロシミュレーション
+        // モード（２）：3回のモンテカルロシミュレーション
         const monteCarloResults = [];
         
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 3; i++) {
           let monteCarloDecisionVar = { ...decisionVarRef.current };
           monteCarloDecisionVar['cp_climate_params'] = decisionVarRef.current.cp_climate_params;
 
