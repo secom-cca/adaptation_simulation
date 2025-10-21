@@ -1044,7 +1044,7 @@ function App() {
   // スライダーの表示値をバックエンド送信値に変換する関数
   const convertDisplayToBackendValue = (key, displayValue) => {
     const conversionMap = {
-      'planting_trees_amount': [0, 75, 150],
+      'planting_trees_amount': [0, 50, 100],
       'dam_levee_construction_cost': [0, 1, 2], // 既に3段階
       'agricultural_RnD_cost': [0, 5, 10],
       'house_migration_amount': [0, 50, 100],
@@ -1062,7 +1062,7 @@ function App() {
   // バックエンド送信値を表示値に変換する関数
   const convertBackendToDisplayValue = (key, backendValue) => {
     const conversionMap = {
-      'planting_trees_amount': [0, 75, 150],
+      'planting_trees_amount': [0, 50, 100],
       'dam_levee_construction_cost': [0, 1, 2],
       'agricultural_RnD_cost': [0, 5, 10],
       'house_migration_amount': [0, 50, 100],
