@@ -66,7 +66,8 @@ export const texts = {
       heavyRainFreq: '大雨の頻度',
       residentBurden: '住民の負担',
       biodiversity: '生物多様性',
-      frequency: '回/年'
+      frequency: '回/年', 
+      hotDays: '真夏日日数',
     },
     buttons: {
       advanceYears: '25年進める',
@@ -183,7 +184,8 @@ export const texts = {
       heavyRainFreq: 'Heavy Rain Frequency',
       residentBurden: 'Resident Burden',
       biodiversity: 'Biodiversity',
-      frequency: 'times/year'
+      frequency: 'times/year',
+      hotDays: 'Tropical Days',
     },
     buttons: {
       advanceYears: '25 years advance',

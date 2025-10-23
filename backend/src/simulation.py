@@ -121,7 +121,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     precip = max(0, base_precip + precip_trend * (year - start_year) + np.random.normal(0, precip_unc))
     
     hot_days = initial_hot_days + (temp - base_temp) * temp_to_hot_days_coeff + np.random.normal(0, hot_days_uncertainty)
-    hot_days = max(hot_days, 0)
+    hot_days = int(max(hot_days, 0))
     
     # --- 極端降水の「強度」スケーリング（最重要） ---
     # 1 K あたり 6.5% の倍率で Gumbel の scale(β) を増加させる

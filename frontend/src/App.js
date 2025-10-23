@@ -39,7 +39,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"
 const getLineChartIndicators = (language) => {
   const indicators = {
     ja: {
-      'Flood Damage': { labelTitle: '洪水被害', max: 1000000, min: 0, unit: 'ドル' },
+      'Flood Damage': { labelTitle: '洪水被害', max: 2000000, min: 0, unit: 'ドル' },
       'Crop Yield': { labelTitle: '収穫量', max: 6000, min: 0, unit: 'kg/ha' },
       'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: '予算', max: 10000000, min: 0, unit: 'ドル' },
@@ -54,7 +54,7 @@ const getLineChartIndicators = (language) => {
       'available_water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' },
     },
     en: {
-      'Flood Damage': { labelTitle: 'Flood Damage', max: 1000000, min: 0, unit: 'USD' },
+      'Flood Damage': { labelTitle: 'Flood Damage', max: 2000000, min: 0, unit: 'USD' },
       'Crop Yield': { labelTitle: 'Crop Yield', max: 6000, min: 0, unit: 'kg/ha' },
       'Ecosystem Level': { labelTitle: 'Ecosystem Level', max: 100, min: 0, unit: '-' },
       'Municipal Cost': { labelTitle: 'Municipal Cost', max: 10000000, min: 0, unit: 'USD' },
@@ -2056,16 +2056,15 @@ function App() {
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ mb: 0 }}>{t.chart.residentBurden}</Typography>
-                <Gauge width={100} height={100} value={currentValues.resident_burden * INDICATOR_CONVERSION["Municipal Cost"]} valueMax={10} />
-                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>{t.unit.manYen}</Typography>
+                <Typography variant="body2" sx={{ mb: 0 }}>{t.chart.hotDays}</Typography>
+                <Gauge width={100} height={100} value={currentValues.hot_days} valueMax={10} />
+                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>{t.unit.frequency}</Typography>
               </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {/* <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>{t.chart.biodiversity}</Typography>
                 <Gauge width={100} height={100} value={currentValues.ecosystem_level} valueMax={100} />
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>{t.unit.none}</Typography>
-              </Box>
+              </Box> */}
             </Box>
           </Box>
 
