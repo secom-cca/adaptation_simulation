@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Box, Button, Dialog, DialogTitle, DialogContent, FormControl, Grid, IconButton, InputLabel, MenuItem, Slider, Stack, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper, TextField } from '@mui/material';
 import { LineChart, ScatterChart, Gauge } from '@mui/x-charts';
 import { Agriculture, Biotech, EmojiTransportation, Flood, Forest, Houseboat, LocalLibrary, PlayCircle } from '@mui/icons-material';
@@ -155,6 +155,23 @@ function App() {
   })
   const [simulationData, setSimulationData] = useState([]); // 結果格納
 
+
+  const [flashOn, setFlashOn] = useState(false);
+  const lastFlashAtRef = useRef(0); // 連続点滅の抑制用
+  const FLOOD_THRESHOLD = 100;      // 閾値（必要なら設定ダイアログに出してOK）
+  const FLASH_COOLDOWN_MS = 500;   // 1.5秒以内の連続発火を抑制
+  const FLASH_DURATION_MS = 500;    // 点滅の長さ
+
+  const triggerFlash = () => {
+    const now = Date.now();
+    if (now - lastFlashAtRef.current < FLASH_COOLDOWN_MS) return; // 連続発火防止
+    lastFlashAtRef.current = now;
+
+    setFlashOn(true);
+    setTimeout(() => setFlashOn(false), FLASH_DURATION_MS);
+  };
+
+  
   // ロード中やエラー表示用
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -190,8 +207,121 @@ function App() {
   const [userNameError, setUserNameError] = useState("")
   const [selectedMode, setSelectedMode] = useState(localStorage.getItem('selectedMode') || 'group'); // モード選択: 'group', 'upstream', 'downstream'
 
+    // /ranking の全体データ（既に fetchRanking があるのでそれを活用）
+  const [globalRankingRows, setGlobalRankingRows] = useState([]);
+
+  // サイクル別の「平均値」と「順位」
+  const [cycleAverages, setCycleAverages] = useState({}); // { cycleNumber: { key: avg, ... } }
+  const [cycleRanks, setCycleRanks] = useState({});       // { cycleNumber: { key: {rank,total} } }
+
   // ここでuseRefを定義
   const wsLogRef = useRef(null);
+
+  const [showYearlyDots, setShowYearlyDots] = useState(true);
+
+  // 散布図セクションの上あたりに追加（関数なのでどこでもOK）
+  const baseRGB = [
+    [25,118,210], [220,0,78], [56,142,60], [245,124,0],
+    [123,31,162], [211,47,47], [0,121,107], [194,24,91],
+    [255,160,0], [0,151,167],
+  ];
+  const makeColor = (idx, a=0.6) => {
+    const [r,g,b] = baseRGB[idx % baseRGB.length];
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  };
+
+  const RANK_METRICS = [
+    { key: 'Flood Damage',     ja: '洪水被害',  lowerIsBetter: true  },
+    { key: 'Ecosystem Level',  ja: '生態系',    lowerIsBetter: false },
+    { key: 'Crop Yield',       ja: '収穫量',    lowerIsBetter: false },
+    { key: 'Municipal Cost',   ja: '予算',      lowerIsBetter: true  },
+  ];
+
+  // 1サイクルの期間平均（2026-2100の全レコード平均）
+  const getCycleAverages = (cycle) => {
+    const rows = cycle?.simulationData ?? [];
+    const sums = {}; const counts = {};
+    RANK_METRICS.forEach(m => { sums[m.key] = 0; counts[m.key] = 0; });
+    rows.forEach(r => {
+      RANK_METRICS.forEach(m => {
+        const v = r[m.key];
+        if (typeof v === 'number' && !Number.isNaN(v)) { sums[m.key] += v; counts[m.key]++; }
+      });
+    });
+    const avg = {};
+    RANK_METRICS.forEach(m => { avg[m.key] = counts[m.key] ? (sums[m.key] / counts[m.key]) : null; });
+    return avg;
+  };
+
+  // 自分のサイクル（resultHistory）同士でランク付け
+  const { latestCycleNumber, latestRanks, totalCycles } = useMemo(() => {
+    if (!resultHistory || resultHistory.length === 0) {
+      return { latestCycleNumber: null, latestRanks: null, totalCycles: 0 };
+    }
+
+    const totalCycles = resultHistory.length;
+    const items = resultHistory.map(cycle => ({
+      id: cycle.cycleNumber,
+      values: getCycleAverages(cycle),
+    }));
+
+    // 指標ごとに並べ替え→順位を付与
+    const rankTable = {}; // { cycleNumber: { key: rank } }
+    items.forEach(it => { rankTable[it.id] = {}; });
+
+    RANK_METRICS.forEach(m => {
+      const valid = items
+        .filter(it => typeof it.values[m.key] === 'number')
+        .sort((a, b) =>
+          m.lowerIsBetter
+            ? (a.values[m.key] - b.values[m.key])
+            : (b.values[m.key] - a.values[m.key])
+        );
+      valid.forEach((it, i) => {
+        rankTable[it.id][m.key] = i + 1; // 1位始まり
+      });
+      // 値なしは最下位扱い
+      items
+        .filter(it => typeof it.values[m.key] !== 'number')
+        .forEach(it => { rankTable[it.id][m.key] = totalCycles; });
+    });
+
+    const latestCycleNumber = resultHistory[resultHistory.length - 1].cycleNumber;
+    const latestRanks = rankTable[latestCycleNumber];
+
+    return { latestCycleNumber, latestRanks, totalCycles };
+  }, [resultHistory]);
+
+  // 与えられた「候補集合（全参加者 or 自分のサイクル）」に対する順位を返す
+  // items: [{ id, values: { 'Flood Damage': 123, ... } }, ...]
+  const calcRanks = (items, lowerIsBetterMap) => {
+    const ranks = {}; // { id: {key: rank, total: N} }
+    const N = items.length || 0;
+    items.forEach(it => { ranks[it.id] = {}; });
+
+    RANK_METRICS.forEach(m => {
+      // 値がnullのものは末尾に回すためにフィルタ
+      const valid = items.filter(it => typeof it.values[m.key] === 'number');
+      const invalid = items.filter(it => typeof it.values[m.key] !== 'number');
+
+      // 小さいほど良い or 大きいほど良いで並べ替え
+      valid.sort((a, b) => {
+        const av = a.values[m.key], bv = b.values[m.key];
+        return lowerIsBetterMap[m.key] ? av - bv : bv - av;
+      });
+
+      // 順位付け（同値は同順位にしても良いが、ここでは単純に配列順で 1,2,3…）
+      valid.forEach((it, i) => {
+        ranks[it.id][m.key] = { rank: i + 1, total: N };
+      });
+      // 値なしは最下位扱い
+      invalid.forEach(it => {
+        ranks[it.id][m.key] = { rank: N, total: N };
+      });
+    });
+
+    return ranks;
+  };
 
   // ここでuseEffectを定義
   useEffect(() => {
@@ -211,6 +341,19 @@ function App() {
     const res = await axios.get(`${BACKEND_URL}/ranking`);
     setRanking(res.data);
   };
+
+  // ↓ fetchRanking を少し拡張（setGlobalRankingRowsも設定）
+  const fetchRankingExtended = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/ranking`);
+      setRanking(res.data);           // 既存の用途があれば継続
+      setGlobalRankingRows(res.data); // 全参加者分を保持
+    } catch (e) {
+      console.error('ranking取得失敗', e);
+      setGlobalRankingRows([]);       // フェイルセーフ
+    }
+  };
+
   const handleUserNameRegister = async () => {
     try {
       const res = await axios.get(`${BACKEND_URL}/block_scores`); // ここはAPIでCSV読ませる形にする
@@ -384,7 +527,20 @@ function App() {
       // resp.data はバックエンドの SimulationResponse (scenario_name, data)
       if (resp.data && resp.data.data) {
         const processedData = processIndicatorData(resp.data.data, selectedIndicator);
-        setSimulationData(prev => [...prev, ...processedData]);
+        setSimulationData(prev => {
+          const next = [...prev, ...processedData];
+
+          // ★ ここで直近追加分をチェック
+          // 追加分の中に「洪水被害 > 閾値」があれば点滅
+          const newlyAdded = processedData;
+          const floodHit = newlyAdded.some(row =>
+            typeof row['Flood Damage'] === 'number' && row['Flood Damage'] > FLOOD_THRESHOLD
+          );
+          if (floodHit) triggerFlash();
+
+          return next;
+        });
+
         updateCurrentValues(resp.data.data[0])
       }
     } catch (err) {
@@ -740,9 +896,10 @@ function App() {
 
   // (E) トレードスペース用UIの表示
 
+  // 開く時にランキングも取得
   const handleOpenResultUI = () => {
     setOpenResultUI(true);
-    // --- 「サイクルの比較」開始をWebSocketで送信 ---
+    fetchRankingExtended(); // ← こちらに変更
     if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
       wsLogRef.current.send(JSON.stringify({
         user_name: userName,
@@ -751,8 +908,67 @@ function App() {
         timestamp: new Date().toISOString()
       }));
     }
-    // ------------------------------------------------------
   };
+
+  // resultHistory or globalRankingRows が変化したら再計算
+  useEffect(() => {
+    if (!resultHistory.length) return;
+
+    // 1) 自分の各サイクルの平均値を計算
+    const averagesPerCycle = {};
+    resultHistory.forEach(cycle => {
+      averagesPerCycle[cycle.cycleNumber] = getCycleAverages(cycle);
+    });
+    setCycleAverages(averagesPerCycle);
+
+    // 2) ランキング母集団を組み立てる
+    //    可能なら /ranking の全参加者を使い、ダメなら自分のサイクル内で暫定ランキング
+    const lowerIsBetterMap = Object.fromEntries(RANK_METRICS.map(m => [m.key, m.lowerIsBetter]));
+
+    // (A) /ranking が使える場合の例：res.data の各行に各指標の平均値がある想定
+    //     例 { user_name, cycle_number, FloodDamage_avg, EcosystemLevel_avg, CropYield_avg, MunicipalCost_avg }
+    //     ※ API 仕様が違う場合はここを合わせてください。
+    let population = [];
+    if (Array.isArray(globalRankingRows) && globalRankingRows.length > 0) {
+      population = globalRankingRows.map((row, idx) => ({
+        id: `global-${idx}`,
+        user: row.user_name ?? '',
+        cycle: row.cycle_number ?? null,
+        values: {
+          'Flood Damage':    row.FloodDamage_avg ?? row['Flood Damage'] ?? null,
+          'Ecosystem Level': row.EcosystemLevel_avg ?? row['Ecosystem Level'] ?? null,
+          'Crop Yield':      row.CropYield_avg ?? row['Crop Yield'] ?? null,
+          'Municipal Cost':  row.MunicipalCost_avg ?? row['Municipal Cost'] ?? null,
+        }
+      }));
+    } else {
+      // (B) フェイルセーフ：自分のサイクルだけで暫定ランキング
+      population = resultHistory.map(cycle => ({
+        id: `self-${cycle.cycleNumber}`,
+        cycle: cycle.cycleNumber,
+        values: averagesPerCycle[cycle.cycleNumber]
+      }));
+    }
+
+    // 3) 母集団に対する順位表（id→各指標rank）を計算
+    const ranksAll = calcRanks(population, lowerIsBetterMap);
+
+    // 4) 各サイクルの順位を抜き出す
+    //    - /ranking を使っている時：自分のサイクル値（averagesPerCycle）を母集団に追加して順位を再計算してもOK
+    //      →ここでは簡潔化のため、「自サイクルを母集団に追加して」評価します。
+    const finalCycleRanks = {};
+    resultHistory.forEach(cycle => {
+      const selfItem = { id: `self-cycle-${cycle.cycleNumber}`, values: averagesPerCycle[cycle.cycleNumber] };
+
+      // 自分のサイクルを入れた母集団を組み直して順位算出
+      const merged = [...population, selfItem];
+      const r = calcRanks(merged, lowerIsBetterMap);
+      finalCycleRanks[cycle.cycleNumber] = r[selfItem.id]; // { 'Flood Damage': {rank,total}, ... }
+    });
+
+    setCycleRanks(finalCycleRanks);
+  }, [resultHistory, globalRankingRows]);
+
 
   const handleCloseResultUI = () => {
     setOpenResultUI(false);
@@ -1081,7 +1297,19 @@ function App() {
   return (
     <Box sx={{ padding: 2, backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
 
-
+      {/* ★ Flood flash overlay */}
+      <Box
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 9999,
+          backgroundColor: flashOn ? 'rgba(255,0,0,0.25)' : 'transparent',
+          transition: 'background-color 150ms ease-in-out',
+          // ふわっと点滅を強めたい場合は keyframes を使う：
+          // animation: flashOn ? 'flashRed 0.7s ease-in-out' : 'none',
+        }}
+      />
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography variant="h4" gutterBottom>
@@ -1443,6 +1671,18 @@ function App() {
                       <MenuItem value="all">{t.scatter.allDisplay}</MenuItem>
                     </Select>
                   </FormControl>
+                  <Box sx={{ display:'flex', alignItems:'center', pl:1 }}>
+                    <input
+                      type="checkbox"
+                      checked={showYearlyDots}
+                      onChange={(e)=>setShowYearlyDots(e.target.checked)}
+                      style={{ marginRight: 8 }}
+                    />
+                    <Typography variant="body2">
+                      {language === 'ja' ? '各年の点を表示（小・同色）' : 'Show yearly dots (small, same color)'}
+                    </Typography>
+                  </Box>
+
                 </Box>
                 
                 {/* 散布図 */}
@@ -1452,106 +1692,98 @@ function App() {
                     height={400}
                     series={resultHistory
                       .filter(cycle => visibleCycles.has(cycle.cycleNumber))
-                      .map((cycle, cycleIndex) => {
-                      const colors = ['rgba(25, 118, 210, 0.6)', 'rgba(220, 0, 78, 0.6)', 'rgba(56, 142, 60, 0.6)', 'rgba(245, 124, 0, 0.6)', 'rgba(123, 31, 162, 0.6)', 'rgba(211, 47, 47, 0.6)'];
-                      const color = colors[cycleIndex % colors.length];
-                      
-                      // 選択されたプロット属性に応じて対象年を決定
-                      let targetYears;
-                      if (selectedPlotAttribute === 'all') {
-                        targetYears = [2050, 2075, 2100];
-                      } else if (selectedPlotAttribute === 'average') {
-                        targetYears = ['average'];
-                      } else {
-                        targetYears = [parseInt(selectedPlotAttribute)];
-                      }
-                      
-                      return targetYears.map((year) => {
-                        let yearData;
-                        
-                        if (year === 'average') {
-                          // 2026年～2100年の全データの平均値を計算
-                          const validData = cycle.simulationData.filter(data =>
-                            typeof data[selectedXAxis] === 'number' && typeof data[selectedYAxis] === 'number'
-                          );
-                          if (validData.length === 0) return null;
-                          const avgX = validData.reduce((sum, d) => sum + d[selectedXAxis], 0) / validData.length;
-                          const avgY = validData.reduce((sum, d) => sum + d[selectedYAxis], 0) / validData.length;
-                          yearData = {
-                            [selectedXAxis]: avgX,
-                            [selectedYAxis]: avgY
-                          };
-                        } else {
-                          // 選択された年の過去25年分の平均値を計算
-                          const startYear = year - 25;
-                          const endYear = year;
-                          const validData = cycle.simulationData.filter(data =>
-                            data.Year >= startYear && data.Year <= endYear &&
-                            typeof data[selectedXAxis] === 'number' && typeof data[selectedYAxis] === 'number'
-                          );
-                          if (validData.length === 0) return null;
-                          const avgX = validData.reduce((sum, d) => sum + d[selectedXAxis], 0) / validData.length;
-                          const avgY = validData.reduce((sum, d) => sum + d[selectedYAxis], 0) / validData.length;
-                          yearData = {
-                            [selectedXAxis]: avgX,
-                            [selectedYAxis]: avgY
-                          };
-                        }
-                        
-                        if (!yearData) {
-                          console.log(`サイクル${cycle.cycleNumber}の${year}年のデータが見つかりません`);
-                          return null;
-                        }
-                        
-                        // 年ごとに異なるマーカーサイズと透明度を設定
-                        let markerSize, opacity;
-                        if (year === 'average') {
-                          markerSize = 6;
-                          opacity = 0.7;
-                        } else {
-                          switch (year) {
-                            case 2050:
-                              markerSize = 6;
-                              opacity = 0.8;
-                              break;
-                            case 2075:
-                              markerSize = 7;
-                              opacity = 0.6;
-                              break;
-                            case 2100:
-                              markerSize = 8;
-                              opacity = 0.4;
-                              break;
-                            default:
-                              markerSize = 6;
-                              opacity = 0.8;
+                      .flatMap((cycle, cycleIndex) => {
+                        const seriesList = [];
+
+                        // ---- (A) 年ごとの小点（薄色・小さめ） ----
+                        if (showYearlyDots) {
+                          const yearPoints = cycle.simulationData
+                            .filter(d =>
+                              typeof d[selectedXAxis] === 'number' &&
+                              typeof d[selectedYAxis] === 'number'
+                            )
+                            .map(d => ({ x: d[selectedXAxis], y: d[selectedYAxis] }));
+
+                          if (yearPoints.length > 0) {
+                            seriesList.push({
+                              data: yearPoints,
+                              color: makeColor(cycleIndex, 0.25),  // 同系色・薄め
+                              markerSize: 2,                       // 小さく
+                              showMark: true,
+                              // label: `${t.scatter.cycle} ${cycle.cycleNumber} (years)`,
+                            });
                           }
                         }
-                        
-                        return {
-                          data: [{
-                            x: yearData[selectedXAxis] || 0,
-                            y: yearData[selectedYAxis] || 0,
-                          }],
-                          color: color.replace('0.6', opacity.toString()),
-                          markerSize: markerSize,
-                          showMark: true,
-                          label: `${t.scatter.cycle} ${cycle.cycleNumber}`,
-                        };
-                      }).filter(Boolean);
-                    }).flat()}
+
+                        // ---- (B) 既存の平均/特定年の大きめ点（濃色） ----
+                        let targetYears;
+                        if (selectedPlotAttribute === 'all') {
+                          targetYears = [2050, 2075, 2100];
+                        } else if (selectedPlotAttribute === 'average') {
+                          targetYears = ['average'];
+                        } else {
+                          targetYears = [parseInt(selectedPlotAttribute)];
+                        }
+
+                        const bigPoints = targetYears.map((year) => {
+                          let yearData;
+
+                          if (year === 'average') {
+                            const valid = cycle.simulationData.filter(d =>
+                              typeof d[selectedXAxis] === 'number' &&
+                              typeof d[selectedYAxis] === 'number'
+                            );
+                            if (!valid.length) return null;
+                            const avgX = valid.reduce((s, d) => s + d[selectedXAxis], 0) / valid.length;
+                            const avgY = valid.reduce((s, d) => s + d[selectedYAxis], 0) / valid.length;
+                            yearData = { [selectedXAxis]: avgX, [selectedYAxis]: avgY };
+                          } else {
+                            const startYear = year - 25;
+                            const endYear = year;
+                            const valid = cycle.simulationData.filter(d =>
+                              d.Year >= startYear && d.Year <= endYear &&
+                              typeof d[selectedXAxis] === 'number' &&
+                              typeof d[selectedYAxis] === 'number'
+                            );
+                            if (!valid.length) return null;
+                            const avgX = valid.reduce((s, d) => s + d[selectedXAxis], 0) / valid.length;
+                            const avgY = valid.reduce((s, d) => s + d[selectedYAxis], 0) / valid.length;
+                            yearData = { [selectedXAxis]: avgX, [selectedYAxis]: avgY };
+                          }
+
+                          // 年に応じたサイズ・濃さ
+                          let markerSize = 6;
+                          let alpha = 0.7;
+                          if (year !== 'average') {
+                            if (year === 2050) { markerSize = 6; alpha = 0.8; }
+                            if (year === 2075) { markerSize = 7; alpha = 0.6; }
+                            if (year === 2100) { markerSize = 8; alpha = 0.4; }
+                          }
+
+                          return {
+                            data: [{ x: yearData[selectedXAxis] || 0, y: yearData[selectedYAxis] || 0 }],
+                            color: makeColor(cycleIndex, alpha),  // 同系色・濃いめ
+                            markerSize,
+                            showMark: true,
+                            label: `${t.scatter.cycle} ${cycle.cycleNumber}`,
+                          };
+                        }).filter(Boolean);
+
+                        return [...seriesList, ...bigPoints];
+                      })
+                    }
                     xAxis={[{
                       label: getLineChartIndicators(language)[selectedXAxis]?.labelTitle || '',
                       min: 0,
-                      max: Math.max(...resultHistory.flatMap(cycle => 
-                        cycle.simulationData.map(data => data[selectedXAxis] || 0)
+                      max: Math.max(...resultHistory.flatMap(cycle =>
+                        cycle.simulationData.map(d => d[selectedXAxis] || 0)
                       )) * 1.1
                     }]}
                     yAxis={[{
                       label: getLineChartIndicators(language)[selectedYAxis]?.labelTitle || '',
                       min: 0,
-                      max: Math.max(...resultHistory.flatMap(cycle => 
-                        cycle.simulationData.map(data => data[selectedYAxis] || 0)
+                      max: Math.max(...resultHistory.flatMap(cycle =>
+                        cycle.simulationData.map(d => d[selectedYAxis] || 0)
                       )) * 1.1
                     }]}
                     legend={null}
@@ -1649,7 +1881,29 @@ function App() {
                 <Typography variant="h6" gutterBottom>
                   {t.scatter.inputHistory}
                 </Typography>
-                
+                {/* 最新サイクルランキング（コンパクト表示） */}
+                {latestCycleNumber && latestRanks && (
+                  <Box sx={{
+                    mb: 1.5,
+                    p: 1,
+                    border: '1px solid #e0e0e0',
+                    borderRadius: 1,
+                    backgroundColor: '#fafafa'
+                  }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      {language === 'ja' ? `サイクル ${latestCycleNumber} の順位` : `Ranks of Cycle ${latestCycleNumber}`}
+                    </Typography>
+
+                    {/* 1行ずつ短く出す（例：洪水被害（2位/4人）） */}
+                    {RANK_METRICS.map(m => (
+                      <Typography key={m.key} variant="body2" sx={{ lineHeight: 1.4 }}>
+                        {language === 'ja'
+                          ? `${m.ja}（${latestRanks[m.key]}位/${totalCycles}人）`
+                          : `${m.key} (${latestRanks[m.key]}/${totalCycles})`}
+                      </Typography>
+                    ))}
+                  </Box>
+                )}
                 {/* 年次・サイクル・ソートセレクトバー */}
                 <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
                   <FormControl sx={{ minWidth: 120 }}>

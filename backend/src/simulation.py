@@ -172,7 +172,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     infiltration = precip * forest_retention_ratio
 
     # 即時流出
-    runoff = runoff_coef * precip * (1 - forest_retention_ratio)
+    runoff = runoff_coef * precip # * (1 - forest_retention_ratio)
 
     # 農業需要と戻り水
     ag_demand = necessary_water_for_crops
@@ -208,10 +208,10 @@ def simulate_year(year, prev_values, decision_vars, params):
         temp_mean_annual=temp,
         high_temp_tolerance_level=high_temp_tolerance_level,
         irrigation_mm=flow_irrigation_level,  # 掛け流しの追加取水量（mm/yr）
-        I50=150.0,                # 半飽和点
-        k_cool=3.0,             # 効率（0.002〜0.01で調整）
+        I50=300.0,                # 半飽和点
+        k_cool=6.0,             # 効率（0.002〜0.01で調整）
         water_supply_ratio=water_impact,  # その年に実際どれだけ水が回ったか
-        cooling_cap_degC=3.0
+        cooling_cap_degC=5.0
     )
 
     flow_irrigation_actual = flow_irrigation_level * act * (1 - return_flow_ratio)

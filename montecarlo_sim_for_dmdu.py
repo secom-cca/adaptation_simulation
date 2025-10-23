@@ -47,7 +47,7 @@ value_map = {
     'house_migration_amount': [0, 50, 100],
     'dam_levee_construction_cost': [0.0, 1.0, 2.0],
     # 'paddy_dam_construction_cost': [0.0, 10.0, 20.0],
-    'flow_irrigation_level': [0.0, 150, 300],
+    'flow_irrigation_level': [0.0, 300, 800],
 }
 
 # 固定（今回は 0）
@@ -159,7 +159,7 @@ for combo_idx, level_tuple in enumerate(decision_combos):
 panel_df = pd.concat(panel_rows, ignore_index=True)
 
 # panel_path = OUTPUT_DIR / "dmdu_panel_paddydam_251006.csv"
-panel_path = OUTPUT_DIR / "dmdu_panel_irrigation_251006.csv"
+panel_path = OUTPUT_DIR / "dmdu_panel_irrigation_251008v2.csv"
 panel_df.to_csv(panel_path, index=False)
 
 # --- 世代要約（各 Scenario×RCP×Sim の平均 → さらに Sim 平均/標準偏差） ---
@@ -196,7 +196,7 @@ for (sid, slabel, rcp), g in sim_level.groupby(['ScenarioID','ScenarioLabel','RC
 
 summary_df = pd.DataFrame(agg_parts)
 # summary_path = OUTPUT_DIR / "dmdu_summary_paddydam_251006.csv"
-summary_path = OUTPUT_DIR / "dmdu_summary_irrigation_251006.csv"
+summary_path = OUTPUT_DIR / "dmdu_summary_irrigation_251008v2.csv"
 summary_df.to_csv(summary_path, index=False)
 
 print(f"[OK] Saved panel:   {panel_path}")

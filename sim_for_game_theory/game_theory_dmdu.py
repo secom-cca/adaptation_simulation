@@ -259,7 +259,7 @@ def BNE_weight_types(
 # ================== 使い方 ==================
 if __name__ == "__main__":
     # 1) CSV読み込み
-    path = "../output/dmdu_summary_irrigation_251006.csv"
+    path = "../output/dmdu_summary_irrigation_251008v2.csv"
     df = pd.read_csv(path)
 
     # 2) 完備情報NE（RCP=ALL平均）

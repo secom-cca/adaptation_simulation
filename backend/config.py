@@ -82,7 +82,7 @@ DEFAULT_PARAMS = {
     'high_temp_tolerance_increment': 0.2,
 
     # 水災害
-    'flood_damage_coefficient': 100000,
+    'flood_damage_coefficient': 1000000,
     'levee_level_increment': 20.0,
     'levee_investment_threshold': 2.0, #########
     'levee_investment_required_years': 10, ###########

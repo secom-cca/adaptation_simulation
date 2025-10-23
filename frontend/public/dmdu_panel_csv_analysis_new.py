@@ -39,7 +39,7 @@ from typing import List, Dict
 import pandas as pd
 
 
-CSV_PATH = Path(__file__).parent / "dmdu_panel_irrigation_251006.csv"
+CSV_PATH = Path(__file__).parent / "dmdu_panel_irrigation_251008v2.csv"
 OUT_MEANS = Path(__file__).parent / "options_yearly_means.json"
 OUT_TIMESERIES = Path(__file__).parent / "options_simulation_timeseries.json"
 
