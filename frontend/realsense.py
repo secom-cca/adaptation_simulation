@@ -117,7 +117,7 @@ def send_object_positions(objects):
 
 # もし以下機能しなければ上記でお願いします
 # ---------------------------------------------------
-df = pd.read_csv("backend/data/parameter_zones.csv")
+df = pd.read_csv("../backend/data/parameter_zones.csv")
 
 parameter_zones_normalized = {
     row["param"]: {
@@ -210,8 +210,8 @@ def get_filtered_objects(
     # print(f"[DEBUG] 領域内の点群座標: {within_marker}")
 
     high_points = within_marker[within_marker[:, 2] < table_z - height_threshold]
-    print(f"[DEBUG] テーブルまでの距離: {table_z:.4}")
-    print(f"[DEBUG] 閾値としての距離: {(table_z - height_threshold):.4}")
+    print(f"[DEBUG] テーブルまでの距離: {table_z:.3}")
+    print(f"[DEBUG] 閾値としての距離: {(table_z - height_threshold):.3}")
     print(f"[DEBUG] マーカー範囲内 & 閾値以上の点群数：{len(high_points)}")
     
     if len(high_points) == 0:
