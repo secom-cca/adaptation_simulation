@@ -220,8 +220,9 @@ def simulate_year(year, prev_values, decision_vars, params):
     current_crop_yield = max((max_potential_yield * (1 - temp_impact)) * water_impact * (1 - paddy_dam_yield_impact),0) # * paddy_field_area [haあたり]
 
     # 5.2 農業R&D：累積投資で耐熱性向上（確率的閾値）
+    RND_NOISE_FACTOR = 0.1
     RnD_investment_total += agricultural_RnD_cost
-    RnD_threshold_with_noise = np.random.normal(RnD_investment_threshold * RnD_investment_required_years, RnD_investment_threshold * 0.1)
+    RnD_threshold_with_noise = np.random.normal(RnD_investment_threshold * RnD_investment_required_years, RnD_investment_threshold * RND_NOISE_FACTOR)
 
     if RnD_investment_total >= RnD_threshold_with_noise:
         high_temp_tolerance_level += high_temp_tolerance_increment
@@ -290,7 +291,8 @@ def simulate_year(year, prev_values, decision_vars, params):
 
     # Human pressure
     human_pressure_raw = min(0.01 * current_levee_level - 1, 1.0)
-    human_pressure = 1.0 - human_pressure_raw
+    # keep human_pressure in [0, 1] to avoid ecosystem_level exceeding 100
+    human_pressure = float(np.clip(1.0 - human_pressure_raw, 0.0, 1.0))
 
     # Weighted ecosystem score
     # weights = np.random.dirichlet([1/4, 1/4, 1/4])

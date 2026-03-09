@@ -1655,8 +1655,23 @@ function App() {
       </Dialog>
 
       {/* 結果表示ダイアログ */}
-      <Dialog open={openResultUI} onClose={handleCloseResultUI} maxWidth={false} fullWidth
-        PaperProps={{ sx: { width: '90vw', height: '90vh', maxWidth: '1600px' } }}>
+      {/* <Dialog open={openResultUI} onClose={handleCloseResultUI} maxWidth={false} fullWidth
+        PaperProps={{ sx: { width: '90vw', height: '90vh', maxWidth: '1600px' } }}> */}
+      <Dialog
+        open={openResultUI}
+        onClose={handleCloseResultUI}
+        fullScreen
+        PaperProps={{
+          sx: {
+            width: '100vw',
+            height: '100vh',
+            m: 0,
+            borderRadius: 0,
+            p: { xs: 1, sm: 2, md: 4 },
+            overflow: 'auto'
+          }
+        }}
+      >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {t.scatter.title}
           <Button onClick={handleCloseResultUI} color="primary" variant="outlined">
@@ -1668,7 +1683,15 @@ function App() {
             <Box sx={{ display: 'flex', gap: 4, height: '70vh' }}>
               {/* 左側：散布図セクション */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h6" gutterBottom>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontSize: 'clamp(16px, 2vw, 28px)',   // 小画面:16px, 標準:2vw, 大画面:最大28px
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    mb: 2
+                  }}
+                >
                   {t.scatter.description}
                 </Typography>
                 
@@ -1735,6 +1758,11 @@ function App() {
                 {/* 散布図 */}
                 <Box sx={{ flex: 1, minHeight: 400 }}>
                   <ScatterChart
+                    sx={{
+                      '& .MuiChartsAxis-label': { fontSize: 'clamp(12px, 1.4vw, 20px)' },
+                      '& .MuiChartsAxis-tickLabel': { fontSize: 'clamp(10px, 1.2vw, 16px)' },
+                      '& .MuiChartsLegend-root': { '& *': { fontSize: 'clamp(10px, 1.2vw, 16px)' } },
+                    }}
                     width={600}
                     height={400}
                     series={resultHistory

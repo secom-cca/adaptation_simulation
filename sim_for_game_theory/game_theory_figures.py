@@ -47,6 +47,55 @@ D_COST_COEF = {
     "flow_irrigation_level_level": 0.0         # 0
 }
 
+def compute_global_scalers(df_raw: pd.DataFrame, gen: str = "mean") -> dict:
+    """
+    全RCP・全戦略プロファイルをまとめて、指標のスケーリング基準を作る。
+    戻り値: {"flood": (min, max), "eco": (min, max), "yield": (min, max),
+            "U_cost": (min, max), "D_cost": (min, max)}
+    """
+    cols = get_metric_cols(gen)
+    df = df_raw.copy()
+
+    flood = df[cols["flood"]].mean(axis=1)
+    eco   = df[cols["eco"]].mean(axis=1)
+    yld   = df[cols["yield"]].mean(axis=1)
+
+    # コスト（Separate costsを使う場合）
+    if USE_SEPARATE_COSTS:
+        if ("U_cost_raw" not in df.columns) or ("D_cost_raw" not in df.columns):
+            df = compute_player_costs(df)
+        U_cost = df["U_cost_raw"]
+        D_cost = df["D_cost_raw"]
+    else:
+        # 共有コスト
+        cost_common = df[cols["cost"]].mean(axis=1)
+        U_cost = cost_common
+        D_cost = cost_common
+
+    def _minmax(s: pd.Series):
+        s = pd.to_numeric(s, errors="coerce")
+        mn, mx = float(np.nanmin(s.values)), float(np.nanmax(s.values))
+        if not np.isfinite(mn) or not np.isfinite(mx) or mx - mn < 1e-12:
+            return (0.0, 1.0)
+        return (mn, mx)
+
+    return {
+        "flood": _minmax(flood),
+        "eco":   _minmax(eco),
+        "yield": _minmax(yld),
+        "U_cost": _minmax(U_cost),
+        "D_cost": _minmax(D_cost),
+    }
+
+def norm01_with_scaler(s: pd.Series, scaler: tuple) -> pd.Series:
+    """固定scaler(min,max)で0-1正規化"""
+    mn, mx = scaler
+    s = pd.to_numeric(s, errors="coerce").fillna(mn)
+    if mx - mn < 1e-12:
+        return pd.Series(np.zeros(len(s)), index=s.index, dtype=float)
+    return ((s - mn) / (mx - mn)).clip(0.0, 1.0)
+
+
 # ========= 列名ユーティリティ =========
 def get_metric_cols(gen: str):
     """世代ごとの列名を返す。gen='mean' は Gen1-3 の平均を意図。"""
@@ -161,46 +210,39 @@ def _filter_rcp(df: pd.DataFrame, rcp_target) -> pd.DataFrame:
         "例: rcpU=4.5 もしくは rcpU='RCP4.5' 等、データに合わせて指定してください。"
     )
 
-def build_payoffs(df_raw: pd.DataFrame, wU: Dict, wD: Dict, gen: str = "Gen3") -> pd.DataFrame:
-    """
-    指標（Flood, Eco, Yield）＋ コストから U/D の効用を作成。
-    - USE_SEPARATE_COSTS=True: 上流/下流で別コスト（U_cost_raw / D_cost_raw）を使用
-    - USE_SEPARATE_COSTS=False: 従来通り Municipal Cost（共通）を使用
-    - gen='mean' は Gen1-3 の単純平均。
-    """
+def build_payoffs(df_raw: pd.DataFrame, wU: Dict, wD: Dict, gen: str = "Gen3", scalers: dict = None) -> pd.DataFrame:
     cols = get_metric_cols(gen)
     df = df_raw.copy()
 
-    # --- 指標（世代平均 or 単一） ---
     flood = df[cols["flood"]].mean(axis=1)
     eco   = df[cols["eco"]].mean(axis=1)
     yld   = df[cols["yield"]].mean(axis=1)
 
-    # --- コスト ---
     if USE_SEPARATE_COSTS:
         if ("U_cost_raw" not in df.columns) or ("D_cost_raw" not in df.columns):
             df = compute_player_costs(df)
         U_cost_raw = df["U_cost_raw"]
         D_cost_raw = df["D_cost_raw"]
-        # 各コストを別々に正規化（0-1）
+    else:
+        cost_common = df[cols["cost"]].mean(axis=1)
+        U_cost_raw = cost_common
+        D_cost_raw = cost_common
+
+    # ★ ここで「全RCP共通scaler」を使う
+    if scalers is None:
+        # 後方互換：scalers未指定なら従来通り（ただし論文整合性は落ちる）
+        flood_n = norm01(flood)
+        eco_n   = norm01(eco)
+        yield_n = norm01(yld)
         U_cost_n = norm01(U_cost_raw)
         D_cost_n = norm01(D_cost_raw)
-        # 参考用に Municipal（共通）も作っておく（集計やデバッグで見たい時）
-        cost_common = (U_cost_raw + D_cost_raw)
     else:
-        # 従来：CSVの Municipal Cost_* を使用（平均）
-        cost_common = df[cols["cost"]].mean(axis=1)
-        cost_n = norm01(cost_common)
-        U_cost_n = cost_n
-        D_cost_n = cost_n
+        flood_n = norm01_with_scaler(flood, scalers["flood"])
+        eco_n   = norm01_with_scaler(eco,   scalers["eco"])
+        yield_n = norm01_with_scaler(yld,   scalers["yield"])
+        U_cost_n = norm01_with_scaler(U_cost_raw, scalers["U_cost"])
+        D_cost_n = norm01_with_scaler(D_cost_raw, scalers["D_cost"])
 
-    # --- 正規化（指標） ---
-    flood_n = norm01(flood)    # 小さい方が良い（負項）
-    eco_n   = norm01(eco)      # 大きい方が良い（正項）
-    yield_n = norm01(yld)      # 大きい方が良い（正項）
-
-    # --- 効用（線形加重） ---
-    # 重要：U は U_cost_n、D は D_cost_n をそれぞれ参照
     df["U_payoff"] = (
         + wU.get("eco",0.0)   * eco_n
         - wU.get("flood",0.0) * flood_n
@@ -213,17 +255,12 @@ def build_payoffs(df_raw: pd.DataFrame, wU: Dict, wD: Dict, gen: str = "Gen3") -
     )
     df["SW"] = df["U_payoff"] + df["D_payoff"]
 
-    # --- 解析用に元値を保持（共通名） ---
-    df["Flood Damage"]     = flood
-    df["Ecosystem Level"]  = eco
-    df["Crop Yield"]       = yld
-    # 参考列
-    if USE_SEPARATE_COSTS:
-        df["Upstream Cost (raw)"]   = U_cost_raw
-        df["Downstream Cost (raw)"] = D_cost_raw
-        df["Municipal Cost (ref)"]  = cost_common   # U+D の推計（CSVの Municipal に近いはず）
-    else:
-        df["Municipal Cost"]        = cost_common
+    # 解析用保持
+    df["Flood Damage"]    = flood
+    df["Ecosystem Level"] = eco
+    df["Crop Yield"]      = yld
+    df["Upstream Cost (raw)"]   = U_cost_raw
+    df["Downstream Cost (raw)"] = D_cost_raw
     return df
 
 
@@ -269,69 +306,93 @@ def best_responses_and_NE(grid: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFram
 def NE_complete_info(df: pd.DataFrame, rcp: Optional[float]=None, wU=None, wD=None, gen: str="Gen3"):
     if wU is None: wU = W_UP_BASE
     if wD is None: wD = W_DN_BASE
-    if rcp is None:
-        dfR = df.copy()  # 全RCPを含めた上で GEN平均 or GEN指定
-    else:
-        dfR = _filter_rcp(df, rcp).copy()
 
-    dfP = build_payoffs(dfR, wU, wD, gen=gen)
+    # ★ 全RCP共通scaler
+    scalers = compute_global_scalers(df, gen=gen)
+
+    dfR = df.copy() if rcp is None else _filter_rcp(df, rcp).copy()
+    dfP = build_payoffs(dfR, wU, wD, gen=gen, scalers=scalers)
     grid = grid_from_df(dfP)
     return (*best_responses_and_NE(grid), grid)
 
 # ========= NE（プレイヤー別にRCPを固定） =========
-def NE_with_player_specific_RCPs(df: pd.DataFrame, rcpU, rcpD, wU=None, wD=None, gen: str="Gen3"):
+def NE_with_player_specific_RCPs(
+    df: pd.DataFrame,
+    rcpU,
+    rcpD,
+    wU: Optional[Dict]=None,
+    wD: Optional[Dict]=None,
+    gen: str="Gen3",
+    scalers: Optional[dict]=None
+):
     """
     上流の効用は rcpU だけから計算、下流の効用は rcpD だけから計算。
-    同一プロファイルの上に、U_payoff と D_payoff を別集計して突き合わせる。
+    ただし、指標のスケーリング（正規化）は全RCP共通scalerで揃える（論文整合）。
     """
     if wU is None: wU = W_UP_BASE
     if wD is None: wD = W_DN_BASE
+    if scalers is None:
+        scalers = compute_global_scalers(df, gen=gen)  # ★ 全体から一回作る
 
-    # U側データを安全に抽出
+    # U側データ抽出
     dfU = _filter_rcp(df, rcpU).copy()
     if dfU.empty:
         raise ValueError(f"RCP {rcpU} に一致するデータがありません（U側）。")
 
-    # D側データを安全に抽出
+    # D側データ抽出
     dfD = _filter_rcp(df, rcpD).copy()
     if dfD.empty:
         raise ValueError(f"RCP {rcpD} に一致するデータがありません（D側）。")
 
-    # 片側だけの効用を作る（もう一方はゼロ重みでダミー化）
-    dfU = build_payoffs(dfU, wU, {"yield":0,"flood":0,"cost":0}, gen=gen)
+    # U側：U_payoffだけ有効（Dはゼロ重み）
+    dfU = build_payoffs(dfU, wU, {"yield":0,"flood":0,"cost":0}, gen=gen, scalers=scalers)
     gU  = grid_from_df(dfU)[U_DEC + D_DEC + ["U_payoff"]].copy()
 
-    dfD = build_payoffs(dfD, {"eco":0,"flood":0,"cost":0}, wD, gen=gen)
+    # D側：D_payoffだけ有効（Uはゼロ重み）
+    dfD = build_payoffs(dfD, {"eco":0,"flood":0,"cost":0}, wD, gen=gen, scalers=scalers)
     gD  = grid_from_df(dfD)[U_DEC + D_DEC + ["D_payoff"]].copy()
 
+    # 同一プロファイルで突き合わせ
     grid = pd.merge(gU, gD, on=U_DEC + D_DEC, how="inner")
     if grid.empty:
-        raise ValueError("U/Dでアクションの直積が一致せず、比較可能なプロファイルがゼロです。"
-                         "（意思決定レベル列の水準がRCPごとにズレていないか確認してください）")
+        raise ValueError(
+            "U/Dでアクションの直積が一致せず、比較可能なプロファイルがゼロです。"
+            "（意思決定レベル列の水準がRCPごとにズレていないか確認してください）"
+        )
 
     grid["SW"] = grid["U_payoff"] + grid["D_payoff"]
     grid["U_action"] = list(zip(grid[U_DEC[0]], grid[U_DEC[1]]))
     grid["D_action"] = list(zip(grid[D_DEC[0]], grid[D_DEC[1]]))
+
     return (*best_responses_and_NE(grid), grid)
 
 # ========= NE（プレイヤー別にRCP事前（確率）） =========
-def NE_with_player_specific_priors(df: pd.DataFrame, priorU: Dict[float,float], priorD: Dict[float,float],
-                                   wU=None, wD=None, gen: str="Gen3"):
+def NE_with_player_specific_priors(
+    df: pd.DataFrame,
+    priorU: Dict,
+    priorD: Dict,
+    wU: Optional[Dict]=None,
+    wD: Optional[Dict]=None,
+    gen: str="Gen3",
+    scalers: Optional[dict]=None
+):
     """
-    UとDで異なるRCP事前分布を持つ場合の期待効用を計算。
-    - 各RCPのグリッドを作り、U/Dそれぞれの期待値だけ重み付き平均して合成。
+    UとDで異なるRCP事前分布（scenario weights）を持つ場合の期待効用を計算しNEを求める。
+    - RCPごとに grid(ω) を作成（U_payoff, D_payoff）
+    - Uは priorU、Dは priorD でそれぞれ期待値をとって合成
+    - 指標のスケーリングは全RCP共通scalerで揃える（論文整合）
     """
     if wU is None: wU = W_UP_BASE
     if wD is None: wD = W_DN_BASE
+    if scalers is None:
+        scalers = compute_global_scalers(df, gen=gen)  # ★ 全体から一回作る
 
-    # 事前のキー（RCP）を数値化して正規化（'RCP4.5' → 4.5 等）
+    # ---- priorのキーを正規化（数値化できればfloatに） ----
     def _norm_prior_keys(pr):
-        if pr is None: return {}
         out = {}
-        for k,v in pr.items():
+        for k, v in (pr or {}).items():
             k_num = _normalize_rcp_series(pd.Series([k])).iloc[0]
             if pd.isna(k_num):
-                # 文字列そのまま一致にも備えて保持
                 out[str(k).strip()] = float(v)
             else:
                 out[float(k_num)] = float(v)
@@ -340,20 +401,17 @@ def NE_with_player_specific_priors(df: pd.DataFrame, priorU: Dict[float,float], 
     priorU_n = _norm_prior_keys(priorU)
     priorD_n = _norm_prior_keys(priorD)
 
-    # 使用するRCP集合（数値解釈＋文字列）
-    keysU = set(priorU_n.keys())
-    keysD = set(priorD_n.keys())
-    all_keys = keysU | keysD
+    all_keys = set(priorU_n.keys()) | set(priorD_n.keys())
     if not all_keys:
         raise ValueError("priorU/priorD が空です。")
 
-    # データ側のRCP（両方の表現を用意）
+    # データ側RCP
     rcps_num = _normalize_rcp_series(df["RCP"])
     rcps_str = df["RCP"].astype(str).str.strip()
 
+    # ---- RCPごとの grid(ω) を作る ----
     grids = {}
     for k in sorted(all_keys, key=lambda x: str(x)):
-        # k が数値なら±ε一致、文字列ならそのまま一致
         if isinstance(k, (int, float)):
             eps = 1e-6
             sub = df[rcps_num.sub(float(k)).abs() <= eps].copy()
@@ -361,36 +419,46 @@ def NE_with_player_specific_priors(df: pd.DataFrame, priorU: Dict[float,float], 
             sub = df[rcps_str == str(k)].copy()
 
         if sub.empty:
-            # 見つからないキーはスキップ（重みが正でもデータがなければ寄与0）
+            # priorにあるがデータがないRCPはスキップ（寄与0）
             continue
 
-        sub = build_payoffs(sub, wU, wD, gen=gen)
-        g = grid_from_df(sub)
-        grids[k] = g[U_DEC + D_DEC + ["U_payoff","D_payoff"]].copy()
+        subP = build_payoffs(sub, wU, wD, gen=gen, scalers=scalers)
+        g = grid_from_df(subP)[U_DEC + D_DEC + ["U_payoff","D_payoff"]].copy()
+        grids[k] = g
 
     if not grids:
-        raise ValueError("priorU/priorD に対応するRCPデータが見つかりません。"
-                         "priorキーとCSVのRCP表記をご確認ください。")
+        raise ValueError(
+            "priorU/priorD に対応するRCPデータが見つかりません。"
+            "priorキーとCSVのRCP表記をご確認ください。"
+        )
 
-    # 期待効用（UとDで別ウェイト）
+    # ---- 期待効用の合成：UとDで別prior ----
+    # 合成先の器（全プロファイルの和を取る）
     base = None
     for k, g in grids.items():
-        wU_k = priorU_n.get(k, 0.0)
-        wD_k = priorD_n.get(k, 0.0)
+        wU_k = float(priorU_n.get(k, 0.0))
+        wD_k = float(priorD_n.get(k, 0.0))
 
-        gU = g.copy(); gU["D_payoff"] = 0.0; gU["U_payoff"] *= wU_k
-        gD = g.copy(); gD["U_payoff"] = 0.0; gD["D_payoff"] *= wD_k
+        # それぞれの prior で重み付け
+        tmp = g.copy()
+        tmp["U_payoff"] *= wU_k
+        tmp["D_payoff"] *= wD_k
 
-        comb = gU.copy(); comb["D_payoff"] = gD["D_payoff"]
-        base = comb if base is None else pd.concat([base, comb], ignore_index=True)
+        base = tmp if base is None else pd.concat([base, tmp], ignore_index=True)
 
+    # プロファイルごとに足し合わせ（期待値）
     grid = base.groupby(U_DEC + D_DEC, as_index=False).sum(numeric_only=True)
+
     if grid.empty:
-        raise ValueError("RCP事前に基づく合成で、比較可能なプロファイルがゼロです。"
-                         "（RCPごとに意思決定水準が異ならないか確認）")
+        raise ValueError(
+            "RCP事前に基づく合成で、比較可能なプロファイルがゼロです。"
+            "（RCPごとに意思決定水準が異ならないか確認）"
+        )
+
     grid["SW"] = grid["U_payoff"] + grid["D_payoff"]
     grid["U_action"] = list(zip(grid[U_DEC[0]], grid[U_DEC[1]]))
     grid["D_action"] = list(zip(grid[D_DEC[0]], grid[D_DEC[1]]))
+
     return (*best_responses_and_NE(grid), grid)
 
 # ========= パレートフロンティア =========
@@ -437,6 +505,10 @@ def plot_outcome_projection(grid: pd.DataFrame, NE: pd.DataFrame, xcol: str, yco
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.3)
     plt.tight_layout()
+
+def NE_common_prior(df: pd.DataFrame, common_prior: Dict, wU=None, wD=None, gen: str="Gen3"):
+    scalers = compute_global_scalers(df, gen=gen)
+    return NE_with_player_specific_priors(df, common_prior, common_prior, wU=wU, wD=wD, gen=gen, scalers=scalers)
 
 def compare_ne_across_weights(df: pd.DataFrame, wU_a: Dict, wD_a: Dict, wU_b: Dict, wD_b: Dict,
                               label_a="A", label_b="B", gen: str="Gen3"):
@@ -1120,3 +1192,294 @@ if __name__ == "__main__":
     )
 
     plt.show()
+
+
+# ============================================================
+# Results用：4つのRCPアンカー組（1.9/1.9,1.9/8.5,8.5/1.9,8.5/8.5）
+# × 複数の重みwセット で
+#  - NE（U_action/D_action）を一覧表にする
+#  - 効用空間（Pareto + NE）をプロット保存
+#  - Outcome空間（Flood vs Eco / Flood vs Yield）をプロット保存
+#
+# 前提：あなたの既存コード（grid_from_df, best_responses_and_NE, plot_* 等）に加え、
+#       build_payoffs(..., scalers=...) と compute_global_scalers が入っていること。
+# ============================================================
+
+import os
+import pandas as pd
+import numpy as np
+
+# ---------- 出力先 ----------
+OUTDIR = "./results"
+os.makedirs(OUTDIR, exist_ok=True)
+
+# ---------- 使うRCPペア ----------
+RCP_PAIRS = [
+    (1.9, 1.9),
+    (1.9, 8.5),
+    (8.5, 1.9),
+    (8.5, 8.5),
+]
+
+# ---------- 重みセット（必要に応じて追加/調整） ----------
+WEIGHT_SETS = {
+    "base": (W_UP_BASE, W_DN_BASE),
+    "alt":  (W_UP_ALT,  W_DN_ALT),
+    "flood": (
+        {"flood":0.6, "eco":0.2, "cost":0.2},
+        {"flood":0.6, "yield":0.2, "cost":0.2},
+    ),
+    "alt_base": (W_UP_ALT,  W_DN_BASE),
+    "base_alt": (W_UP_BASE,  W_DN_ALT),
+    "alt_flood": (W_UP_ALT,  {"flood":0.6, "yield":0.2, "cost":0.2},),
+}
+
+# ============================================================
+# （必須）NE関数：scalers共有版
+#  - 既にあなたが追加した修正版があるならそれを使ってOK
+# ============================================================
+
+def NE_with_player_specific_RCPs(
+    df: pd.DataFrame,
+    rcpU,
+    rcpD,
+    wU=None,
+    wD=None,
+    gen: str="Gen3",
+    scalers: dict=None
+):
+    if wU is None: wU = W_UP_BASE
+    if wD is None: wD = W_DN_BASE
+    if scalers is None:
+        scalers = compute_global_scalers(df, gen=gen)
+
+    dfU = _filter_rcp(df, rcpU).copy()
+    dfD = _filter_rcp(df, rcpD).copy()
+
+    # Uのみ効用
+    dfU = build_payoffs(dfU, wU, {"yield":0,"flood":0,"cost":0}, gen=gen, scalers=scalers)
+    gU  = grid_from_df(dfU)[U_DEC + D_DEC + ["U_payoff"]].copy()
+
+    # Dのみ効用
+    dfD = build_payoffs(dfD, {"eco":0,"flood":0,"cost":0}, wD, gen=gen, scalers=scalers)
+    gD  = grid_from_df(dfD)[U_DEC + D_DEC + ["D_payoff"]].copy()
+
+    grid = pd.merge(gU, gD, on=U_DEC + D_DEC, how="inner")
+    if grid.empty:
+        raise ValueError("U/Dで比較可能なプロファイルがゼロです（RCPごとに水準がズレていないか確認）。")
+
+    grid["SW"] = grid["U_payoff"] + grid["D_payoff"]
+    grid["U_action"] = list(zip(grid[U_DEC[0]], grid[U_DEC[1]]))
+    grid["D_action"] = list(zip(grid[D_DEC[0]], grid[D_DEC[1]]))
+
+    BR_U, BR_D, NE = best_responses_and_NE(grid)
+    return BR_U, BR_D, NE, grid
+
+
+def NE_with_player_specific_priors(
+    df: pd.DataFrame,
+    priorU: dict,
+    priorD: dict,
+    wU=None,
+    wD=None,
+    gen: str="Gen3",
+    scalers: dict=None
+):
+    if wU is None: wU = W_UP_BASE
+    if wD is None: wD = W_DN_BASE
+    if scalers is None:
+        scalers = compute_global_scalers(df, gen=gen)
+
+    def _norm_prior_keys(pr):
+        out = {}
+        for k, v in (pr or {}).items():
+            k_num = _normalize_rcp_series(pd.Series([k])).iloc[0]
+            if pd.isna(k_num):
+                out[str(k).strip()] = float(v)
+            else:
+                out[float(k_num)] = float(v)
+        return out
+
+    priorU_n = _norm_prior_keys(priorU)
+    priorD_n = _norm_prior_keys(priorD)
+    all_keys = set(priorU_n.keys()) | set(priorD_n.keys())
+    if not all_keys:
+        raise ValueError("priorU/priorD が空です。")
+
+    rcps_num = _normalize_rcp_series(df["RCP"])
+    rcps_str = df["RCP"].astype(str).str.strip()
+
+    grids = {}
+    for k in sorted(all_keys, key=lambda x: str(x)):
+        if isinstance(k, (int, float)):
+            sub = df[rcps_num.sub(float(k)).abs() <= 1e-6].copy()
+        else:
+            sub = df[rcps_str == str(k)].copy()
+        if sub.empty:
+            continue
+
+        subP = build_payoffs(sub, wU, wD, gen=gen, scalers=scalers)
+        g = grid_from_df(subP)[U_DEC + D_DEC + ["U_payoff","D_payoff"]].copy()
+        grids[k] = g
+
+    if not grids:
+        raise ValueError("priorに対応するRCPデータが見つかりません。")
+
+    base = None
+    for k, g in grids.items():
+        tmp = g.copy()
+        tmp["U_payoff"] *= float(priorU_n.get(k, 0.0))
+        tmp["D_payoff"] *= float(priorD_n.get(k, 0.0))
+        base = tmp if base is None else pd.concat([base, tmp], ignore_index=True)
+
+    grid = base.groupby(U_DEC + D_DEC, as_index=False).sum(numeric_only=True)
+    grid["SW"] = grid["U_payoff"] + grid["D_payoff"]
+    grid["U_action"] = list(zip(grid[U_DEC[0]], grid[U_DEC[1]]))
+    grid["D_action"] = list(zip(grid[D_DEC[0]], grid[D_DEC[1]]))
+
+    BR_U, BR_D, NE = best_responses_and_NE(grid)
+    return BR_U, BR_D, NE, grid
+
+
+# ============================================================
+# Results生成：RCPペア×重みセット
+# ============================================================
+
+def _ne_code(NE: pd.DataFrame) -> str:
+    if NE is None or NE.empty:
+        return "—"
+    u = NE.iloc[0]["U_action"]
+    d = NE.iloc[0]["D_action"]
+    return f"U{u}|D{d}"
+
+def _save_fig_safe(fig_title: str) -> str:
+    # ファイル名用に最低限のサニタイズ
+    fname = "".join(ch if ch.isalnum() or ch in "._-=" else "_" for ch in fig_title)
+    return os.path.join(OUTDIR, f"{fname}.png")
+
+def run_results_four_rcp_patterns(
+    df: pd.DataFrame,
+    gen: str="Gen3",
+    weight_sets: dict=None,
+    rcp_pairs=None,
+    make_plots: bool=True,
+    plot_outcomes: bool=True
+) -> pd.DataFrame:
+    if weight_sets is None:
+        weight_sets = WEIGHT_SETS
+    if rcp_pairs is None:
+        rcp_pairs = RCP_PAIRS
+
+    # ★全RCP共通scaler（ここが重要）
+    scalers = compute_global_scalers(df, gen=gen)
+
+    rows = []
+    for wname, (wU, wD) in weight_sets.items():
+        for (rcpU, rcpD) in rcp_pairs:
+            try:
+                BR_U, BR_D, NE, grid = NE_with_player_specific_RCPs(
+                    df, rcpU, rcpD, wU=wU, wD=wD, gen=gen, scalers=scalers
+                )
+                ne_code = _ne_code(NE)
+
+                # 結果（NEの各種値も保持）
+                if NE.empty:
+                    u_pay = d_pay = sw = np.nan
+                else:
+                    u_pay = float(NE.iloc[0]["U_payoff"])
+                    d_pay = float(NE.iloc[0]["D_payoff"])
+                    sw    = float(NE.iloc[0]["SW"])
+
+                rows.append({
+                    "weight_set": wname,
+                    "rcpU": rcpU,
+                    "rcpD": rcpD,
+                    "NE_code": ne_code,
+                    "NE_U_payoff": u_pay,
+                    "NE_D_payoff": d_pay,
+                    "NE_SW": sw,
+                })
+
+                # ---- 図の保存（必要なものだけ本文へ） ----
+                if make_plots:
+                    # 1) Utility space + PF + NE
+                    title1 = f"Utilities_PF_NE__GEN={gen}__w={wname}__U={rcpU}__D={rcpD}"
+                    plot_utilities_with_pf_ne(grid, NE, title1)
+                    plt.savefig(_save_fig_safe(title1), dpi=200)
+                    plt.close()
+
+                    if plot_outcomes:
+                        # 2) Outcome space (Flood vs Eco)
+                        title2 = f"Outcome__Flood_vs_Eco__GEN={gen}__w={wname}__U={rcpU}__D={rcpD}"
+                        plot_outcome_projection(grid, NE, "Flood Damage", "Ecosystem Level", title2)
+                        plt.savefig(_save_fig_safe(title2), dpi=200)
+                        plt.close()
+
+                        # 3) Outcome space (Flood vs Yield) も欲しければ
+                        title3 = f"Outcome__Flood_vs_Yield__GEN={gen}__w={wname}__U={rcpU}__D={rcpD}"
+                        plot_outcome_projection(grid, NE, "Flood Damage", "Crop Yield", title3)
+                        plt.savefig(_save_fig_safe(title3), dpi=200)
+                        plt.close()
+
+            except Exception as e:
+                rows.append({
+                    "weight_set": wname,
+                    "rcpU": rcpU,
+                    "rcpD": rcpD,
+                    "NE_code": f"ERROR: {e}",
+                    "NE_U_payoff": np.nan,
+                    "NE_D_payoff": np.nan,
+                    "NE_SW": np.nan,
+                })
+
+    return pd.DataFrame(rows)
+
+
+# ============================================================
+# （任意）NEコード表（Results本文に載せやすい表）を作る
+# ============================================================
+
+def make_ne_table(summary_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    行：RCPペア、列：weight_set、セル：NE_code
+    """
+    tbl = summary_df.pivot_table(
+        index=["rcpU", "rcpD"],
+        columns="weight_set",
+        values="NE_code",
+        aggfunc="first"
+    ).reset_index()
+    return tbl
+
+
+# ============================================================
+# 実行例
+# ============================================================
+
+if __name__ == "__main__":
+    df = pd.read_csv(CSV_PATH)
+
+    # 使えるRCPを確認
+    print("Available RCP (raw):", sorted(df["RCP"].astype(str).str.strip().unique().tolist()))
+    print("Available RCP (num):", sorted([x for x in _normalize_rcp_series(df["RCP"]).unique() if pd.notna(x)]))
+
+    # Results生成
+    summary = run_results_four_rcp_patterns(
+        df,
+        gen=GEN,
+        weight_sets=WEIGHT_SETS,
+        rcp_pairs=RCP_PAIRS,
+        make_plots=True,
+        plot_outcomes=True
+    )
+    summary_path = os.path.join(OUTDIR, f"NE_summary__GEN={GEN}.csv")
+    summary.to_csv(summary_path, index=False)
+    print("Saved:", summary_path)
+
+    # 表（本文用）
+    ne_table = make_ne_table(summary)
+    table_path = os.path.join(OUTDIR, f"NE_table__GEN={GEN}.csv")
+    ne_table.to_csv(table_path, index=False)
+    print("Saved:", table_path)
+
+    print(ne_table)
