@@ -144,7 +144,7 @@ if rcp_choice != "(none)":
     for k, v in rcp_climate_params[rcp_key].items():
         params[k] = v
 
-n_scenarios = st.sidebar.number_input("Monte Carlo scenarios", min_value=1, max_value=500, value=50, step=1, key="n_scenarios")
+n_scenarios = st.sidebar.number_input("Monte Carlo scenarios", min_value=1, max_value=500, value=100, step=10, key="n_scenarios")
 discount_rate = st.sidebar.number_input(
     "Discount rate (NPV)", min_value=0.0, max_value=0.2, value=0.03, step=0.005, format="%.3f", key="discount_rate"
 )
@@ -1782,13 +1782,14 @@ if all_years:
     for ((b0, a), (b1, b)), sh in edge_share.items():
         x0, y0 = x_map[b0], y_map[a]
         x1, y1 = x_map[b1], y_map[b]
-        lw = max(0.6, 12 * sh)
+        lw = max(1.2, 18 * sh)
+        edge_color = policy_color_map.get(a, fixed_line_color) if a == b else fixed_line_color
         figm.add_trace(
             go.Scatter(
                 x=[x0, x1],
                 y=[y0, y1],
                 mode="lines",
-                line=dict(width=lw, color=fixed_line_color),
+                line=dict(width=lw, color=edge_color),
                 hoverinfo="text",
                 text=[f"{a} → {b}<br>{b0}→{b1}<br>share={sh:.2f}"] * 2,
                 showlegend=False,
@@ -1892,7 +1893,7 @@ else:
         for ((b0, a), (b1, b)), sh in edge_share.items():
             x0, y0 = x_map[b0], y_map_r[a]
             x1, y1 = x_map[b1], y_map_r[b]
-            lw = max(0.6, 12 * sh)
+            lw = max(1.2, 18 * sh)
             figmr.add_trace(
                 go.Scatter(
                     x=[x0, x1],
