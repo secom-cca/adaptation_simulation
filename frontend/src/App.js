@@ -157,21 +157,32 @@ function App() {
 
 
   const [flashOn, setFlashOn] = useState(false);
+  const [flashMessage, setFlashMessage] = useState('');
   const lastFlashAtRef = useRef(0); // 連続点滅の抑制用
   const FLOOD_THRESHOLD = 100;      // 閾値（必要なら設定ダイアログに出してOK）
   const FLASH_COOLDOWN_MS = 500;   // 1.5秒以内の連続発火を抑制
   const FLASH_DURATION_MS = 500;    // 点滅の長さ
 
-  const triggerFlash = () => {
+  const triggerFlash = (damageValueRaw) => {
     const now = Date.now();
-    if (now - lastFlashAtRef.current < FLASH_COOLDOWN_MS) return; // 連続発火防止
+    if (now - lastFlashAtRef.current < FLASH_COOLDOWN_MS) return;
+
+    const damageValue = toNumber(damageValueRaw);
+    if (!Number.isFinite(damageValue)) return; // 値が変なら表示しない
+
     lastFlashAtRef.current = now;
 
+    const formatted = formatUSD(damageValue) ?? ''; // 例: "12,345 USD"
+    setFlashMessage(`洪水発生！${formatted}のダメージ`);
     setFlashOn(true);
-    setTimeout(() => setFlashOn(false), FLASH_DURATION_MS);
+
+    setTimeout(() => {
+      setFlashOn(false);
+      setFlashMessage('');
+    }, FLASH_DURATION_MS);
   };
 
-  
+
   // ロード中やエラー表示用
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -236,6 +247,23 @@ function App() {
     { key: 'Crop Yield',       ja: '収穫量',    lowerIsBetter: false },
     { key: 'Municipal Cost',   ja: '予算',      lowerIsBetter: true  },
   ];
+
+  // 数値に正規化：文字列ならカンマや単位を除去して数値化
+  const toNumber = (v) => {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') {
+      const cleaned = v.replace(/[^0-9.+-eE]/g, ''); // 例: "12,345 USD" → "12345"
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    return NaN;
+  };
+
+  // USDの簡易フォーマット（$を付けない「12,345 USD」形式）
+  const formatUSD = (n) => {
+    if (!Number.isFinite(n)) return null;
+    return `${Math.round(n).toLocaleString()} USD`;
+  };
 
   // 1サイクルの期間平均（2026-2100の全レコード平均）
   const getCycleAverages = (cycle) => {
@@ -533,10 +561,13 @@ function App() {
           // ★ ここで直近追加分をチェック
           // 追加分の中に「洪水被害 > 閾値」があれば点滅
           const newlyAdded = processedData;
-          const floodHit = newlyAdded.some(row =>
-            typeof row['Flood Damage'] === 'number' && row['Flood Damage'] > FLOOD_THRESHOLD
-          );
-          if (floodHit) triggerFlash();
+          const floodEvent = newlyAdded.find(row => {
+            const v = toNumber(row['Flood Damage']);
+            return Number.isFinite(v) && v > FLOOD_THRESHOLD;
+          });
+          if (floodEvent) {
+            triggerFlash(floodEvent['Flood Damage']); // 生の値を渡してOK（中で数値化）
+          }
 
           return next;
         });
@@ -1304,12 +1335,28 @@ function App() {
           inset: 0,
           pointerEvents: 'none',
           zIndex: 9999,
-          backgroundColor: flashOn ? 'rgba(255,0,0,0.25)' : 'transparent',
-          transition: 'background-color 150ms ease-in-out',
-          // ふわっと点滅を強めたい場合は keyframes を使う：
-          // animation: flashOn ? 'flashRed 0.7s ease-in-out' : 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          backgroundColor: flashOn ? 'rgba(255,0,0,0.35)' : 'transparent',
+          transition: 'background-color 200ms ease-in-out',
         }}
-      />
+      >
+        {flashOn && flashMessage && (
+          <Typography
+            variant="h4"
+            sx={{
+              color: '#fff',
+              fontWeight: 'bold',
+              textShadow: '0 0 10px rgba(0,0,0,0.7)',
+              animation: 'fadeText 1s ease-in-out',
+            }}
+          >
+            {flashMessage}
+          </Typography>
+        )}
+      </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography variant="h4" gutterBottom>
@@ -1608,8 +1655,23 @@ function App() {
       </Dialog>
 
       {/* 結果表示ダイアログ */}
-      <Dialog open={openResultUI} onClose={handleCloseResultUI} maxWidth={false} fullWidth
-        PaperProps={{ sx: { width: '90vw', height: '90vh', maxWidth: '1600px' } }}>
+      {/* <Dialog open={openResultUI} onClose={handleCloseResultUI} maxWidth={false} fullWidth
+        PaperProps={{ sx: { width: '90vw', height: '90vh', maxWidth: '1600px' } }}> */}
+      <Dialog
+        open={openResultUI}
+        onClose={handleCloseResultUI}
+        fullScreen
+        PaperProps={{
+          sx: {
+            width: '100vw',
+            height: '100vh',
+            m: 0,
+            borderRadius: 0,
+            p: { xs: 1, sm: 2, md: 4 },
+            overflow: 'auto'
+          }
+        }}
+      >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {t.scatter.title}
           <Button onClick={handleCloseResultUI} color="primary" variant="outlined">
@@ -1621,7 +1683,15 @@ function App() {
             <Box sx={{ display: 'flex', gap: 4, height: '70vh' }}>
               {/* 左側：散布図セクション */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h6" gutterBottom>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontSize: 'clamp(16px, 2vw, 28px)',   // 小画面:16px, 標準:2vw, 大画面:最大28px
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    mb: 2
+                  }}
+                >
                   {t.scatter.description}
                 </Typography>
                 
@@ -1688,6 +1758,11 @@ function App() {
                 {/* 散布図 */}
                 <Box sx={{ flex: 1, minHeight: 400 }}>
                   <ScatterChart
+                    sx={{
+                      '& .MuiChartsAxis-label': { fontSize: 'clamp(12px, 1.4vw, 20px)' },
+                      '& .MuiChartsAxis-tickLabel': { fontSize: 'clamp(10px, 1.2vw, 16px)' },
+                      '& .MuiChartsLegend-root': { '& *': { fontSize: 'clamp(10px, 1.2vw, 16px)' } },
+                    }}
                     width={600}
                     height={400}
                     series={resultHistory
@@ -2008,7 +2083,7 @@ function App() {
 
           <Box sx={{ position: 'relative', width: '100%' }}>
             <img
-              src="/system_dynamics.png"
+              src="/system_dynamics_ja2.png"
               alt="サンプル画像"
               style={{ width: '100%', display: 'block', height: 'auto' }}
             />

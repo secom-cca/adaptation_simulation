@@ -188,14 +188,22 @@ This project implements a Dynamic Adaptive Policy Pathways (DAPP) tool for clima
 
 * Monte Carlo simulation of policies under uncertainty (temperature, precipitation, flood events, demand, etc.)
 * Adaptive pathway detection using threshold exceedance (ATP: Adaptation Tipping Points)
-* Candidate strategy definition as a ladder of policies with trigger maps
-* Multi-scenario evaluation with scorecards (robustness, NPV of costs/damages, ecosystem levels, yields, etc.)
+* Policy switching modes:
+  * `Reactive`: uses `Escalation ladder` and `Trigger → policy mapping`
+  * `Anticipatory`: chooses from all policy primitives via lookahead optimization
+* Two-layer regime mode:
+  * Regime shift toggles only the `Crop Yield` constraint ON/OFF
+  * toggle probability is `1 / X` per year (`metric_toggle_interval_years`)
+  * optional cooldown after each exercise (`cooldown_years`)
+* Multi-scenario evaluation with scorecards (robustness, NPV/cumulative costs, ecosystem levels, yields, etc.)
 * Visualization suite:
 > * Pathway composition (stacked policy share over time)
-> * Radar charts for candidate comparison (normalized 0–100)
-> * Metro map: policy sequences across time buckets, showing transitions as subway-like lines
+> * Regime composition (stacked regime share over time)
+> * Threshold satisfaction share over time + final-year score table
+> * Cost time series (mean across scenarios) + period total summary
+> * Metro map: policy/regime sequences across time buckets, showing transitions as subway-like lines
 >> * Export of per-scenario and aggregated scorecards to CSV
->> * Session persistence: simulation results survive UI changes (e.g. changing dropdowns) until explicitly reset
+>> * Session persistence: simulation results survive UI changes until recomputed with `Run DAPP`
 
 ### Usage
 
@@ -205,16 +213,15 @@ streamlit run dapp_app.py
 
 In the web UI:
 1. Configure thresholds for evaluation metrics
-2. Define candidate pathways (e.g., Nature-first, Engineering-first, etc.)
-3. Select RCP scenario and simulation settings
-4. Run ▶️ Run DAPP (Monte Carlo)
-5. Explore results in visualizations:
-- Pathway composition
-- Radar chart
-- Metro map
-6. Export results to CSV if needed
+2. Select policy switching mode (`Reactive` or `Anticipatory`)
+3. Edit policy primitives
+4. If `Reactive`, configure escalation ladder and trigger mapping
+5. Select RCP and simulation settings
+6. Run ▶️ Run DAPP (Monte Carlo)
+7. Explore results in visualizations (composition, thresholds, costs, metro maps)
+8. Export results to CSV if needed
 
-Note: Results are cached in st.session_state. They remain visible until you press 🧹 Clear results.
+Note: Results are stored in `st.session_state` and remain visible until you rerun the simulation.
 
 ---
 
