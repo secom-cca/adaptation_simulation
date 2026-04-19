@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+﻿import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Box, Button, Dialog, DialogTitle, DialogContent, FormControl, Grid, IconButton, InputLabel, MenuItem, Slider, Stack, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper, TextField } from '@mui/material';
 import { LineChart, ScatterChart, Gauge } from '@mui/x-charts';
 import { Agriculture, Biotech, EmojiTransportation, Flood, Forest, Houseboat, LocalLibrary, PlayCircle } from '@mui/icons-material';
@@ -80,6 +80,39 @@ const INDICATOR_CONVERSION = {
   // 'Crop Yield': 1 / 1000 // kg → ton（例）
 };
 
+const BASE_POLICY_BUDGET_POINTS = 10;
+const POLICY_POINT_MAX = 10;
+const HOUSE_MIGRATION_BUDGET_STEP_POINTS = 5;
+const FLOOD_DAMAGE_BUDGET_POINT_USD = 1000000;
+const POLICY_POINT_KEYS = [
+  'planting_trees_amount',
+  'house_migration_amount',
+  'dam_levee_construction_cost',
+  'paddy_dam_construction_cost',
+  'agricultural_RnD_cost',
+  'capacity_building_cost'
+];
+const POLICY_BACKEND_MAX = {
+  planting_trees_amount: 100,
+  house_migration_amount: 100,
+  dam_levee_construction_cost: 2,
+  paddy_dam_construction_cost: 10,
+  agricultural_RnD_cost: 10,
+  capacity_building_cost: 10
+};
+
+const buildBlankDecisionVar = (year = 2026, cpClimate = 4.5) => ({
+  year,
+  planting_trees_amount: 0,
+  house_migration_amount: 0,
+  dam_levee_construction_cost: 0,
+  paddy_dam_construction_cost: 0,
+  capacity_building_cost: 0,
+  transportation_invest: 0,
+  agricultural_RnD_cost: 0,
+  cp_climate_params: cpClimate
+});
+
 
 
 function AppRouter() {
@@ -116,19 +149,7 @@ function App() {
   const [chartPredictMode, setChartPredictMode] = useState(localStorage.getItem('chartPredictMode') || 'monte-carlo'); // 予測データ表示モード: 'best-worst', 'monte-carlo', 'none'
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'en'); // 言語モード: 'ja', 'en'
   const [visibleCycles, setVisibleCycles] = useState(new Set()); // 表示するサイクルのセット
-  const [decisionVar, setDecisionVar] = useState({
-    year: 2026,
-    planting_trees_amount: 0.,   // 植林・森林保全
-    house_migration_amount: 0.,  // 住宅移転・嵩上げ
-    dam_levee_construction_cost: 0., //ダム・堤防工事
-    paddy_dam_construction_cost: 0., //田んぼダム工事
-    capacity_building_cost: 0.,   // 防災訓練・普及啓発
-    // irrigation_water_amount: 100, // 灌漑水量
-    // released_water_amount: 100,   // 放流水量
-    transportation_invest: 0,     // 交通網の拡充
-    agricultural_RnD_cost: 0,      // 農業研究開発
-    cp_climate_params: 4.5 //RCPの不確実性シナリオ
-  })
+  const [decisionVar, setDecisionVar] = useState(buildBlankDecisionVar())
   const [currentValues, setCurrentValues] = useState({
     temp: 15.5,
     precip: 1700,
@@ -230,6 +251,12 @@ function App() {
 
   const [showYearlyDots, setShowYearlyDots] = useState(true);
 
+  const resetPolicySelections = (year = decisionVarRef.current?.year ?? 2026, cpClimate = decisionVarRef.current?.cp_climate_params ?? 4.5) => {
+    const resetDecision = buildBlankDecisionVar(year, cpClimate);
+    decisionVarRef.current = resetDecision;
+    setDecisionVar(resetDecision);
+  };
+
   // 散布図セクションの上あたりに追加（関数なのでどこでもOK）
   const baseRGB = [
     [25,118,210], [220,0,78], [56,142,60], [245,124,0],
@@ -264,6 +291,8 @@ function App() {
     if (!Number.isFinite(n)) return null;
     return `${Math.round(n).toLocaleString()} USD`;
   };
+
+  const formatPoints = (n) => `${Math.round(n)} pt`;
 
   // 1サイクルの期間平均（2026-2100の全レコード平均）
   const getCycleAverages = (cycle) => {
@@ -479,16 +508,10 @@ function App() {
       console.log("受信:", data);
 
       if (data.simulate_trigger === true) {
-        setDecisionVar(prev => ({
-          ...prev,
-          transportation_invest: 0,
-          agricultural_RnD_cost: 0,
-          planting_trees_amount: 0,
-          house_migration_amount: 0,
-          dam_levee_construction_cost: 0,
-          paddy_dam_construction_cost: 0,
-          capacity_building_cost: 0
-        }));
+        resetPolicySelections(
+          decisionVarRef.current?.year ?? 2026,
+          decisionVarRef.current?.cp_climate_params ?? 4.5
+        );
         handleClickCalc();
       } else {
         setDecisionVar(prev => {
@@ -630,6 +653,11 @@ function App() {
       // 表示更新のために一時停止（見た目をスムーズに）
       await new Promise(res => setTimeout(res, LINE_CHART_DISPLAY_INTERVAL));
     }
+
+    resetPolicySelections(
+      nextYear,
+      decisionVarRef.current?.cp_climate_params ?? decisionVar.cp_climate_params
+    );
 
     isRunningRef.current = false;
     
@@ -809,8 +837,8 @@ function App() {
     setInputCount(0); // 入力カウントをリセット
     setInputHistory([]); // 入力履歴をリセット
     
-    // 年を2026年にリセット
-    updateDecisionVar("year", 2026);
+    // 年と政策選択を初期状態にリセット
+    resetPolicySelections(2026, decisionVarRef.current?.cp_climate_params ?? 4.5);
     
     // シミュレーションデータをクリア（新しいサイクルのため）
     setSimulationData([]);
@@ -1110,7 +1138,12 @@ function App() {
   const updateDecisionVar = (key, value) => {
     setDecisionVar(prev => {
       // スライダーの場合は表示値をバックエンド値に変換して保存
-      const backendValue = convertDisplayToBackendValue(key, value);
+      const nextValue = POLICY_POINT_KEYS.includes(key)
+        ? findAllowedPolicyPoints(prev, key, value)
+        : value;
+      const backendValue = POLICY_POINT_KEYS.includes(key)
+        ? convertPolicyPointsToBackendValue(key, nextValue)
+        : convertDisplayToBackendValue(key, nextValue);
       const updated = { ...prev, [key]: backendValue };
       decisionVarRef.current = updated;
       
@@ -1324,6 +1357,142 @@ function App() {
     }
     return backendValue; // 変換できない場合はそのまま返す
   };
+
+  const convertPolicyPointsToBackendValue = (key, displayValue) => {
+    const backendMax = POLICY_BACKEND_MAX[key];
+    if (backendMax === undefined) {
+      return displayValue;
+    }
+
+    const normalizedPoints = Math.max(0, Math.min(POLICY_POINT_MAX, Math.round(Number(displayValue) || 0)));
+    return (backendMax * normalizedPoints) / POLICY_POINT_MAX;
+  };
+
+  const convertBackendValueToPolicyPoints = (key, backendValue) => {
+    const backendMax = POLICY_BACKEND_MAX[key];
+    if (backendMax === undefined) {
+      return backendValue;
+    }
+
+    const numericValue = Number(backendValue) || 0;
+    return Math.max(0, Math.min(POLICY_POINT_MAX, Math.round((numericValue / backendMax) * POLICY_POINT_MAX)));
+  };
+
+  const getPolicyPointsForDecision = (decisionVariables, key) => convertBackendValueToPolicyPoints(key, decisionVariables?.[key] ?? 0);
+
+  const getUsedPolicyPoints = (decisionVariables) => (
+    POLICY_POINT_KEYS.reduce((sum, key) => sum + getPolicyPointsForDecision(decisionVariables, key), 0)
+  );
+
+  const getFloodDamageForPeriod = (rows, periodIndex) => {
+    if (periodIndex < 0) return 0;
+
+    const start = periodIndex * SIMULATION_YEARS;
+    const end = start + SIMULATION_YEARS;
+    return rows
+      .slice(start, end)
+      .reduce((sum, row) => sum + Math.max(toNumber(row?.['Flood Damage']), 0), 0);
+  };
+
+  const getFloodBudgetReduction = (floodDamage) => Math.max(0, Math.floor(Math.max(floodDamage, 0) / FLOOD_DAMAGE_BUDGET_POINT_USD));
+
+  const getMigrationBudgetReduction = (cumulativeMigrationPoints) => (
+    Math.max(0, Math.floor(Math.max(cumulativeMigrationPoints, 0) / HOUSE_MIGRATION_BUDGET_STEP_POINTS))
+  );
+
+  const buildBudgetRows = (historyEntries, rows, pendingInput = null) => {
+    const completedEntries = Array.isArray(historyEntries) ? historyEntries : [];
+    const allEntries = pendingInput ? [...completedEntries, pendingInput] : completedEntries;
+    const simulationRows = Array.isArray(rows) ? rows : [];
+    let cumulativeMigrationPoints = 0;
+
+    return allEntries.map((entry, index) => {
+      const decisionVariables = entry?.decisionVariables ?? {};
+      const houseMigrationPoints = getPolicyPointsForDecision(decisionVariables, 'house_migration_amount');
+      const appliedFloodDamage = index === 0 ? 0 : getFloodDamageForPeriod(simulationRows, index - 1);
+      const relocationPointsApplied = cumulativeMigrationPoints;
+      const floodReduction = getFloodBudgetReduction(appliedFloodDamage);
+      const migrationReduction = getMigrationBudgetReduction(relocationPointsApplied);
+      const availableBudgetPoints = Math.max(
+        0,
+        BASE_POLICY_BUDGET_POINTS - floodReduction - migrationReduction
+      );
+      const usedPolicyPoints = getUsedPolicyPoints(decisionVariables);
+      const totalBudgetReduction = floodReduction + migrationReduction;
+      const periodLabel = `${entry?.year ?? '-'} - ${(entry?.year ?? 0) + SIMULATION_YEARS - 1}`;
+
+      cumulativeMigrationPoints += houseMigrationPoints;
+
+      return {
+        inputNumber: entry?.inputNumber ?? index + 1,
+        year: entry?.year,
+        periodLabel,
+        decisionVariables,
+        houseMigrationPoints,
+        appliedFloodDamage,
+        periodFloodDamage: index < completedEntries.length ? getFloodDamageForPeriod(simulationRows, index) : null,
+        cumulativeMigrationPoints,
+        relocationPointsApplied,
+        floodReduction,
+        migrationReduction,
+        totalBudgetReduction,
+        availableBudgetPoints,
+        usedPolicyPoints,
+        remainingBudgetPoints: Math.max(availableBudgetPoints - usedPolicyPoints, 0),
+        isPending: Boolean(pendingInput) && index === allEntries.length - 1
+      };
+    });
+  };
+
+  const getPendingBudgetInput = (decisionVariables) => ({
+    inputNumber: inputCount + 1,
+    year: decisionVariables.year,
+    decisionVariables
+  });
+
+  const getBudgetRowForDecision = (decisionVariables) => {
+    const rows = buildBudgetRows(inputHistory, simulationData, getPendingBudgetInput(decisionVariables));
+    return rows[rows.length - 1] ?? null;
+  };
+
+  const isDecisionWithinBudget = (decisionVariables) => {
+    const budgetRow = getBudgetRowForDecision(decisionVariables);
+    if (!budgetRow) return true;
+    return budgetRow.usedPolicyPoints <= budgetRow.availableBudgetPoints;
+  };
+
+  const withPolicyPoints = (decisionVariables, key, points) => ({
+    ...decisionVariables,
+    [key]: convertPolicyPointsToBackendValue(key, points)
+  });
+
+  const findAllowedPolicyPoints = (decisionVariables, key, requestedPoints) => {
+    const normalizedTarget = Math.max(0, Math.min(POLICY_POINT_MAX, Math.round(Number(requestedPoints) || 0)));
+
+    for (let candidate = normalizedTarget; candidate >= 0; candidate -= 1) {
+      if (isDecisionWithinBudget(withPolicyPoints(decisionVariables, key, candidate))) {
+        return candidate;
+      }
+    }
+
+    return 0;
+  };
+
+  const getSliderMaxPoints = (sliderName) => {
+    return POLICY_POINT_MAX;
+  };
+
+  const getSliderMarks = () => ([0, 5, 10].map((value) => ({ value, label: String(value) })));
+
+  const currentCycleBudgetRows = useMemo(() => (
+    buildBudgetRows(
+      inputHistory,
+      simulationData,
+      cycleCompleted || inputCount >= 3 ? null : getPendingBudgetInput(decisionVar)
+    )
+  ), [inputHistory, simulationData, decisionVar, inputCount, cycleCompleted]);
+
+  const currentBudgetRow = currentCycleBudgetRows[currentCycleBudgetRows.length - 1] ?? null;
 
   return (
     <Box sx={{ padding: 2, backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
@@ -2044,13 +2213,13 @@ function App() {
                                 <TableCell>{input.inputNumber}回目</TableCell>
                                 <TableCell>{input.year}年</TableCell>
                                 <TableCell>{input.decisionVariables.cp_climate_params}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('planting_trees_amount', input.decisionVariables.planting_trees_amount)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('house_migration_amount', input.decisionVariables.house_migration_amount)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('dam_levee_construction_cost', input.decisionVariables.dam_levee_construction_cost)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('paddy_dam_construction_cost', input.decisionVariables.paddy_dam_construction_cost)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('capacity_building_cost', input.decisionVariables.capacity_building_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('planting_trees_amount', input.decisionVariables.planting_trees_amount)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('house_migration_amount', input.decisionVariables.house_migration_amount)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('dam_levee_construction_cost', input.decisionVariables.dam_levee_construction_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('paddy_dam_construction_cost', input.decisionVariables.paddy_dam_construction_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('capacity_building_cost', input.decisionVariables.capacity_building_cost)}</TableCell>
                                 {/* <TableCell>{input.decisionVariables.transportation_invest}</TableCell> */}
-                                <TableCell>{convertBackendToDisplayValue('agricultural_RnD_cost', input.decisionVariables.agricultural_RnD_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('agricultural_RnD_cost', input.decisionVariables.agricultural_RnD_cost)}</TableCell>
                               </TableRow>
                             ))
                         )}
@@ -2276,6 +2445,65 @@ function App() {
           </Box>
         </Paper>
       </Box>
+      <Paper
+        elevation={2}
+        sx={{
+          width: '100%',
+          mb: 2,
+          p: 2,
+          borderRadius: 2,
+          backgroundColor: '#fffdf7',
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          {t.budget.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          {t.budget.description}
+        </Typography>
+        {currentBudgetRow && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+              gap: 2,
+            }}
+          >
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                {t.budget.appliedFloodDamage}
+              </Typography>
+              <Typography variant="h6">
+                {formatUSD(currentBudgetRow.appliedFloodDamage) ?? '-'}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                {t.budget.floodReduction}
+              </Typography>
+              <Typography variant="h6">
+                {formatPoints(currentBudgetRow.floodReduction)}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                {t.budget.relocationReduction}
+              </Typography>
+              <Typography variant="h6">
+                {formatPoints(currentBudgetRow.migrationReduction)}
+              </Typography>
+            </Paper>
+            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+              <Typography variant="body2" color="text.secondary">
+                {`${t.budget.period}: ${currentBudgetRow.isPending ? `${currentBudgetRow.periodLabel} (${t.budget.currentSelection})` : currentBudgetRow.periodLabel}`}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {`${t.budget.availablePoints}: ${formatPoints(currentBudgetRow.availableBudgetPoints)} / ${t.budget.totalReduction}: ${formatPoints(currentBudgetRow.totalBudgetReduction)}`}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+      </Paper>
       <Box style={{ width: '100%' }}>
         <Grid container spacing={2}> {/* spacingでBox間の余白を調整できます */}
           <Grid size={4}>
@@ -2291,22 +2519,19 @@ function App() {
               <Forest color="success" />
               {t.sliders.plantingTrees}
               <Slider
-                value={convertBackendToDisplayValue('planting_trees_amount', decisionVar.planting_trees_amount)}
+                value={convertBackendValueToPolicyPoints('planting_trees_amount', decisionVar.planting_trees_amount)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('planting_trees_amount')}
+                marks={getSliderMarks('planting_trees_amount')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => {
                   updateDecisionVar('planting_trees_amount', newValue);
-                  updatePlantingHistory(decisionVar.year, convertDisplayToBackendValue('planting_trees_amount', newValue));
+                  updatePlantingHistory(decisionVar.year, convertPolicyPointsToBackendValue('planting_trees_amount', newValue));
                 }}
                 disabled={!isSliderEnabled('planting_trees_amount')}
               />
@@ -2352,18 +2577,15 @@ function App() {
               <Flood color="info"  />
               {t.sliders.damLevee}
               <Slider
-                value={convertBackendToDisplayValue('dam_levee_construction_cost', decisionVar.dam_levee_construction_cost)}
+                value={convertBackendValueToPolicyPoints('dam_levee_construction_cost', decisionVar.dam_levee_construction_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('dam_levee_construction_cost')}
+                marks={getSliderMarks('dam_levee_construction_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('dam_levee_construction_cost', newValue)}
                 disabled={!isSliderEnabled('dam_levee_construction_cost')}
@@ -2382,18 +2604,15 @@ function App() {
               <Biotech color="success"  />
               {t.sliders.agriculturalRnD}
               <Slider
-                value={convertBackendToDisplayValue('agricultural_RnD_cost', decisionVar.agricultural_RnD_cost)}
+                value={convertBackendValueToPolicyPoints('agricultural_RnD_cost', decisionVar.agricultural_RnD_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('agricultural_RnD_cost')}
+                marks={getSliderMarks('agricultural_RnD_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('agricultural_RnD_cost', newValue)}
                 disabled={!isSliderEnabled('agricultural_RnD_cost')}
@@ -2412,18 +2631,15 @@ function App() {
               <Houseboat color={"info"} />
               {t.sliders.houseMigration}
               <Slider
-                value={convertBackendToDisplayValue('house_migration_amount', decisionVar.house_migration_amount)}
+                value={convertBackendValueToPolicyPoints('house_migration_amount', decisionVar.house_migration_amount)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('house_migration_amount')}
+                marks={getSliderMarks('house_migration_amount')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('house_migration_amount', newValue)}
                 disabled={!isSliderEnabled('house_migration_amount')}
@@ -2442,18 +2658,15 @@ function App() {
               <Agriculture color={"success"} />
               {t.sliders.paddyDam}
               <Slider
-                value={convertBackendToDisplayValue('paddy_dam_construction_cost', decisionVar.paddy_dam_construction_cost)}
+                value={convertBackendValueToPolicyPoints('paddy_dam_construction_cost', decisionVar.paddy_dam_construction_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('paddy_dam_construction_cost')}
+                marks={getSliderMarks('paddy_dam_construction_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('paddy_dam_construction_cost', newValue)}
                 disabled={!isSliderEnabled('paddy_dam_construction_cost')}
@@ -2472,18 +2685,15 @@ function App() {
               <LocalLibrary color="action" />
               {t.sliders.capacityBuilding}
               <Slider
-                value={convertBackendToDisplayValue('capacity_building_cost', decisionVar.capacity_building_cost)}
+                value={convertBackendValueToPolicyPoints('capacity_building_cost', decisionVar.capacity_building_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('capacity_building_cost')}
+                marks={getSliderMarks('capacity_building_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('capacity_building_cost', newValue)}
                 disabled={!isSliderEnabled('capacity_building_cost')}

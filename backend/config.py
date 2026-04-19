@@ -12,6 +12,7 @@ start_year = 2026
 end_year = 2100
 years = np.arange(start_year, end_year + 1)
 total_years = len(years)
+SIMULATION_RANDOM_SEED = 4
 
 DEFAULT_PARAMS = {
     'start_year': start_year,
@@ -155,5 +156,5 @@ rcp_climate_params = {
 
 __all__ = [
     "DATA_DIR", "RANK_FILE", "ACTION_LOG_FILE", "YOUR_NAME_FILE",
-    "DEFAULT_PARAMS", "rcp_climate_params"
+    "DEFAULT_PARAMS", "rcp_climate_params", "SIMULATION_RANDOM_SEED"
 ]

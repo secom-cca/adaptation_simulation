@@ -1,8 +1,10 @@
 # simulation.py
 
+import random
 import numpy as np
 import pandas as pd
 from scipy.stats import gumbel_r
+from config import SIMULATION_RANDOM_SEED
 from src.utils import estimate_rice_yield_loss
 
 def simulate_year(year, prev_values, decision_vars, params):
@@ -108,6 +110,11 @@ def simulate_year(year, prev_values, decision_vars, params):
     # 地形
     total_area = params['total_area']
     paddy_field_area = params['paddy_field_area']
+
+    # Keep yearly shocks reproducible regardless of request order.
+    year_seed = SIMULATION_RANDOM_SEED + (year - start_year)
+    random.seed(year_seed)
+    np.random.seed(year_seed)
     
     # resident_density = 1000 # [person/km^2]
     # water_demand_per_resident = 130 # [m3/person]
