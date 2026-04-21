@@ -21,7 +21,16 @@ entry point
 │   ├── realsense.py                 ← RealSense input processing (Python)
 │   └── ws_server.js                 ← WebSocket server (Node.js)
 ```
+---
 
+## 🛠 Prerequisites (AI Agent Setup)
+
+This project uses **gemma2:2b** via **Ollama** for AI-agent features. Please set up the following before running the simulation:
+
+1. **Install Ollama**: Download and install from [ollama.com](https://ollama.com).
+2. **Download Gemma Model**: Run the following command in your terminal to pull the required model:
+   ```bash
+   ollama pull gemma2:2b
 ---
 
 ## 🚀 Usage Options
