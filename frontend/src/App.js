@@ -101,6 +101,12 @@ const POLICY_BACKEND_MAX = {
   capacity_building_cost: 10
 };
 
+const INTERMEDIATE_EVALUATION_STAGES = [
+  { stageIndex: 1, checkpointYear: 2050, periodStartYear: 2026, periodEndYear: 2050 },
+  { stageIndex: 2, checkpointYear: 2075, periodStartYear: 2051, periodEndYear: 2075 },
+  { stageIndex: 3, checkpointYear: 2100, periodStartYear: 2076, periodEndYear: 2100 },
+];
+
 const buildBlankDecisionVar = (year = 2026, cpClimate = 4.5) => ({
   year,
   planting_trees_amount: 0,
@@ -248,8 +254,12 @@ function App() {
 
   // ここでuseRefを定義
   const wsLogRef = useRef(null);
+  const evaluationSessionRef = useRef(0);
 
   const [showYearlyDots, setShowYearlyDots] = useState(true);
+  const [intermediateEvaluations, setIntermediateEvaluations] = useState([]);
+  const [evaluationErrors, setEvaluationErrors] = useState({});
+  const [loadingEvaluationStages, setLoadingEvaluationStages] = useState({});
 
   const resetPolicySelections = (year = decisionVarRef.current?.year ?? 2026, cpClimate = decisionVarRef.current?.cp_climate_params ?? 4.5) => {
     const resetDecision = buildBlankDecisionVar(year, cpClimate);
@@ -293,6 +303,94 @@ function App() {
   };
 
   const formatPoints = (n) => `${Math.round(n)} pt`;
+
+  const upsertIntermediateEvaluation = (nextEvaluation) => {
+    setIntermediateEvaluations(prev => (
+      [...prev.filter(item => item.stageIndex !== nextEvaluation.stageIndex), nextEvaluation]
+        .sort((a, b) => a.stageIndex - b.stageIndex)
+    ));
+  };
+
+  const getIntermediateEvaluation = (stageIndex) => (
+    intermediateEvaluations.find(item => item.stageIndex === stageIndex) ?? null
+  );
+
+  const setEvaluationStageLoading = (stageIndex, isLoading) => {
+    setLoadingEvaluationStages(prev => {
+      const next = { ...prev };
+      if (isLoading) {
+        next[stageIndex] = true;
+      } else {
+        delete next[stageIndex];
+      }
+      return next;
+    });
+  };
+
+  const buildIntermediateEvaluationPayload = (stageIndex, decisionVariables, periodRows) => {
+    const firstYear = periodRows[0]?.Year ?? INTERMEDIATE_EVALUATION_STAGES[stageIndex - 1]?.periodStartYear;
+    const lastYear = periodRows[periodRows.length - 1]?.Year ?? INTERMEDIATE_EVALUATION_STAGES[stageIndex - 1]?.periodEndYear;
+    return {
+      stage_index: stageIndex,
+      checkpoint_year: lastYear,
+      period_start_year: firstYear,
+      period_end_year: lastYear,
+      language,
+      decision_var: decisionVariables,
+      simulation_rows: periodRows,
+    };
+  };
+
+  const requestIntermediateEvaluation = async ({ stageIndex, decisionVariables, periodRows, sessionId }) => {
+    if (!Array.isArray(periodRows) || periodRows.length === 0) {
+      return null;
+    }
+
+    if (evaluationSessionRef.current !== sessionId) {
+      return null;
+    }
+
+    setEvaluationStageLoading(stageIndex, true);
+    setEvaluationErrors(prev => {
+      const next = { ...prev };
+      delete next[stageIndex];
+      return next;
+    });
+
+    try {
+      const payload = buildIntermediateEvaluationPayload(stageIndex, decisionVariables, periodRows);
+      const resp = await axios.post(`${BACKEND_URL}/intermediate-evaluation`, payload);
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const nextEvaluation = {
+        stageIndex: resp.data.stage_index,
+        checkpointYear: resp.data.checkpoint_year,
+        periodStartYear: resp.data.period_start_year,
+        periodEndYear: resp.data.period_end_year,
+        model: resp.data.model,
+        feedback: resp.data.feedback,
+        policySummary: resp.data.policy_summary ?? [],
+        eventHighlights: resp.data.event_highlights ?? [],
+      };
+      upsertIntermediateEvaluation(nextEvaluation);
+      return nextEvaluation;
+    } catch (err) {
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const detail = err?.response?.data?.detail;
+      setEvaluationErrors(prev => ({
+        ...prev,
+        [stageIndex]: typeof detail === 'string' ? detail : t.evaluation.errorMessage,
+      }));
+      return null;
+    } finally {
+      if (evaluationSessionRef.current === sessionId) {
+        setEvaluationStageLoading(stageIndex, false);
+      }
+    }
+  };
 
   // 1サイクルの期間平均（2026-2100の全レコード平均）
   const getCycleAverages = (cycle) => {
@@ -626,10 +724,11 @@ function App() {
     let count = 0;
     let cycleStartYear = decisionVar.year; // サイクル開始年を記録
     let latestSimulationData = []; // 最新のシミュレーションデータを保存
+    const completedStageIndex = inputCount + 1;
 
     // 現在の入力を履歴に記録
     const currentInput = {
-      inputNumber: inputCount + 1,
+      inputNumber: completedStageIndex,
       year: decisionVar.year,
       decisionVariables: { ...decisionVar },
       currentValues: { ...currentValues }
@@ -653,6 +752,22 @@ function App() {
       // 表示更新のために一時停止（見た目をスムーズに）
       await new Promise(res => setTimeout(res, LINE_CHART_DISPLAY_INTERVAL));
     }
+
+    latestSimulationData = [...simulationDataRef.current];
+    const stageStartIndex = (completedStageIndex - 1) * SIMULATION_YEARS;
+    let periodRows = latestSimulationData.slice(stageStartIndex, stageStartIndex + SIMULATION_YEARS);
+    if (periodRows.length < SIMULATION_YEARS) {
+      await new Promise(res => setTimeout(res, 0));
+      latestSimulationData = [...simulationDataRef.current];
+      periodRows = latestSimulationData.slice(stageStartIndex, stageStartIndex + SIMULATION_YEARS);
+    }
+
+    void requestIntermediateEvaluation({
+      stageIndex: completedStageIndex,
+      decisionVariables: currentInput.decisionVariables,
+      periodRows,
+      sessionId: evaluationSessionRef.current,
+    });
 
     resetPolicySelections(
       nextYear,
@@ -836,6 +951,10 @@ function App() {
     setShowResultButton(false);
     setInputCount(0); // 入力カウントをリセット
     setInputHistory([]); // 入力履歴をリセット
+    evaluationSessionRef.current += 1;
+    setIntermediateEvaluations([]);
+    setEvaluationErrors({});
+    setLoadingEvaluationStages({});
     
     // 年と政策選択を初期状態にリセット
     resetPolicySelections(2026, decisionVarRef.current?.cp_climate_params ?? 4.5);
@@ -2503,6 +2622,95 @@ function App() {
             </Box>
           </Box>
         )}
+      </Paper>
+      <Paper
+        elevation={2}
+        sx={{
+          width: '100%',
+          mb: 2,
+          p: 2,
+          borderRadius: 2,
+          backgroundColor: '#f8fbff',
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          {t.evaluation.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {t.evaluation.description}
+        </Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
+            gap: 2,
+          }}
+        >
+          {INTERMEDIATE_EVALUATION_STAGES.map((stage) => {
+            const evaluation = getIntermediateEvaluation(stage.stageIndex);
+            const isLoading = Boolean(loadingEvaluationStages[stage.stageIndex]);
+            const errorMessage = evaluationErrors[stage.stageIndex];
+            const stageTitle = t.evaluation[`stage${stage.checkpointYear}`];
+
+            return (
+              <Paper
+                key={stage.stageIndex}
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  minHeight: 280,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.5,
+                  borderColor: evaluation ? 'primary.light' : 'divider',
+                }}
+              >
+                <Box>
+                  <Typography variant="overline" color="primary">
+                    {stageTitle}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {t.evaluation.periodLabel}: {stage.periodStartYear}-{stage.periodEndYear}
+                  </Typography>
+                </Box>
+
+                {evaluation && (
+                  <Typography component="div" variant="caption" color="text.secondary">
+                    {t.evaluation.modelLabel}: {evaluation.model}
+                  </Typography>
+                )}
+
+                {isLoading && (
+                  <Typography component="div" variant="body2" color="primary">
+                    {t.evaluation.generating}
+                  </Typography>
+                )}
+
+                {!isLoading && errorMessage && (
+                  <Typography component="div" variant="body2" color="error">
+                    {errorMessage}
+                  </Typography>
+                )}
+
+                {!isLoading && !errorMessage && evaluation && (
+                  <Box
+                    component="div"
+                    translate="no"
+                    sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}
+                  >
+                    {evaluation.feedback}
+                  </Box>
+                )}
+
+                {!isLoading && !errorMessage && !evaluation && (
+                  <Typography component="div" variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                    {t.evaluation.pending}
+                  </Typography>
+                )}
+              </Paper>
+            );
+          })}
+        </Box>
       </Paper>
       <Box style={{ width: '100%' }}>
         <Grid container spacing={2}> {/* spacingでBox間の余白を調整できます */}
