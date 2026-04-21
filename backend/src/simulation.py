@@ -3,6 +3,7 @@
 import random
 import numpy as np
 import pandas as pd
+import ollama
 from scipy.stats import gumbel_r
 from config import SIMULATION_RANDOM_SEED
 from src.utils import estimate_rice_yield_loss
@@ -442,3 +443,105 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
         results.append(outputs)
 
     return results
+
+def create_random_agent():
+    """
+    固定された年齢リストからエージェントを生成する
+    """
+    # 年齢のプリセット
+    AGE_PRESETS = [12, 25, 45, 78]
+    age = random.choice(AGE_PRESETS)
+    
+    # 年齢に紐づいた詳細設定
+    settings = {
+        12: {"role": "小学生", "pronoun": "僕", "focus": "未来の地球"},
+        25: {"role": "若手起業家", "pronoun": "私", "focus": "都市の利便性と持続可能性"},
+        45: {"role": "市議会議員", "pronoun": "私", "focus": "予算効率と防災インフラ"},
+        78: {"role": "隠居中の元農家", "pronoun": "わし", "focus": "日々の平穏と伝統的な田畑"}
+    }
+    
+    selected = settings[age]
+    return {
+        "age": age,
+        "role": selected["role"],
+        "pronoun": selected["pronoun"],
+        "focus_point": selected["focus"],
+        "name": f"{selected['role']} ({age}歳)"
+    }
+
+def generate_ai_commentary(results):
+    """
+    指定されたペルソナが、85歳までの残り人生を全データから読み解く
+    """
+    agent = create_random_agent()
+    age = agent['age']
+    years_to_85 = 85 - age
+    
+    # 85歳までの期間（またはシミュレーション全期間）を抽出
+    target_results = results[-years_to_85:] if len(results) > years_to_85 else results
+    duration = len(target_results)
+
+    # --- 全データの集計（outputsにある全項目を網羅） ---
+    def avg(key): return sum(r[key] for r in target_results) / duration
+
+    # AIに渡す情報の整理
+    data_summary = {
+        "気象・環境": {
+            "気温": f"{avg('Temperature (℃)'):.1f}℃",
+            "猛暑日": f"{avg('Hot Days'):.1f}日",
+            "最大豪雨": f"{max(r['Extreme Precip Events'] for r in target_results):.1f}mm"
+        },
+        "インフラ・安全": {
+            "堤防強度": f"{target_results[-1]['Levee Level']:.1f}",
+            "住みやすさスコア": f"{avg('Urban Level'):.1f}/100",
+            "直近の水害被害": f"{target_results[-1]['Flood Damage']:.1f} USD"
+        },
+        "経済・社会": {
+            "住民負担": f"{avg('Resident Burden'):.1f} USD",
+            "作物の収穫量": f"{avg('Crop Yield'):.1f}",
+            "住民の防災意識": f"{avg('Resident capacity'):.2f}"
+        },
+        "自然資源": {
+            "生態系スコア": f"{avg('Ecosystem Level'):.1f}/100",
+            "森林面積": f"{avg('Forest Area'):.1f}ha"
+        }
+    }
+
+    # --- ペルソナを徹底的に反映させたプロンプト ---
+    prompt = f"""
+    あなたは「{agent['role']}」としてこの街に住んでいます。
+    
+    【あなたの設定】
+    - 年齢: {age}歳（85歳まで残り{years_to_85}年）
+    - 一人称: {agent['pronoun']}
+    - あなたが最も重視していること: {agent['focus_point']}
+
+    【分析対象のデータ（これからの{duration}年間）】
+    {data_summary}
+
+    【講評への指示】
+    1. 最初の一文で「{agent['pronoun']}」を使って自己紹介してください。
+    2. 特にあなたの関心事である「{agent['focus_point']}」の観点から、この街の未来をどう思うか自然な日本語で語ってください。
+    3. 全てのデータ（暑さ、お金、自然、安全）を総合して、85歳までの人生が幸せそうか判断してください。
+    4. 特に気になったポイントについては具体的に言及してください。
+    5. {age}歳らしい口調（小学生なら可愛らしく、農家なら落ち着いた口調など）で180文字程度でお願いします。
+    6. 最後の一文は市長を「どの程度支持するか」の総合評価のコメントにしてください。
+    """
+
+    try:
+        response = ollama.chat(model='gemma2:2b', messages=[
+            {'role': 'system', 'content': f'あなたは{agent["role"]}です。{agent["focus_point"]}を重視して話してください。'},
+            {'role': 'user', 'content': prompt},
+        ])
+        comment = response['message']['content']
+    except:
+        comment = f"{agent['pronoun']}、これからのデータを見ていたら言葉を失ってしまいました..."
+
+    return {
+        "text": comment,
+        "agent_name": agent['name'],
+        "agent_role": agent['role'],
+        "agent_focus": agent['focus_point'],
+        "years_to_85": years_to_85
+    }
+
