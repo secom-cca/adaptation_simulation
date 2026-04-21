@@ -8,7 +8,7 @@ from scipy.stats import gumbel_r
 from config import SIMULATION_RANDOM_SEED
 from src.utils import estimate_rice_yield_loss
 
-def simulate_year(year, prev_values, decision_vars, params):
+def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
     # --- 前年の値を展開（初期値を定義していない変数は追って調整） ---
     prev_levee_level = prev_values.get('levee_level', 100.0)
     high_temp_tolerance_level = prev_values.get('high_temp_tolerance_level', 0.0)
@@ -112,10 +112,12 @@ def simulate_year(year, prev_values, decision_vars, params):
     total_area = params['total_area']
     paddy_field_area = params['paddy_field_area']
 
-    # Keep yearly shocks reproducible regardless of request order.
-    year_seed = SIMULATION_RANDOM_SEED + (year - start_year)
-    random.seed(year_seed)
-    np.random.seed(year_seed)
+    # The main simulation should stay reproducible, while forecast runs can
+    # keep stochastic variation so the preview chart still shows uncertainty.
+    if fixed_seed:
+        year_seed = SIMULATION_RANDOM_SEED + (year - start_year)
+        random.seed(year_seed)
+        np.random.seed(year_seed)
     
     # resident_density = 1000 # [person/km^2]
     # water_demand_per_resident = 130 # [m3/person]
@@ -423,7 +425,7 @@ def simulate_year(year, prev_values, decision_vars, params):
     return current_values, outputs
 
 
-def simulate_simulation(years, initial_values, decision_vars_list, params):
+def simulate_simulation(years, initial_values, decision_vars_list, params, fixed_seed=True):
     prev_values = initial_values.copy()
     results = []
 
@@ -439,7 +441,13 @@ def simulate_simulation(years, initial_values, decision_vars_list, params):
             decision_vars_raw = decision_vars_list.loc[decision_year].to_dict()
             decision_vars = decision_vars_raw
 
-        prev_values, outputs = simulate_year(year, prev_values, decision_vars, params)
+        prev_values, outputs = simulate_year(
+            year,
+            prev_values,
+            decision_vars,
+            params,
+            fixed_seed=fixed_seed
+        )
         results.append(outputs)
 
     return results
