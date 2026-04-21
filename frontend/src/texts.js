@@ -67,6 +67,18 @@ export const texts = {
       remainingPoints: '残りポイント',
       currentSelection: '現在の配分'
     },
+    evaluation: {
+      title: '中間評価AI',
+      description: '各25年区切りの終了後に、選択した政策とその25年の実績をもとに中間評価を表示します。',
+      periodLabel: '対象期間',
+      modelLabel: '使用モデル',
+      generating: 'gemma2:2b で中間評価を生成しています...',
+      pending: 'この25年区切りが完了すると、ここに中間評価が表示されます。',
+      errorMessage: '中間評価の生成に失敗しました。Ollama の起動状態を確認してください。',
+      stage2050: '2050時点の中間評価',
+      stage2075: '2075時点の中間評価',
+      stage2100: '2100時点の中間評価'
+    },
     chart: {
       measuredValue: '実測値',
       upperLimit: '上限値予測',
@@ -198,6 +210,18 @@ export const texts = {
       usedPoints: 'Allocated Points',
       remainingPoints: 'Remaining Points',
       currentSelection: 'Current Allocation'
+    },
+    evaluation: {
+      title: 'Checkpoint Review AI',
+      description: 'After each 25-year segment, the AI reviews the chosen policy package and the actual outcomes from that segment.',
+      periodLabel: 'Period',
+      modelLabel: 'Model',
+      generating: 'Generating checkpoint review with gemma2:2b...',
+      pending: 'The checkpoint review will appear here after this 25-year segment is completed.',
+      errorMessage: 'Failed to generate the checkpoint review. Check whether Ollama is running.',
+      stage2050: '2050 Checkpoint Review',
+      stage2075: '2075 Checkpoint Review',
+      stage2100: '2100 Checkpoint Review'
     },
     chart: {
       measuredValue: 'Measured Value',

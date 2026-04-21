@@ -11,8 +11,10 @@ from typing import Dict
 from config import DEFAULT_PARAMS, rcp_climate_params, RANK_FILE, ACTION_LOG_FILE, YOUR_NAME_FILE
 from models import (
     SimulationRequest, SimulationResponse, CompareRequest, CompareResponse,
-    DecisionVar, CurrentValues, BlockRaw
+    DecisionVar, CurrentValues, BlockRaw,
+    IntermediateEvaluationRequest, IntermediateEvaluationResponse,
 )
+from intermediate_evaluation import generate_intermediate_evaluation
 from simulation import simulate_simulation, simulate_year
 from utils import calculate_scenario_indicators, aggregate_blocks
 
@@ -207,6 +209,16 @@ def get_block_scores():
         return df.to_dict(orient="records")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/intermediate-evaluation", response_model=IntermediateEvaluationResponse)
+def create_intermediate_evaluation(req: IntermediateEvaluationRequest):
+    try:
+        return generate_intermediate_evaluation(req)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 # サーバに送信されているログをWebSocketで受信。現在はbackendに保存中
