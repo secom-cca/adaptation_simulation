@@ -61,7 +61,8 @@ def run_simulation(req: SimulationRequest):
                 years=params['years'],
                 initial_values=req.current_year_index_seq.model_dump(),
                 decision_vars_list=decision_df,
-                params=params
+                params=params,
+                fixed_seed=True
             )
             df_sim = pd.DataFrame(sim_result)
             df_sim["Simulation"] = sim
@@ -79,7 +80,8 @@ def run_simulation(req: SimulationRequest):
             year=year,
             prev_values=current_values_input,
             decision_vars=decision_vars,
-            params=params
+            params=params,
+            fixed_seed=True
         )
         result = [outputs]  # simulate_simulation と同じ形式で返すためリストに
 
@@ -123,7 +125,8 @@ def run_simulation(req: SimulationRequest):
             years=sim_years,
             initial_values=req.current_year_index_seq.model_dump(),
             decision_vars_list=decision_df,
-            params=params
+            params=params,
+            fixed_seed=False
         )
 
         all_df = pd.DataFrame(seq_result)
