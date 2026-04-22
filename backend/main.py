@@ -13,9 +13,12 @@ from models import (
     SimulationRequest, SimulationResponse, CompareRequest, CompareResponse,
     DecisionVar, CurrentValues, BlockRaw,
     IntermediateEvaluationRequest, IntermediateEvaluationResponse,
+    ResidentCouncilResponse, SnsReactionsRequest, SnsReactionsResponse,
 )
 from intermediate_evaluation import generate_intermediate_evaluation
+from resident_council import generate_resident_council
 from simulation import simulate_simulation, simulate_year
+from sns_opinion import generate_sns_reactions
 from utils import calculate_scenario_indicators, aggregate_blocks
 
 app = FastAPI()
@@ -215,6 +218,26 @@ def get_block_scores():
 def create_intermediate_evaluation(req: IntermediateEvaluationRequest):
     try:
         return generate_intermediate_evaluation(req)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/resident-council", response_model=ResidentCouncilResponse)
+def create_resident_council(req: IntermediateEvaluationRequest):
+    try:
+        return generate_resident_council(req)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/sns-reactions", response_model=SnsReactionsResponse)
+def create_sns_reactions(req: SnsReactionsRequest):
+    try:
+        return generate_sns_reactions(req)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:

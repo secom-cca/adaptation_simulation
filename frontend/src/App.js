@@ -260,6 +260,12 @@ function App() {
   const [intermediateEvaluations, setIntermediateEvaluations] = useState([]);
   const [evaluationErrors, setEvaluationErrors] = useState({});
   const [loadingEvaluationStages, setLoadingEvaluationStages] = useState({});
+  const [residentCouncilByStage, setResidentCouncilByStage] = useState({});
+  const [loadingCouncilStages, setLoadingCouncilStages] = useState({});
+  const [councilErrors, setCouncilErrors] = useState({});
+  const [snsReactionsByStage, setSnsReactionsByStage] = useState({});
+  const [loadingSnsStages, setLoadingSnsStages] = useState({});
+  const [snsErrors, setSnsErrors] = useState({});
 
   const resetPolicySelections = (year = decisionVarRef.current?.year ?? 2026, cpClimate = decisionVarRef.current?.cp_climate_params ?? 4.5) => {
     const resetDecision = buildBlankDecisionVar(year, cpClimate);
@@ -327,6 +333,41 @@ function App() {
     });
   };
 
+  const setCouncilStageLoading = (stageIndex, isLoading) => {
+    setLoadingCouncilStages(prev => {
+      const next = { ...prev };
+      if (isLoading) {
+        next[stageIndex] = true;
+      } else {
+        delete next[stageIndex];
+      }
+      return next;
+    });
+  };
+
+  const setSnsStageLoading = (stageIndex, isLoading) => {
+    setLoadingSnsStages(prev => {
+      const next = { ...prev };
+      if (isLoading) {
+        next[stageIndex] = true;
+      } else {
+        delete next[stageIndex];
+      }
+      return next;
+    });
+  };
+
+  const getStageRows = (stageIndex, rows = simulationDataRef.current) => {
+    const stageStartIndex = (stageIndex - 1) * SIMULATION_YEARS;
+    return rows.slice(stageStartIndex, stageStartIndex + SIMULATION_YEARS);
+  };
+
+  const isStageCompleted = (stageIndex) => getStageRows(stageIndex, simulationData).length === SIMULATION_YEARS;
+
+  const getStageDecisionVariables = (stageIndex) => (
+    inputHistory[stageIndex - 1]?.decisionVariables ?? null
+  );
+
   const buildIntermediateEvaluationPayload = (stageIndex, decisionVariables, periodRows) => {
     const firstYear = periodRows[0]?.Year ?? INTERMEDIATE_EVALUATION_STAGES[stageIndex - 1]?.periodStartYear;
     const lastYear = periodRows[periodRows.length - 1]?.Year ?? INTERMEDIATE_EVALUATION_STAGES[stageIndex - 1]?.periodEndYear;
@@ -372,6 +413,12 @@ function App() {
         feedback: resp.data.feedback,
         policySummary: resp.data.policy_summary ?? [],
         eventHighlights: resp.data.event_highlights ?? [],
+        headline: resp.data.headline ?? "",
+        subheadline: resp.data.subheadline ?? "",
+        lead: resp.data.lead ?? "",
+        expertComment: resp.data.expert_comment ?? "",
+        policyAssessment: resp.data.policy_assessment ?? "",
+        articleBody: resp.data.article_body ?? "",
       };
       upsertIntermediateEvaluation(nextEvaluation);
       return nextEvaluation;
@@ -388,6 +435,112 @@ function App() {
     } finally {
       if (evaluationSessionRef.current === sessionId) {
         setEvaluationStageLoading(stageIndex, false);
+      }
+    }
+  };
+
+  const requestResidentCouncil = async ({ stageIndex, decisionVariables, periodRows, sessionId }) => {
+    if (!Array.isArray(periodRows) || periodRows.length === 0 || !decisionVariables) {
+      return null;
+    }
+
+    if (evaluationSessionRef.current !== sessionId) {
+      return null;
+    }
+
+    setCouncilStageLoading(stageIndex, true);
+    setCouncilErrors(prev => {
+      const next = { ...prev };
+      delete next[stageIndex];
+      return next;
+    });
+
+    try {
+      const payload = buildIntermediateEvaluationPayload(stageIndex, decisionVariables, periodRows);
+      const resp = await axios.post(`${BACKEND_URL}/resident-council`, payload);
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const nextCouncil = {
+        stageIndex: resp.data.stage_index,
+        checkpointYear: resp.data.checkpoint_year,
+        periodStartYear: resp.data.period_start_year,
+        periodEndYear: resp.data.period_end_year,
+        model: resp.data.model,
+        scores: resp.data.scores ?? {},
+      };
+      setResidentCouncilByStage(prev => ({
+        ...prev,
+        [stageIndex]: nextCouncil,
+      }));
+      return nextCouncil;
+    } catch (err) {
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const detail = err?.response?.data?.detail;
+      setCouncilErrors(prev => ({
+        ...prev,
+        [stageIndex]: typeof detail === 'string' ? detail : t.council.errorMessage,
+      }));
+      return null;
+    } finally {
+      if (evaluationSessionRef.current === sessionId) {
+        setCouncilStageLoading(stageIndex, false);
+      }
+    }
+  };
+
+  const requestSnsReactions = async (stageIndex) => {
+    const decisionVariables = getStageDecisionVariables(stageIndex);
+    const periodRows = getStageRows(stageIndex, simulationDataRef.current);
+    if (!decisionVariables || periodRows.length === 0) {
+      return null;
+    }
+
+    const sessionId = evaluationSessionRef.current;
+    setSnsStageLoading(stageIndex, true);
+    setSnsErrors(prev => {
+      const next = { ...prev };
+      delete next[stageIndex];
+      return next;
+    });
+
+    try {
+      const payload = {
+        ...buildIntermediateEvaluationPayload(stageIndex, decisionVariables, periodRows),
+        regeneration_token: Date.now(),
+      };
+      const resp = await axios.post(`${BACKEND_URL}/sns-reactions`, payload);
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const nextSns = {
+        stageIndex: resp.data.stage_index,
+        checkpointYear: resp.data.checkpoint_year,
+        periodStartYear: resp.data.period_start_year,
+        periodEndYear: resp.data.period_end_year,
+        model: resp.data.model,
+        posts: resp.data.posts ?? [],
+      };
+      setSnsReactionsByStage(prev => ({
+        ...prev,
+        [stageIndex]: nextSns,
+      }));
+      return nextSns;
+    } catch (err) {
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const detail = err?.response?.data?.detail;
+      setSnsErrors(prev => ({
+        ...prev,
+        [stageIndex]: typeof detail === 'string' ? detail : t.sns.errorMessage,
+      }));
+      return null;
+    } finally {
+      if (evaluationSessionRef.current === sessionId) {
+        setSnsStageLoading(stageIndex, false);
       }
     }
   };
@@ -754,15 +907,20 @@ function App() {
     }
 
     latestSimulationData = [...simulationDataRef.current];
-    const stageStartIndex = (completedStageIndex - 1) * SIMULATION_YEARS;
-    let periodRows = latestSimulationData.slice(stageStartIndex, stageStartIndex + SIMULATION_YEARS);
+    let periodRows = getStageRows(completedStageIndex, latestSimulationData);
     if (periodRows.length < SIMULATION_YEARS) {
       await new Promise(res => setTimeout(res, 0));
       latestSimulationData = [...simulationDataRef.current];
-      periodRows = latestSimulationData.slice(stageStartIndex, stageStartIndex + SIMULATION_YEARS);
+      periodRows = getStageRows(completedStageIndex, latestSimulationData);
     }
 
     void requestIntermediateEvaluation({
+      stageIndex: completedStageIndex,
+      decisionVariables: currentInput.decisionVariables,
+      periodRows,
+      sessionId: evaluationSessionRef.current,
+    });
+    void requestResidentCouncil({
       stageIndex: completedStageIndex,
       decisionVariables: currentInput.decisionVariables,
       periodRows,
@@ -955,6 +1113,12 @@ function App() {
     setIntermediateEvaluations([]);
     setEvaluationErrors({});
     setLoadingEvaluationStages({});
+    setResidentCouncilByStage({});
+    setLoadingCouncilStages({});
+    setCouncilErrors({});
+    setSnsReactionsByStage({});
+    setLoadingSnsStages({});
+    setSnsErrors({});
     
     // 年と政策選択を初期状態にリセット
     resetPolicySelections(2026, decisionVarRef.current?.cp_climate_params ?? 4.5);
@@ -2650,7 +2814,21 @@ function App() {
             const evaluation = getIntermediateEvaluation(stage.stageIndex);
             const isLoading = Boolean(loadingEvaluationStages[stage.stageIndex]);
             const errorMessage = evaluationErrors[stage.stageIndex];
+            const council = residentCouncilByStage[stage.stageIndex];
+            const isCouncilLoading = Boolean(loadingCouncilStages[stage.stageIndex]);
+            const councilError = councilErrors[stage.stageIndex];
+            const snsReaction = snsReactionsByStage[stage.stageIndex];
+            const isSnsLoading = Boolean(loadingSnsStages[stage.stageIndex]);
+            const snsError = snsErrors[stage.stageIndex];
+            const stageCompleted = isStageCompleted(stage.stageIndex);
             const stageTitle = t.evaluation[`stage${stage.checkpointYear}`];
+            const snsButtonLabel = snsReaction ? t.sns.regenerateButton : t.sns.generateButton;
+            const councilEntries = [
+              ['child_future', t.council.childFuture],
+              ['entrepreneur', t.council.entrepreneur],
+              ['council_member', t.council.councilMember],
+              ['farmer', t.council.farmer],
+            ];
 
             return (
               <Paper
@@ -2658,7 +2836,7 @@ function App() {
                 variant="outlined"
                 sx={{
                   p: 2,
-                  minHeight: 280,
+                  minHeight: 520,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 1.5,
@@ -2694,11 +2872,38 @@ function App() {
 
                 {!isLoading && !errorMessage && evaluation && (
                   <Box
-                    component="div"
-                    translate="no"
-                    sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}
+                    sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}
                   >
-                    {evaluation.feedback}
+                    <Typography variant="h6" sx={{ lineHeight: 1.4 }}>
+                      {evaluation.headline || stageTitle}
+                    </Typography>
+                    {evaluation.subheadline && (
+                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                        {evaluation.subheadline}
+                      </Typography>
+                    )}
+                    {evaluation.lead && (
+                      <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                        {evaluation.lead}
+                      </Typography>
+                    )}
+                    {evaluation.policyAssessment && (
+                      <Typography variant="caption" color="primary" sx={{ fontWeight: 700 }}>
+                        {t.evaluation.policyAssessmentLabel}: {evaluation.policyAssessment}
+                      </Typography>
+                    )}
+                    {evaluation.expertComment && (
+                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                        {t.evaluation.expertCommentLabel}: {evaluation.expertComment}
+                      </Typography>
+                    )}
+                    <Box
+                      component="div"
+                      translate="no"
+                      sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}
+                    >
+                      {evaluation.articleBody || evaluation.feedback}
+                    </Box>
                   </Box>
                 )}
 
@@ -2707,6 +2912,130 @@ function App() {
                     {t.evaluation.pending}
                   </Typography>
                 )}
+
+                <Box sx={{ mt: 'auto', pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    {t.council.title}
+                  </Typography>
+
+                  {isCouncilLoading && (
+                    <Typography variant="body2" color="primary">
+                      {t.council.generating}
+                    </Typography>
+                  )}
+
+                  {!isCouncilLoading && councilError && (
+                    <Typography variant="body2" color="error">
+                      {councilError}
+                    </Typography>
+                  )}
+
+                  {!isCouncilLoading && !councilError && council && (
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                        gap: 1,
+                      }}
+                    >
+                      {councilEntries.map(([key, label]) => (
+                        <Box
+                          key={key}
+                          sx={{
+                            p: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1.5,
+                            backgroundColor: '#fff',
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary">
+                            {label}
+                          </Typography>
+                          <Typography variant="h6">
+                            {council.scores?.[key] ?? '-'}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+
+                  {!isCouncilLoading && !councilError && !council && (
+                    <Typography variant="body2" color="text.secondary">
+                      {t.council.pending}
+                    </Typography>
+                  )}
+                </Box>
+
+                <Box sx={{ pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 1,
+                      mb: 1,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <Typography variant="subtitle2">
+                      {t.sns.title}
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => requestSnsReactions(stage.stageIndex)}
+                      disabled={!stageCompleted || isSnsLoading}
+                    >
+                      {snsButtonLabel}
+                    </Button>
+                  </Box>
+
+                  {!stageCompleted && (
+                    <Typography variant="body2" color="text.secondary">
+                      {t.sns.disabledMessage}
+                    </Typography>
+                  )}
+
+                  {stageCompleted && isSnsLoading && (
+                    <Typography variant="body2" color="primary">
+                      {t.sns.generating}
+                    </Typography>
+                  )}
+
+                  {stageCompleted && !isSnsLoading && snsError && (
+                    <Typography variant="body2" color="error">
+                      {snsError}
+                    </Typography>
+                  )}
+
+                  {stageCompleted && !isSnsLoading && !snsError && snsReaction && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {snsReaction.posts?.map((post, index) => (
+                        <Box
+                          key={`${stage.stageIndex}-${index}`}
+                          sx={{
+                            p: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1.5,
+                            backgroundColor: '#fff',
+                          }}
+                        >
+                          <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                            {post}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+
+                  {stageCompleted && !isSnsLoading && !snsError && !snsReaction && (
+                    <Typography variant="body2" color="text.secondary">
+                      {t.sns.pending}
+                    </Typography>
+                  )}
+                </Box>
               </Paper>
             );
           })}
