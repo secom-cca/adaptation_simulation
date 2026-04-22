@@ -500,14 +500,14 @@ def generate_ai_commentary(results):
             "最大豪雨": f"{max(r['Extreme Precip Events'] for r in target_results):.1f}mm"
         },
         "インフラ・安全": {
-            "堤防強度": f"{target_results[-1]['Levee Level']:.1f}",
-            "住みやすさスコア": f"{avg('Urban Level'):.1f}/100",
+            "堤防強度": f"{target_results[-1]['Levee Level']:.1f}(mm)",
+            "住みやすさスコア": f"{avg('Urban Level'):.1f}(person)",
             "直近の水害被害": f"{target_results[-1]['Flood Damage']:.1f} USD"
         },
         "経済・社会": {
             "住民負担": f"{avg('Resident Burden'):.1f} USD",
-            "作物の収穫量": f"{avg('Crop Yield'):.1f}",
-            "住民の防災意識": f"{avg('Resident capacity'):.2f}"
+            "作物の収穫量": f"{avg('Crop Yield'):.1f}(kg/ha)",
+            "住民の防災意識": f"{avg('Resident capacity'):.2f}/1.0"
         },
         "自然資源": {
             "生態系スコア": f"{avg('Ecosystem Level'):.1f}/100",
