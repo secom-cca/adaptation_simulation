@@ -68,16 +68,37 @@ export const texts = {
       currentSelection: '現在の配分'
     },
     evaluation: {
-      title: '中間評価AI',
-      description: '各25年区切りの終了後に、選択した政策とその25年の実績をもとに中間評価を表示します。',
+      title: '新聞一面',
+      description: '各25年区切りの終了後に、その期間の結果をもとに 新聞一面 と 住民別満足度 を表示します。SNS世論はボタンを押した時だけ生成されます。',
       periodLabel: '対象期間',
       modelLabel: '使用モデル',
-      generating: 'gemma2:2b で中間評価を生成しています...',
-      pending: 'この25年区切りが完了すると、ここに中間評価が表示されます。',
-      errorMessage: '中間評価の生成に失敗しました。Ollama の起動状態を確認してください。',
-      stage2050: '2050時点の中間評価',
-      stage2075: '2075時点の中間評価',
-      stage2100: '2100時点の中間評価'
+      generating: 'gemma2:2b で新聞一面を生成しています...',
+      pending: 'この25年区切りが完了すると、ここに新聞一面が表示されます。',
+      errorMessage: '新聞一面の生成に失敗しました。Ollama の起動状態を確認してください。',
+      policyAssessmentLabel: '政策評価',
+      expertCommentLabel: '専門コメント',
+      stage2050: '2050年時点の新聞一面',
+      stage2075: '2075年時点の新聞一面',
+      stage2100: '2100年時点の新聞一面'
+    },
+    council: {
+      title: '住民別満足度',
+      generating: '住民別満足度を生成しています...',
+      pending: 'この25年区切りが完了すると、ここに4人の納得度が表示されます。',
+      errorMessage: '住民別満足度の生成に失敗しました。Ollama の起動状態を確認してください。',
+      childFuture: '小学生',
+      entrepreneur: '若手起業家',
+      councilMember: '市議会議員',
+      farmer: '農家'
+    },
+    sns: {
+      title: 'SNS世論',
+      generateButton: 'SNS生成',
+      regenerateButton: '再生成',
+      generating: 'SNS世論を生成しています...',
+      pending: 'ボタンを押すと、この期間のSNS投稿が表示されます。',
+      disabledMessage: 'この段階が完了すると、SNS生成ボタンが使えます。',
+      errorMessage: 'SNS世論の生成に失敗しました。Ollama の起動状態を確認してください。'
     },
     chart: {
       measuredValue: '実測値',
@@ -212,16 +233,37 @@ export const texts = {
       currentSelection: 'Current Allocation'
     },
     evaluation: {
-      title: 'Checkpoint Review AI',
-      description: 'After each 25-year segment, the AI reviews the chosen policy package and the actual outcomes from that segment.',
+      title: 'Newspaper Front Page',
+      description: 'After each 25-year segment, the app shows a newspaper front page and resident satisfaction scores. SNS reactions are generated only when the button is pressed.',
       periodLabel: 'Period',
       modelLabel: 'Model',
-      generating: 'Generating checkpoint review with gemma2:2b...',
-      pending: 'The checkpoint review will appear here after this 25-year segment is completed.',
-      errorMessage: 'Failed to generate the checkpoint review. Check whether Ollama is running.',
-      stage2050: '2050 Checkpoint Review',
-      stage2075: '2075 Checkpoint Review',
-      stage2100: '2100 Checkpoint Review'
+      generating: 'Generating the newspaper front page with gemma2:2b...',
+      pending: 'The newspaper front page will appear here after this 25-year segment is completed.',
+      errorMessage: 'Failed to generate the newspaper front page. Check whether Ollama is running.',
+      policyAssessmentLabel: 'Policy Assessment',
+      expertCommentLabel: 'Expert Comment',
+      stage2050: '2050 Newspaper Front Page',
+      stage2075: '2075 Newspaper Front Page',
+      stage2100: '2100 Newspaper Front Page'
+    },
+    council: {
+      title: 'Resident Satisfaction Scores',
+      generating: 'Generating resident satisfaction scores...',
+      pending: 'After this 25-year segment is completed, the four persona scores will appear here.',
+      errorMessage: 'Failed to generate resident satisfaction scores. Check whether Ollama is running.',
+      childFuture: 'Child',
+      entrepreneur: 'Entrepreneur',
+      councilMember: 'Council Member',
+      farmer: 'Farmer'
+    },
+    sns: {
+      title: 'SNS Reactions',
+      generateButton: 'Generate SNS',
+      regenerateButton: 'Regenerate',
+      generating: 'Generating SNS reactions...',
+      pending: 'Press the button to generate SNS-style reactions for this period.',
+      disabledMessage: 'The SNS button becomes available after this stage is completed.',
+      errorMessage: 'Failed to generate SNS reactions. Check whether Ollama is running.'
     },
     chart: {
       measuredValue: 'Measured Value',

@@ -83,3 +83,38 @@ class IntermediateEvaluationResponse(BaseModel):
     feedback: str
     policy_summary: List[str]
     event_highlights: List[str]
+    headline: Optional[str] = None
+    subheadline: Optional[str] = None
+    lead: Optional[str] = None
+    expert_comment: Optional[str] = None
+    policy_assessment: Optional[str] = None
+    article_body: Optional[str] = None
+
+
+class ResidentCouncilResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    scores: Dict[str, int]
+
+
+class SnsReactionsRequest(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    language: str = "ja"
+    decision_var: DecisionVar
+    simulation_rows: List[Dict[str, Any]]
+    regeneration_token: Optional[int] = None
+
+
+class SnsReactionsResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    posts: List[str]
