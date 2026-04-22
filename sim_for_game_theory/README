@@ -1,0 +1,199 @@
+# README — 2プレイヤー（上流/下流）ゲーム可視化ツール
+
+* 流域の**上流（U）/下流（D）**の2プレイヤーゲームを，**重み（flood/eco/yield/cost）**や**RCP の前提**によってどう変化するかまで含めて可視化
+* ナッシュ均衡（NE），パレートフロンティア，結果空間（Flood vs Yield / Eco vs Yield）に加え，**重みスイープ → NEの頻度ランキング・ヒートマップ**も出力
+
+---
+
+## 特長
+
+* **Municipal Cost をコスト**として常に使用（負の効用項）
+* **プレイヤー別RCP**（上流はRCP4.5、下流はRCP8.5など）に対応
+* **プレイヤー別RCP事前（確率）**にも対応（UとDで異なる確率分布OK）
+* **重みスイープ**で，重み配分に応じた**NEの切り替わり**を可視化
+
+---
+
+## セットアップ
+
+### 依存関係
+
+* Python 3.9+（3.12 まで動作確認）
+* `pandas`, `numpy`, `matplotlib`
+
+```bash
+pip install pandas numpy matplotlib
+```
+
+### ファイル構成（例）
+
+```
+your_project/
+  ├─ output/
+  │   └─ dmdu_summary_irrigation_251008v2.csv   # 入力CSV
+  ├─ sim_for_game_theory/
+  │   └─ game_theory_figures.py     # 本スクリプト
+```
+---
+
+## 入力データ仕様（CSV）
+
+必須列（世代ごと）
+
+* `Flood Damage_Gen1`, `Flood Damage_Gen2`, `Flood Damage_Gen3`
+* `Ecosystem Level_Gen1`, `Ecosystem Level_Gen2`, `Ecosystem Level_Gen3`
+* `Crop Yield_Gen1`, `Crop Yield_Gen2`, `Crop Yield_Gen3`
+* `Municipal Cost_Gen1`, `Municipal Cost_Gen2`, `Municipal Cost_Gen3`
+
+もしくは **単一世代**を使う場合は `GEN="Gen1" | "Gen2" | "Gen3"` に設定
+
+意思決定（アクション）列（デフォルト）
+
+* 上流（U）:
+
+  * `dam_levee_construction_cost_level`
+  * `planting_trees_amount_level`
+* 下流（D）:
+
+  * `flow_irrigation_level_level`
+  * `house_migration_amount_level`
+
+---
+
+## 使い方（クイックスタート）
+
+```bash
+python game_theory_figures.py
+```
+
+以下を描画：
+1. **U vs D 効用空間**（全プロファイル・Pareto frontier・NE）
+2. **結果空間の投影**（Flood vs Yield / Eco vs Yield）
+3. **重み違いでのNE比較**（ベース vs 代替）
+4. **プレイヤー別RCP**でのNE
+5. **プレイヤー別RCP事前（確率）**でのNE
+6. **重みスイープ**：
+
+   * NEの頻度ランキング（棒グラフ）
+   * 重み→NEの対応ヒートマップ（上流eco/下流yieldをスライスして2D表示）
+
+> 描画ウィンドウが出ない環境では、`plt.show()` の代わりに `plt.savefig(...)` などに変更してください。
+
+---
+
+## 主なパラメータ
+
+### 世代選択
+
+```python
+GEN = "Gen3"  # "Gen1" / "Gen2" / "Gen3" / "mean"
+```
+* `"mean"` は `Gen1-3` を平均化して使用
+
+### 重み（例）
+
+```python
+W_UP_BASE = {"flood":0.4, "eco":0.4, "cost":0.2}
+W_DN_BASE = {"flood":0.4, "yield":0.4, "cost":0.2}
+
+W_UP_ALT  = {"flood":0.6, "eco":0.2, "cost":0.2}
+W_DN_ALT  = {"flood":0.2, "yield":0.6, "cost":0.2}
+```
+
+### RCPの指定
+
+```python
+rcpU, rcpD = 4.5, 8.5  # または 'RCP4.5', 'RCP8.5'
+```
+
+### 事前確率の指定例
+
+```python
+priorU = {2.6:0.2, 4.5:0.5, 8.5:0.3}
+priorD = {2.6:0.1, 4.5:0.3, 8.5:0.6}
+```
+
+### 重みスイープ
+
+```python
+sweep_df = sweep_weights(df, gen=GEN, rcpU=rcpU, rcpD=rcpD, steps=5)
+```
+
+* `steps` を上げると解像度UP（計算コストも増加）
+* 結果は `sweep_df`（各重み組み合わせごとの NE/効用など）
+
+---
+
+## 生成される図（概要）
+
+* **Utilities with PF & NE**
+  効用空間に全プロファイル、パレートフロンティア、NE（×印）を重ね描画
+* **Outcome space: Flood vs Yield / Eco vs Yield**
+  指標空間の2D投影。NEも重ね表示
+* **NE comparison across weights**
+  ベース重みと代替重みでNEを比較
+* **NE with player-specific RCPs / priors**
+  プレイヤーの前提（RCP固定 or 事前）による NE の違い
+* **Top NE action profiles by frequency**
+  重みスイープで“出やすい”NEのランキング
+* **Weight → NE heatmaps**
+  上流：`eco`を固定し、`(flood, cost)` の2DでNEを表示
+  下流：`yield`を固定し、`(flood, cost)` の2DでNEを表示
+  セル中に **短縮コード**（例：`U(2,1)|D(0,2)`）を描画
+
+---
+
+## 関数早見表
+
+* `NE_complete_info(df, rcp=None, wU, wD, gen)`
+  完備情報（RCP固定 or 全RCP込み）での NE を計算
+* `NE_with_player_specific_RCPs(df, rcpU, rcpD, wU, wD, gen)`
+  **UとDで異なるRCP**を前提とした NE
+* `NE_with_player_specific_priors(df, priorU, priorD, wU, wD, gen)`
+  **UとDで異なるRCP事前**を前提とした NE
+* `sweep_weights(df, gen, rcpU/rcpD | priorU/priorD, steps)`
+  重みスイープで各組み合わせの NE を記録（`DataFrame`返却）
+* `plot_utilities_with_pf_ne(...)` / `plot_outcome_projection(...)`
+  効用空間・結果空間の作図
+* `plot_ne_frequency_bar(sweep_df, top_k)`
+  スイープで頻出のNEを棒グラフで表示
+* `plot_weight_to_NE_heatmaps(sweep_df, upstream_eco_slices, downstream_yield_slices)`
+  重み→NEの対応をヒートマップで表示
+
+
+
+---
+
+## よくあるエラーと対処
+
+### `ValueError: zero-size array to reduction operation ...`
+
+**原因**：指定RCPに一致する行がCSV内に無く、空データを正規化しようとしている。
+**対処**：本スクリプトは以下で堅牢化しています。
+
+* `_filter_rcp` により、`4.5` / `'4.5'` / `'RCP4.5'` の表記揺れを吸収
+* 一致するRCPがない場合、**利用可能RCPの一覧**を表示して分かりやすく例外
+* `norm01` は空でもクラッシュしないようガード
+
+まず実行ログに出る
+
+```
+Available RCP (raw strings): [...]
+Available RCP (numeric):    [...]
+```
+
+を確認し、`rcpU/rcpD` をデータに合わせて指定してください。
+
+### プレイヤー別RCPで `U/Dでアクションの直積が一致せず...`
+
+**原因**：RCPごとに意思決定水準（level）の存在範囲がズレており、U側RCPのプロファイルとD側RCPのプロファイルが突き合わない。
+**対処**：意思決定水準の共通部分のみを使うように前処理するか、データ側の水準を揃えてください。必要なら前処理ユーティリティの追加をご相談ください。
+
+---
+
+## カスタマイズTips
+
+* **列名が違う**場合：`U_DEC` / `D_DEC` を変更
+* **描画を保存**したい：`plt.savefig("fig.png", dpi=200, bbox_inches="tight")` を適所に追加
+* **重みスイープの軸**：ヒートマップの固定スライス（`upstream_eco_slices`, `downstream_yield_slices`）は自由に変更可能
+* **解像度**：`steps` を増やす（計算時間は増えます）

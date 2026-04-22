@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+﻿import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Box, Button, Dialog, DialogTitle, DialogContent, FormControl, Grid, IconButton, InputLabel, MenuItem, Slider, Stack, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper, TextField } from '@mui/material';
 import { LineChart, ScatterChart, Gauge } from '@mui/x-charts';
 import { Agriculture, Biotech, EmojiTransportation, Flood, Forest, Houseboat, LocalLibrary, PlayCircle } from '@mui/icons-material';
@@ -6,8 +6,9 @@ import InfoIcon from '@mui/icons-material/Info';
 import SettingsIcon from '@mui/icons-material/Settings';
 import axios from "axios";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import ModelExplanationPage from "./ModelExplanationPage"; // 模型解释页面
-import ThankYouPage from "./ThankYouPage"; // Thank You页面
+import ExpertApp from './ExpertApp';
+import FormulaPage from "./FormulaPage"; // 新ページ
+import { texts } from "./texts"; // テキスト定義をインポート
 
 // ※ chart.js v4 の設定
 import {
@@ -31,29 +32,41 @@ ChartJS.register(
 );
 
 // バックエンドの URL を環境変数や直書きなどで指定
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://web-production-5fb04.up.railway.app";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
 
 // 各種設定
 
 const getLineChartIndicators = (language) => {
   const indicators = {
     ja: {
-      'Flood Damage': { labelTitle: '洪水被害', max: 20000, min: 0, unit: '万円' },
-      'Crop Yield': { labelTitle: '収穫量', max: 5, min: 0, unit: 'ton/ha' },
+      'Flood Damage': { labelTitle: '洪水被害', max: 2000000, min: 0, unit: 'ドル' },
+      'Crop Yield': { labelTitle: '収穫量', max: 6000, min: 0, unit: 'kg/ha' },
       'Ecosystem Level': { labelTitle: '生態系', max: 100, min: 0, unit: '-' },
-      'Municipal Cost': { labelTitle: '予算', max: 100000, min: 0, unit: '万円' },
+      'Municipal Cost': { labelTitle: '予算', max: 10000000, min: 0, unit: 'ドル' },
       'Temperature (℃)': { labelTitle: '【気候要素】年平均気温', max: 20, min: 12, unit: '℃' },
       'Precipitation (mm)': { labelTitle: '【気候要素】年降水量', max: 3000, min: 0, unit: 'mm' },
-      'Available Water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' }
+      'Extreme Precip Frequency': { labelTitle: '【気候要素】極端降水頻度', max: 3, min: 0, unit: 'times/year' },
+      'Levee Level': { labelTitle: '【中間要素】堤防レベル', max: 400, min: 0, unit: 'mm' },
+      'Forest Area': { labelTitle: '【中間要素】森林面積', max: 7000, min: 0, unit: 'ha' },
+      'risky_house_total': { labelTitle: '【中間要素】高リスク地域住民', max: 20000, min: 0, unit: 'person' },
+      'Resident capacity': { labelTitle: '【中間要素】住民防災能力レベル', max: 1, min: 0, unit: '-' },
+      'paddy_dam_area': { labelTitle: '【中間要素】田んぼダムの面積', max: 500, min: 0, unit: 'ha' },
+      'available_water': { labelTitle: '【中間要素】利用可能な水量', max: 3000, min: 0, unit: 'mm' },
     },
     en: {
-      'Flood Damage': { labelTitle: 'Flood Damage', max: 20000, min: 0, unit: '10k yen' },
-      'Crop Yield': { labelTitle: 'Crop Yield', max: 5, min: 0, unit: 'ton/ha' },
+      'Flood Damage': { labelTitle: 'Flood Damage', max: 2000000, min: 0, unit: 'USD' },
+      'Crop Yield': { labelTitle: 'Crop Yield', max: 6000, min: 0, unit: 'kg/ha' },
       'Ecosystem Level': { labelTitle: 'Ecosystem Level', max: 100, min: 0, unit: '-' },
-      'Municipal Cost': { labelTitle: 'Municipal Cost', max: 100000, min: 0, unit: '10k yen' },
-      'Temperature (℃)': { labelTitle: '[Climate Factor] Average Temperature', max: 20, min: 12, unit: '°C' },
-      'Precipitation (mm)': { labelTitle: '[Climate Factor] Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
-      'Available Water': { labelTitle: '[Intermediate Factor] Available Water', max: 3000, min: 0, unit: 'mm' }
+      'Municipal Cost': { labelTitle: 'Municipal Cost', max: 10000000, min: 0, unit: 'USD' },
+      'Temperature (℃)': { labelTitle: '[Climate] Average Temperature', max: 20, min: 12, unit: '°C' },
+      'Precipitation (mm)': { labelTitle: '[Climate] Annual Precipitation', max: 3000, min: 0, unit: 'mm' },
+      'Extreme Precip Frequency': { labelTitle: '[Climate] Extreme Precip Frequency', max: 3, min: 0, unit: 'times/year' },
+      'Levee Level': { labelTitle: '[Intermediate] Levee Level', max: 400, min: 0, unit: 'mm' },
+      'Forest Area': { labelTitle: '[Intermediate] Forest Area', max: 7000, min: 0, unit: 'ha' },
+      'risky_house_total': { labelTitle: '[Intermediate] High Risk Area Residents', max: 20000, min: 0, unit: 'person' },
+      'Resident capacity': { labelTitle: '[Intermediate] Residents\' Capacity', max: 1, min: 0, unit: '-' },
+      'paddy_dam_area': { labelTitle: '[Intermediate] Paddy Dam Area', max: 500, min: 0, unit: 'ha' },
+      'available_water': { labelTitle: '[Intermediate] Available Water', max: 3000, min: 0, unit: 'mm' },
     }
   };
   return indicators[language] || indicators.ja;
@@ -62,254 +75,59 @@ const getLineChartIndicators = (language) => {
 const SIMULATION_YEARS = 25 // 一回のシミュレーションで進める年数を決定する 
 const LINE_CHART_DISPLAY_INTERVAL = 100 // ms
 const INDICATOR_CONVERSION = {
-  'Municipal Cost': 1 / 10000, // 円 → 億円
-  'Flood Damage': 1 / 10000, // 円 → 万円
-  'Crop Yield': 1 / 1000 // kg → ton（例）
+  // 'Municipal Cost': 1 / 100, // USD → 万円
+  // 'Flood Damage': 1 / 100, // USD → 万円
+  // 'Crop Yield': 1 / 1000 // kg → ton（例）
 };
 
-// 日本語と英語のテキスト定義
-const texts = {
-  ja: {
-    title: '気候変動適応策検討シミュレーション',
-    cycle: 'サイクル',
-    year: '年',
-    cropYield: '収穫量',
-    floodDamage: '洪水被害',
-    ecosystemLevel: '生態系',
-    municipalCost: '予算',
-    temperature: '年平均気温',
-    precipitation: '年降水量',
-    availableWater: '利用可能な水量',
-    unit: {
-      tonHa: 'ton/ha',
-      manYen: '万円',
-      none: '-',
-      celsius: '℃',
-      mm: 'mm',
-      frequency: '回/年'
-    },
-    mode: {
-      group: '（１）グループモード',
-      upstream: '（２）上流モード',
-      downstream: '（３）下流モード',
-      groupDesc: '全ての項目を操作可能',
-      upstreamDesc: '植林・河川堤防・田んぼダムのみ',
-      downstreamDesc: '田んぼダム・住宅移転・防災訓練のみ'
-    },
-    predictMode: {
-      bestWorst: 'モード（１）：ベストケース・ワーストケース',
-      monteCarlo: 'モード（２）：モンテカルロシミュレーション（10回）',
-      none: 'モード（３）：予測結果を表示しない'
-    },
-    settings: {
-      title: '設定',
-      predictDataMode: '折れ線グラフの予測データ表示モード',
-      languageMode: '言語設定',
-      close: '閉じる'
-    },
-    dialog: {
-      nameTitle: 'お名前とモードを入力してください',
-      nameLabel: 'お名前',
-      modeTitle: 'モードを選択してください',
-      register: '登録',
-      nameError: 'この名前は既に使用されています。別の名前を入力してください。'
-    },
-    sliders: {
-      plantingTrees: '植林・森林保全',
-      damLevee: '河川堤防',
-      agriculturalRnD: '高温耐性品種',
-      houseMigration: '住宅移転',
-      paddyDam: '田んぼダム',
-      capacityBuilding: '防災訓練・啓発'
-    },
-    chart: {
-      measuredValue: '実測値',
-      upperLimit: '上限値予測',
-      lowerLimit: '下限値予測',
-      monteCarlo: 'モンテカルロ',
-      selectYAxis: '縦軸を選択',
-      years: 'Years',
-      weatherCondition: '年の気象条件と将来影響予測',
-      averageTemp: '年平均気温',
-      annualPrecip: '年降水量',
-      heavyRainFreq: '大雨の頻度',
-      residentBurden: '住民の負担',
-      biodiversity: '生物多様性',
-      frequency: '回/年'
-    },
-    buttons: {
-      advanceYears: '25年進める',
-      inputComplete: '回の入力完了',
-      nextCycle: '次のサイクル (',
-      startNext: ') を開始',
-      cycleComplete: 'サイクル',
-      completed: 'が完了しました！',
-      // viewResults: '結果を見る',
-    },
-    rcp: {
-      scenario: 'RCPシナリオ'
-    },
-    scatter: {
-      title: 'サイクルの比較',
-      description: '各サイクルを比較',
-      xAxis: 'X軸',
-      yAxis: 'Y軸',
-      plotAttribute: 'プロット属性',
-      average: '平均値',
-      year2050: '2050年',
-      year2075: '2075年', 
-      year2100: '2100年',
-      allDisplay: '全て表示',
-      markerSize: 'マーカーサイズと透明度（時点）:',
-      small: '2050年',
-      medium: '2075年',
-      large: '2100年',
-      cycleColor: 'サイクルの色:',
-      inputHistory: '各サイクルの入力履歴',
-      cycle: 'サイクル',
-      inputCount: '入力回数',
-      inputYear: '入力年',
-      noCompletedCycles: '完了したサイクルがありません。サイクルが完了すると結果が表示されます。',
-      historyFilter: 'フィルター',
-      historySort: 'ソート',
-      filterAll: 'すべて',
-      filterCycle1: 'サイクル1',
-      filterCycle2: 'サイクル2',
-      filterCycle3: 'サイクル3',
-      sortByCycle: 'サイクル順',
-      sortByYear: '年順',
-      sortByInput: '入力回数順',
-      yearFilter: '年次選択',
-      cycleFilter: 'サイクル選択',
-      allYears: 'すべての年次',
-      allCycles: 'すべてのサイクル'
-    }
-  },
-  en: {
-    title: 'Climate Change Adaptation Strategy Simulation',
-    cycle: 'Cycle',
-    year: 'Year',
-    cropYield: 'Crop Yield',
-    floodDamage: 'Flood Damage',
-    ecosystemLevel: 'Ecosystem Level',
-    municipalCost: 'Municipal Cost',
-    temperature: 'Average Temperature',
-    precipitation: 'Annual Precipitation',
-    availableWater: 'Available Water',
-    unit: {
-      tonHa: 'ton/ha',
-      manYen: '10k yen',
-      none: '-',
-      celsius: '°C',
-      mm: 'mm',
-      frequency: 'times/year'
-    },
-    mode: {
-      group: '(1) Group Mode',
-      upstream: '(2) Upstream Mode',
-      downstream: '(3) Downstream Mode',
-      groupDesc: 'All items can be operated',
-      upstreamDesc: 'Forest conservation, river levee, paddy dam only',
-      downstreamDesc: 'Paddy dam, house migration, disaster training only'
-    },
-    predictMode: {
-      bestWorst: 'Mode (1): Best Case - Worst Case',
-      monteCarlo: 'Mode (2): Monte Carlo Simulation (10 times)',
-      none: 'Mode (3): No prediction display'
-    },
-    settings: {
-      title: 'Settings',
-      predictDataMode: 'Line Chart Prediction Data Display Mode',
-      languageMode: 'Language Settings',
-      close: 'Close'
-    },
-    dialog: {
-      nameTitle: 'Enter your name and select mode',
-      nameLabel: 'Name',
-      modeTitle: 'Please select a mode',
-      register: 'Register',
-      nameError: 'This name is already in use. Please enter a different name.'
-    },
-    sliders: {
-      plantingTrees: 'Forest Conservation',
-      damLevee: 'River Levee',
-      agriculturalRnD: 'Heat-resistant Varieties',
-      houseMigration: 'House Migration',
-      paddyDam: 'Paddy Dam',
-      capacityBuilding: 'Disaster Training'
-    },
-    chart: {
-      measuredValue: 'Measured Value',
-      upperLimit: 'Upper Limit Prediction',
-      lowerLimit: 'Lower Limit Prediction',
-      monteCarlo: 'Monte Carlo',
-      selectYAxis: 'Select Y-axis',
-      years: 'Years',
-      weatherCondition: 'Weather Conditions and Future Impact Predictions',
-      averageTemp: 'Average Temperature',
-      annualPrecip: 'Annual Precipitation',
-      heavyRainFreq: 'Heavy Rain Frequency',
-      residentBurden: 'Resident Burden',
-      biodiversity: 'Biodiversity',
-      frequency: 'times/year'
-    },
-    buttons: {
-      advanceYears: '25 years advance',
-      inputComplete: 'inputs completed',
-      nextCycle: 'Next Cycle (',
-      startNext: ') Start',
-      cycleComplete: 'Cycle',
-      completed: 'completed!',
-      // viewResults: 'View Results',
-    },
-    rcp: {
-      scenario: 'RCP Scenario'
-    },
-    scatter: {
-      title: 'Cycle Comparison',
-      description: 'Compare cycles',
-      xAxis: 'X-axis',
-      yAxis: 'Y-axis',
-      plotAttribute: 'Plot Attribute',
-      average: 'Average',
-      year2050: '2050',
-      year2075: '2075',
-      year2100: '2100',
-      allDisplay: 'All',
-      markerSize: 'Marker Size and Opacity (Time Point):',
-      small: '2050',
-      medium: '2075',
-      large: '2100',
-      cycleColor: 'Cycle Color:',
-      inputHistory: 'Input History for Each Cycle',
-      cycle: 'Cycle',
-      inputCount: 'Input Count',
-      inputYear: 'Input Year',
-      noCompletedCycles: 'No completed cycles. Results will be displayed when cycles are completed.',
-      historyFilter: 'Filter',
-      historySort: 'Sort',
-      filterAll: 'All',
-      filterCycle1: 'Cycle 1',
-      filterCycle2: 'Cycle 2',
-      filterCycle3: 'Cycle 3',
-      sortByCycle: 'By Cycle',
-      sortByYear: 'By Year',
-      sortByInput: 'By Input Count',
-      yearFilter: 'Year Selection',
-      cycleFilter: 'Cycle Selection',
-      allYears: 'All Years',
-      allCycles: 'All Cycles'
-    }
-  }
+const BASE_POLICY_BUDGET_POINTS = 10;
+const POLICY_POINT_MAX = 10;
+const HOUSE_MIGRATION_BUDGET_STEP_POINTS = 5;
+const FLOOD_DAMAGE_BUDGET_POINT_USD = 1000000;
+const POLICY_POINT_KEYS = [
+  'planting_trees_amount',
+  'house_migration_amount',
+  'dam_levee_construction_cost',
+  'paddy_dam_construction_cost',
+  'agricultural_RnD_cost',
+  'capacity_building_cost'
+];
+const POLICY_BACKEND_MAX = {
+  planting_trees_amount: 100,
+  house_migration_amount: 100,
+  dam_levee_construction_cost: 2,
+  paddy_dam_construction_cost: 10,
+  agricultural_RnD_cost: 10,
+  capacity_building_cost: 10
 };
+
+const INTERMEDIATE_EVALUATION_STAGES = [
+  { stageIndex: 1, checkpointYear: 2050, periodStartYear: 2026, periodEndYear: 2050 },
+  { stageIndex: 2, checkpointYear: 2075, periodStartYear: 2051, periodEndYear: 2075 },
+  { stageIndex: 3, checkpointYear: 2100, periodStartYear: 2076, periodEndYear: 2100 },
+];
+
+const buildBlankDecisionVar = (year = 2026, cpClimate = 4.5) => ({
+  year,
+  planting_trees_amount: 0,
+  house_migration_amount: 0,
+  dam_levee_construction_cost: 0,
+  paddy_dam_construction_cost: 0,
+  capacity_building_cost: 0,
+  transportation_invest: 0,
+  agricultural_RnD_cost: 0,
+  cp_climate_params: cpClimate
+});
+
+
 
 function AppRouter() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/formula" element={<ModelExplanationPage />} />
-        <Route path="/thank-you" element={<ThankYouPage />} />
+        <Route path="/formula" element={<FormulaPage />} />
+        <Route path="/analyze" element={<ExpertApp />} />
       </Routes>
     </Router>
   );
@@ -332,26 +150,14 @@ function App() {
   const [selectedYAxis, setSelectedYAxis] = useState('Flood Damage'); // 散布図Y軸選択
   const [selectedPlotAttribute, setSelectedPlotAttribute] = useState('average'); // プロット属性選択: 'average', '2050', '2075', '2100', 'all'
   const [selectedHistoryFilter, setSelectedHistoryFilter] = useState('all'); // 入力履歴フィルター選択
-  const [selectedHistorySort, setSelectedHistorySort] = useState('cycle'); // 入力履歴ソート選択
   const [selectedYearFilter, setSelectedYearFilter] = useState('all'); // 年次フィルター選択
   const [selectedCycleFilter, setSelectedCycleFilter] = useState('all'); // サイクルフィルター選択
   const [chartPredictMode, setChartPredictMode] = useState(localStorage.getItem('chartPredictMode') || 'monte-carlo'); // 予測データ表示モード: 'best-worst', 'monte-carlo', 'none'
-  const [language, setLanguage] = useState(localStorage.getItem('language') || 'ja'); // 言語モード: 'ja', 'en'
-  const [decisionVar, setDecisionVar] = useState({
-    year: 2026,
-    planting_trees_amount: 0.,   // 植林・森林保全
-    house_migration_amount: 0.,  // 住宅移転・嵩上げ
-    dam_levee_construction_cost: 0., //ダム・堤防工事
-    paddy_dam_construction_cost: 0., //田んぼダム工事
-    capacity_building_cost: 0.,   // 防災訓練・普及啓発
-    // irrigation_water_amount: 100, // 灌漑水量
-    // released_water_amount: 100,   // 放流水量
-    transportation_invest: 0,     // 交通網の拡充
-    agricultural_RnD_cost: 0,      // 農業研究開発
-    cp_climate_params: 4.5 //RCPの不確実性シナリオ
-  })
+  const [language, setLanguage] = useState(localStorage.getItem('language') || 'en'); // 言語モード: 'ja', 'en'
+  const [visibleCycles, setVisibleCycles] = useState(new Set()); // 表示するサイクルのセット
+  const [decisionVar, setDecisionVar] = useState(buildBlankDecisionVar())
   const [currentValues, setCurrentValues] = useState({
-    temp: 15,
+    temp: 15.5,
     precip: 1700,
     municipal_demand: 100,
     available_water: 1000,
@@ -359,21 +165,50 @@ function App() {
     hot_days: 30,
     extreme_precip_freq: 0.1,
     ecosystem_level: 100,
-    levee_level: 0.5,
+    levee_level: 100,
     high_temp_tolerance_level: 0,
-    forest_area: 0,
+    forest_area: 5000,
     planting_history: {},
     urban_level: 100,
     resident_capacity: 0,
     transportation_level: 0,
     levee_investment_total: 0,
     RnD_investment_total: 0,
-    risky_house_total: 10000,
+    risky_house_total: 15000,
     non_risky_house_total: 0,
-    resident_burden: 5.379 * 10**8,
+    resident_burden: 0,
     biodiversity_level: 100,
+    paddy_dam_area:0
   })
   const [simulationData, setSimulationData] = useState([]); // 結果格納
+
+
+  const [flashOn, setFlashOn] = useState(false);
+  const [flashMessage, setFlashMessage] = useState('');
+  const lastFlashAtRef = useRef(0); // 連続点滅の抑制用
+  const FLOOD_THRESHOLD = 100;      // 閾値（必要なら設定ダイアログに出してOK）
+  const FLASH_COOLDOWN_MS = 500;   // 1.5秒以内の連続発火を抑制
+  const FLASH_DURATION_MS = 500;    // 点滅の長さ
+
+  const triggerFlash = (damageValueRaw) => {
+    const now = Date.now();
+    if (now - lastFlashAtRef.current < FLASH_COOLDOWN_MS) return;
+
+    const damageValue = toNumber(damageValueRaw);
+    if (!Number.isFinite(damageValue)) return; // 値が変なら表示しない
+
+    lastFlashAtRef.current = now;
+
+    const formatted = formatUSD(damageValue) ?? ''; // 例: "12,345 USD"
+    setFlashMessage(`洪水発生！${formatted}のダメージ`);
+    setFlashOn(true);
+
+    setTimeout(() => {
+      setFlashOn(false);
+      setFlashMessage('');
+    }, FLASH_DURATION_MS);
+  };
+
 
   // ロード中やエラー表示用
   const [loading, setLoading] = useState(false);
@@ -390,12 +225,16 @@ function App() {
   const handleLineChartChange = (event) => {
     setSelectedIndicator(event.target.value);
 
-    // --- 縦軸選択変更ログを队列に追加 ---
-    addLogToQueue({
-      type: "GraphSelect",
-      name: event.target.value
-    });
-    console.log(`📊 图表Y轴选择: ${event.target.value}`);
+    // --- 縦軸選択変更ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "GraphSelect",
+        name: event.target.value,
+        timestamp: new Date().toISOString()
+      }));
+    }
   };
 
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
@@ -406,94 +245,400 @@ function App() {
   const [userNameError, setUserNameError] = useState("")
   const [selectedMode, setSelectedMode] = useState(localStorage.getItem('selectedMode') || 'group'); // モード選択: 'group', 'upstream', 'downstream'
 
+    // /ranking の全体データ（既に fetchRanking があるのでそれを活用）
+  const [globalRankingRows, setGlobalRankingRows] = useState([]);
+
+  // サイクル別の「平均値」と「順位」
+  const [cycleAverages, setCycleAverages] = useState({}); // { cycleNumber: { key: avg, ... } }
+  const [cycleRanks, setCycleRanks] = useState({});       // { cycleNumber: { key: {rank,total} } }
+
   // ここでuseRefを定義
   const wsLogRef = useRef(null);
-  const [logQueue, setLogQueue] = useState([]); // 前端log缓存队列
-  const [logStatus, setLogStatus] = useState('disconnected'); // WebSocket连接状态
+  const evaluationSessionRef = useRef(0);
 
-  // 结束实验功能
-  const handleEndExperiment = async () => {
-    try {
-      // 发送结束实验日志到队列
-      addLogToQueue({
-        type: "EndExperiment",
-        name: userName,
-        timestamp: new Date().toISOString()
-      });
+  const [showYearlyDots, setShowYearlyDots] = useState(true);
+  const [intermediateEvaluations, setIntermediateEvaluations] = useState([]);
+  const [evaluationErrors, setEvaluationErrors] = useState({});
+  const [loadingEvaluationStages, setLoadingEvaluationStages] = useState({});
+  const [residentCouncilByStage, setResidentCouncilByStage] = useState({});
+  const [loadingCouncilStages, setLoadingCouncilStages] = useState({});
+  const [councilErrors, setCouncilErrors] = useState({});
+  const [snsReactionsByStage, setSnsReactionsByStage] = useState({});
+  const [loadingSnsStages, setLoadingSnsStages] = useState({});
+  const [snsErrors, setSnsErrors] = useState({});
 
-      // 立即发送所有队列中的日志
-      await sendLogQueue();
-
-      // 发送用户行为数据到后端
-      const allUserLogs = [...logQueue];
-      if (allUserLogs.length > 0) {
-        await axios.post(`${BACKEND_URL}/experiment/end`, {
-          user_name: userName,
-          logs: allUserLogs
-        });
-      }
-
-      // 跳转到Thank You页面
-      window.location.href = `/thank-you?user=${encodeURIComponent(userName)}`;
-    } catch (error) {
-      console.error('结束实验失败:', error);
-      alert('实验结束时发生错误，请重试');
-    }
+  const resetPolicySelections = (year = decisionVarRef.current?.year ?? 2026, cpClimate = decisionVarRef.current?.cp_climate_params ?? 4.5) => {
+    const resetDecision = buildBlankDecisionVar(year, cpClimate);
+    decisionVarRef.current = resetDecision;
+    setDecisionVar(resetDecision);
   };
 
-  // 添加log到队列的函数
-  const addLogToQueue = (logData) => {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-      ...logData,
-      timestamp,
-      user_name: userName,
-      mode: chartPredictMode
+  // 散布図セクションの上あたりに追加（関数なのでどこでもOK）
+  const baseRGB = [
+    [25,118,210], [220,0,78], [56,142,60], [245,124,0],
+    [123,31,162], [211,47,47], [0,121,107], [194,24,91],
+    [255,160,0], [0,151,167],
+  ];
+  const makeColor = (idx, a=0.6) => {
+    const [r,g,b] = baseRGB[idx % baseRGB.length];
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  };
+
+  const RANK_METRICS = [
+    { key: 'Flood Damage',     ja: '洪水被害',  lowerIsBetter: true  },
+    { key: 'Ecosystem Level',  ja: '生態系',    lowerIsBetter: false },
+    { key: 'Crop Yield',       ja: '収穫量',    lowerIsBetter: false },
+    { key: 'Municipal Cost',   ja: '予算',      lowerIsBetter: true  },
+  ];
+
+  // 数値に正規化：文字列ならカンマや単位を除去して数値化
+  const toNumber = (v) => {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') {
+      const cleaned = v.replace(/[^0-9.+-eE]/g, ''); // 例: "12,345 USD" → "12345"
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    return NaN;
+  };
+
+  // USDの簡易フォーマット（$を付けない「12,345 USD」形式）
+  const formatUSD = (n) => {
+    if (!Number.isFinite(n)) return null;
+    return `${Math.round(n).toLocaleString()} USD`;
+  };
+
+  const formatPoints = (n) => `${Math.round(n)} pt`;
+
+  const upsertIntermediateEvaluation = (nextEvaluation) => {
+    setIntermediateEvaluations(prev => (
+      [...prev.filter(item => item.stageIndex !== nextEvaluation.stageIndex), nextEvaluation]
+        .sort((a, b) => a.stageIndex - b.stageIndex)
+    ));
+  };
+
+  const getIntermediateEvaluation = (stageIndex) => (
+    intermediateEvaluations.find(item => item.stageIndex === stageIndex) ?? null
+  );
+
+  const setEvaluationStageLoading = (stageIndex, isLoading) => {
+    setLoadingEvaluationStages(prev => {
+      const next = { ...prev };
+      if (isLoading) {
+        next[stageIndex] = true;
+      } else {
+        delete next[stageIndex];
+      }
+      return next;
+    });
+  };
+
+  const setCouncilStageLoading = (stageIndex, isLoading) => {
+    setLoadingCouncilStages(prev => {
+      const next = { ...prev };
+      if (isLoading) {
+        next[stageIndex] = true;
+      } else {
+        delete next[stageIndex];
+      }
+      return next;
+    });
+  };
+
+  const setSnsStageLoading = (stageIndex, isLoading) => {
+    setLoadingSnsStages(prev => {
+      const next = { ...prev };
+      if (isLoading) {
+        next[stageIndex] = true;
+      } else {
+        delete next[stageIndex];
+      }
+      return next;
+    });
+  };
+
+  const getStageRows = (stageIndex, rows = simulationDataRef.current) => {
+    const stageStartIndex = (stageIndex - 1) * SIMULATION_YEARS;
+    return rows.slice(stageStartIndex, stageStartIndex + SIMULATION_YEARS);
+  };
+
+  const isStageCompleted = (stageIndex) => getStageRows(stageIndex, simulationData).length === SIMULATION_YEARS;
+
+  const getStageDecisionVariables = (stageIndex) => (
+    inputHistory[stageIndex - 1]?.decisionVariables ?? null
+  );
+
+  const buildIntermediateEvaluationPayload = (stageIndex, decisionVariables, periodRows) => {
+    const firstYear = periodRows[0]?.Year ?? INTERMEDIATE_EVALUATION_STAGES[stageIndex - 1]?.periodStartYear;
+    const lastYear = periodRows[periodRows.length - 1]?.Year ?? INTERMEDIATE_EVALUATION_STAGES[stageIndex - 1]?.periodEndYear;
+    return {
+      stage_index: stageIndex,
+      checkpoint_year: lastYear,
+      period_start_year: firstYear,
+      period_end_year: lastYear,
+      language,
+      decision_var: decisionVariables,
+      simulation_rows: periodRows,
     };
-
-    setLogQueue(prev => [...prev, logEntry]);
-    console.log(`📝 Log添加到队列: ${logData.type} - ${logData.name || ''}`);
   };
 
-  // 发送log队列到后端
-  const sendLogQueue = async () => {
-    if (logQueue.length === 0) return;
+  const requestIntermediateEvaluation = async ({ stageIndex, decisionVariables, periodRows, sessionId }) => {
+    if (!Array.isArray(periodRows) || periodRows.length === 0) {
+      return null;
+    }
+
+    if (evaluationSessionRef.current !== sessionId) {
+      return null;
+    }
+
+    setEvaluationStageLoading(stageIndex, true);
+    setEvaluationErrors(prev => {
+      const next = { ...prev };
+      delete next[stageIndex];
+      return next;
+    });
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/logs/batch`, {
-        logs: logQueue
-      });
-
-      if (response.status === 200) {
-        console.log(`✅ 成功发送 ${logQueue.length} 条log到后端`);
-        setLogQueue([]); // 清空队列
+      const payload = buildIntermediateEvaluationPayload(stageIndex, decisionVariables, periodRows);
+      const resp = await axios.post(`${BACKEND_URL}/intermediate-evaluation`, payload);
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
       }
-    } catch (error) {
-      console.error(`❌ 发送log失败:`, error);
-      console.log(`📦 保留 ${logQueue.length} 条log在队列中，等待下次发送`);
+      const nextEvaluation = {
+        stageIndex: resp.data.stage_index,
+        checkpointYear: resp.data.checkpoint_year,
+        periodStartYear: resp.data.period_start_year,
+        periodEndYear: resp.data.period_end_year,
+        model: resp.data.model,
+        feedback: resp.data.feedback,
+        policySummary: resp.data.policy_summary ?? [],
+        eventHighlights: resp.data.event_highlights ?? [],
+        headline: resp.data.headline ?? "",
+        subheadline: resp.data.subheadline ?? "",
+        lead: resp.data.lead ?? "",
+        expertComment: resp.data.expert_comment ?? "",
+        policyAssessment: resp.data.policy_assessment ?? "",
+        articleBody: resp.data.article_body ?? "",
+      };
+      upsertIntermediateEvaluation(nextEvaluation);
+      return nextEvaluation;
+    } catch (err) {
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const detail = err?.response?.data?.detail;
+      setEvaluationErrors(prev => ({
+        ...prev,
+        [stageIndex]: typeof detail === 'string' ? detail : t.evaluation.errorMessage,
+      }));
+      return null;
+    } finally {
+      if (evaluationSessionRef.current === sessionId) {
+        setEvaluationStageLoading(stageIndex, false);
+      }
     }
   };
 
-  // 每5秒发送一次log队列
-  useEffect(() => {
-    const interval = setInterval(sendLogQueue, 5000);
-    return () => clearInterval(interval);
-  }, [logQueue]);
+  const requestResidentCouncil = async ({ stageIndex, decisionVariables, periodRows, sessionId }) => {
+    if (!Array.isArray(periodRows) || periodRows.length === 0 || !decisionVariables) {
+      return null;
+    }
+
+    if (evaluationSessionRef.current !== sessionId) {
+      return null;
+    }
+
+    setCouncilStageLoading(stageIndex, true);
+    setCouncilErrors(prev => {
+      const next = { ...prev };
+      delete next[stageIndex];
+      return next;
+    });
+
+    try {
+      const payload = buildIntermediateEvaluationPayload(stageIndex, decisionVariables, periodRows);
+      const resp = await axios.post(`${BACKEND_URL}/resident-council`, payload);
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const nextCouncil = {
+        stageIndex: resp.data.stage_index,
+        checkpointYear: resp.data.checkpoint_year,
+        periodStartYear: resp.data.period_start_year,
+        periodEndYear: resp.data.period_end_year,
+        model: resp.data.model,
+        scores: resp.data.scores ?? {},
+      };
+      setResidentCouncilByStage(prev => ({
+        ...prev,
+        [stageIndex]: nextCouncil,
+      }));
+      return nextCouncil;
+    } catch (err) {
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const detail = err?.response?.data?.detail;
+      setCouncilErrors(prev => ({
+        ...prev,
+        [stageIndex]: typeof detail === 'string' ? detail : t.council.errorMessage,
+      }));
+      return null;
+    } finally {
+      if (evaluationSessionRef.current === sessionId) {
+        setCouncilStageLoading(stageIndex, false);
+      }
+    }
+  };
+
+  const requestSnsReactions = async (stageIndex) => {
+    const decisionVariables = getStageDecisionVariables(stageIndex);
+    const periodRows = getStageRows(stageIndex, simulationDataRef.current);
+    if (!decisionVariables || periodRows.length === 0) {
+      return null;
+    }
+
+    const sessionId = evaluationSessionRef.current;
+    setSnsStageLoading(stageIndex, true);
+    setSnsErrors(prev => {
+      const next = { ...prev };
+      delete next[stageIndex];
+      return next;
+    });
+
+    try {
+      const payload = {
+        ...buildIntermediateEvaluationPayload(stageIndex, decisionVariables, periodRows),
+        regeneration_token: Date.now(),
+      };
+      const resp = await axios.post(`${BACKEND_URL}/sns-reactions`, payload);
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const nextSns = {
+        stageIndex: resp.data.stage_index,
+        checkpointYear: resp.data.checkpoint_year,
+        periodStartYear: resp.data.period_start_year,
+        periodEndYear: resp.data.period_end_year,
+        model: resp.data.model,
+        posts: resp.data.posts ?? [],
+      };
+      setSnsReactionsByStage(prev => ({
+        ...prev,
+        [stageIndex]: nextSns,
+      }));
+      return nextSns;
+    } catch (err) {
+      if (evaluationSessionRef.current !== sessionId) {
+        return null;
+      }
+      const detail = err?.response?.data?.detail;
+      setSnsErrors(prev => ({
+        ...prev,
+        [stageIndex]: typeof detail === 'string' ? detail : t.sns.errorMessage,
+      }));
+      return null;
+    } finally {
+      if (evaluationSessionRef.current === sessionId) {
+        setSnsStageLoading(stageIndex, false);
+      }
+    }
+  };
+
+  // 1サイクルの期間平均（2026-2100の全レコード平均）
+  const getCycleAverages = (cycle) => {
+    const rows = cycle?.simulationData ?? [];
+    const sums = {}; const counts = {};
+    RANK_METRICS.forEach(m => { sums[m.key] = 0; counts[m.key] = 0; });
+    rows.forEach(r => {
+      RANK_METRICS.forEach(m => {
+        const v = r[m.key];
+        if (typeof v === 'number' && !Number.isNaN(v)) { sums[m.key] += v; counts[m.key]++; }
+      });
+    });
+    const avg = {};
+    RANK_METRICS.forEach(m => { avg[m.key] = counts[m.key] ? (sums[m.key] / counts[m.key]) : null; });
+    return avg;
+  };
+
+  // 自分のサイクル（resultHistory）同士でランク付け
+  const { latestCycleNumber, latestRanks, totalCycles } = useMemo(() => {
+    if (!resultHistory || resultHistory.length === 0) {
+      return { latestCycleNumber: null, latestRanks: null, totalCycles: 0 };
+    }
+
+    const totalCycles = resultHistory.length;
+    const items = resultHistory.map(cycle => ({
+      id: cycle.cycleNumber,
+      values: getCycleAverages(cycle),
+    }));
+
+    // 指標ごとに並べ替え→順位を付与
+    const rankTable = {}; // { cycleNumber: { key: rank } }
+    items.forEach(it => { rankTable[it.id] = {}; });
+
+    RANK_METRICS.forEach(m => {
+      const valid = items
+        .filter(it => typeof it.values[m.key] === 'number')
+        .sort((a, b) =>
+          m.lowerIsBetter
+            ? (a.values[m.key] - b.values[m.key])
+            : (b.values[m.key] - a.values[m.key])
+        );
+      valid.forEach((it, i) => {
+        rankTable[it.id][m.key] = i + 1; // 1位始まり
+      });
+      // 値なしは最下位扱い
+      items
+        .filter(it => typeof it.values[m.key] !== 'number')
+        .forEach(it => { rankTable[it.id][m.key] = totalCycles; });
+    });
+
+    const latestCycleNumber = resultHistory[resultHistory.length - 1].cycleNumber;
+    const latestRanks = rankTable[latestCycleNumber];
+
+    return { latestCycleNumber, latestRanks, totalCycles };
+  }, [resultHistory]);
+
+  // 与えられた「候補集合（全参加者 or 自分のサイクル）」に対する順位を返す
+  // items: [{ id, values: { 'Flood Damage': 123, ... } }, ...]
+  const calcRanks = (items, lowerIsBetterMap) => {
+    const ranks = {}; // { id: {key: rank, total: N} }
+    const N = items.length || 0;
+    items.forEach(it => { ranks[it.id] = {}; });
+
+    RANK_METRICS.forEach(m => {
+      // 値がnullのものは末尾に回すためにフィルタ
+      const valid = items.filter(it => typeof it.values[m.key] === 'number');
+      const invalid = items.filter(it => typeof it.values[m.key] !== 'number');
+
+      // 小さいほど良い or 大きいほど良いで並べ替え
+      valid.sort((a, b) => {
+        const av = a.values[m.key], bv = b.values[m.key];
+        return lowerIsBetterMap[m.key] ? av - bv : bv - av;
+      });
+
+      // 順位付け（同値は同順位にしても良いが、ここでは単純に配列順で 1,2,3…）
+      valid.forEach((it, i) => {
+        ranks[it.id][m.key] = { rank: i + 1, total: N };
+      });
+      // 値なしは最下位扱い
+      invalid.forEach(it => {
+        ranks[it.id][m.key] = { rank: N, total: N };
+      });
+    });
+
+    return ranks;
+  };
 
   // ここでuseEffectを定義
   useEffect(() => {
-    wsLogRef.current = new WebSocket("wss://web-production-5fb04.up.railway.app/ws/log");
+    wsLogRef.current = new WebSocket("ws://localhost:8000/ws/log");
     wsLogRef.current.onopen = () => {
       console.log("✅ Log WebSocket connected");
-      setLogStatus('connected');
     };
     wsLogRef.current.onerror = (e) => {
       console.error("Log WebSocket error", e);
-      setLogStatus('error');
-    };
-    wsLogRef.current.onclose = () => {
-      console.log("⚠️ Log WebSocket closed");
-      setLogStatus('disconnected');
     };
     return () => {
       wsLogRef.current && wsLogRef.current.close();
@@ -504,13 +649,26 @@ function App() {
     const res = await axios.get(`${BACKEND_URL}/ranking`);
     setRanking(res.data);
   };
+
+  // ↓ fetchRanking を少し拡張（setGlobalRankingRowsも設定）
+  const fetchRankingExtended = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/ranking`);
+      setRanking(res.data);           // 既存の用途があれば継続
+      setGlobalRankingRows(res.data); // 全参加者分を保持
+    } catch (e) {
+      console.error('ranking取得失敗', e);
+      setGlobalRankingRows([]);       // フェイルセーフ
+    }
+  };
+
   const handleUserNameRegister = async () => {
     try {
       const res = await axios.get(`${BACKEND_URL}/block_scores`); // ここはAPIでCSV読ませる形にする
       const existingUsers = new Set(res.data.map(row => row.user_name));
       
       if (existingUsers.has(userName.trim())) {
-        setUserNameError("この名前は既に使用されています。別の名前を入力してください。");
+        setUserNameError(t.dialog.nameError);
       } else {
         localStorage.setItem('userName', userName.trim());
         localStorage.setItem('selectedMode', selectedMode); // 選択されたモードも保存
@@ -519,12 +677,16 @@ function App() {
         setOpenNameDialog(false);
         setUserNameError(""); // エラー解除
 
-        // --- ユーザ名登録ログを队列に追加 ---
-        addLogToQueue({
-          type: "Register",
-          name: userName.trim()
-        });
-        console.log(`👤 用户注册: ${userName.trim()}`);
+        // --- ユーザ名をWebSocketで送信 ---
+        if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+          wsLogRef.current.send(JSON.stringify({
+            user_name: userName,
+            mode: chartPredictMode,
+            type: "Register",
+            timestamp: new Date().toISOString()
+          }));
+        }
+        // ------------------------------------------------------
       }    
     } catch (err) {
       console.error("ユーザー名チェックエラー", err);
@@ -546,10 +708,12 @@ function App() {
   }, [simulationData]);
 
   useEffect(() => {
-    // 每次访问都清除用户名，确保弹窗显示
-    localStorage.removeItem('userName');
-    localStorage.removeItem('selectedMode');
-    localStorage.removeItem('chartPredictMode');
+    // 開発中のみ userName を強制リセット
+    if (process.env.NODE_ENV === 'development') {
+      localStorage.removeItem('userName');
+      localStorage.removeItem('selectedMode'); // モードもリセット
+      localStorage.removeItem('chartPredictMode'); // 予測モードもリセット
+    }
   
     const storedName = localStorage.getItem('userName');
     const storedMode = localStorage.getItem('selectedMode');
@@ -564,7 +728,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const ws = new WebSocket("wss://web-production-5fb04.up.railway.app/ws");
+    const ws = new WebSocket("ws://localhost:3001");
 
     ws.onopen = () => {
       console.log("✅ WebSocket connected");
@@ -595,16 +759,10 @@ function App() {
       console.log("受信:", data);
 
       if (data.simulate_trigger === true) {
-        setDecisionVar(prev => ({
-          ...prev,
-          transportation_invest: 0,
-          agricultural_RnD_cost: 0,
-          planting_trees_amount: 0,
-          house_migration_amount: 0,
-          dam_levee_construction_cost: 0,
-          paddy_dam_construction_cost: 0,
-          capacity_building_cost: 0
-        }));
+        resetPolicySelections(
+          decisionVarRef.current?.year ?? 2026,
+          decisionVarRef.current?.cp_climate_params ?? 4.5
+        );
         handleClickCalc();
       } else {
         setDecisionVar(prev => {
@@ -615,8 +773,8 @@ function App() {
               const increment = {
                 transportation_invest: 5,
                 agricultural_RnD_cost: 5,
-                planting_trees_amount: 100,
-                house_migration_amount: 5,
+                planting_trees_amount: 50,
+                house_migration_amount: 50,
                 dam_levee_construction_cost: 1,
                 paddy_dam_construction_cost: 5,
                 capacity_building_cost: 5,
@@ -671,7 +829,23 @@ function App() {
       // resp.data はバックエンドの SimulationResponse (scenario_name, data)
       if (resp.data && resp.data.data) {
         const processedData = processIndicatorData(resp.data.data, selectedIndicator);
-        setSimulationData(prev => [...prev, ...processedData]);
+        setSimulationData(prev => {
+          const next = [...prev, ...processedData];
+
+          // ★ ここで直近追加分をチェック
+          // 追加分の中に「洪水被害 > 閾値」があれば点滅
+          const newlyAdded = processedData;
+          const floodEvent = newlyAdded.find(row => {
+            const v = toNumber(row['Flood Damage']);
+            return Number.isFinite(v) && v > FLOOD_THRESHOLD;
+          });
+          if (floodEvent) {
+            triggerFlash(floodEvent['Flood Damage']); // 生の値を渡してOK（中で数値化）
+          }
+
+          return next;
+        });
+
         updateCurrentValues(resp.data.data[0])
       }
     } catch (err) {
@@ -683,13 +857,18 @@ function App() {
   };
 
   const handleClickCalc = async () => {
-    // --- 「25年進める」押下ログを队列に追加 ---
-    addLogToQueue({
-      type: "Next",
-      name: decisionVar.year,
-      cycle: currentCycle
-    });
-    console.log(`⏭️ 25年进める按钮点击: 年份${decisionVar.year}, 周期${currentCycle}`);
+    // --- 「25年進める」押下ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "Next",
+        name: decisionVar.year,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+    // ------------------------------------------------------
 
     if (isRunningRef.current) return;
     isRunningRef.current = true;
@@ -698,10 +877,11 @@ function App() {
     let count = 0;
     let cycleStartYear = decisionVar.year; // サイクル開始年を記録
     let latestSimulationData = []; // 最新のシミュレーションデータを保存
+    const completedStageIndex = inputCount + 1;
 
     // 現在の入力を履歴に記録
     const currentInput = {
-      inputNumber: inputCount + 1,
+      inputNumber: completedStageIndex,
       year: decisionVar.year,
       decisionVariables: { ...decisionVar },
       currentValues: { ...currentValues }
@@ -726,6 +906,32 @@ function App() {
       await new Promise(res => setTimeout(res, LINE_CHART_DISPLAY_INTERVAL));
     }
 
+    latestSimulationData = [...simulationDataRef.current];
+    let periodRows = getStageRows(completedStageIndex, latestSimulationData);
+    if (periodRows.length < SIMULATION_YEARS) {
+      await new Promise(res => setTimeout(res, 0));
+      latestSimulationData = [...simulationDataRef.current];
+      periodRows = getStageRows(completedStageIndex, latestSimulationData);
+    }
+
+    void requestIntermediateEvaluation({
+      stageIndex: completedStageIndex,
+      decisionVariables: currentInput.decisionVariables,
+      periodRows,
+      sessionId: evaluationSessionRef.current,
+    });
+    void requestResidentCouncil({
+      stageIndex: completedStageIndex,
+      decisionVariables: currentInput.decisionVariables,
+      periodRows,
+      sessionId: evaluationSessionRef.current,
+    });
+
+    resetPolicySelections(
+      nextYear,
+      decisionVarRef.current?.cp_climate_params ?? decisionVar.cp_climate_params
+    );
+
     isRunningRef.current = false;
     
     // 3回の入力が完了した場合、サイクル完了処理
@@ -746,6 +952,23 @@ function App() {
       setResultHistory(prev => [...prev, cycleResult]);
       setCycleCompleted(true);
       setShowResultButton(true);
+      
+      // --- 25年進めた後の最終値をWebSocketで送信 ---
+      if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+        wsLogRef.current.send(JSON.stringify({
+          user_name: userName,
+          mode: chartPredictMode,
+          type: "Result",
+          cycle: currentCycle,
+          finalValues: { ...currentValues },
+          // (i)全データを抽出する場合
+          // simulationData: latestSimulationData,
+          // (ii)25, 50, 75年目のみ抽出する場合
+          simulationData: [latestSimulationData[24], latestSimulationData[49], latestSimulationData[74]],
+          timestamp: new Date().toISOString()
+        }));
+      }
+      // ------------------------------------------------------
     }
     
   };
@@ -805,10 +1028,10 @@ function App() {
           });
         }
       } else if (chartPredictMode === 'monte-carlo') {
-        // モード（２）：１０回のモンテカルロシミュレーション
+        // モード（２）：3回のモンテカルロシミュレーション
         const monteCarloResults = [];
         
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 3; i++) {
           let monteCarloDecisionVar = { ...decisionVarRef.current };
           monteCarloDecisionVar['cp_climate_params'] = decisionVarRef.current.cp_climate_params;
 
@@ -867,13 +1090,18 @@ function App() {
 
   // 次のサイクルに移る処理
   const handleNextCycle = () => {
-    // --- 「次のサイクル」押下ログを队列に追加 ---
-    addLogToQueue({
-      type: "EndCycle",
-      name: decisionVar.year,
-      cycle: currentCycle
-    });
-    console.log(`🔄 下一个周期按钮点击: 结束周期${currentCycle}`);
+    // --- 「次のサイクル」押下ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "EndCycle",
+        name: decisionVar.year,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+    // ------------------------------------------------------
 
     // 新しいサイクルの準備
     setCurrentCycle(prev => prev + 1);
@@ -881,9 +1109,19 @@ function App() {
     setShowResultButton(false);
     setInputCount(0); // 入力カウントをリセット
     setInputHistory([]); // 入力履歴をリセット
+    evaluationSessionRef.current += 1;
+    setIntermediateEvaluations([]);
+    setEvaluationErrors({});
+    setLoadingEvaluationStages({});
+    setResidentCouncilByStage({});
+    setLoadingCouncilStages({});
+    setCouncilErrors({});
+    setSnsReactionsByStage({});
+    setLoadingSnsStages({});
+    setSnsErrors({});
     
-    // 年を2026年にリセット
-    updateDecisionVar("year", 2026);
+    // 年と政策選択を初期状態にリセット
+    resetPolicySelections(2026, decisionVarRef.current?.cp_climate_params ?? 4.5);
     
     // シミュレーションデータをクリア（新しいサイクルのため）
     setSimulationData([]);
@@ -894,7 +1132,7 @@ function App() {
     // 現在の値を初期状態にリセット（必要に応じて調整）
     setCurrentValues(prev => ({
       ...prev,
-      temp: 15,
+      temp: 15.5,
       precip: 1700,
       municipal_demand: 100,
       available_water: 1000,
@@ -902,21 +1140,47 @@ function App() {
       hot_days: 30,
       extreme_precip_freq: 0.1,
       ecosystem_level: 100,
-      levee_level: 0.5,
+      levee_level: 100,
       high_temp_tolerance_level: 0,
-      forest_area: 0,
+      forest_area: 5000,
       planting_history: {},
       urban_level: 100,
       resident_capacity: 0,
       transportation_level: 0,
       levee_investment_total: 0,
       RnD_investment_total: 0,
-      risky_house_total: 10000,
+      risky_house_total: 15000,
       non_risky_house_total: 0,
-      resident_burden: 5.379 * 10**8,
+      resident_burden: 0,
       biodiversity_level: 100,
+      paddy_dam_area:0
     }));
   };
+
+  // サイクル表示/非表示の切り替え
+  const handleCycleVisibilityChange = (cycleNumber, isVisible) => {
+    setVisibleCycles(prev => {
+      const newSet = new Set(prev);
+      if (isVisible) {
+        newSet.add(cycleNumber);
+      } else {
+        newSet.delete(cycleNumber);
+      }
+      return newSet;
+    });
+  };
+
+  // 新しいサイクルが完了した時に自動的に表示リストに追加
+  useEffect(() => {
+    if (resultHistory.length > 0) {
+      const latestCycle = resultHistory[resultHistory.length - 1];
+      setVisibleCycles(prev => {
+        const newSet = new Set(prev);
+        newSet.add(latestCycle.cycleNumber);
+        return newSet;
+      });
+    }
+  }, [resultHistory]);
 
   // (B) グラフ描画用データ作成
   // 例として "Temperature (℃)" をシミュレーション1本分だけ描画する
@@ -974,9 +1238,10 @@ function App() {
 
   // (E) トレードスペース用UIの表示
 
+  // 開く時にランキングも取得
   const handleOpenResultUI = () => {
     setOpenResultUI(true);
-    // --- 「サイクルの比較」開始をWebSocketで送信 ---
+    fetchRankingExtended(); // ← こちらに変更
     if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
       wsLogRef.current.send(JSON.stringify({
         user_name: userName,
@@ -985,8 +1250,67 @@ function App() {
         timestamp: new Date().toISOString()
       }));
     }
-    // ------------------------------------------------------
   };
+
+  // resultHistory or globalRankingRows が変化したら再計算
+  useEffect(() => {
+    if (!resultHistory.length) return;
+
+    // 1) 自分の各サイクルの平均値を計算
+    const averagesPerCycle = {};
+    resultHistory.forEach(cycle => {
+      averagesPerCycle[cycle.cycleNumber] = getCycleAverages(cycle);
+    });
+    setCycleAverages(averagesPerCycle);
+
+    // 2) ランキング母集団を組み立てる
+    //    可能なら /ranking の全参加者を使い、ダメなら自分のサイクル内で暫定ランキング
+    const lowerIsBetterMap = Object.fromEntries(RANK_METRICS.map(m => [m.key, m.lowerIsBetter]));
+
+    // (A) /ranking が使える場合の例：res.data の各行に各指標の平均値がある想定
+    //     例 { user_name, cycle_number, FloodDamage_avg, EcosystemLevel_avg, CropYield_avg, MunicipalCost_avg }
+    //     ※ API 仕様が違う場合はここを合わせてください。
+    let population = [];
+    if (Array.isArray(globalRankingRows) && globalRankingRows.length > 0) {
+      population = globalRankingRows.map((row, idx) => ({
+        id: `global-${idx}`,
+        user: row.user_name ?? '',
+        cycle: row.cycle_number ?? null,
+        values: {
+          'Flood Damage':    row.FloodDamage_avg ?? row['Flood Damage'] ?? null,
+          'Ecosystem Level': row.EcosystemLevel_avg ?? row['Ecosystem Level'] ?? null,
+          'Crop Yield':      row.CropYield_avg ?? row['Crop Yield'] ?? null,
+          'Municipal Cost':  row.MunicipalCost_avg ?? row['Municipal Cost'] ?? null,
+        }
+      }));
+    } else {
+      // (B) フェイルセーフ：自分のサイクルだけで暫定ランキング
+      population = resultHistory.map(cycle => ({
+        id: `self-${cycle.cycleNumber}`,
+        cycle: cycle.cycleNumber,
+        values: averagesPerCycle[cycle.cycleNumber]
+      }));
+    }
+
+    // 3) 母集団に対する順位表（id→各指標rank）を計算
+    const ranksAll = calcRanks(population, lowerIsBetterMap);
+
+    // 4) 各サイクルの順位を抜き出す
+    //    - /ranking を使っている時：自分のサイクル値（averagesPerCycle）を母集団に追加して順位を再計算してもOK
+    //      →ここでは簡潔化のため、「自サイクルを母集団に追加して」評価します。
+    const finalCycleRanks = {};
+    resultHistory.forEach(cycle => {
+      const selfItem = { id: `self-cycle-${cycle.cycleNumber}`, values: averagesPerCycle[cycle.cycleNumber] };
+
+      // 自分のサイクルを入れた母集団を組み直して順位算出
+      const merged = [...population, selfItem];
+      const r = calcRanks(merged, lowerIsBetterMap);
+      finalCycleRanks[cycle.cycleNumber] = r[selfItem.id]; // { 'Flood Damage': {rank,total}, ... }
+    });
+
+    setCycleRanks(finalCycleRanks);
+  }, [resultHistory, globalRankingRows]);
+
 
   const handleCloseResultUI = () => {
     setOpenResultUI(false);
@@ -1039,18 +1363,17 @@ function App() {
   const handlePlotAttributeChange = (event) => {
     setSelectedPlotAttribute(event.target.value);
 
-    // --- 绘图属性选择ログをWebSocketで送信 ---
+    // --- プロット属性変更ログをWebSocketで送信 ---
     if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
       wsLogRef.current.send(JSON.stringify({
         user_name: userName,
         mode: chartPredictMode,
-        type: "PlotAttribute",
+        type: "ScatterAttribute",
         name: event.target.value,
         cycle: currentCycle,
         timestamp: new Date().toISOString()
       }));
     }
-    console.log(`🎨 绘图属性选择: ${event.target.value}`);
   };
 
   const handleOpenSettings = () => {
@@ -1061,11 +1384,49 @@ function App() {
     setOpenSettingsDialog(false);
   };
 
+  // 年次選択（入力履歴テーブルの年次フィルター）変更時のハンドラ
+  const handleYearFilterChange = (event) => {
+    setSelectedYearFilter(event.target.value);
+
+    // --- 年次選択変更ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "InputHistoryYearFilter",
+        value: event.target.value,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  };
+  // サイクル選択（入力履歴テーブルのサイクルフィルター）変更時のハンドラ
+  const handleCycleFilterChange = (event) => {
+    setSelectedCycleFilter(event.target.value);
+
+    // --- サイクル選択変更ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "InputHistoryCycleFilter",
+        value: event.target.value,
+        cycle: currentCycle,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  };
+
   // (F) パラメータ周りの変更処理
   const updateDecisionVar = (key, value) => {
     setDecisionVar(prev => {
       // スライダーの場合は表示値をバックエンド値に変換して保存
-      const backendValue = convertDisplayToBackendValue(key, value);
+      const nextValue = POLICY_POINT_KEYS.includes(key)
+        ? findAllowedPolicyPoints(prev, key, value)
+        : value;
+      const backendValue = POLICY_POINT_KEYS.includes(key)
+        ? convertPolicyPointsToBackendValue(key, nextValue)
+        : convertDisplayToBackendValue(key, nextValue);
       const updated = { ...prev, [key]: backendValue };
       decisionVarRef.current = updated;
       
@@ -1085,6 +1446,55 @@ function App() {
     });
   };
 
+  // Planting Historyの更新（追加）
+  const updatePlantingHistory = (year, amount) => {
+    setCurrentValues(prev => {
+      const updatedHistory = {
+        ...(prev.planting_history || {}),  // 以前の履歴を残す
+        [year]: amount                     // 新しい年を追加または更新
+      };
+      const updated = {
+        ...prev,
+        planting_history: updatedHistory
+      };
+
+      console.log("🌱 planting_history 更新:", updatedHistory);
+      console.log("🔁 全currentValuesRef:", updated);
+
+      currentValuesRef.current = updated;
+      return updated;
+    });
+  };
+
+
+  // Model Descriptionボタン押下時のハンドラ
+  const handleOpenFormulaModal = () => {
+    setOpenFormulaModal(true);
+    // --- 「MODEL DESCRIPTION」ボタン押下ログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "OpenModelDescription",
+        timestamp: new Date().toISOString()
+      }));
+    }
+    // -------------------------------------------------------------
+  };
+  // Model Descriptionダイアログを閉じたときのハンドラ
+  const handleCloseFormulaModal = () => {
+    setOpenFormulaModal(false);
+    // --- 「MODEL DESCRIPTION」ダイアログを閉じたログをWebSocketで送信 ---
+    if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
+      wsLogRef.current.send(JSON.stringify({
+        user_name: userName,
+        mode: chartPredictMode,
+        type: "CloseModelDescription",
+        timestamp: new Date().toISOString()
+      }));
+    }
+    // -------------------------------------------------------------
+  };
 
 
   const updateCurrentValues = (newDict) => {
@@ -1093,14 +1503,14 @@ function App() {
       temp: newDict['Temperature (℃)'],
       precip: newDict['Precipitation (mm)'],
       municipal_demand: newDict['Municipal Demand'],
-      available_water: newDict['Available Water'],
+      available_water: newDict['available_water'],
       crop_yield: newDict['Crop Yield'],
       hot_days: newDict['Hot Days'],
       extreme_precip_freq: newDict['Extreme Precip Frequency'],
       ecosystem_level: newDict['Ecosystem Level'],
       levee_level: newDict['Levee Level'],                       
       high_temp_tolerance_level: newDict['High Temp Tolerance Level'],
-      forest_area: newDict['Forest area'],                      
+      forest_area: newDict['Forest Area'],                      
       resident_capacity: newDict['Resident capacity'],          
       transportation_level: newDict['transportation_level'],    
       levee_investment_total: newDict['Levee investment total'],
@@ -1109,7 +1519,8 @@ function App() {
       non_risky_house_total: newDict['non_risky_house_total'],  
       resident_burden: newDict['Resident Burden'],
       biodiversity_level: newDict['biodiversity_level'],
-
+      planting_history: newDict['planting_history'],
+      paddy_dam_area: newDict['paddy_dam_area'],
     };
     console.log("更新されるcurrentValues:", updated);
     setCurrentValues(prev => ({ ...prev, ...updated }));
@@ -1196,10 +1607,10 @@ function App() {
   // スライダーの表示値をバックエンド送信値に変換する関数
   const convertDisplayToBackendValue = (key, displayValue) => {
     const conversionMap = {
-      'planting_trees_amount': [0, 100, 200],
+      'planting_trees_amount': [0, 50, 100],
       'dam_levee_construction_cost': [0, 1, 2], // 既に3段階
       'agricultural_RnD_cost': [0, 5, 10],
-      'house_migration_amount': [0, 5, 10],
+      'house_migration_amount': [0, 50, 100],
       'paddy_dam_construction_cost': [0, 5, 10],
       'capacity_building_cost': [0, 5, 10]
     };
@@ -1214,10 +1625,10 @@ function App() {
   // バックエンド送信値を表示値に変換する関数
   const convertBackendToDisplayValue = (key, backendValue) => {
     const conversionMap = {
-      'planting_trees_amount': [0, 100, 200],
+      'planting_trees_amount': [0, 50, 100],
       'dam_levee_construction_cost': [0, 1, 2],
       'agricultural_RnD_cost': [0, 5, 10],
-      'house_migration_amount': [0, 5, 10],
+      'house_migration_amount': [0, 50, 100],
       'paddy_dam_construction_cost': [0, 5, 10],
       'capacity_building_cost': [0, 5, 10]
     };
@@ -1230,10 +1641,174 @@ function App() {
     return backendValue; // 変換できない場合はそのまま返す
   };
 
+  const convertPolicyPointsToBackendValue = (key, displayValue) => {
+    const backendMax = POLICY_BACKEND_MAX[key];
+    if (backendMax === undefined) {
+      return displayValue;
+    }
+
+    const normalizedPoints = Math.max(0, Math.min(POLICY_POINT_MAX, Math.round(Number(displayValue) || 0)));
+    return (backendMax * normalizedPoints) / POLICY_POINT_MAX;
+  };
+
+  const convertBackendValueToPolicyPoints = (key, backendValue) => {
+    const backendMax = POLICY_BACKEND_MAX[key];
+    if (backendMax === undefined) {
+      return backendValue;
+    }
+
+    const numericValue = Number(backendValue) || 0;
+    return Math.max(0, Math.min(POLICY_POINT_MAX, Math.round((numericValue / backendMax) * POLICY_POINT_MAX)));
+  };
+
+  const getPolicyPointsForDecision = (decisionVariables, key) => convertBackendValueToPolicyPoints(key, decisionVariables?.[key] ?? 0);
+
+  const getUsedPolicyPoints = (decisionVariables) => (
+    POLICY_POINT_KEYS.reduce((sum, key) => sum + getPolicyPointsForDecision(decisionVariables, key), 0)
+  );
+
+  const getFloodDamageForPeriod = (rows, periodIndex) => {
+    if (periodIndex < 0) return 0;
+
+    const start = periodIndex * SIMULATION_YEARS;
+    const end = start + SIMULATION_YEARS;
+    return rows
+      .slice(start, end)
+      .reduce((sum, row) => sum + Math.max(toNumber(row?.['Flood Damage']), 0), 0);
+  };
+
+  const getFloodBudgetReduction = (floodDamage) => Math.max(0, Math.floor(Math.max(floodDamage, 0) / FLOOD_DAMAGE_BUDGET_POINT_USD));
+
+  const getMigrationBudgetReduction = (cumulativeMigrationPoints) => (
+    Math.max(0, Math.floor(Math.max(cumulativeMigrationPoints, 0) / HOUSE_MIGRATION_BUDGET_STEP_POINTS))
+  );
+
+  const buildBudgetRows = (historyEntries, rows, pendingInput = null) => {
+    const completedEntries = Array.isArray(historyEntries) ? historyEntries : [];
+    const allEntries = pendingInput ? [...completedEntries, pendingInput] : completedEntries;
+    const simulationRows = Array.isArray(rows) ? rows : [];
+    let cumulativeMigrationPoints = 0;
+
+    return allEntries.map((entry, index) => {
+      const decisionVariables = entry?.decisionVariables ?? {};
+      const houseMigrationPoints = getPolicyPointsForDecision(decisionVariables, 'house_migration_amount');
+      const appliedFloodDamage = index === 0 ? 0 : getFloodDamageForPeriod(simulationRows, index - 1);
+      const relocationPointsApplied = cumulativeMigrationPoints;
+      const floodReduction = getFloodBudgetReduction(appliedFloodDamage);
+      const migrationReduction = getMigrationBudgetReduction(relocationPointsApplied);
+      const availableBudgetPoints = Math.max(
+        0,
+        BASE_POLICY_BUDGET_POINTS - floodReduction - migrationReduction
+      );
+      const usedPolicyPoints = getUsedPolicyPoints(decisionVariables);
+      const totalBudgetReduction = floodReduction + migrationReduction;
+      const periodLabel = `${entry?.year ?? '-'} - ${(entry?.year ?? 0) + SIMULATION_YEARS - 1}`;
+
+      cumulativeMigrationPoints += houseMigrationPoints;
+
+      return {
+        inputNumber: entry?.inputNumber ?? index + 1,
+        year: entry?.year,
+        periodLabel,
+        decisionVariables,
+        houseMigrationPoints,
+        appliedFloodDamage,
+        periodFloodDamage: index < completedEntries.length ? getFloodDamageForPeriod(simulationRows, index) : null,
+        cumulativeMigrationPoints,
+        relocationPointsApplied,
+        floodReduction,
+        migrationReduction,
+        totalBudgetReduction,
+        availableBudgetPoints,
+        usedPolicyPoints,
+        remainingBudgetPoints: Math.max(availableBudgetPoints - usedPolicyPoints, 0),
+        isPending: Boolean(pendingInput) && index === allEntries.length - 1
+      };
+    });
+  };
+
+  const getPendingBudgetInput = (decisionVariables) => ({
+    inputNumber: inputCount + 1,
+    year: decisionVariables.year,
+    decisionVariables
+  });
+
+  const getBudgetRowForDecision = (decisionVariables) => {
+    const rows = buildBudgetRows(inputHistory, simulationData, getPendingBudgetInput(decisionVariables));
+    return rows[rows.length - 1] ?? null;
+  };
+
+  const isDecisionWithinBudget = (decisionVariables) => {
+    const budgetRow = getBudgetRowForDecision(decisionVariables);
+    if (!budgetRow) return true;
+    return budgetRow.usedPolicyPoints <= budgetRow.availableBudgetPoints;
+  };
+
+  const withPolicyPoints = (decisionVariables, key, points) => ({
+    ...decisionVariables,
+    [key]: convertPolicyPointsToBackendValue(key, points)
+  });
+
+  const findAllowedPolicyPoints = (decisionVariables, key, requestedPoints) => {
+    const normalizedTarget = Math.max(0, Math.min(POLICY_POINT_MAX, Math.round(Number(requestedPoints) || 0)));
+
+    for (let candidate = normalizedTarget; candidate >= 0; candidate -= 1) {
+      if (isDecisionWithinBudget(withPolicyPoints(decisionVariables, key, candidate))) {
+        return candidate;
+      }
+    }
+
+    return 0;
+  };
+
+  const getSliderMaxPoints = (sliderName) => {
+    return POLICY_POINT_MAX;
+  };
+
+  const getSliderMarks = () => ([0, 5, 10].map((value) => ({ value, label: String(value) })));
+
+  const currentCycleBudgetRows = useMemo(() => (
+    buildBudgetRows(
+      inputHistory,
+      simulationData,
+      cycleCompleted || inputCount >= 3 ? null : getPendingBudgetInput(decisionVar)
+    )
+  ), [inputHistory, simulationData, decisionVar, inputCount, cycleCompleted]);
+
+  const currentBudgetRow = currentCycleBudgetRows[currentCycleBudgetRows.length - 1] ?? null;
+
   return (
     <Box sx={{ padding: 2, backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
 
-
+      {/* ★ Flood flash overlay */}
+      <Box
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          backgroundColor: flashOn ? 'rgba(255,0,0,0.35)' : 'transparent',
+          transition: 'background-color 200ms ease-in-out',
+        }}
+      >
+        {flashOn && flashMessage && (
+          <Typography
+            variant="h4"
+            sx={{
+              color: '#fff',
+              fontWeight: 'bold',
+              textShadow: '0 0 10px rgba(0,0,0,0.7)',
+              animation: 'fadeText 1s ease-in-out',
+            }}
+          >
+            {flashMessage}
+          </Typography>
+        )}
+      </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography variant="h4" gutterBottom>
@@ -1261,16 +1836,7 @@ function App() {
         </Box>
 
         {/* Model Descriptionボタン */}
-        <Button variant="outlined" onClick={() => {
-          setOpenFormulaModal(true);
-          // --- 模型说明打开ログを队列に追加 ---
-          addLogToQueue({
-            type: "ModelExplanation",
-            name: "Open",
-            action: "open_model_description"
-          });
-          console.log(`📖 模型说明页面打开`);
-        }}>
+        <Button variant="outlined" onClick={handleOpenFormulaModal}>
           Model Description
         </Button>
         
@@ -1299,55 +1865,32 @@ function App() {
           />
         </Box>
         
-        {/* WebSocket状态指示灯 - 左上方 */}
-        <Box sx={{ position: 'absolute', top: 16, left: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box
-            sx={{
-              width: 12,
-              height: 12,
-              borderRadius: '50%',
-              backgroundColor: logStatus === 'connected' ? '#4caf50' : '#f44336',
-              boxShadow: logStatus === 'connected' ? '0 0 8px rgba(76, 175, 80, 0.6)' : '0 0 8px rgba(244, 67, 54, 0.6)',
-            }}
-          />
-          <Typography variant="caption" color="text.secondary">
-            WebSocket
-          </Typography>
-        </Box>
-
-        {/* 右上方按钮组 */}
-        <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 1 }}>
+        {/* {showResultButton && (
+        <Box sx={{ textAlign: 'center', mt: 0 }}>
           <Button
             variant="contained"
-            color="error"
-            size="small"
-            onClick={handleEndExperiment}
-            sx={{ fontSize: '0.75rem', px: 2 }}
+            color="success"
+            size="large"
+            onClick={handleShowResult}
           >
-            {language === 'ja' ? '実験終了' : 'End Experiment'}
+            {t.buttons.viewResults}
           </Button>
-          <IconButton color="primary" onClick={handleOpenSettings}>
+        </Box>
+      )} */}
+        <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+          <IconButton color="primary" onClick={handleOpenSettings} sx={{ ml: 1 }}>
             <SettingsIcon />
           </IconButton>
         </Box>
       </Box>
 
       {/* Model Description Dialog */}
-      <Dialog open={openFormulaModal} onClose={() => setOpenFormulaModal(false)} maxWidth="xl" fullWidth>
+      <Dialog open={openFormulaModal} onClose={handleCloseFormulaModal} maxWidth="xl" fullWidth>
         <DialogTitle>Model Description</DialogTitle>
         <DialogContent>
-          <ModelExplanationPage />
+          <FormulaPage />
           <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Button variant="contained" onClick={() => {
-              setOpenFormulaModal(false);
-              // --- 模型说明关闭ログを队列に追加 ---
-              addLogToQueue({
-                type: "ModelExplanation",
-                name: "Close",
-                action: "close_model_description"
-              });
-              console.log(`📖 模型说明页面关闭`);
-            }}>
+            <Button variant="contained" onClick={handleCloseFormulaModal}>
               Close
             </Button>
           </Box>
@@ -1385,16 +1928,7 @@ function App() {
                 name="mode"
                 value="group"
                 checked={selectedMode === 'group'}
-                onChange={(e) => {
-                  setSelectedMode(e.target.value);
-                  // --- 流域选择ログを队列に追加 ---
-                  addLogToQueue({
-                    type: "ModeSelect",
-                    name: e.target.value,
-                    action: "watershed_selection"
-                  });
-                  console.log(`🏞️ 流域选择: ${e.target.value}`);
-                }}
+                onChange={(e) => setSelectedMode(e.target.value)}
               />
               <label htmlFor="mode-group" style={{ marginLeft: 8 }}>
                 <Typography variant="body1">
@@ -1410,16 +1944,7 @@ function App() {
                 name="mode"
                 value="upstream"
                 checked={selectedMode === 'upstream'}
-                onChange={(e) => {
-                  setSelectedMode(e.target.value);
-                  // --- 流域选择ログを队列に追加 ---
-                  addLogToQueue({
-                    type: "ModeSelect",
-                    name: e.target.value,
-                    action: "watershed_selection"
-                  });
-                  console.log(`🏞️ 流域选择: ${e.target.value}`);
-                }}
+                onChange={(e) => setSelectedMode(e.target.value)}
               />
               <label htmlFor="mode-upstream" style={{ marginLeft: 8 }}>
                 <Typography variant="body1">
@@ -1435,16 +1960,7 @@ function App() {
                 name="mode"
                 value="downstream"
                 checked={selectedMode === 'downstream'}
-                onChange={(e) => {
-                  setSelectedMode(e.target.value);
-                  // --- 流域选择ログを队列に追加 ---
-                  addLogToQueue({
-                    type: "ModeSelect",
-                    name: e.target.value,
-                    action: "watershed_selection"
-                  });
-                  console.log(`🏞️ 流域选择: ${e.target.value}`);
-                }}
+                onChange={(e) => setSelectedMode(e.target.value)}
               />
               <label htmlFor="mode-downstream" style={{ marginLeft: 8 }}>
                 <Typography variant="body1">
@@ -1485,13 +2001,6 @@ function App() {
                 onChange={(e) => {
                   setChartPredictMode(e.target.value);
                   localStorage.setItem('chartPredictMode', e.target.value);
-                  // --- 预测模式选择ログを队列に追加 ---
-                  addLogToQueue({
-                    type: "PredictModeSelect",
-                    name: e.target.value,
-                    action: "prediction_mode_change"
-                  });
-                  console.log(`🔮 预测模式选择: ${e.target.value}`);
                 }}
               />
               <label htmlFor="predict-best-worst" style={{ marginLeft: 8 }}>
@@ -1511,13 +2020,6 @@ function App() {
                 onChange={(e) => {
                   setChartPredictMode(e.target.value);
                   localStorage.setItem('chartPredictMode', e.target.value);
-                  // --- 预测模式选择ログを队列に追加 ---
-                  addLogToQueue({
-                    type: "PredictModeSelect",
-                    name: e.target.value,
-                    action: "prediction_mode_change"
-                  });
-                  console.log(`🔮 预测模式选择: ${e.target.value}`);
                 }}
               />
               <label htmlFor="predict-monte-carlo" style={{ marginLeft: 8 }}>
@@ -1537,13 +2039,6 @@ function App() {
                 onChange={(e) => {
                   setChartPredictMode(e.target.value);
                   localStorage.setItem('chartPredictMode', e.target.value);
-                  // --- 预测模式选择ログを队列に追加 ---
-                  addLogToQueue({
-                    type: "PredictModeSelect",
-                    name: e.target.value,
-                    action: "prediction_mode_change"
-                  });
-                  console.log(`🔮 预测模式选择: ${e.target.value}`);
                 }}
               />
               <label htmlFor="predict-none" style={{ marginLeft: 8 }}>
@@ -1572,13 +2067,6 @@ function App() {
                 onChange={(e) => {
                   setLanguage(e.target.value);
                   localStorage.setItem('language', e.target.value);
-                  // --- 语言切换ログを队列に追加 ---
-                  addLogToQueue({
-                    type: "LanguageSelect",
-                    name: e.target.value,
-                    action: "language_change"
-                  });
-                  console.log(`🌐 语言切换: ${e.target.value}`);
                 }}
               />
               <label htmlFor="lang-ja" style={{ marginLeft: 8 }}>
@@ -1597,13 +2085,6 @@ function App() {
                 onChange={(e) => {
                   setLanguage(e.target.value);
                   localStorage.setItem('language', e.target.value);
-                  // --- 语言切换ログを队列に追加 ---
-                  addLogToQueue({
-                    type: "LanguageSelect",
-                    name: e.target.value,
-                    action: "language_change"
-                  });
-                  console.log(`🌐 语言切换: ${e.target.value}`);
                 }}
               />
               <label htmlFor="lang-en" style={{ marginLeft: 8 }}>
@@ -1626,8 +2107,23 @@ function App() {
       </Dialog>
 
       {/* 結果表示ダイアログ */}
-      <Dialog open={openResultUI} onClose={handleCloseResultUI} maxWidth={false} fullWidth
-        PaperProps={{ sx: { width: '90vw', height: '90vh', maxWidth: '1600px' } }}>
+      {/* <Dialog open={openResultUI} onClose={handleCloseResultUI} maxWidth={false} fullWidth
+        PaperProps={{ sx: { width: '90vw', height: '90vh', maxWidth: '1600px' } }}> */}
+      <Dialog
+        open={openResultUI}
+        onClose={handleCloseResultUI}
+        fullScreen
+        PaperProps={{
+          sx: {
+            width: '100vw',
+            height: '100vh',
+            m: 0,
+            borderRadius: 0,
+            p: { xs: 1, sm: 2, md: 4 },
+            overflow: 'auto'
+          }
+        }}
+      >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {t.scatter.title}
           <Button onClick={handleCloseResultUI} color="primary" variant="outlined">
@@ -1639,7 +2135,15 @@ function App() {
             <Box sx={{ display: 'flex', gap: 4, height: '70vh' }}>
               {/* 左側：散布図セクション */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h6" gutterBottom>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontSize: 'clamp(16px, 2vw, 28px)',   // 小画面:16px, 標準:2vw, 大画面:最大28px
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    mb: 2
+                  }}
+                >
                   {t.scatter.description}
                 </Typography>
                 
@@ -1689,105 +2193,178 @@ function App() {
                       <MenuItem value="all">{t.scatter.allDisplay}</MenuItem>
                     </Select>
                   </FormControl>
+                  <Box sx={{ display:'flex', alignItems:'center', pl:1 }}>
+                    <input
+                      type="checkbox"
+                      checked={showYearlyDots}
+                      onChange={(e)=>setShowYearlyDots(e.target.checked)}
+                      style={{ marginRight: 8 }}
+                    />
+                    <Typography variant="body2">
+                      {language === 'ja' ? '各年の点を表示（小・同色）' : 'Show yearly dots (small, same color)'}
+                    </Typography>
+                  </Box>
+
                 </Box>
                 
                 {/* 散布図 */}
                 <Box sx={{ flex: 1, minHeight: 400 }}>
                   <ScatterChart
+                    sx={{
+                      '& .MuiChartsAxis-label': { fontSize: 'clamp(12px, 1.4vw, 20px)' },
+                      '& .MuiChartsAxis-tickLabel': { fontSize: 'clamp(10px, 1.2vw, 16px)' },
+                      '& .MuiChartsLegend-root': { '& *': { fontSize: 'clamp(10px, 1.2vw, 16px)' } },
+                    }}
                     width={600}
                     height={400}
-                    series={resultHistory.map((cycle, cycleIndex) => {
-                      const colors = ['rgba(25, 118, 210, 0.6)', 'rgba(220, 0, 78, 0.6)', 'rgba(56, 142, 60, 0.6)', 'rgba(245, 124, 0, 0.6)', 'rgba(123, 31, 162, 0.6)', 'rgba(211, 47, 47, 0.6)'];
-                      const color = colors[cycleIndex % colors.length];
-                      
-                      // 選択されたプロット属性に応じて対象年を決定
-                      let targetYears;
-                      if (selectedPlotAttribute === 'all') {
-                        targetYears = [2050, 2075, 2100];
-                      } else if (selectedPlotAttribute === 'average') {
-                        targetYears = ['average'];
-                      } else {
-                        targetYears = [parseInt(selectedPlotAttribute)];
-                      }
-                      
-                      return targetYears.map((year) => {
-                        let yearData;
-                        
-                        if (year === 'average') {
-                          // 2026年～2100年の全データの平均値を計算
-                          const validData = cycle.simulationData.filter(data =>
-                            typeof data[selectedXAxis] === 'number' && typeof data[selectedYAxis] === 'number'
-                          );
-                          if (validData.length === 0) return null;
-                          const avgX = validData.reduce((sum, d) => sum + d[selectedXAxis], 0) / validData.length;
-                          const avgY = validData.reduce((sum, d) => sum + d[selectedYAxis], 0) / validData.length;
-                          yearData = {
-                            [selectedXAxis]: avgX,
-                            [selectedYAxis]: avgY
-                          };
-                        } else {
-                          yearData = cycle.simulationData.find(data => data.Year === year);
-                        }
-                        
-                        if (!yearData) {
-                          console.log(`サイクル${cycle.cycleNumber}の${year}年のデータが見つかりません`);
-                          return null;
-                        }
-                        
-                        // 年ごとに異なるマーカーサイズと透明度を設定
-                        let markerSize, opacity;
-                        if (year === 'average') {
-                          markerSize = 10;
-                          opacity = 0.7;
-                        } else {
-                          switch (year) {
-                            case 2050:
-                              markerSize = 6;
-                              opacity = 0.8;
-                              break;
-                            case 2075:
-                              markerSize = 8;
-                              opacity = 0.6;
-                              break;
-                            case 2100:
-                              markerSize = 10;
-                              opacity = 0.4;
-                              break;
-                            default:
-                              markerSize = 6;
-                              opacity = 0.8;
+                    series={resultHistory
+                      .filter(cycle => visibleCycles.has(cycle.cycleNumber))
+                      .flatMap((cycle, cycleIndex) => {
+                        const seriesList = [];
+
+                        // ---- (A) 年ごとの小点（薄色・小さめ） ----
+                        if (showYearlyDots) {
+                          const yearPoints = cycle.simulationData
+                            .filter(d =>
+                              typeof d[selectedXAxis] === 'number' &&
+                              typeof d[selectedYAxis] === 'number'
+                            )
+                            .map(d => ({ x: d[selectedXAxis], y: d[selectedYAxis] }));
+
+                          if (yearPoints.length > 0) {
+                            seriesList.push({
+                              data: yearPoints,
+                              color: makeColor(cycleIndex, 0.25),  // 同系色・薄め
+                              markerSize: 2,                       // 小さく
+                              showMark: true,
+                              // label: `${t.scatter.cycle} ${cycle.cycleNumber} (years)`,
+                            });
                           }
                         }
-                        
-                        return {
-                          data: [{
-                            x: yearData[selectedXAxis] || 0,
-                            y: yearData[selectedYAxis] || 0,
-                          }],
-                          color: color.replace('0.6', opacity.toString()),
-                          markerSize: markerSize,
-                          showMark: true,
-                        };
-                      }).filter(Boolean);
-                    }).flat()}
+
+                        // ---- (B) 既存の平均/特定年の大きめ点（濃色） ----
+                        let targetYears;
+                        if (selectedPlotAttribute === 'all') {
+                          targetYears = [2050, 2075, 2100];
+                        } else if (selectedPlotAttribute === 'average') {
+                          targetYears = ['average'];
+                        } else {
+                          targetYears = [parseInt(selectedPlotAttribute)];
+                        }
+
+                        const bigPoints = targetYears.map((year) => {
+                          let yearData;
+
+                          if (year === 'average') {
+                            const valid = cycle.simulationData.filter(d =>
+                              typeof d[selectedXAxis] === 'number' &&
+                              typeof d[selectedYAxis] === 'number'
+                            );
+                            if (!valid.length) return null;
+                            const avgX = valid.reduce((s, d) => s + d[selectedXAxis], 0) / valid.length;
+                            const avgY = valid.reduce((s, d) => s + d[selectedYAxis], 0) / valid.length;
+                            yearData = { [selectedXAxis]: avgX, [selectedYAxis]: avgY };
+                          } else {
+                            const startYear = year - 25;
+                            const endYear = year;
+                            const valid = cycle.simulationData.filter(d =>
+                              d.Year >= startYear && d.Year <= endYear &&
+                              typeof d[selectedXAxis] === 'number' &&
+                              typeof d[selectedYAxis] === 'number'
+                            );
+                            if (!valid.length) return null;
+                            const avgX = valid.reduce((s, d) => s + d[selectedXAxis], 0) / valid.length;
+                            const avgY = valid.reduce((s, d) => s + d[selectedYAxis], 0) / valid.length;
+                            yearData = { [selectedXAxis]: avgX, [selectedYAxis]: avgY };
+                          }
+
+                          // 年に応じたサイズ・濃さ
+                          let markerSize = 6;
+                          let alpha = 0.7;
+                          if (year !== 'average') {
+                            if (year === 2050) { markerSize = 6; alpha = 0.8; }
+                            if (year === 2075) { markerSize = 7; alpha = 0.6; }
+                            if (year === 2100) { markerSize = 8; alpha = 0.4; }
+                          }
+
+                          return {
+                            data: [{ x: yearData[selectedXAxis] || 0, y: yearData[selectedYAxis] || 0 }],
+                            color: makeColor(cycleIndex, alpha),  // 同系色・濃いめ
+                            markerSize,
+                            showMark: true,
+                            label: `${t.scatter.cycle} ${cycle.cycleNumber}`,
+                          };
+                        }).filter(Boolean);
+
+                        return [...seriesList, ...bigPoints];
+                      })
+                    }
                     xAxis={[{
                       label: getLineChartIndicators(language)[selectedXAxis]?.labelTitle || '',
                       min: 0,
-                      max: Math.max(...resultHistory.flatMap(cycle => 
-                        cycle.simulationData.map(data => data[selectedXAxis] || 0)
+                      max: Math.max(...resultHistory.flatMap(cycle =>
+                        cycle.simulationData.map(d => d[selectedXAxis] || 0)
                       )) * 1.1
                     }]}
                     yAxis={[{
                       label: getLineChartIndicators(language)[selectedYAxis]?.labelTitle || '',
                       min: 0,
-                      max: Math.max(...resultHistory.flatMap(cycle => 
-                        cycle.simulationData.map(data => data[selectedYAxis] || 0)
+                      max: Math.max(...resultHistory.flatMap(cycle =>
+                        cycle.simulationData.map(d => d[selectedYAxis] || 0)
                       )) * 1.1
                     }]}
                     legend={null}
                   />
                 </Box>
                 
+                {/* サイクル表示制御 */}
+                <Box sx={{ mt: 2, border: '1px solid #ddd', borderRadius: 1, p: 2 }}>
+                  <Typography variant="body2" fontWeight="bold" gutterBottom>
+                    {t.scatter.cycleDisplayControl}
+                  </Typography>
+                  <Box sx={{ 
+                    maxHeight: 150, 
+                    overflowY: 'auto', 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: 1 
+                  }}>
+                    {resultHistory.map((cycle, index) => {
+                      const colors = ['#1976d2', '#dc004e', '#388e3c', '#f57c00', '#7b1fa2', '#d32f2f', '#00796b', '#c2185b', '#ffa000', '#0097a7'];
+                      const color = colors[index % colors.length];
+                      const isVisible = visibleCycles.has(cycle.cycleNumber);
+                      
+                      return (
+                        <Box key={cycle.cycleNumber} sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1,
+                          p: 0.5,
+                          borderRadius: 1,
+                          backgroundColor: isVisible ? 'rgba(25, 118, 210, 0.1)' : 'transparent'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={isVisible}
+                            onChange={(e) => handleCycleVisibilityChange(cycle.cycleNumber, e.target.checked)}
+                            style={{ margin: 0 }}
+                          />
+                          <Box sx={{ 
+                            width: 12, 
+                            height: 12, 
+                            backgroundColor: color, 
+                            display: 'inline-block',
+                            borderRadius: '50%'
+                          }}></Box>
+                          <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>
+                            {t.scatter.cycle} {cycle.cycleNumber}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
+
                 {/* 凡例の説明 */}
                 <Box sx={{ mt: 2, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <Box>
@@ -1823,23 +2400,6 @@ function App() {
                       </Box>
                     )}
                   </Box>
-                  
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold" gutterBottom>
-                      {t.scatter.cycleColor}
-                    </Typography>
-                    {resultHistory.map((cycle, index) => {
-                      const colors = ['#1976d2', '#dc004e', '#388e3c', '#f57c00', '#7b1fa2', '#d32f2f', '#00796b', '#c2185b', '#ffa000', '#0097a7'];
-                      const color = colors[index % colors.length];
-                      
-                      return (
-                        <Box key={index} sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                          <Box sx={{ width: 12, height: 12, backgroundColor: color, display: 'inline-block' }}></Box>
-                          <Typography variant="caption">{t.scatter.cycle} {cycle.cycleNumber}</Typography>
-                        </Box>
-                      );
-                    })}
-                  </Box>
                 </Box>
               </Box>
               
@@ -1848,7 +2408,29 @@ function App() {
                 <Typography variant="h6" gutterBottom>
                   {t.scatter.inputHistory}
                 </Typography>
-                
+                {/* 最新サイクルランキング（コンパクト表示） */}
+                {latestCycleNumber && latestRanks && (
+                  <Box sx={{
+                    mb: 1.5,
+                    p: 1,
+                    border: '1px solid #e0e0e0',
+                    borderRadius: 1,
+                    backgroundColor: '#fafafa'
+                  }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      {language === 'ja' ? `サイクル ${latestCycleNumber} の順位` : `Ranks of Cycle ${latestCycleNumber}`}
+                    </Typography>
+
+                    {/* 1行ずつ短く出す（例：洪水被害（2位/4人）） */}
+                    {RANK_METRICS.map(m => (
+                      <Typography key={m.key} variant="body2" sx={{ lineHeight: 1.4 }}>
+                        {language === 'ja'
+                          ? `${m.ja}（${latestRanks[m.key]}位/${totalCycles}人）`
+                          : `${m.key} (${latestRanks[m.key]}/${totalCycles})`}
+                      </Typography>
+                    ))}
+                  </Box>
+                )}
                 {/* 年次・サイクル・ソートセレクトバー */}
                 <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
                   <FormControl sx={{ minWidth: 120 }}>
@@ -1856,21 +2438,7 @@ function App() {
                     <Select
                       value={selectedYearFilter}
                       label={t.scatter.yearFilter}
-                      onChange={(event) => {
-                        setSelectedYearFilter(event.target.value);
-                        // --- 年份过滤ログをWebSocketで送信 ---
-                        if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
-                          wsLogRef.current.send(JSON.stringify({
-                            user_name: userName,
-                            mode: chartPredictMode,
-                            type: "YearFilter",
-                            name: event.target.value,
-                            cycle: currentCycle,
-                            timestamp: new Date().toISOString()
-                          }));
-                        }
-                        console.log(`📅 年份过滤选择: ${event.target.value}`);
-                      }}
+                      onChange={handleYearFilterChange}
                     >
                       <MenuItem value="all">{t.scatter.allYears}</MenuItem>
                       {/* 年次リストを動的に生成 */}
@@ -1884,21 +2452,7 @@ function App() {
                     <Select
                       value={selectedCycleFilter}
                       label={t.scatter.cycleFilter}
-                      onChange={(event) => {
-                        setSelectedCycleFilter(event.target.value);
-                        // --- 周期过滤ログをWebSocketで送信 ---
-                        if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
-                          wsLogRef.current.send(JSON.stringify({
-                            user_name: userName,
-                            mode: chartPredictMode,
-                            type: "CycleFilter",
-                            name: event.target.value,
-                            cycle: currentCycle,
-                            timestamp: new Date().toISOString()
-                          }));
-                        }
-                        console.log(`🔄 周期过滤选择: ${event.target.value}`);
-                      }}
+                      onChange={handleCycleFilterChange}
                     >
                       <MenuItem value="all">{t.scatter.allCycles}</MenuItem>
                       {/* サイクル番号リストを動的に生成 */}
@@ -1907,32 +2461,7 @@ function App() {
                       ))}
                     </Select>
                   </FormControl>
-                  <FormControl sx={{ minWidth: 120 }}>
-                    <InputLabel>{t.scatter.historySort}</InputLabel>
-                    <Select
-                      value={selectedHistorySort}
-                      label={t.scatter.historySort}
-                      onChange={(event) => {
-                        setSelectedHistorySort(event.target.value);
-                        // --- 历史排序ログをWebSocketで送信 ---
-                        if (wsLogRef.current && wsLogRef.current.readyState === WebSocket.OPEN) {
-                          wsLogRef.current.send(JSON.stringify({
-                            user_name: userName,
-                            mode: chartPredictMode,
-                            type: "HistorySort",
-                            name: event.target.value,
-                            cycle: currentCycle,
-                            timestamp: new Date().toISOString()
-                          }));
-                        }
-                        console.log(`📊 历史排序选择: ${event.target.value}`);
-                      }}
-                    >
-                      <MenuItem value="cycle">{t.scatter.sortByCycle}</MenuItem>
-                      <MenuItem value="year">{t.scatter.sortByYear}</MenuItem>
-                      <MenuItem value="input">{t.scatter.sortByInput}</MenuItem>
-                    </Select>
-                  </FormControl>
+
                 </Box>
                 
                 <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -1948,9 +2477,9 @@ function App() {
                           <TableCell>{t.sliders.houseMigration}</TableCell>
                           <TableCell>{t.sliders.damLevee}</TableCell>
                           <TableCell>{t.sliders.paddyDam}</TableCell>
-                          <TableCell>{t.sliders.capacityBuilding}</TableCell>
                           {/* <TableCell>{t.sliders.transportation}</TableCell> */}
                           <TableCell>{t.sliders.agriculturalRnD}</TableCell>
+                          <TableCell>{t.sliders.capacityBuilding}</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -1960,29 +2489,20 @@ function App() {
                               (selectedYearFilter === 'all' || input.year === Number(selectedYearFilter)) &&
                               (selectedCycleFilter === 'all' || cycle.cycleNumber === Number(selectedCycleFilter))
                             )
-                            .sort((a, b) => {
-                              if (selectedHistorySort === 'cycle') {
-                                return cycle.cycleNumber - cycle.cycleNumber;
-                              } else if (selectedHistorySort === 'year') {
-                                return a.year - b.year;
-                              } else if (selectedHistorySort === 'input') {
-                                return a.inputNumber - b.inputNumber;
-                              }
-                              return 0;
-                            })
+
                             .map((input, inputIndex) => (
                               <TableRow key={`${cycleIndex}-${inputIndex}`}>
                                 <TableCell>{cycle.cycleNumber}</TableCell>
                                 <TableCell>{input.inputNumber}回目</TableCell>
                                 <TableCell>{input.year}年</TableCell>
                                 <TableCell>{input.decisionVariables.cp_climate_params}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('planting_trees_amount', input.decisionVariables.planting_trees_amount)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('house_migration_amount', input.decisionVariables.house_migration_amount)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('dam_levee_construction_cost', input.decisionVariables.dam_levee_construction_cost)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('paddy_dam_construction_cost', input.decisionVariables.paddy_dam_construction_cost)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('capacity_building_cost', input.decisionVariables.capacity_building_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('planting_trees_amount', input.decisionVariables.planting_trees_amount)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('house_migration_amount', input.decisionVariables.house_migration_amount)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('dam_levee_construction_cost', input.decisionVariables.dam_levee_construction_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('paddy_dam_construction_cost', input.decisionVariables.paddy_dam_construction_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('capacity_building_cost', input.decisionVariables.capacity_building_cost)}</TableCell>
                                 {/* <TableCell>{input.decisionVariables.transportation_invest}</TableCell> */}
-                                <TableCell>{convertBackendToDisplayValue('agricultural_RnD_cost', input.decisionVariables.agricultural_RnD_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('agricultural_RnD_cost', input.decisionVariables.agricultural_RnD_cost)}</TableCell>
                               </TableRow>
                             ))
                         )}
@@ -2015,7 +2535,7 @@ function App() {
 
           <Box sx={{ position: 'relative', width: '100%' }}>
             <img
-              src="/stockflow_mayfes.png"
+              src="/system_dynamics_ja2.png"
               alt="サンプル画像"
               style={{ width: '100%', display: 'block', height: 'auto' }}
             />
@@ -2039,7 +2559,7 @@ function App() {
           {/* ゲージセクション */}
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h6" gutterBottom>
-              {t.year} {decisionVar.year - 1} {t.chart.weatherCondition}
+              {decisionVar.year - 1} {t.chart.weatherCondition}
             </Typography>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 2 }}>
@@ -2063,16 +2583,15 @@ function App() {
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ mb: 0 }}>{t.chart.residentBurden}</Typography>
-                <Gauge width={100} height={100} value={currentValues.resident_burden * INDICATOR_CONVERSION["Municipal Cost"]} valueMax={10} />
-                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>{t.unit.manYen}</Typography>
+                <Typography variant="body2" sx={{ mb: 0 }}>{t.chart.hotDays}</Typography>
+                <Gauge width={100} height={100} value={currentValues.hot_days} valueMax={10} />
+                <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>{t.unit.frequency}</Typography>
               </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {/* <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 0 }}>{t.chart.biodiversity}</Typography>
                 <Gauge width={100} height={100} value={currentValues.ecosystem_level} valueMax={100} />
                 <Typography variant="caption" sx={{ mt: '0px', fontSize: '0.75rem', color: 'text.secondary' }}>{t.unit.none}</Typography>
-              </Box>
+              </Box> */}
             </Box>
           </Box>
 
@@ -2209,6 +2728,319 @@ function App() {
           </Box>
         </Paper>
       </Box>
+      <Paper
+        elevation={2}
+        sx={{
+          width: '100%',
+          mb: 2,
+          p: 2,
+          borderRadius: 2,
+          backgroundColor: '#fffdf7',
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          {t.budget.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          {t.budget.description}
+        </Typography>
+        {currentBudgetRow && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+              gap: 2,
+            }}
+          >
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                {t.budget.appliedFloodDamage}
+              </Typography>
+              <Typography variant="h6">
+                {formatUSD(currentBudgetRow.appliedFloodDamage) ?? '-'}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                {t.budget.floodReduction}
+              </Typography>
+              <Typography variant="h6">
+                {formatPoints(currentBudgetRow.floodReduction)}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                {t.budget.relocationReduction}
+              </Typography>
+              <Typography variant="h6">
+                {formatPoints(currentBudgetRow.migrationReduction)}
+              </Typography>
+            </Paper>
+            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+              <Typography variant="body2" color="text.secondary">
+                {`${t.budget.period}: ${currentBudgetRow.isPending ? `${currentBudgetRow.periodLabel} (${t.budget.currentSelection})` : currentBudgetRow.periodLabel}`}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {`${t.budget.availablePoints}: ${formatPoints(currentBudgetRow.availableBudgetPoints)} / ${t.budget.totalReduction}: ${formatPoints(currentBudgetRow.totalBudgetReduction)}`}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+      </Paper>
+      <Paper
+        elevation={2}
+        sx={{
+          width: '100%',
+          mb: 2,
+          p: 2,
+          borderRadius: 2,
+          backgroundColor: '#f8fbff',
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          {t.evaluation.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {t.evaluation.description}
+        </Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
+            gap: 2,
+          }}
+        >
+          {INTERMEDIATE_EVALUATION_STAGES.map((stage) => {
+            const evaluation = getIntermediateEvaluation(stage.stageIndex);
+            const isLoading = Boolean(loadingEvaluationStages[stage.stageIndex]);
+            const errorMessage = evaluationErrors[stage.stageIndex];
+            const council = residentCouncilByStage[stage.stageIndex];
+            const isCouncilLoading = Boolean(loadingCouncilStages[stage.stageIndex]);
+            const councilError = councilErrors[stage.stageIndex];
+            const snsReaction = snsReactionsByStage[stage.stageIndex];
+            const isSnsLoading = Boolean(loadingSnsStages[stage.stageIndex]);
+            const snsError = snsErrors[stage.stageIndex];
+            const stageCompleted = isStageCompleted(stage.stageIndex);
+            const stageTitle = t.evaluation[`stage${stage.checkpointYear}`];
+            const snsButtonLabel = snsReaction ? t.sns.regenerateButton : t.sns.generateButton;
+            const councilEntries = [
+              ['child_future', t.council.childFuture],
+              ['entrepreneur', t.council.entrepreneur],
+              ['council_member', t.council.councilMember],
+              ['farmer', t.council.farmer],
+            ];
+
+            return (
+              <Paper
+                key={stage.stageIndex}
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  minHeight: 520,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.5,
+                  borderColor: evaluation ? 'primary.light' : 'divider',
+                }}
+              >
+                <Box>
+                  <Typography variant="overline" color="primary">
+                    {stageTitle}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {t.evaluation.periodLabel}: {stage.periodStartYear}-{stage.periodEndYear}
+                  </Typography>
+                </Box>
+
+                {evaluation && (
+                  <Typography component="div" variant="caption" color="text.secondary">
+                    {t.evaluation.modelLabel}: {evaluation.model}
+                  </Typography>
+                )}
+
+                {isLoading && (
+                  <Typography component="div" variant="body2" color="primary">
+                    {t.evaluation.generating}
+                  </Typography>
+                )}
+
+                {!isLoading && errorMessage && (
+                  <Typography component="div" variant="body2" color="error">
+                    {errorMessage}
+                  </Typography>
+                )}
+
+                {!isLoading && !errorMessage && evaluation && (
+                  <Box
+                    sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}
+                  >
+                    <Typography variant="h6" sx={{ lineHeight: 1.4 }}>
+                      {evaluation.headline || stageTitle}
+                    </Typography>
+                    {evaluation.subheadline && (
+                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                        {evaluation.subheadline}
+                      </Typography>
+                    )}
+                    {evaluation.lead && (
+                      <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                        {evaluation.lead}
+                      </Typography>
+                    )}
+                    {evaluation.policyAssessment && (
+                      <Typography variant="caption" color="primary" sx={{ fontWeight: 700 }}>
+                        {t.evaluation.policyAssessmentLabel}: {evaluation.policyAssessment}
+                      </Typography>
+                    )}
+                    {evaluation.expertComment && (
+                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                        {t.evaluation.expertCommentLabel}: {evaluation.expertComment}
+                      </Typography>
+                    )}
+                    <Box
+                      component="div"
+                      translate="no"
+                      sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}
+                    >
+                      {evaluation.articleBody || evaluation.feedback}
+                    </Box>
+                  </Box>
+                )}
+
+                {!isLoading && !errorMessage && !evaluation && (
+                  <Typography component="div" variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                    {t.evaluation.pending}
+                  </Typography>
+                )}
+
+                <Box sx={{ mt: 'auto', pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    {t.council.title}
+                  </Typography>
+
+                  {isCouncilLoading && (
+                    <Typography variant="body2" color="primary">
+                      {t.council.generating}
+                    </Typography>
+                  )}
+
+                  {!isCouncilLoading && councilError && (
+                    <Typography variant="body2" color="error">
+                      {councilError}
+                    </Typography>
+                  )}
+
+                  {!isCouncilLoading && !councilError && council && (
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                        gap: 1,
+                      }}
+                    >
+                      {councilEntries.map(([key, label]) => (
+                        <Box
+                          key={key}
+                          sx={{
+                            p: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1.5,
+                            backgroundColor: '#fff',
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary">
+                            {label}
+                          </Typography>
+                          <Typography variant="h6">
+                            {council.scores?.[key] ?? '-'}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+
+                  {!isCouncilLoading && !councilError && !council && (
+                    <Typography variant="body2" color="text.secondary">
+                      {t.council.pending}
+                    </Typography>
+                  )}
+                </Box>
+
+                <Box sx={{ pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 1,
+                      mb: 1,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <Typography variant="subtitle2">
+                      {t.sns.title}
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => requestSnsReactions(stage.stageIndex)}
+                      disabled={!stageCompleted || isSnsLoading}
+                    >
+                      {snsButtonLabel}
+                    </Button>
+                  </Box>
+
+                  {!stageCompleted && (
+                    <Typography variant="body2" color="text.secondary">
+                      {t.sns.disabledMessage}
+                    </Typography>
+                  )}
+
+                  {stageCompleted && isSnsLoading && (
+                    <Typography variant="body2" color="primary">
+                      {t.sns.generating}
+                    </Typography>
+                  )}
+
+                  {stageCompleted && !isSnsLoading && snsError && (
+                    <Typography variant="body2" color="error">
+                      {snsError}
+                    </Typography>
+                  )}
+
+                  {stageCompleted && !isSnsLoading && !snsError && snsReaction && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {snsReaction.posts?.map((post, index) => (
+                        <Box
+                          key={`${stage.stageIndex}-${index}`}
+                          sx={{
+                            p: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1.5,
+                            backgroundColor: '#fff',
+                          }}
+                        >
+                          <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                            {post}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+
+                  {stageCompleted && !isSnsLoading && !snsError && !snsReaction && (
+                    <Typography variant="body2" color="text.secondary">
+                      {t.sns.pending}
+                    </Typography>
+                  )}
+                </Box>
+              </Paper>
+            );
+          })}
+        </Box>
+      </Paper>
       <Box style={{ width: '100%' }}>
         <Grid container spacing={2}> {/* spacingでBox間の余白を調整できます */}
           <Grid size={4}>
@@ -2224,20 +3056,20 @@ function App() {
               <Forest color="success" />
               {t.sliders.plantingTrees}
               <Slider
-                value={convertBackendToDisplayValue('planting_trees_amount', decisionVar.planting_trees_amount)}
+                value={convertBackendValueToPolicyPoints('planting_trees_amount', decisionVar.planting_trees_amount)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('planting_trees_amount')}
+                marks={getSliderMarks('planting_trees_amount')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
-                onChange={(event, newValue) => updateDecisionVar('planting_trees_amount', newValue)}
+                onChange={(event, newValue) => {
+                  updateDecisionVar('planting_trees_amount', newValue);
+                  updatePlantingHistory(decisionVar.year, convertPolicyPointsToBackendValue('planting_trees_amount', newValue));
+                }}
                 disabled={!isSliderEnabled('planting_trees_amount')}
               />
             </Box>
@@ -2282,18 +3114,15 @@ function App() {
               <Flood color="info"  />
               {t.sliders.damLevee}
               <Slider
-                value={convertBackendToDisplayValue('dam_levee_construction_cost', decisionVar.dam_levee_construction_cost)}
+                value={convertBackendValueToPolicyPoints('dam_levee_construction_cost', decisionVar.dam_levee_construction_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('dam_levee_construction_cost')}
+                marks={getSliderMarks('dam_levee_construction_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('dam_levee_construction_cost', newValue)}
                 disabled={!isSliderEnabled('dam_levee_construction_cost')}
@@ -2312,18 +3141,15 @@ function App() {
               <Biotech color="success"  />
               {t.sliders.agriculturalRnD}
               <Slider
-                value={convertBackendToDisplayValue('agricultural_RnD_cost', decisionVar.agricultural_RnD_cost)}
+                value={convertBackendValueToPolicyPoints('agricultural_RnD_cost', decisionVar.agricultural_RnD_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('agricultural_RnD_cost')}
+                marks={getSliderMarks('agricultural_RnD_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('agricultural_RnD_cost', newValue)}
                 disabled={!isSliderEnabled('agricultural_RnD_cost')}
@@ -2342,18 +3168,15 @@ function App() {
               <Houseboat color={"info"} />
               {t.sliders.houseMigration}
               <Slider
-                value={convertBackendToDisplayValue('house_migration_amount', decisionVar.house_migration_amount)}
+                value={convertBackendValueToPolicyPoints('house_migration_amount', decisionVar.house_migration_amount)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('house_migration_amount')}
+                marks={getSliderMarks('house_migration_amount')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('house_migration_amount', newValue)}
                 disabled={!isSliderEnabled('house_migration_amount')}
@@ -2372,18 +3195,15 @@ function App() {
               <Agriculture color={"success"} />
               {t.sliders.paddyDam}
               <Slider
-                value={convertBackendToDisplayValue('paddy_dam_construction_cost', decisionVar.paddy_dam_construction_cost)}
+                value={convertBackendValueToPolicyPoints('paddy_dam_construction_cost', decisionVar.paddy_dam_construction_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('paddy_dam_construction_cost')}
+                marks={getSliderMarks('paddy_dam_construction_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('paddy_dam_construction_cost', newValue)}
                 disabled={!isSliderEnabled('paddy_dam_construction_cost')}
@@ -2402,18 +3222,15 @@ function App() {
               <LocalLibrary color="action" />
               {t.sliders.capacityBuilding}
               <Slider
-                value={convertBackendToDisplayValue('capacity_building_cost', decisionVar.capacity_building_cost)}
+                value={convertBackendValueToPolicyPoints('capacity_building_cost', decisionVar.capacity_building_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('capacity_building_cost')}
+                marks={getSliderMarks('capacity_building_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('capacity_building_cost', newValue)}
                 disabled={!isSliderEnabled('capacity_building_cost')}
@@ -2427,4 +3244,4 @@ function App() {
   );
 }
 
-export default AppRouter;
+export default App;

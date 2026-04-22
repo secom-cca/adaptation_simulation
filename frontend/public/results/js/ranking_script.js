@@ -22,94 +22,24 @@ var yourscore = [];
 var allscore = [];
 
 
-// 获取后端URL的函数 - 使用统一配置
-function getBackendUrl() {
-    // 优先使用全局配置
-    if (window.APP_CONFIG) {
-        return window.APP_CONFIG.getBackendUrl();
-    }
-
-    // 降级方案：检测当前环境
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost:8000';
-    } else {
-        return 'https://web-production-5fb04.up.railway.app';
-    }
-}
-
-// 显示错误信息的函数
-function showErrorMessage(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.style.cssText = 'color: red; font-size: 18px; text-align: center; margin: 20px; padding: 10px; border: 1px solid red; background-color: #ffe6e6;';
-    errorDiv.textContent = message;
-    document.body.insertBefore(errorDiv, document.body.firstChild);
-}
-
-//统一的用户数据获取函数
+//CSVファイルを読み込む関数getCSV()の定義
 function get_nameCSV(){
-    const userName = localStorage.getItem('userName') || 'default_user';
-    const backendUrl = getBackendUrl();
-
-    console.log(`🔍 正在获取用户数据: ${userName} from ${backendUrl}`);
-
-    var req = new XMLHttpRequest();
-    req.open("get", `${backendUrl}/api/user_data/${userName}`, true);
-    req.send(null);
-
+    var req = new XMLHttpRequest(); // HTTPでファイルを読み込むためのXMLHttpRrequestオブジェクトを生成
+    req.open("get", "http://localhost:3000/results/data/your_name.csv", true); // アクセスするファイルを指定
+    req.send(null); // HTTPリクエストの発行
+    // レスポンスが返ってきたらconvertCSVtoArray()を呼ぶ
     req.onload = function(){
-        if (req.status === 200) {
-            try {
-                const userData = JSON.parse(req.responseText);
-                console.log('✅ 用户数据获取成功:', userData);
-
-                // 检查数据完整性
-                if (!userData.data_complete) {
-                    console.warn(`⚠️ 数据不完整: 只有 ${userData.periods_found} 个时期的数据`);
-                    showErrorMessage(`データが不完全です。${userData.periods_found}期間のデータのみ見つかりました。`);
-                }
-
-                // 直接处理所有数据，避免多次API调用
-                processAllUserData(userData);
-
-            } catch (e) {
-                console.error('❌ 用户数据解析失败:', e);
-                showErrorMessage('データの解析に失敗しました');
-            }
-        } else {
-            console.error('❌ 用户数据加载失败:', req.status);
-            showErrorMessage('ユーザーデータの読み込みに失敗しました');
-        }
-    }
-
-    req.onerror = function() {
-        console.error('❌ 网络请求失败');
-        showErrorMessage('ネットワークエラーが発生しました');
+	convert_nameCSVtoArray(req.responseText); // 渡されるのは読み込んだCSVデータ
     }
 }
-
-// 统一处理所有用户数据的函数
-function processAllUserData(userData) {
-    try {
-        // 处理用户名数据
-        if (userData.your_name_csv) {
-            convert_nameCSVtoArray(userData.your_name_csv);
-        }
-
-        // 处理评分数据
-        if (userData.block_scores_tsv) {
-            convert_dataCSVtoArray(userData.block_scores_tsv);
-        }
-
-        console.log('✅ 所有数据处理完成');
-    } catch (e) {
-        console.error('❌ 数据处理失败:', e);
-        showErrorMessage('データの処理に失敗しました');
-    }
-}
-
-// 保留原有函数作为备用（现在不会被调用）
+// 2つ目のCSVを読み込む
 function get_dataCSV(){
-    console.log('⚠️ get_dataCSV 被调用，但数据已在 get_nameCSV 中处理');
+    var req = new XMLHttpRequest();
+    req.open("get", "http://localhost:3000/results/data/block_scores.tsv", true); // ファイル名は適宜変更
+    req.send(null);
+    req.onload = function(){
+        convert_dataCSVtoArray(req.responseText);
+    }
 }
 // 1つ目のCSVを配列に変換
 function convert_nameCSVtoArray(str){
@@ -118,23 +48,19 @@ function convert_nameCSVtoArray(str){
     for(var i=0;i<tmp.length;++i){
         result1[i] = [tmp[i].trim()]; // 1列しかないので配列に
     }
-    console.log('✅ 用户名数据处理完成:', result1);
-    // 不再调用 get_dataCSV()，数据已在 processAllUserData 中统一处理
+    // ここで1つ目の値を使って2つ目のCSVを処理
+    get_dataCSV();
 }
 // 3つ目のCSVを配列に変換し、1つ目の値を使って処理
 function convert_dataCSVtoArray(str){
-    console.log('开始处理评分数据...');
-    console.log('评分数据前500字符:', str.substring(0, 500));
     result2 = [];
     var tmp = str.split("\n");
-    console.log('数据行数:', tmp.length);
     for(var i=0;i<tmp.length;++i){
         result2[i] = tmp[i].split('\t');
     }
 
     // プレイヤー名を取得
     yourname = result1[1][0].trim();
-    console.log('当前玩家名:', yourname);
 
     document.getElementById("yourname").innerText=yourname;
 
@@ -144,36 +70,26 @@ function convert_dataCSVtoArray(str){
     document.getElementById("bunya3").innerText=scorename[3];
     document.getElementById("bunya4").innerText=scorename[4];
 
-    console.log('开始查找玩家数据...');
     for(var i=1;i<tmp.length;++i){
         if (result2[i][0] == yourname){
-            console.log('找到玩家数据，行', i, ':', result2[i]);
             your_data.push(result2[i]);
         }
     }
-    console.log('玩家数据总数:', your_data.length);
-
-    // 🔧 数据完整性检查
-    if (your_data.length < 3) {
-        console.error(`❌ 数据不完整: 需要3个时期的数据，但只找到 ${your_data.length} 个`);
-        showErrorMessage(`データが不完全です。3期間のデータが必要ですが、${your_data.length}期間のデータのみ見つかりました。`);
-        return; // 提前返回，避免后续处理
-    }
 
     // 2050年
-    var jsonStr2050score = your_data[0][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''); // numpy型を除去
+    var jsonStr2050score = your_data[0][4].replace(/'/g, '"'); // シングルクォートをダブルクォートに変換
     var obj2050score = JSON.parse(jsonStr2050score);
     sum2050 = Object.values(obj2050score).reduce(function(acc, val){
     return acc + Number(val);
     }, 0);
     // 2075年
-    var jsonStr2075score = your_data[1][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''); // numpy型を除去
+    var jsonStr2075score = your_data[1][4].replace(/'/g, '"'); // シングルクォートをダブルクォートに変換
     var obj2075score = JSON.parse(jsonStr2075score);
     sum2075 = Object.values(obj2075score).reduce(function(acc, val){
     return acc + Number(val);
     }, 0);
     // 2100年
-    var jsonStr2100score = your_data[2][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''); // numpy型を除去
+    var jsonStr2100score = your_data[2][4].replace(/'/g, '"'); // シングルクォートをダブルクォートに変換
     var obj2100score = JSON.parse(jsonStr2100score);
     sum2100 = Object.values(obj2100score).reduce(function(acc, val){
     return acc + Number(val);
@@ -210,24 +126,12 @@ function convert_dataCSVtoArray(str){
     // プレイヤー全員の結果をresult2より取得
     allscore = []; // ここで初期化
     for(var i=1;i<result2.length; i=i+3){ // 1行目はヘッダーなのでi=1から
-        // 更严格的数据检查
-        if (!result2[i] || !result2[i+1] || !result2[i+2] ||
-            !result2[i][4] || !result2[i+1][4] || !result2[i+2][4] ||
-            result2[i].length < 6 || result2[i+1].length < 6 || result2[i+2].length < 6) {
-            console.log('跳过不完整的数据行:', i);
-            continue;
-        }
+        if (!result2[i] || !result2[i+1] || !result2[i+2]) continue;
         var playername = result2[i][0];
-        console.log('处理玩家:', playername);
 
-        try {
-            var obj2050score = JSON.parse(result2[i][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''));
-            var obj2075score = JSON.parse(result2[i+1][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''));
-            var obj2100score = JSON.parse(result2[i+2][4].replace(/'/g, '"').replace(/np\.float64\(/g, '').replace(/\)/g, ''));
-        } catch (error) {
-            console.error('JSON解析错误，玩家:', playername, '错误:', error);
-            continue;
-        }
+        var obj2050score = JSON.parse(result2[i][4].replace(/'/g, '"'));
+        var obj2075score = JSON.parse(result2[i+1][4].replace(/'/g, '"'));
+        var obj2100score = JSON.parse(result2[i+2][4].replace(/'/g, '"'));
 
         var sum2050 = Object.values(obj2050score).reduce((acc, val) => acc + Number(val), 0);
         var sum2075 = Object.values(obj2075score).reduce((acc, val) => acc + Number(val), 0);
