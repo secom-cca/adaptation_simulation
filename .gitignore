@@ -3,3 +3,26 @@ result
 __pycache__
 .env
 output
+
+# Python
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+backend/.venv/
+
+# Local simulation artifacts / logs
+backend/data/block_scores.tsv
+backend/data/decision_log.csv
+backend/data/your_name.csv
+
+# OS / editor
+.DS_Store
+Thumbs.db

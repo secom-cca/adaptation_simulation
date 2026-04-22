@@ -1,13 +1,7 @@
 from pathlib import Path, PosixPath
 import numpy as np
-import os
 
-# 检查是否在Railway环境中，如果是则使用Volume路径
-if os.getenv("RAILWAY_ENVIRONMENT"):
-    DATA_DIR: PosixPath = Path("/app/data")
-else:
-    DATA_DIR: PosixPath = Path("data")
-
+DATA_DIR: PosixPath = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
 RANK_FILE = DATA_DIR / "block_scores.tsv"
@@ -18,6 +12,7 @@ start_year = 2026
 end_year = 2100
 years = np.arange(start_year, end_year + 1)
 total_years = len(years)
+SIMULATION_RANDOM_SEED = 4
 
 DEFAULT_PARAMS = {
     'start_year': start_year,
@@ -27,18 +22,18 @@ DEFAULT_PARAMS = {
 
     # 地形
     'total_area': 10000,
-    'paddy_field_area': 1000,
+    'paddy_field_area': 2000, # [ha]
     # 'max_forest_area': 7000, 
 
     # 気温・降水・高温日数
-    'base_temp': 15.0,
+    'base_temp': 15.5,
     'temp_trend': 0.04,
     'temp_uncertainty': 0.5,
 
     'base_precip': 1700.0,
-    'precip_trend': 0,
+    'precip_trend': 0.0,
     'base_precip_uncertainty': 50,
-    'precip_uncertainty_trend': 5,
+    'precip_uncertainty_trend': 0,
 
     'base_extreme_precip_freq': 0.1,
     'extreme_precip_freq_trend': 0.05,
@@ -58,7 +53,7 @@ DEFAULT_PARAMS = {
 
     # 住宅
     'house_total': 15000,
-    'cost_per_migration': 1000000,
+    'cost_per_migration': 975000, # [JPY/house]
 
     # 水循環
     'max_available_water': 3000.0,
@@ -66,7 +61,7 @@ DEFAULT_PARAMS = {
     'ecosystem_threshold': 800.0,
 
     # 森林
-    'cost_per_1000trees': 2310000,
+    'cost_per_1000trees': 2310000, # [JPY/1000 trees]
     'forest_degradation_rate': 0.01,
     'tree_growup_year': 30,
     'initial_forest_area': 0.5,
@@ -74,9 +69,8 @@ DEFAULT_PARAMS = {
 
     # 農業
     'temp_coefficient': 1.0,
-    'max_potential_yield': 5000.0,
+    'max_potential_yield': 5000.0, # [kg/ha]
     'optimal_irrigation_amount': 30.0,
-    'high_temp_tolerance_increment': 0.2,
     'necessary_water_for_crops': 330, # [m3/ha]
     'paddy_dam_cost_per_ha': 1.5,
     'paddy_dam_yield_coef': 0.01,
@@ -84,16 +78,17 @@ DEFAULT_PARAMS = {
     # 農業R&D
     'RnD_investment_threshold': 5.0, ############
     'RnD_investment_required_years': 5, ###########
-    'temp_threshold_crop_ini': 26.0,
-    'temp_critical_crop': 30.0,
+    'temp_threshold_crop_ini': 28.0,
+    'temp_crop_decrease_coef': 0.06,
+    'high_temp_tolerance_increment': 0.2,
 
     # 水災害
-    'flood_damage_coefficient': 100000,
+    'flood_damage_coefficient': 1000000,
     'levee_level_increment': 20.0,
     'levee_investment_threshold': 2.0, #########
     'levee_investment_required_years': 10, ###########
     'flood_recovery_cost_coef': 0.1,
-    'runoff_coef': 0.55,
+    'runoff_coef': 0.6,
 
     # 交通
     'transport_level_coef': 1.0,
@@ -118,41 +113,48 @@ rcp_climate_params = {
     1.9: {
         'temp_trend': 0.02,
         'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.05,
-        'extreme_precip_intensity_trend': 0.2,
+        'extreme_precip_freq_trend': 0.01,
+        'extreme_precip_intensity_trend': 0.02,
         'extreme_precip_uncertainty_trend': 0.05
     },
     2.6: {
         'temp_trend': 0.025,
         'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.07,
-        'extreme_precip_intensity_trend': 0.4,
+        'extreme_precip_freq_trend': 0.015,
+        'extreme_precip_intensity_trend': 0.025,
         'extreme_precip_uncertainty_trend': 0.07
     },
     4.5: {
         'temp_trend': 0.035,
         'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.1,
-        'extreme_precip_intensity_trend': 0.8,
+        'extreme_precip_freq_trend': 0.02,
+        'extreme_precip_intensity_trend': 0.035,
         'extreme_precip_uncertainty_trend': 0.1
     },
     6.0: {
         'temp_trend': 0.045,
         'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.13,
-        'extreme_precip_intensity_trend': 1.1,
+        'extreme_precip_freq_trend': 0.03,
+        'extreme_precip_intensity_trend': 0.045,
         'extreme_precip_uncertainty_trend': 0.13
     },
+    # 7.0: {
+    # 'temp_trend': 0.05,
+    # 'precip_uncertainty_trend': 2.5,
+    # 'extreme_precip_freq_trend': 0.15,
+    # 'extreme_precip_intensity_trend': 1.3,
+    # 'extreme_precip_uncertainty_trend': 0.14
+    # },
     8.5: {
         'temp_trend': 0.06,
         'precip_uncertainty_trend': 0,
-        'extreme_precip_freq_trend': 0.17,
-        'extreme_precip_intensity_trend': 1.5,
+        'extreme_precip_freq_trend': 0.04,
+        'extreme_precip_intensity_trend': 0.06,
         'extreme_precip_uncertainty_trend': 0.15
     }
 }
 
 __all__ = [
     "DATA_DIR", "RANK_FILE", "ACTION_LOG_FILE", "YOUR_NAME_FILE",
-    "DEFAULT_PARAMS", "rcp_climate_params"
+    "DEFAULT_PARAMS", "rcp_climate_params", "SIMULATION_RANDOM_SEED"
 ]

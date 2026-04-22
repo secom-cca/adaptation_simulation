@@ -21,94 +21,24 @@ var ctx2 = document.getElementById("Chart2075");
 var ctx3 = document.getElementById("Chart2100");
 
 
-// 获取后端URL的函数 - 使用统一配置
-function getBackendUrl() {
-    // 优先使用全局配置
-    if (window.APP_CONFIG) {
-        return window.APP_CONFIG.getBackendUrl();
-    }
-
-    // 降级方案：检测当前环境
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost:8000';
-    } else {
-        return 'https://web-production-5fb04.up.railway.app';
-    }
-}
-
-// 显示错误信息的函数
-function showErrorMessage(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.style.cssText = 'color: red; font-size: 18px; text-align: center; margin: 20px; padding: 10px; border: 1px solid red; background-color: #ffe6e6;';
-    errorDiv.textContent = message;
-    document.body.insertBefore(errorDiv, document.body.firstChild);
-}
-
-//统一的用户数据获取函数
+//CSVファイルを読み込む関数getCSV()の定義
 function get_nameCSV(){
-    const userName = localStorage.getItem('userName') || 'default_user';
-    const backendUrl = getBackendUrl();
-
-    console.log(`🔍 正在获取用户数据: ${userName} from ${backendUrl}`);
-
-    var req = new XMLHttpRequest();
-    req.open("get", `${backendUrl}/api/user_data/${userName}`, true);
-    req.send(null);
-
+    var req = new XMLHttpRequest(); // HTTPでファイルを読み込むためのXMLHttpRrequestオブジェクトを生成
+    req.open("get", "http://localhost:3000/results/data/your_name.csv", true); // アクセスするファイルを指定
+    req.send(null); // HTTPリクエストの発行
+    // レスポンスが返ってきたらconvertCSVtoArray()を呼ぶ
     req.onload = function(){
-        if (req.status === 200) {
-            try {
-                const userData = JSON.parse(req.responseText);
-                console.log('✅ 用户数据获取成功:', userData);
-
-                // 检查数据完整性
-                if (!userData.data_complete) {
-                    console.warn(`⚠️ 数据不完整: 只有 ${userData.periods_found} 个时期的数据`);
-                    showErrorMessage(`データが不完全です。${userData.periods_found}期間のデータのみ見つかりました。`);
-                }
-
-                // 直接处理所有数据，避免多次API调用
-                processAllUserData(userData);
-
-            } catch (e) {
-                console.error('❌ 用户数据解析失败:', e);
-                showErrorMessage('データの解析に失敗しました');
-            }
-        } else {
-            console.error('❌ 用户数据加载失败:', req.status);
-            showErrorMessage('ユーザーデータの読み込みに失敗しました');
-        }
-    }
-
-    req.onerror = function() {
-        console.error('❌ 网络请求失败');
-        showErrorMessage('ネットワークエラーが発生しました');
+	convert_nameCSVtoArray(req.responseText); // 渡されるのは読み込んだCSVデータ
     }
 }
-
-// 统一处理所有用户数据的函数
-function processAllUserData(userData) {
-    try {
-        // 处理用户名数据
-        if (userData.your_name_csv) {
-            convert_nameCSVtoArray(userData.your_name_csv);
-        }
-
-        // 处理评分数据
-        if (userData.block_scores_tsv) {
-            convert_dataCSVtoArray(userData.block_scores_tsv);
-        }
-
-        console.log('✅ 所有数据处理完成');
-    } catch (e) {
-        console.error('❌ 数据处理失败:', e);
-        showErrorMessage('データの処理に失敗しました');
-    }
-}
-
-// 保留原有函数作为备用（现在不会被调用）
+// 2つ目のCSVを読み込む
 function get_dataCSV(){
-    console.log('⚠️ get_dataCSV 被调用，但数据已在 get_nameCSV 中处理');
+    var req = new XMLHttpRequest();
+    req.open("get", "http://localhost:3000/results/data/block_scores.tsv", true); // ファイル名は適宜変更
+    req.send(null);
+    req.onload = function(){
+        convert_dataCSVtoArray(req.responseText);
+    }
 }
 
 // 1つ目のCSVを配列に変換
@@ -118,8 +48,8 @@ function convert_nameCSVtoArray(str){
     for(var i=0;i<tmp.length;++i){
         result1[i] = tmp[i].split('\t');
     }
-    console.log('✅ 用户名数据处理完成:', result1);
-    // 不再调用 get_dataCSV()，数据已在 processAllUserData 中统一处理
+    // ここで1つ目の値を使って2つ目のCSVを処理
+    get_dataCSV();
 }
 // 2つ目のCSVを配列に変換し、1つ目の値を使って処理
 function convert_dataCSVtoArray(str){
@@ -136,14 +66,6 @@ function convert_dataCSVtoArray(str){
         }
     }
 
-    // 🔧 数据完整性检查
-    console.log(`📊 找到 ${your_data.length} 个时期的数据`);
-
-    if (your_data.length < 3) {
-        console.error(`❌ 数据不完整: 需要3个时期的数据，但只找到 ${your_data.length} 个`);
-        showErrorMessage(`データが不完全です。3期間のデータが必要ですが、${your_data.length}期間のデータのみ見つかりました。`);
-        return; // 提前返回，避免后续处理
-    }
 
     // 結果を表示
     document.getElementById("yourname").innerText=your_data[0][0];

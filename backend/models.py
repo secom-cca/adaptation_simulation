@@ -34,6 +34,7 @@ class CurrentValues(BaseModel):
     non_risky_house_total: Optional[float] = 0.0
     resident_burden: Optional[float] = 0.0
     biodiversity_level: Optional[float] = 0.0
+    paddy_dam_area: float = 0.0
 
 class BlockRaw(BaseModel):
     period: str
@@ -48,9 +49,6 @@ class SimulationRequest(BaseModel):
     decision_vars: List[DecisionVar] = []
     num_simulations: int = 100
     current_year_index_seq: CurrentValues
-    # 添加仿真数据字段，用于Record Results Mode
-    simulation_data: Optional[List[Dict[str, Any]]] = []
-    result_history: Optional[List[Dict[str, Any]]] = []
 
 class SimulationResponse(BaseModel):
     scenario_name: str
@@ -64,3 +62,59 @@ class CompareRequest(BaseModel):
 class CompareResponse(BaseModel):
     message: str
     comparison: Dict[str, Any]
+
+
+class IntermediateEvaluationRequest(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    language: str = "ja"
+    decision_var: DecisionVar
+    simulation_rows: List[Dict[str, Any]]
+
+
+class IntermediateEvaluationResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    feedback: str
+    policy_summary: List[str]
+    event_highlights: List[str]
+    headline: Optional[str] = None
+    subheadline: Optional[str] = None
+    lead: Optional[str] = None
+    expert_comment: Optional[str] = None
+    policy_assessment: Optional[str] = None
+    article_body: Optional[str] = None
+
+
+class ResidentCouncilResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    scores: Dict[str, int]
+
+
+class SnsReactionsRequest(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    language: str = "ja"
+    decision_var: DecisionVar
+    simulation_rows: List[Dict[str, Any]]
+    regeneration_token: Optional[int] = None
+
+
+class SnsReactionsResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    posts: List[str]

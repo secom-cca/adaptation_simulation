@@ -1,0 +1,31 @@
+|--- rain_change <= -0.13
+|   |--- pop_growth <= 0.11
+|   |   |--- rain_change <= -0.22
+|   |   |   |--- class: 1
+|   |   |--- rain_change >  -0.22
+|   |   |   |--- class: 0
+|   |--- pop_growth >  0.11
+|   |   |--- rain_change <= -0.16
+|   |   |   |--- pop_growth <= 0.14
+|   |   |   |   |--- class: 1
+|   |   |   |--- pop_growth >  0.14
+|   |   |   |   |--- class: 1
+|   |   |--- rain_change >  -0.16
+|   |   |   |--- class: 1
+|--- rain_change >  -0.13
+|   |--- pop_growth <= 0.22
+|   |   |--- rain_change <= -0.06
+|   |   |   |--- pop_growth <= 0.11
+|   |   |   |   |--- class: 0
+|   |   |   |--- pop_growth >  0.11
+|   |   |   |   |--- class: 0
+|   |   |--- rain_change >  -0.06
+|   |   |   |--- tech_yield_trend <= 0.04
+|   |   |   |   |--- class: 0
+|   |   |   |--- tech_yield_trend >  0.04
+|   |   |   |   |--- class: 0
+|   |--- pop_growth >  0.22
+|   |   |--- rain_change <= -0.02
+|   |   |   |--- class: 1
+|   |   |--- rain_change >  -0.02
+|   |   |   |--- class: 0
