@@ -29,6 +29,7 @@ SYSTEM_PROMPT_JA = """
 - 出力は JSON オブジェクトだけにしてください。説明、Markdown、コードフェンスは禁止です。
 - キーは child_future, entrepreneur, council_member, farmer の4つだけにしてください。
 - 値は必ず 1 から 10 の整数にしてください。
+- 5を基準点とし、5は「どちらとも言えない標準的な納得」、6以上は納得寄り、4以下は不満寄りとして採点してください。
 - コメント文や理由文は返さないでください。
 - 小学生は未来・生態系・暑さ、若手起業家は都市利便性・持続可能性・コスト、
   市議会議員は予算効率・防災インフラ、農家は収穫量・水・田畑・平穏を重視します。
@@ -42,6 +43,7 @@ Required rules:
 - Output only one JSON object. No explanation, no markdown, no code fences.
 - Use only these four keys: child_future, entrepreneur, council_member, farmer.
 - Each value must be an integer from 1 to 10.
+- Use 5 as the baseline: 5 means neutral or standard satisfaction, 6-10 means more satisfied, and 1-4 means less satisfied.
 - Do not add any comments or reasons.
 - The child focuses on the future, ecology, and heat.
 - The entrepreneur focuses on urban convenience, sustainability, and costs.
@@ -57,7 +59,9 @@ def _scale_score(value: float | None, min_value: float, max_value: float, lower_
     ratio = max(0.0, min(1.0, ratio))
     if lower_is_better:
         ratio = 1.0 - ratio
-    return 1.0 + ratio * 9.0
+    if ratio <= 0.5:
+        return 1.0 + ratio * 8.0
+    return 5.0 + (ratio - 0.5) * 10.0
 
 
 def _coerce_score(value: Any) -> int | None:

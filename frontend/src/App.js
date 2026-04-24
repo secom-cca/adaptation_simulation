@@ -2953,7 +2953,7 @@ function App() {
                             {label}
                           </Typography>
                           <Typography variant="h6">
-                            {council.scores?.[key] ?? '-'}
+                            {council.scores?.[key] != null ? `${council.scores[key]}/10` : '-'}
                           </Typography>
                         </Box>
                       ))}

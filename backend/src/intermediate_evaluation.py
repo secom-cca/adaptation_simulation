@@ -96,7 +96,8 @@ SYSTEM_PROMPT_JA = """
 - 必ず次のキーを含めてください:
   headline, subheadline, lead, expert_comment, policy_assessment, article_body
 - 見出しは短く、本文は3〜5文程度にしてください。
-- subheadline は観測結果に即した文にし、毎回同じ定型句は使わないでください。
+- subheadline は、25年分の年次データを振り返って見えた変化、山場、転換年のどれかを1文で具体的に書いてください。
+- lead は、年ごとの推移から読み手に役立つフィードバックを1文で書いてください。単なる初年と最終年の比較だけで終わらせないでください。
 - expert_comment は、識者がズバッと言い切る明快な1文にしてください。
 - 将来の助言や「次にすべきこと」は書かないでください。
 - このシミュレータにおける政策の効き方メモと矛盾しないでください。
@@ -114,7 +115,8 @@ Required rules:
 - Include exactly these keys:
   headline, subheadline, lead, expert_comment, policy_assessment, article_body
 - Keep the headline short and the body to about 3-5 sentences.
-- Make the subheadline specific to the observed 25-year results, not a stock phrase.
+- Make subheadline review the yearly data and name a concrete change, peak, or turning year.
+- Make lead give useful feedback from the year-by-year trend, not just a first-year vs final-year comparison.
 - Make expert_comment one sharp, clear sentence.
 - Do not give future advice or recommendations.
 - Do not contradict the simulator notes about how each policy works.
@@ -407,8 +409,7 @@ def _build_event_highlights(rows: List[Dict[str, Any]]) -> List[str]:
     for row in _top_rows_by_metric(rows, "Flood Damage", count=3, reverse=True):
         highlights.append(
             "洪水被害が大きい年: "
-            f"{int(row['Year'])}年, 洪水被害={_format_number(_to_float(row.get('Flood Damage')))}, "
-            f"極端降水回数={_format_number(_to_float(row.get('Extreme Precip Frequency')), digits=0)}, "
+            f"{int(row['Year'])}年, 洪水被害={_format_number(_to_float(row.get('Flood Damage')))} "
         )
 
     for row in _top_rows_by_metric(rows, "Crop Yield", count=2, reverse=False):
@@ -988,7 +989,9 @@ Yearly timeline:
 Output requirements:
 - Return only one JSON object
 - policy_assessment must be a short label, not a sentence
-- Make the subheadline data-specific and avoid stock wording
+- Make subheadline a feedback sentence based on the yearly timeline, and mention a concrete change, peak, or turning year
+- Make lead explain what the year-by-year trend reveals for the player; do not merely compare the first and final years
+- Avoid generic phrases about short-term vs slow policies unless the yearly data directly supports them
 - expert_comment must be one sharp sentence
 - Keep the whole article compact and specific
 - Mention concrete years or numbers where useful
@@ -1025,7 +1028,9 @@ Output requirements:
 - JSON オブジェクトのみを返す
 - 見出しは短く、本文は3〜5文程度
 - 見出しで分かる様にする
-- subheadline は観測結果に即した文にし、定型句をそのまま繰り返さない
+- subheadline は、年次データを振り返り、具体的な変化・山場・転換年のどれかを1文で書く
+- lead は、年ごとの推移から読み手に役立つフィードバックを1文で書く。初年と最終年の比較だけで終わらせない
+- 年次データに基づかない「短期で効く」「時間差がある」だけの定型的な総括は避ける
 - expert_comment は、識者がズバッと言う1文にする
 - 新聞一面の語り口で書く
 - 中学生にも分かるやさしい日本語にする
