@@ -1,5 +1,6 @@
 .page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
   padding: 48px 24px;
   background: var(--color-bg);
   display: flex;
