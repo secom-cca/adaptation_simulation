@@ -1,5 +1,60 @@
 # README
 
+## OpenLab-version: frontend-new ワークショップ版
+
+`OpenLab-version` ブランチでは、既存の `frontend` とは別に `frontend-new` を追加しています。明日のワークショップではこのブランチを使い、結果が問題なければ後から `main` へマージする想定です。
+
+### 起動方法
+
+1. バックエンドを起動します。
+
+```bash
+cd backend
+python main.py
+```
+
+2. 別ターミナルで `frontend-new` を起動します。
+
+```bash
+cd frontend-new
+npm install
+npm run dev
+```
+
+`frontend-new` は Vite 版の UI で、既存の React UI とは別ルートとして管理しています。
+
+### 予算制約ルール
+
+政策スライダーの見た目は常に `0` から `10` のままです。ただし、使える政策ポイントを超える入力は内部で自動的に切り詰めます。
+
+* 弱 = `0`
+* 標準 = `5`
+* 強 = `10`
+
+25 年ごとの政策ポイントは、直前 25 年間の結果に応じて減少します。
+
+* 洪水被害額が `2,000,000 USD` 増えるごとに、使える政策ポイントが `1` 減少します。
+* 25 年間で住宅移転を累計 `5` ポイント実行するごとに、使える政策ポイントが `1` 減少します。
+* `Advance 25 Years` 後は、政策スライダーをすべて `0` に戻します。
+* 予算ポイントの減少は累計ではなく、各 25 年ごとに判定します。
+
+### 結果比較
+
+最終結果画面から、政策なしのベースラインおよび保存済みの他グループ結果と比較できます。ベースラインは常に次の固定値として表示します。
+
+* 累計洪水被害額: `29.8M USD`
+* 最終収穫量: `1308`
+* 最終生態系レベル: `70.8`
+* 平均住宅負担: `461`
+
+他グループの結果は、最終評価画面に到達した時点で `backend/data/comparison_results.tsv` に保存されます。このファイルはローカル実行時の生成データなので Git 管理対象外です。
+
+### ランダム性
+
+シミュレーション本体、政策影響、予測に関わる乱数は固定シードで再現可能にしています。ただし、生成 AI ペルソナの年齢・役割選択だけはランダムのままにしています。
+
+---
+
 This simulation platform allows you to explore future climate adaptation scenarios using either a **Streamlit-based interface** or a **React-based frontend**. It supports policy simulation, Monte Carlo analysis, and optional integration with **Intel RealSense** sensors for gesture-based control.
 
 ---

@@ -1,0 +1,132 @@
+.panel {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72%;
+  height: 33vh;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.10);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  transition: height 0.25s ease;
+  overflow: hidden;
+}
+
+.teamPanel  { height: 56vh; }
+
+/* Collapsed: only the handle bar shows */
+.collapsed         { height: 28px; }
+.collapsed.teamPanel { height: 28px; }
+
+/* ── Handle (always visible, sits at top of panel) ── */
+.handle {
+  flex-shrink: 0;
+  height: 28px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 0 16px;
+}
+.handle:hover .handleArrow { color: var(--color-accent); }
+
+.handleLine {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.handleArrow {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  transition: color 0.15s;
+  line-height: 1;
+  user-select: none;
+}
+
+.handleLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  user-select: none;
+  margin-right: 6px;
+}
+
+/* ── Body ── */
+.inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 18px 12px;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.subtitle {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+.policies {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.policiesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.advanceArea {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.advanceBtn {
+  padding: 9px 28px;
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: opacity 0.15s;
+}
+.advanceBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.advanceBtn:not(:disabled):hover { opacity: 0.85; }

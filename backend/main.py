@@ -2,18 +2,20 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent / "src"))
 
-from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi import FastAPI, HTTPException, WebSocket, Body
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
-from typing import Dict
+from typing import Dict, Any, List
 
 from config import DEFAULT_PARAMS, rcp_climate_params, RANK_FILE, ACTION_LOG_FILE, YOUR_NAME_FILE
 from models import (
     SimulationRequest, SimulationResponse, CompareRequest, CompareResponse,
-    DecisionVar, CurrentValues, BlockRaw
+    DecisionVar, CurrentValues, BlockRaw,
+    IntermediateEvaluationRequest, IntermediateEvaluationResponse,
 )
-from simulation import simulate_simulation, simulate_year
+from intermediate_evaluation import generate_intermediate_evaluation
+from simulation import generate_ai_commentary, simulate_simulation, simulate_year
 from utils import calculate_scenario_indicators, aggregate_blocks
 
 app = FastAPI()
@@ -26,6 +28,30 @@ app.add_middleware(
 )
 
 scenarios_data: Dict[str, pd.DataFrame] = {}
+
+def _data_file(path: Path) -> Path:
+    if path.exists():
+        return path
+    backend_data_path = Path(__file__).parent / "data" / path.name
+    return backend_data_path
+
+def _json_safe(value):
+    if isinstance(value, dict):
+        return {str(k): _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, tuple):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, (np.integer,)):
+        return int(value)
+    if isinstance(value, (np.floating, float)):
+        numeric = float(value)
+        if not np.isfinite(numeric):
+            return None
+        return numeric
+    return value
+
+COMPARISON_RESULTS_FILE = Path(__file__).parent / "data" / "comparison_results.tsv"
 
 @app.get("/ping")
 def ping():
@@ -126,7 +152,7 @@ def run_simulation(req: SimulationRequest):
             initial_values=req.current_year_index_seq.model_dump(),
             decision_vars_list=decision_df,
             params=params,
-            fixed_seed=False
+            fixed_seed=True
         )
 
         all_df = pd.DataFrame(seq_result)
@@ -166,9 +192,10 @@ def run_simulation(req: SimulationRequest):
 
 @app.get("/ranking")
 def get_ranking():
-    if not RANK_FILE.exists():
+    rank_file = _data_file(RANK_FILE)
+    if not rank_file.exists():
         return []
-    df = pd.read_csv(RANK_FILE, sep='\t')
+    df = pd.read_csv(rank_file, sep='\t')
     latest = df.sort_values('timestamp').drop_duplicates(['user_name', 'scenario_name', 'period'], keep='last')
     rank_df = (
         latest.groupby('user_name')['total_score']
@@ -200,16 +227,135 @@ def export_scenario_data(scenario_name: str):
 
 @app.get("/block_scores")
 def get_block_scores():
-    if not RANK_FILE.exists():
+    rank_file = _data_file(RANK_FILE)
+    if not rank_file.exists():
         return []
     try:
-        df = pd.read_csv(RANK_FILE, sep="\t")
-        return df.to_dict(orient="records")
+        df = pd.read_csv(rank_file, sep="\t")
+        df = df.replace([np.inf, -np.inf], np.nan).where(pd.notnull(df), None)
+        return _json_safe(df.to_dict(orient="records"))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/comparison-results")
+def get_comparison_results():
+    if not COMPARISON_RESULTS_FILE.exists():
+        return []
+    try:
+        df = pd.read_csv(COMPARISON_RESULTS_FILE, sep="\t")
+        df = df.replace([np.inf, -np.inf], np.nan).where(pd.notnull(df), None)
+        return _json_safe(df.to_dict(orient="records"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/comparison-results")
+def save_comparison_result(result: Dict[str, Any] = Body(...)):
+    required = [
+        "user_name",
+        "cumulative_flood_damage",
+        "final_crop_yield",
+        "final_ecosystem_level",
+        "average_resident_burden",
+        "total_score",
+    ]
+    missing = [key for key in required if key not in result]
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Missing fields: {', '.join(missing)}")
+
+    COMPARISON_RESULTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    row = {
+        "user_name": str(result.get("user_name") or "Guest"),
+        "mode": str(result.get("mode") or ""),
+        "cumulative_flood_damage": float(result.get("cumulative_flood_damage") or 0),
+        "final_crop_yield": float(result.get("final_crop_yield") or 0),
+        "final_ecosystem_level": float(result.get("final_ecosystem_level") or 0),
+        "average_resident_burden": float(result.get("average_resident_burden") or 0),
+        "total_score": float(result.get("total_score") or 0),
+        "timestamp": pd.Timestamp.utcnow(),
+    }
+
+    new_df = pd.DataFrame([row])
+    if COMPARISON_RESULTS_FILE.exists():
+        old_df = pd.read_csv(COMPARISON_RESULTS_FILE, sep="\t")
+        old_df = old_df[old_df["user_name"] != row["user_name"]]
+        new_df = pd.concat([old_df, new_df], ignore_index=True)
+    new_df.to_csv(COMPARISON_RESULTS_FILE, sep="\t", index=False)
+    return {"status": "ok"}
+
+
+@app.get("/baseline-simulation")
+def get_baseline_simulation(rcp_value: float = 4.5):
+    params = DEFAULT_PARAMS.copy()
+    available_rcp_values = list(rcp_climate_params.keys())
+    closest_rcp = min(available_rcp_values, key=lambda x: abs(x - rcp_value))
+    params.update(rcp_climate_params[closest_rcp])
+
+    initial_values = {
+        "temp": 15.5,
+        "precip": 1700.0,
+        "municipal_demand": 100.0,
+        "available_water": 2000.0,
+        "crop_yield": 4500.0,
+        "hot_days": 30.0,
+        "extreme_precip_freq": 0.1,
+        "ecosystem_level": 1000.0,
+        "levee_level": 0.0,
+        "high_temp_tolerance_level": 0.0,
+        "forest_area": 5000.0,
+        "planting_history": {},
+        "urban_level": 0.0,
+        "resident_capacity": 0.0,
+        "transportation_level": 100.0,
+        "levee_investment_total": 0.0,
+        "RnD_investment_total": 0.0,
+        "risky_house_total": 10000.0,
+        "non_risky_house_total": 0.0,
+        "resident_burden": 0.0,
+        "biodiversity_level": 0.0,
+        "paddy_dam_area": 0.0,
+    }
+    zero_decision = {
+        "year": params["start_year"],
+        "cp_climate_params": closest_rcp,
+        "planting_trees_amount": 0.0,
+        "house_migration_amount": 0.0,
+        "dam_levee_construction_cost": 0.0,
+        "paddy_dam_construction_cost": 0.0,
+        "capacity_building_cost": 0.0,
+        "transportation_invest": 0.0,
+        "agricultural_RnD_cost": 0.0,
+    }
+
+    data = simulate_simulation(
+        years=params["years"],
+        initial_values=initial_values,
+        decision_vars_list=[zero_decision],
+        params=params,
+        fixed_seed=True,
+    )
+    return _json_safe({"scenario_name": "baseline_no_policy", "data": data})
+
+
+@app.post("/intermediate-evaluation", response_model=IntermediateEvaluationResponse)
+def create_intermediate_evaluation(req: IntermediateEvaluationRequest):
+    try:
+        return generate_intermediate_evaluation(req)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
 # サーバに送信されているログをWebSocketで受信。現在はbackendに保存中
+@app.post("/final-commentary")
+def create_final_commentary(results: List[Dict[str, Any]] = Body(...)):
+    if not results:
+        raise HTTPException(status_code=400, detail="No simulation results provided.")
+    return generate_ai_commentary(results)
+
+
 @app.websocket("/ws/log")
 async def websocket_log_endpoint(websocket: WebSocket):
     await websocket.accept()

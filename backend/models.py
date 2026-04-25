@@ -62,3 +62,24 @@ class CompareRequest(BaseModel):
 class CompareResponse(BaseModel):
     message: str
     comparison: Dict[str, Any]
+
+
+class IntermediateEvaluationRequest(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    language: str = "ja"
+    decision_var: DecisionVar
+    simulation_rows: List[Dict[str, Any]]
+
+
+class IntermediateEvaluationResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    feedback: str
+    policy_summary: List[str]
+    event_highlights: List[str]

@@ -1,0 +1,68 @@
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Main area ── */
+.mainArea {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  /* leave room for decision panel (normal: 33vh) */
+  padding-bottom: 33vh;
+}
+
+/* In detail mode, 2×2 grid fills all space except the 28px handle */
+.mainArea.detailMode {
+  padding-bottom: 28px;
+}
+
+/* team mode normal view needs more room */
+:global(.teamMode) .mainArea:not(.detailMode) {
+  padding-bottom: 56vh;
+}
+
+/* ── Simple view overlays ── */
+.bgCanvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120%;
+  height: 100%;
+  object-fit: contain;
+  background: #f0ece4;
+  z-index: 0;
+}
+
+.rightArea {
+  position: relative;
+  z-index: 1;
+  margin-left: auto;
+  width: 280px;
+  margin-right: 16px;
+  margin-top: 12px;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+/* ── Error banner ── */
+.errorBanner {
+  position: fixed;
+  bottom: 28vh;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-critical);
+  color: white;
+  padding: 10px 24px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  z-index: 100;
+  max-width: 80vw;
+  word-break: break-all;
+}

@@ -1,0 +1,118 @@
+.page {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--event-color, #3d6b8f) 12%, var(--color-bg));
+}
+
+.card {
+  width: min(820px, 92vw);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Event image ── */
+.eventImage {
+  width: 100%;
+  height: 340px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-bottom: 3px solid var(--event-color, #3d6b8f);
+  display: block;
+}
+
+/* ── Image placeholder (used by CycleReport) ── */
+.imagePlaceholder {
+  width: 100%;
+  height: 340px;
+  background: color-mix(in srgb, var(--event-color, #5a6a7a) 18%, #d8d4cc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-bottom: 3px solid var(--event-color, #5a6a7a);
+}
+
+.imagePlaceholderLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: color-mix(in srgb, var(--event-color, #5a6a7a) 60%, #888);
+  border: 1.5px dashed color-mix(in srgb, var(--event-color, #5a6a7a) 40%, #aaa);
+  padding: 8px 18px;
+  border-radius: 4px;
+}
+
+/* ── Text content ── */
+.content {
+  padding: 28px 40px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.yearTag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--event-color, #3d6b8f);
+}
+
+.tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: color-mix(in srgb, var(--event-color, #3d6b8f) 15%, transparent);
+  color: var(--event-color, #3d6b8f);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.subtitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--color-text-secondary);
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.body {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.75;
+  margin: 0;
+}
+
+.continueBtn {
+  align-self: flex-end;
+  margin-top: 4px;
+  padding: 11px 28px;
+  background: var(--event-color, #3d6b8f);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  transition: opacity 0.15s;
+  cursor: pointer;
+}
+.continueBtn:hover { opacity: 0.85; }

@@ -3,6 +3,9 @@ result
 __pycache__
 .env
 output
+logs/
+*.log
+*.tmp
 
 # Python
 *.py[cod]
@@ -17,12 +20,27 @@ output
 venv/
 env/
 backend/.venv/
+backend/venv/
 
 # Local simulation artifacts / logs
 backend/data/block_scores.tsv
 backend/data/decision_log.csv
 backend/data/your_name.csv
+backend/data/comparison_results.tsv
+backend/data/user_log.json
+frontend/public/results/data/
+
+# Node / frontend builds
+node_modules/
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend-new/node_modules/
+frontend-new/dist/
 
 # OS / editor
 .DS_Store
 Thumbs.db
+desktop.ini
+.vscode/
+.idea/
