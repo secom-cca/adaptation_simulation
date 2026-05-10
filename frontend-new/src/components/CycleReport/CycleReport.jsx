@@ -18,7 +18,7 @@ function avg(rows, key) {
   return rows.reduce((sum, r) => sum + (r[key] ?? 0), 0) / rows.length
 }
 
-export default function CycleReport({ history, year, cycle, onViewDetails, llmCommentary, llmLoading }) {
+export default function CycleReport({ history, year, cycle, onViewDetails }) {
   const { t } = useTranslation()
 
   const cycleStart = year - 25
@@ -61,17 +61,6 @@ export default function CycleReport({ history, year, cycle, onViewDetails, llmCo
               )
             })}
           </div>
-
-          {/* ── AI commentary ── */}
-          {(llmLoading || llmCommentary) && (
-            <div className={own.llmBox}>
-              <span className={own.llmTitle}>{t('report.llm_title')}</span>
-              {llmLoading
-                ? <span className={own.llmLoading}>{t('report.llm_loading')}</span>
-                : <p className={own.llmText}>{llmCommentary}</p>
-              }
-            </div>
-          )}
 
           <button className={s.continueBtn} onClick={onViewDetails}>
             {t('report.cta')}

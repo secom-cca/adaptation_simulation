@@ -83,3 +83,40 @@ class IntermediateEvaluationResponse(BaseModel):
     feedback: str
     policy_summary: List[str]
     event_highlights: List[str]
+
+
+class ResidentVoice(BaseModel):
+    persona_key: str
+    display_name: str
+    handle: str
+    avatar: str
+    role: str
+    focus: str
+    score: int
+    short_voice: str
+
+
+class ResidentCouncilResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    scores: Dict[str, int]
+    residents: List[ResidentVoice]
+
+
+class ResidentInterviewRequest(IntermediateEvaluationRequest):
+    persona_key: str
+    score: Optional[int] = None
+
+
+class ResidentInterviewResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    persona_key: str
+    display_name: str
+    detailed_voice: str

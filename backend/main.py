@@ -13,8 +13,10 @@ from models import (
     SimulationRequest, SimulationResponse, CompareRequest, CompareResponse,
     DecisionVar, CurrentValues, BlockRaw,
     IntermediateEvaluationRequest, IntermediateEvaluationResponse,
+    ResidentCouncilResponse, ResidentInterviewRequest, ResidentInterviewResponse,
 )
 from intermediate_evaluation import generate_intermediate_evaluation
+from resident_council import generate_resident_council, generate_resident_interview
 from simulation import generate_ai_commentary, simulate_simulation, simulate_year
 from utils import calculate_scenario_indicators, aggregate_blocks
 
@@ -342,6 +344,26 @@ def get_baseline_simulation(rcp_value: float = 4.5):
 def create_intermediate_evaluation(req: IntermediateEvaluationRequest):
     try:
         return generate_intermediate_evaluation(req)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/resident-council", response_model=ResidentCouncilResponse)
+def create_resident_council(req: IntermediateEvaluationRequest):
+    try:
+        return generate_resident_council(req)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/resident-interview", response_model=ResidentInterviewResponse)
+def create_resident_interview(req: ResidentInterviewRequest):
+    try:
+        return generate_resident_interview(req)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:

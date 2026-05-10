@@ -28,6 +28,20 @@ const INITIAL_VALUES = {
   paddy_dam_area: 0.0,
 }
 
+function buildDecisionVar({ year, sliders, rcpValue }) {
+  return {
+    year,
+    cp_climate_params: rcpValue,
+    planting_trees_amount:       sliderToBackend('planting_trees_amount',       sliders.planting_trees_amount ?? 1),
+    house_migration_amount:      sliderToBackend('house_migration_amount',       sliders.house_migration_amount ?? 1),
+    dam_levee_construction_cost: sliderToBackend('dam_levee_construction_cost',  sliders.dam_levee_construction_cost ?? 1),
+    paddy_dam_construction_cost: sliderToBackend('paddy_dam_construction_cost',  sliders.paddy_dam_construction_cost ?? 1),
+    capacity_building_cost:      sliderToBackend('capacity_building_cost',       sliders.capacity_building_cost ?? 1),
+    transportation_invest:       sliderToBackend('transportation_invest',        sliders.transportation_invest ?? 1),
+    agricultural_RnD_cost:       sliderToBackend('agricultural_RnD_cost',       sliders.agricultural_RnD_cost ?? 1),
+  }
+}
+
 // Map data[0] keys (backend output) back to CurrentValues keys (backend input)
 function extractState(prev, row) {
   return {
@@ -63,17 +77,7 @@ async function advance25Years({ currentValues, sliders, year, scenarioName, user
   const yearlyResults = []
 
   for (let y = year; y < year + 25; y++) {
-    const decisionVar = {
-      year: y,
-      cp_climate_params: rcpValue,
-      planting_trees_amount:       sliderToBackend('planting_trees_amount',       sliders.planting_trees_amount ?? 1),
-      house_migration_amount:      sliderToBackend('house_migration_amount',       sliders.house_migration_amount ?? 1),
-      dam_levee_construction_cost: sliderToBackend('dam_levee_construction_cost',  sliders.dam_levee_construction_cost ?? 1),
-      paddy_dam_construction_cost: sliderToBackend('paddy_dam_construction_cost',  sliders.paddy_dam_construction_cost ?? 1),
-      capacity_building_cost:      sliderToBackend('capacity_building_cost',       sliders.capacity_building_cost ?? 1),
-      transportation_invest:       sliderToBackend('transportation_invest',        sliders.transportation_invest ?? 1),
-      agricultural_RnD_cost:       sliderToBackend('agricultural_RnD_cost',       sliders.agricultural_RnD_cost ?? 1),
-    }
+    const decisionVar = buildDecisionVar({ year: y, sliders, rcpValue })
 
     const res = await fetch(`${API}/simulate`, {
       method: 'POST',
@@ -119,6 +123,12 @@ export function useSimulation() {
     pendingEvents: [],
     llmCommentary: '',
     llmLoading: false,
+    residentCouncil: null,
+    residentCouncilLoading: false,
+    residentCouncilError: false,
+    residentInterviews: {},
+    residentInterviewLoading: {},
+    lastEvaluationRequest: null,
     gameView: 'simple',
     loading: false,
     error: null,
@@ -136,6 +146,14 @@ export function useSimulation() {
       currentValues: INITIAL_VALUES,
       history: [],
       policyHistory: [],
+      llmCommentary: '',
+      llmLoading: false,
+      residentCouncil: null,
+      residentCouncilLoading: false,
+      residentCouncilError: false,
+      residentInterviews: {},
+      residentInterviewLoading: {},
+      lastEvaluationRequest: null,
       year: 2026,
       cycle: 1,
       exogenousOrder: order,
@@ -171,12 +189,28 @@ export function useSimulation() {
       if (exogenousKey)   pendingEvents.push({ key: exogenousKey,   type: 'exogenous'   })
 
       const nextPhase = nextYear > 2100 ? 'ending' : pendingEvents.length > 0 ? 'consequence' : 'report'
+      const evalDecisionVar = buildDecisionVar({ year: s.year, sliders, rcpValue: s.rcpValue })
+      const evaluationRequest = {
+        stage_index: s.cycle,
+        checkpoint_year: nextYear,
+        period_start_year: s.year,
+        period_end_year: nextYear - 1,
+        decision_var: evalDecisionVar,
+        simulation_rows: yearlyResults,
+        language: 'ja',
+      }
 
       setGameState(prev => ({
         ...prev,
         loading: false,
         llmCommentary: '',
         llmLoading: true,
+        residentCouncil: null,
+        residentCouncilLoading: true,
+        residentCouncilError: false,
+        residentInterviews: {},
+        residentInterviewLoading: {},
+        lastEvaluationRequest: evaluationRequest,
         currentValues: finalState,
         history: newHistory,
         policyHistory: newPolicyHistory,
@@ -186,37 +220,73 @@ export function useSimulation() {
         pendingEvents,
       }))
 
-      // Fire LLM evaluation in parallel — does not block phase transition
-      const evalDecisionVar = {
-        year: s.year,
-        cp_climate_params: s.rcpValue,
-        planting_trees_amount:       sliderToBackend('planting_trees_amount',       sliders.planting_trees_amount ?? 1),
-        house_migration_amount:      sliderToBackend('house_migration_amount',       sliders.house_migration_amount ?? 1),
-        dam_levee_construction_cost: sliderToBackend('dam_levee_construction_cost',  sliders.dam_levee_construction_cost ?? 1),
-        paddy_dam_construction_cost: sliderToBackend('paddy_dam_construction_cost',  sliders.paddy_dam_construction_cost ?? 1),
-        capacity_building_cost:      sliderToBackend('capacity_building_cost',       sliders.capacity_building_cost ?? 1),
-        transportation_invest:       sliderToBackend('transportation_invest',        sliders.transportation_invest ?? 1),
-        agricultural_RnD_cost:       sliderToBackend('agricultural_RnD_cost',       sliders.agricultural_RnD_cost ?? 1),
-      }
+      // Fire detail-page evaluations in parallel. They are stored for DetailPanel only.
       fetch(`${API}/intermediate-evaluation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stage_index: s.cycle,
-          checkpoint_year: nextYear,
-          period_start_year: s.year,
-          period_end_year: nextYear - 1,
-          decision_var: evalDecisionVar,
-          simulation_rows: yearlyResults,
-          language: 'ja',
-        }),
+        body: JSON.stringify(evaluationRequest),
       })
         .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(data => setGameState(prev => ({ ...prev, llmCommentary: data.feedback ?? '', llmLoading: false })))
         .catch(() => setGameState(prev => ({ ...prev, llmLoading: false })))
 
+      fetch(`${API}/resident-council`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(evaluationRequest),
+      })
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => setGameState(prev => ({
+          ...prev,
+          residentCouncil: data,
+          residentCouncilLoading: false,
+          residentCouncilError: false,
+        })))
+        .catch(() => setGameState(prev => ({
+          ...prev,
+          residentCouncilLoading: false,
+          residentCouncilError: true,
+        })))
+
     } catch (err) {
       setGameState(prev => ({ ...prev, loading: false, error: err.message }))
+    }
+  }, [gameState])
+
+  const requestResidentInterview = useCallback(async (personaKey, score) => {
+    const request = gameState.lastEvaluationRequest
+    if (!request || !personaKey) return
+
+    setGameState(s => ({
+      ...s,
+      residentInterviewLoading: { ...(s.residentInterviewLoading ?? {}), [personaKey]: true },
+    }))
+
+    try {
+      const res = await fetch(`${API}/resident-interview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...request,
+          persona_key: personaKey,
+          score,
+        }),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      const data = await res.json()
+      setGameState(s => ({
+        ...s,
+        residentInterviews: {
+          ...(s.residentInterviews ?? {}),
+          [personaKey]: data.detailed_voice ?? '',
+        },
+        residentInterviewLoading: { ...(s.residentInterviewLoading ?? {}), [personaKey]: false },
+      }))
+    } catch {
+      setGameState(s => ({
+        ...s,
+        residentInterviewLoading: { ...(s.residentInterviewLoading ?? {}), [personaKey]: false },
+      }))
     }
   }, [gameState])
 
@@ -256,6 +326,14 @@ export function useSimulation() {
       policyHistory: [],
       currentValues: INITIAL_VALUES,
       pendingEvents: [],
+      llmCommentary: '',
+      llmLoading: false,
+      residentCouncil: null,
+      residentCouncilLoading: false,
+      residentCouncilError: false,
+      residentInterviews: {},
+      residentInterviewLoading: {},
+      lastEvaluationRequest: null,
     }))
   }, [])
 
@@ -267,6 +345,7 @@ export function useSimulation() {
     dismissConsequence,
     restart,
     setGameView,
+    requestResidentInterview,
     showComparison,
     backToEnding,
   }
