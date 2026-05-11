@@ -83,6 +83,12 @@ class IntermediateEvaluationResponse(BaseModel):
     feedback: str
     policy_summary: List[str]
     event_highlights: List[str]
+    headline: str = ""
+    subheadline: str = ""
+    lead: str = ""
+    expert_comment: str = ""
+    policy_assessment: str = ""
+    article_body: str = ""
 
 
 class ResidentVoice(BaseModel):

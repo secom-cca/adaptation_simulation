@@ -9,7 +9,7 @@ import ollama
 from models import IntermediateEvaluationRequest, IntermediateEvaluationResponse
 
 
-INTERMEDIATE_EVALUATION_MODEL = "gemma4:e4b" # "gemma2:2b"
+INTERMEDIATE_EVALUATION_MODEL = "gemma4:e2b" # "gemma4:e4b" # "gemma2:2b"
 OLLAMA_TIMEOUT_SECONDS = 30.0
 
 POLICY_LABELS = {
@@ -96,10 +96,17 @@ SYSTEM_PROMPT_JA = """
 - 出力は JSON オブジェクトだけにしてください。前置き、説明、Markdown、コードフェンスは禁止です。
 - 必ず次のキーを含めてください:
   headline, subheadline, lead, expert_comment, policy_assessment, article_body
-- 見出しは短く、本文は3〜5文程度にしてください。
-- subheadline は、25年分の年次データを振り返って見えた重大イベント、急変年、山場、転換年のどれかを1文で具体的に書いてください。
+- headline と subheadline は同じ文にしないでください。
+- headline は短く、読者が一目で「何が山場だったか」分かる結論にしてください。
+- subheadline は headline を繰り返さず、「なぜそう読めるか」「どの政策効果を見るべきか」を1文で補足してください。
+- 本文は3〜5文程度にしてください。
 - lead は、重大イベント年の被害と政策状態から読み手に役立つフィードバックを1文で書いてください。
 - policy_assessment は、政策タイプだけでなく、重大イベント時に政策がどう見えたかまで含む短い評価句にしてください。
+- article_body は、指標の数値を並べるのではなく、「何が要因で、何を読み取るべきか」が直感的に分かる2〜4文にしてください。
+- article_body は必ず「主因」「政策効果」「伝えたいこと」が読み取れる文章にしてください。抽象的な状況説明だけで終わらせないでください。
+- article_body では、実際に効いた政策、どう効いたか、逆にどの政策は足りなかったかを読者が直感的に分かる文章で書いてください。
+- article_body では具体的な数字や変化量を書かず、参考になる指標名を括弧で引用する形にしてください。
+- article_body では、参照すべきグラフ名を必ず括弧で書いてください。例: (収穫量)(利用可能水量)
 - article_body では、少なくとも1つの中間年の重大イベントと、その時点の政策状態を必ず結びつけてください。
 - 重大な被害イベントがある場合、「指標は概ね横ばい」といった総括を中心にしないでください。被害年を主語にして、政策が効いた点・足りなかった点・効果が確認しにくい点を評価してください。
 - 「収穫量はAからBへ改善した」のような期間始点・終点の数値比較文は禁止です。必ず被害イベント年の指標と政策状態を結びつけてください。
@@ -108,7 +115,7 @@ SYSTEM_PROMPT_JA = """
 - このシミュレータにおける政策の効き方メモと矛盾しないでください。
 - データに見えにくい効果は「この25年では確認しにくい」と表現してください。
 - 生活者に伝わる平易な語彙を使ってください。
-- 少なくとも2つ以上の具体的な年または数値を記事全体に入れてください。
+- 具体的な数値は本文に出さないでください。詳しい数字を知りたい読者は括弧内の指標グラフを見る、という役割分担にしてください。
 """.strip()
 
 SYSTEM_PROMPT_EN = """
@@ -119,10 +126,17 @@ Required rules:
 - Output only one JSON object. No preface, no explanation, no markdown, no code fences.
 - Include exactly these keys:
   headline, subheadline, lead, expert_comment, policy_assessment, article_body
-- Keep the headline short and the body to about 3-5 sentences.
-- Make subheadline review the yearly data and name a concrete event, sharp change, peak, or turning year.
+- Do not make headline and subheadline the same sentence.
+- Keep headline short and make it the immediate conclusion about what the turning point was.
+- Make subheadline explain why the headline is true and which policy effect readers should examine. Do not repeat the headline.
+- Keep the body to about 3-5 sentences.
 - Make lead give useful feedback from the year-by-year trend and policy mechanisms, not just a first-year vs final-year comparison.
 - Make policy_assessment a short evaluative phrase that links the policy package to what happened during a major event.
+- Make article_body 2-4 plain sentences that explain the driver and takeaway intuitively instead of listing indicator values.
+- article_body must clearly state the main driver, the policy effect, and the takeaway. Do not end with only abstract situation-setting.
+- In article_body, state which policies actually helped, how they helped, and which policy effects were still insufficient in intuitive language.
+- Do not put concrete numbers or change amounts in article_body. Reference the useful indicator names in parentheses instead.
+- In article_body, name the charts readers should check in parentheses, such as (Crop Yield) or (Available Water).
 - In article_body, connect at least one mid-period event to the policy state visible in that year.
 - If there is a major damage event, do not center the report on "flat" or "stable" indicators. Lead with the damage year and evaluate where policies absorbed the shock, fell short, or remained hard to confirm.
 - Do not write endpoint comparison sentences such as "crop yield improved from A to B." Tie the event-year damage to the policy state instead.
@@ -130,7 +144,7 @@ Required rules:
 - Do not give future advice or recommendations.
 - Do not contradict the simulator notes about how each policy works.
 - If an effect is not yet visible, say it is hard to confirm within this 25-year period.
-- Include at least two concrete years or numbers across the article.
+- Keep specific numbers to a minimum. Let the chart carry detailed values.
 """.strip()
 
 EXPERT_COMMENT_SYSTEM_PROMPT_JA = """
@@ -1134,6 +1148,30 @@ def _build_policy_assessment(req: IntermediateEvaluationRequest) -> str:
     return label
 
 
+def _event_headline(req: IntermediateEvaluationRequest) -> str:
+    event = _primary_damage_event(req.simulation_rows)
+    is_english = req.language.lower().startswith("en")
+    if not event:
+        if is_english:
+            return "Policy Timing Became the Story"
+        return "政策効果の時間差が焦点"
+
+    event_type, row = event
+    year = _row_year(row)
+    if is_english:
+        if event_type == "flood":
+            return f"{year} Flood Tested Local Defenses"
+        if event_type == "crop":
+            return f"{year} Harvest Drop Exposed Farm Risk"
+        return f"{year} Burden Peak Reached Residents"
+
+    if event_type == "flood":
+        return f"{year}年、水害対策の山場"
+    if event_type == "crop":
+        return f"{year}年、収穫低迷の警告"
+    return f"{year}年、住民負担が表面化"
+
+
 def _event_subheadline(req: IntermediateEvaluationRequest) -> str:
     event = _primary_damage_event(req.simulation_rows)
     is_english = req.language.lower().startswith("en")
@@ -1141,26 +1179,81 @@ def _event_subheadline(req: IntermediateEvaluationRequest) -> str:
         return _build_fallback_subheadline(req)
 
     event_type, row = event
+    decision_var = req.decision_var.model_dump()
     if is_english:
         if event_type == "flood":
+            labels = _active_policy_labels(
+                decision_var,
+                (
+                    "house_migration_amount",
+                    "dam_levee_construction_cost",
+                    "paddy_dam_construction_cost",
+                    "capacity_building_cost",
+                ),
+                True,
+            )
+            if labels:
+                return (
+                    f"The key question is whether {_format_label_list(labels[:3], True)} had become enough protection before the peak."
+                )
             return (
-                f"The {_row_year(row)} flood damage peak became the real test of levees, relocation, and preparedness."
+                "Remaining exposure and thin flood defenses made the rainfall shock harder to absorb."
             )
         if event_type == "crop":
-            return (
-                f"The {_row_year(row)} harvest low became the stress test for water, heat tolerance, and farm measures."
+            labels = _active_policy_labels(
+                decision_var,
+                (
+                    "paddy_dam_construction_cost",
+                    "agricultural_RnD_cost",
+                    "planting_trees_amount",
+                ),
+                True,
             )
-        return f"The {_row_year(row)} burden peak showed where policy costs became visible in daily life."
+            if labels:
+                return (
+                    f"Water and heat stress outweighed the visible support from {_format_label_list(labels[:3], True)}."
+                )
+            return (
+                "Water shortage and heat stress hit before farm-support measures showed enough force."
+            )
+        return "Damage response and policy costs surfaced as a household burden before enough relief was visible."
 
     if event_type == "flood":
+        labels = _active_policy_labels(
+            decision_var,
+            (
+                "house_migration_amount",
+                "dam_levee_construction_cost",
+                "paddy_dam_construction_cost",
+                "capacity_building_cost",
+            ),
+            False,
+        )
+        if labels:
+            return (
+                f"{_format_label_list(labels[:3], False)}が、被害年までに十分な守りへ変わっていたかが評価の分かれ目になった。"
+            )
         return (
-            f"{_row_year(row)}年の洪水被害ピークこそが、堤防・住宅移転・防災能力の効き方を測る山場だった。"
+            "危険地の住宅や防御力不足が残り、強い雨を受け止めにくい状態だった。"
         )
     if event_type == "crop":
-        return (
-            f"{_row_year(row)}年の収穫低迷こそが、水量・高温耐性・田んぼダムの効き方を測る山場だった。"
+        labels = _active_policy_labels(
+            decision_var,
+            (
+                "paddy_dam_construction_cost",
+                "agricultural_RnD_cost",
+                "planting_trees_amount",
+            ),
+            False,
         )
-    return f"{_row_year(row)}年の住民負担ピークこそが、政策コストの生活への出方を示す山場だった。"
+        if labels:
+            return (
+                f"{_format_label_list(labels[:3], False)}の支えを、水不足と暑さの圧力が上回った。"
+            )
+        return (
+            "水不足と暑さに対して、農業を支える政策効果がまだ弱かった。"
+        )
+    return "被害対応と政策コストが重なり、住民側に負担が先に見えた。"
 
 
 def _event_lead(req: IntermediateEvaluationRequest) -> str:
@@ -1209,151 +1302,390 @@ def _event_lead(req: IntermediateEvaluationRequest) -> str:
 def _event_body_sentence(req: IntermediateEvaluationRequest) -> str:
     event = _primary_damage_event(req.simulation_rows)
     is_english = req.language.lower().startswith("en")
+    decision_var = req.decision_var.model_dump()
     if not event:
-        return ""
+        if is_english:
+            return (
+                "The main driver was not one standout disaster year, but a timing gap between policies that can affect risks quickly "
+                "and slower measures whose effects were still hard to see."
+            )
+        return (
+            "主因は、1つの大きな被害年というより、早く効く対策と効果が見えるまで時間がかかる対策の差が出たことだ。"
+        )
 
     event_type, row = event
     if is_english:
         if event_type == "flood":
             return (
-                f"At the {_row_year(row)} damage event, high-risk homes were "
-                f"{_format_number(_to_float(row.get('risky_house_total')))}, paddy dams were "
-                f"{_format_number(_to_float(row.get('paddy_dam_area')))}, levees were "
-                f"{_format_number(_to_float(row.get('Levee Level')))}, and preparedness was "
-                f"{_format_number(_to_float(row.get('Resident capacity')), digits=2)}, so the report should judge the policy package by that stress point."
+                f"Main driver: the {_row_year(row)} flood damage came from heavy rainfall pressure meeting remaining exposure and insufficient protection."
             )
         if event_type == "crop":
             return (
-                f"At the {_row_year(row)} harvest event, available water was "
-                f"{_format_number(_to_float(row.get('available_water')))}, hot days were "
-                f"{_format_number(_to_float(row.get('Hot Days')))}, heat tolerance was "
-                f"{_format_number(_to_float(row.get('High Temp Tolerance Level')))}, and paddy dams were "
-                f"{_format_number(_to_float(row.get('paddy_dam_area')))}."
+                f"Main driver: the {_row_year(row)} harvest drop came from water and heat stress outweighing the visible farm support."
             )
         return (
-            f"At the {_row_year(row)} burden event, resident burden reached "
-            f"{_format_number(_to_float(row.get('Resident Burden')))}, making the policy cost visible to households."
+            f"Main driver: the {_row_year(row)} burden peak came from damage pressure and policy costs becoming visible to residents at the same time."
         )
 
     if event_type == "flood":
         return (
-            f"{_row_year(row)}年の被害時点では、高リスク住宅"
-            f"{_format_number(_to_float(row.get('risky_house_total')))}、田んぼダム"
-            f"{_format_number(_to_float(row.get('paddy_dam_area')))}、堤防"
-            f"{_format_number(_to_float(row.get('Levee Level')))}、防災能力"
-            f"{_format_number(_to_float(row.get('Resident capacity')), digits=2)}であり、このストレス点でどこまで被害を受け止めたかが政策評価の焦点になる。"
+            f"主因: {_row_year(row)}年の洪水被害は、強い雨の圧力に、危ない場所に残る住宅や防御力不足が重なって大きくなった。"
         )
     if event_type == "crop":
         return (
-            f"{_row_year(row)}年の収穫低迷時点では、水量"
-            f"{_format_number(_to_float(row.get('available_water')))}、猛暑日"
-            f"{_format_number(_to_float(row.get('Hot Days')))}、高温耐性"
-            f"{_format_number(_to_float(row.get('High Temp Tolerance Level')))}、田んぼダム"
-            f"{_format_number(_to_float(row.get('paddy_dam_area')))}であり、農業対策がどこまで支えたかが焦点になる。"
+            f"主因: {_row_year(row)}年の収穫低迷は、水不足と暑さの圧力が、農業を支える政策効果を上回って起きた。"
         )
     return (
-        f"{_row_year(row)}年の負担ピークでは、住民負担"
-        f"{_format_number(_to_float(row.get('Resident Burden')))}が生活への政策コストとして見えた。"
+        f"主因: {_row_year(row)}年の負担ピークは、被害への対応と政策コストが同じ時期に暮らしの重さとして表れたことだ。"
     )
+
+
+def _policy_active(decision_var: Dict[str, Any], key: str) -> bool:
+    return (_to_float(decision_var.get(key, 0)) or 0.0) > 0
+
+
+def _increased(start: float | None, end: float | None) -> bool:
+    return start is not None and end is not None and end > start + 1e-9
+
+
+def _decreased(start: float | None, end: float | None) -> bool:
+    return start is not None and end is not None and end < start - 1e-9
+
+
+def _policy_factor_sentence(req: IntermediateEvaluationRequest) -> str:
+    event = _primary_damage_event(req.simulation_rows)
+    is_english = req.language.lower().startswith("en")
+    decision_var = req.decision_var.model_dump()
+    event_type = event[0] if event else None
+    row = event[1] if event else req.simulation_rows[-1]
+    first_row = req.simulation_rows[0]
+
+    if is_english:
+        if event_type == "flood":
+            effects: List[str] = []
+            critiques: List[str] = []
+            if _policy_active(decision_var, "house_migration_amount"):
+                start = _to_float(first_row.get("risky_house_total"))
+                end = _to_float(row.get("risky_house_total"))
+                if _decreased(start, end):
+                    effects.append("relocation reduced the pool of homes exposed to flood damage (High-Risk Households)")
+                else:
+                    critiques.append("relocation was selected, but its protective effect was not yet clear (High-Risk Households)")
+            if _policy_active(decision_var, "dam_levee_construction_cost"):
+                start = _to_float(first_row.get("Levee Level"))
+                end = _to_float(row.get("Levee Level"))
+                if _increased(start, end):
+                    effects.append("levee work increased the physical buffer against flooding (Levee Level)")
+                else:
+                    critiques.append("levee investment was selected, but a stronger buffer was not yet visible (Levee Level)")
+            if _policy_active(decision_var, "paddy_dam_construction_cost"):
+                start = _to_float(first_row.get("paddy_dam_area"))
+                end = _to_float(row.get("paddy_dam_area"))
+                if _increased(start, end):
+                    effects.append("paddy dams created more room to hold rainfall temporarily (Paddy Dam Area)")
+                else:
+                    critiques.append("paddy dams were selected, but the storage effect was not yet visible (Paddy Dam Area)")
+            if _policy_active(decision_var, "capacity_building_cost"):
+                start = _to_float(first_row.get("Resident capacity"))
+                end = _to_float(row.get("Resident capacity"))
+                if _increased(start, end):
+                    effects.append("preparedness training improved the local ability to respond (Resident Capacity)")
+                else:
+                    critiques.append("preparedness training was selected, but response capacity was not yet visible (Resident Capacity)")
+            if effects:
+                return "Policies that actually moved: " + "; ".join(effects[:4]) + "."
+            if critiques:
+                return "Policies that actually moved: no clear protective effect yet; " + "; ".join(critiques[:2]) + "."
+            return "Policies that actually moved: no direct flood-risk measure showed a clear protective effect by the event year."
+
+        if event_type == "crop":
+            effects = []
+            if _policy_active(decision_var, "paddy_dam_construction_cost"):
+                start = _to_float(first_row.get("paddy_dam_area"))
+                end = _to_float(row.get("paddy_dam_area"))
+                if _increased(start, end):
+                    effects.append("paddy dams helped buffer water swings around farmland (Paddy Dam Area)(Available Water)")
+            if _policy_active(decision_var, "agricultural_RnD_cost"):
+                start = _to_float(first_row.get("High Temp Tolerance Level"))
+                end = _to_float(row.get("High Temp Tolerance Level"))
+                if _increased(start, end):
+                    effects.append("heat-tolerant crops worked as a cushion against heat stress (Crop Yield)(Temperature)")
+            if _policy_active(decision_var, "planting_trees_amount"):
+                start = _to_float(first_row.get("Forest Area"))
+                end = _to_float(row.get("Forest Area"))
+                if _increased(start, end):
+                    effects.append("planting supported the long-term land and ecosystem base (Forest Area)(Ecosystem Level)")
+                else:
+                    effects.append("planting was selected, but its farm-support effect was still hard to see because the payoff is delayed (Forest Area)")
+            if effects:
+                return "Policies that actually moved: " + "; ".join(effects[:3]) + "."
+            return "Policies that actually moved: no direct farm-stability measure showed a clear support effect by the event year."
+
+        if event_type == "burden":
+            return (
+                "Policies that actually moved: the visible result was burden on residents before enough damage reduction could be felt."
+            )
+        return (
+            "Policies that actually moved: no single policy stood out clearly, so the period is mostly a timing and visibility problem."
+        )
+
+    if event_type == "flood":
+        effects: List[str] = []
+        critiques: List[str] = []
+        if _policy_active(decision_var, "house_migration_amount"):
+            start = _to_float(first_row.get("risky_house_total"))
+            end = _to_float(row.get("risky_house_total"))
+            if _decreased(start, end):
+                effects.append("住宅移転は危ない場所に残る世帯を減らし、洪水被害を受けやすい母数を小さくした（高リスク住宅数）")
+            else:
+                critiques.append("住宅移転は選ばれていたが、被害を受けやすい世帯を減らす効果はまだ見えにくい（高リスク住宅数）")
+        if _policy_active(decision_var, "dam_levee_construction_cost"):
+            start = _to_float(first_row.get("Levee Level"))
+            end = _to_float(row.get("Levee Level"))
+            if _increased(start, end):
+                effects.append("堤防整備は川からの水を受け止める物理的な守りを強めた（堤防レベル）")
+            else:
+                critiques.append("堤防整備は選ばれていたが、被害年までに守りの強化としては見えにくい（堤防レベル）")
+        if _policy_active(decision_var, "paddy_dam_construction_cost"):
+            start = _to_float(first_row.get("paddy_dam_area"))
+            end = _to_float(row.get("paddy_dam_area"))
+            if _increased(start, end):
+                effects.append("田んぼダムは雨水を一時的に受け止める余地を広げた（田んぼダム面積）")
+            else:
+                critiques.append("田んぼダムは選ばれていたが、雨水を受ける余地としてはまだ見えにくい（田んぼダム面積）")
+        if _policy_active(decision_var, "capacity_building_cost"):
+            start = _to_float(first_row.get("Resident capacity"))
+            end = _to_float(row.get("Resident capacity"))
+            if _increased(start, end):
+                effects.append("防災訓練は住民が被害に備えて動く力を底上げした（住民防災能力）")
+            else:
+                critiques.append("防災訓練は選ばれていたが、住民の備えとしてはまだ見えにくい（住民防災能力）")
+        if effects:
+            return f"実際に効いた政策: {'。'.join(effects[:4])}。"
+        if critiques:
+            return f"実際に効いた政策: 明確な抑制効果は弱い。{'。'.join(critiques[:2])}。"
+        return "実際に効いた政策: 水害を直接弱める政策変化は目立たず、被害を抑える力は限定的だった。"
+
+    if event_type == "crop":
+        effects = []
+        critiques = []
+        if _policy_active(decision_var, "paddy_dam_construction_cost"):
+            start = _to_float(first_row.get("paddy_dam_area"))
+            end = _to_float(row.get("paddy_dam_area"))
+            if _increased(start, end):
+                effects.append("田んぼダムは水の変動を受け止める余地を増やし、農業への揺れを和らげる材料になった（田んぼダム面積）（利用可能水量）")
+            else:
+                critiques.append("田んぼダムは選ばれていたが、水の変動を受け止める効果はまだ見えにくい（田んぼダム面積）（利用可能水量）")
+        if _policy_active(decision_var, "agricultural_RnD_cost"):
+            start = _to_float(first_row.get("High Temp Tolerance Level"))
+            end = _to_float(row.get("High Temp Tolerance Level"))
+            if _increased(start, end):
+                effects.append("高温耐性品種は暑さで収穫が落ちるリスクを和らげる方向に効いた（収穫量）（気温）")
+            else:
+                critiques.append("高温耐性品種は選ばれていたが、暑さへの下支えとしてはまだ見えにくい（収穫量）（気温）")
+        if _policy_active(decision_var, "planting_trees_amount"):
+            start = _to_float(first_row.get("Forest Area"))
+            end = _to_float(row.get("Forest Area"))
+            if _increased(start, end):
+                effects.append("植林は土地や生態系の土台づくりには効いたが、農業被害をすぐ抑える政策ではない（森林面積）（生態系レベル）")
+            else:
+                critiques.append("植林は成熟に時間がかかるため、この被害年の農業支援としてはまだ見えにくい（森林面積）（生態系レベル）")
+        if effects:
+            return f"実際に効いた政策: {'。'.join(effects[:3])}。"
+        if critiques:
+            return f"実際に効いた政策: 明確な下支えは弱い。{'。'.join(critiques[:2])}。"
+        return "実際に効いた政策: 水不足や暑さから収穫を守る政策変化は目立たず、下支えは限定的だった。"
+
+    if event_type == "burden":
+        return (
+            "実際に効いた政策: 被害を弱める実感より先に、負担の重さが住民側に見えた。"
+        )
+    return (
+        "実際に効いた政策: 単独で目立つ政策効果は弱く、政策が結果指標を動かすまでの時間差が大きかった。"
+    )
+
+
+def _chart_reference_sentence(req: IntermediateEvaluationRequest) -> str:
+    event = _primary_damage_event(req.simulation_rows)
+    is_english = req.language.lower().startswith("en")
+    event_type = event[0] if event else None
+
+    if is_english:
+        if event_type == "crop":
+            return (
+                "Critical read: support measures moved, but the harvest still fell, so the scale or timing was not enough. Check (Crop Yield), (Available Water), and (Paddy Dam Area)."
+            )
+        if event_type == "flood":
+            return (
+                "Critical read: intermediate protections moved, but the flood peak still arrived, so the scale or timing was not enough. Check (Flood Damage), (High-Risk Households), (Levee Level), and (Paddy Dam Area)."
+            )
+        return (
+            "Critical read: judge the event by whether policy had become real protection by that year. Check (Resident Burden) and the related damage graphs."
+        )
+
+    if event_type == "crop":
+        return (
+            "批判的に見ると、支える政策は動いていても収穫低迷は起きており、政策の量かタイミングが水不足・暑さに追いつかなかった。見るべきグラフ: (収穫量)(利用可能水量)(田んぼダム面積)。"
+        )
+    if event_type == "flood":
+        return (
+            "批判的に見ると、中間指標は改善していても洪水被害の山場は残っており、政策の量かタイミングが強い雨に追いつかなかった。見るべきグラフ: (洪水被害)(高リスク住宅数)(堤防レベル)(田んぼダム面積)(住民防災能力)。"
+        )
+    return (
+        "批判的に見ると、政策の効果より先に住民側の負担が表に出ている。見るべきグラフ: (住民負担)(洪水被害)(財政コスト)。"
+    )
+
+
+def _build_readable_article_body(req: IntermediateEvaluationRequest) -> str:
+    return "\n\n".join(
+        sentence
+        for sentence in [
+            _event_body_sentence(req),
+            _policy_factor_sentence(req),
+            _chart_reference_sentence(req),
+        ]
+        if sentence
+    ).strip()
+
+
+def _format_article_body_sections(text: str, is_english: bool) -> str:
+    cleaned = re.sub(r"\n{3,}", "\n\n", _clean_text(text)).strip()
+    if not cleaned:
+        return ""
+
+    labels = (
+        ("Main driver:", "Policies that actually moved:", "Critical read:")
+        if is_english
+        else ("主因:", "実際に効いた政策:", "批判的に見ると")
+    )
+
+    for label in labels[1:]:
+        cleaned = re.sub(rf"\s*{re.escape(label)}", f"\n\n{label}", cleaned)
+
+    cleaned = re.sub(r"\s*見るべきグラフ:", "\n\n見るべきグラフ:", cleaned)
+    cleaned = re.sub(r"\s*Check \(", "\n\nCheck (", cleaned)
+    return re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+
+
+def _article_body_looks_too_numeric(text: str) -> bool:
+    if not text:
+        return False
+
+    metric_dump_markers = (
+        "洪水被害=",
+        "収穫量=",
+        "生態系=",
+        "住民負担=",
+        "水量=",
+        "猛暑日=",
+        "極端降水=",
+        "堤防=",
+        "防災能力=",
+        "高リスク住宅=",
+        "田んぼダム=",
+        "高温耐性=",
+        "Flood Damage=",
+        "Crop Yield=",
+        "Ecosystem Level=",
+        "Resident Burden=",
+        "available_water=",
+    )
+    marker_count = sum(1 for marker in metric_dump_markers if marker in text)
+    if marker_count >= 3:
+        return True
+
+    numbers = re.findall(r"\d[\d,]*(?:\.\d+)?", text)
+
+    def is_year(token: str) -> bool:
+        normalized = token.replace(",", "")
+        return bool(re.fullmatch(r"(19|20|21)\d{2}", normalized))
+
+    non_year_numbers = [token for token in numbers if not is_year(token)]
+    return len(non_year_numbers) > 0
+
+
+def _article_body_lacks_clear_point(text: str, is_english: bool) -> bool:
+    if not text:
+        return True
+
+    lowered = text.lower()
+    if is_english:
+        return not (
+            "main driver" in lowered
+            and ("policies that actually moved" in lowered or "policy effect" in lowered)
+            and ("critical read" in lowered or "takeaway" in lowered or "what this shows" in lowered)
+            and "check (" in lowered
+        )
+
+    return not (
+        "主因" in text
+        and ("実際に効いた政策" in text or "政策効果" in text)
+        and ("批判的" in text or "伝えたいこと" in text or "読み取るべき" in text)
+        and "見るべきグラフ" in text
+    )
+
+
+def _same_article_line(left: str, right: str) -> bool:
+    def normalize(value: str) -> str:
+        return re.sub(r"[\s。．.、,!！?？:：\-—]+", "", _clean_text(value).lower())
+
+    left_normalized = normalize(left)
+    right_normalized = normalize(right)
+    return bool(left_normalized and left_normalized == right_normalized)
+
+
+def _ensure_distinct_headline_and_subheadline(
+    article: Dict[str, str],
+    req: IntermediateEvaluationRequest,
+) -> Dict[str, str]:
+    focused = dict(article)
+    is_english = req.language.lower().startswith("en")
+
+    if not focused.get("headline") or _same_article_line(focused.get("headline", ""), focused.get("subheadline", "")):
+        focused["headline"] = _event_headline(req).rstrip("." if is_english else "。")
+
+    if not focused.get("subheadline") or _same_article_line(focused.get("headline", ""), focused.get("subheadline", "")):
+        focused["subheadline"] = _event_subheadline(req) or _build_fallback_subheadline(req)
+
+    if _same_article_line(focused.get("headline", ""), focused.get("subheadline", "")):
+        focused["subheadline"] = (
+            "Policy effect and timing, not just the event size, determine the evaluation."
+            if is_english
+            else "評価の焦点は被害の大きさだけでなく、政策が間に合っていたかにある。"
+        )
+
+    return focused
 
 
 def _build_fallback_article(
     req: IntermediateEvaluationRequest,
-    event_highlights: List[str],
+    _event_highlights: List[str],
     fallback_subheadline: str,
     fallback_expert_comment: str,
 ) -> Dict[str, str]:
-    rows = req.simulation_rows
     is_english = req.language.lower().startswith("en")
 
-    first_row = rows[0]
-    last_row = rows[-1]
-
-    flood_start = _to_float(first_row.get("Flood Damage"))
-    flood_end = _to_float(last_row.get("Flood Damage"))
-    crop_start = _to_float(first_row.get("Crop Yield"))
-    crop_end = _to_float(last_row.get("Crop Yield"))
-    ecosystem_start = _to_float(first_row.get("Ecosystem Level"))
-    ecosystem_end = _to_float(last_row.get("Ecosystem Level"))
-    levee_change_year = _find_first_change_year(rows, "Levee Level")
-    capacity_change_year = _find_first_change_year(rows, "Resident capacity")
-    flood_event = next(iter(_top_middle_rows_by_metric(rows, "Flood Damage", count=1, reverse=True)), None)
-    crop_event = next(iter(_top_middle_rows_by_metric(rows, "Crop Yield", count=1, reverse=False)), None)
-
     if is_english:
-        headline = (
-            _event_subheadline(req).rstrip(".")
-        )
+        headline = _event_headline(req).rstrip(".")
         subheadline = _event_subheadline(req) or fallback_subheadline
         lead = _event_lead(req)
         expert_comment = fallback_expert_comment
-        article_body = " ".join(
-            sentence
-            for sentence in [
-                _event_body_sentence(req),
-                (
-                    f"Levee conditions first moved in {levee_change_year}."
-                    if levee_change_year
-                    else "No clear levee step-up was confirmed in this 25-year window."
-                ),
-                (
-                    f"Resident preparedness began to shift in {capacity_change_year}."
-                    if capacity_change_year
-                    else "Resident preparedness changed only gradually within the period."
-                ),
-                (
-                    f"The {_row_year(flood_event)} flood event is the key stress test: {_row_context(flood_event)}."
-                    if flood_event
-                    else ""
-                ),
-                event_highlights[0] + "." if event_highlights else "",
-            ]
-            if sentence
-        )
+        article_body = _build_readable_article_body(req)
     else:
-        headline = (
-            _event_subheadline(req).rstrip("。")
-        )
+        headline = _event_headline(req).rstrip("。")
         subheadline = _event_subheadline(req) or fallback_subheadline
         lead = _event_lead(req)
         expert_comment = fallback_expert_comment
-        article_body = " ".join(
-            sentence
-            for sentence in [
-                _event_body_sentence(req),
-                (
-                    f"堤防レベルのはっきりした変化は{levee_change_year}年に現れた。"
-                    if levee_change_year
-                    else "堤防レベルの段階的な上昇は、この25年でははっきり確認しにくかった。"
-                ),
-                (
-                    f"住民防災能力の変化は{capacity_change_year}年ごろから見え始めた。"
-                    if capacity_change_year
-                    else "住民防災能力は少しずつ動いたが、大きな転換点は読み取りにくかった。"
-                ),
-                (
-                    f"中間の山場は{_row_year(flood_event)}年の洪水被害で、その時点の状態は{_row_context(flood_event)}だった。"
-                    if flood_event
-                    else ""
-                ),
-                (
-                    f"農業面では{_row_year(crop_event)}年の収穫低迷が目立ち、その時点の状態は{_row_context(crop_event)}だった。"
-                    if crop_event
-                    else ""
-                ),
-                event_highlights[0] + "。" if event_highlights else "",
-            ]
-            if sentence
-        )
+        article_body = _build_readable_article_body(req)
 
-    return {
+    return _ensure_distinct_headline_and_subheadline({
         "headline": headline,
         "subheadline": subheadline,
         "lead": lead,
         "expert_comment": expert_comment,
         "policy_assessment": _build_policy_assessment(req),
         "article_body": article_body.strip(),
-    }
+    }, req)
 
 
 def _normalize_article_payload(
@@ -1466,7 +1798,15 @@ def _ensure_event_focused_article(
 ) -> Dict[str, str]:
     event = _primary_damage_event(req.simulation_rows)
     if not event:
-        return article
+        focused = dict(article)
+        is_english = req.language.lower().startswith("en")
+        if (
+            _article_body_looks_too_numeric(focused.get("article_body", ""))
+            or _article_body_lacks_clear_point(focused.get("article_body", ""), is_english)
+        ):
+            focused["article_body"] = _build_readable_article_body(req)
+        focused["article_body"] = _format_article_body_sections(focused.get("article_body", ""), is_english)
+        return _ensure_distinct_headline_and_subheadline(focused, req)
 
     _, row = event
     event_year = _row_year(row)
@@ -1477,7 +1817,7 @@ def _ensure_event_focused_article(
     has_disallowed_summary = _is_disallowed_summary_sentence(combined, is_english)
 
     if not has_event_year or has_disallowed_summary:
-        focused["headline"] = _event_subheadline(req).rstrip("." if is_english else "。")
+        focused["headline"] = _event_headline(req).rstrip("." if is_english else "。")
         focused["subheadline"] = _event_subheadline(req)
         focused["lead"] = _event_lead(req)
 
@@ -1487,11 +1827,14 @@ def _ensure_event_focused_article(
 
     event_sentence = _event_body_sentence(req)
     body = _strip_generic_flat_sentences(focused.get("article_body", ""), event_year, is_english)
-    if event_sentence and event_year not in body:
+    if _article_body_looks_too_numeric(body) or _article_body_lacks_clear_point(body, is_english):
+        body = _build_readable_article_body(req)
+    elif event_sentence and event_year not in body:
         body = f"{event_sentence} {body}".strip()
-    focused["article_body"] = body or event_sentence or focused.get("article_body", "")
+    focused["article_body"] = body or _build_readable_article_body(req) or focused.get("article_body", "")
+    focused["article_body"] = _format_article_body_sections(focused["article_body"], is_english)
 
-    return focused
+    return _ensure_distinct_headline_and_subheadline(focused, req)
 
 
 def _build_expert_comment_prompt(req: IntermediateEvaluationRequest) -> str:
@@ -1679,15 +2022,18 @@ Yearly timeline:
 Output requirements:
 - Return only one JSON object
 - policy_assessment must be a compact evaluation phrase that links the policy package to a major event or turning point
-- Make subheadline a feedback sentence based on the yearly timeline, and mention a concrete change, peak, or turning year
+- Make headline and subheadline different. Headline is the short conclusion; subheadline explains why and what policy effect to examine.
+- Do not repeat the headline wording in subheadline.
 - Make lead explain what the major event year and policy state reveal for the player
 - Use at least one event or sharp change from the middle of the 25-year period in subheadline, lead, or article_body
+- Make article_body explain the cause-and-effect in plain language. Do not list many metric values there.
+- In article_body, avoid exact numbers and change amounts; reference useful chart names in parentheses instead.
 - If the primary damage event exists, make it the main frame of the report. Do not say the indicators were flat/stable as the main conclusion.
 - Do not use endpoint-comparison wording such as "improved from A to B" or "worsened from A to B".
 - Avoid generic phrases about short-term vs slow policies unless the yearly data directly supports them
 - expert_comment must be one sharp sentence
 - Keep the whole article compact and specific
-- Mention concrete years or numbers where useful
+- Mention concrete years where useful, but keep raw numeric values out of article_body
 - Write like a newspaper front page, not like a policy memo
 - No future advice
 """.strip()
@@ -1728,12 +2074,19 @@ Output requirements:
 
 出力条件:
 - JSON オブジェクトのみを返す
-- 見出しは短く、本文は3〜5文程度
-- 見出しで分かる様にする
-- subheadline は、年次データを振り返り、具体的な変化・山場・転換年のどれかを1文で書く
+- headline と subheadline は同じ文章にしない
+- headline は短く、「何が山場だったか」が一目で分かる結論にする
+- subheadline は headline を繰り返さず、「なぜそう読めるか」「どの政策効果を見るべきか」を1文で補足する
+- 本文は3〜5文程度
 - lead は、重大イベント年の被害と政策状態から読み手に役立つフィードバックを1文で書く
 - subheadline, lead, article_body のどれかで、25年の中間で起きたイベントまたは急変年を少なくとも1つ取り上げる
 - 重大イベントを取り上げる時は、その年の堤防・防災能力・高リスク住宅・田んぼダム・高温耐性など政策状態も一緒に読む
+- article_body は、指標の数字を並べず、「何が要因で、何を読み取るべきか」を直感的に説明する
+- article_body は、「主因は何か」「政策は効いたのか／効きにくかったのか」「結局何を伝えたいのか」が分かる2〜4文にする
+- article_body では、実際に効いた政策、どう効いたか、逆にどの政策は足りなかったかを読者が直感的に分かる文章で書く
+- article_body の具体的な数字や変化量は書かず、詳しい値や年ごとの動きは括弧内の指標グラフで確認できると自然に案内する
+- article_body では、参照すべきグラフ名を必ず括弧で書く。例: (収穫量)(利用可能水量)
+- article_body では指標名をただ羅列せず、原因・政策の効き方・批判的な読み取りの3点を中心に書く
 - 最優先の被害イベントがある場合、それをレポートの主軸にする。「指標は横ばい・安定」だけを主結論にしない
 - 「収穫量はAからBへ改善した」「洪水被害はAからBへ悪化した」のような期間始点・終点の比較文は禁止
 - 年次データに基づかない「短期で効く」「時間差がある」だけの定型的な総括は避ける
@@ -1741,7 +2094,7 @@ Output requirements:
 - 新聞一面の語り口で書く
 - 中学生にも分かるやさしい日本語にする
 - 今後の助言は禁止
-- 具体的な年や数値を記事全体で2つ以上入れる
+- 具体的な年は使ってよいが、数値は本文では増やしすぎない
 - policy_assessment は、政策パッケージと重大イベントまたは転換点を結びつけた短い評価句にする
 """.strip()
 
@@ -1764,31 +2117,38 @@ def generate_intermediate_evaluation(
         fallback_expert_comment,
     )
 
+    is_english = req.language.lower().startswith("en")
+    model_name = INTERMEDIATE_EVALUATION_MODEL
+
     try:
         response = _chat_ollama(
             model=INTERMEDIATE_EVALUATION_MODEL,
             messages=[
                 {
                     "role": "system",
-                    "content": SYSTEM_PROMPT_EN if req.language.lower().startswith("en") else SYSTEM_PROMPT_JA,
+                    "content": SYSTEM_PROMPT_EN if is_english else SYSTEM_PROMPT_JA,
                 },
                 {"role": "user", "content": user_prompt},
             ],
             options={"temperature": 0.2, "num_predict": 260},
             response_format="json",
         )
-    except Exception as exc:
-        raise RuntimeError(f"Ollama evaluation failed: {exc}") from exc
+    except Exception:
+        response = None
 
-    feedback_text = _extract_message_content(response)
-    is_english = req.language.lower().startswith("en")
-    article = _normalize_article_payload(_extract_json_object(feedback_text), fallback_article)
-    article = _ensure_event_focused_article(article, req)
-    if _is_canned_subheadline(article["subheadline"], is_english):
-        article["subheadline"] = fallback_subheadline
-    article["expert_comment"] = _generate_expert_comment(req, article["expert_comment"])
-    if _is_disallowed_summary_sentence(article["expert_comment"], is_english):
-        article["expert_comment"] = _build_fallback_expert_comment(req)
+    if response is None:
+        article = fallback_article
+        model_name = f"{INTERMEDIATE_EVALUATION_MODEL} (fallback)"
+    else:
+        feedback_text = _extract_message_content(response)
+        article = _normalize_article_payload(_extract_json_object(feedback_text), fallback_article)
+        article = _ensure_event_focused_article(article, req)
+        if _is_canned_subheadline(article["subheadline"], is_english):
+            article["subheadline"] = fallback_subheadline
+        article["expert_comment"] = _generate_expert_comment(req, article["expert_comment"])
+        if _is_disallowed_summary_sentence(article["expert_comment"], is_english):
+            article["expert_comment"] = _build_fallback_expert_comment(req)
+
     article = _ensure_event_focused_article(article, req)
     feedback = _compose_feedback(article, is_english)
 
@@ -1797,7 +2157,7 @@ def generate_intermediate_evaluation(
         checkpoint_year=req.checkpoint_year,
         period_start_year=req.period_start_year,
         period_end_year=req.period_end_year,
-        model=INTERMEDIATE_EVALUATION_MODEL,
+        model=model_name,
         feedback=feedback,
         policy_summary=policy_summary,
         event_highlights=event_highlights,
