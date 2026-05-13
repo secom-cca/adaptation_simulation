@@ -1,16 +1,16 @@
-import React from 'react'
+﻿import React from 'react'
 import { useTranslation } from '../../contexts/LanguageContext.jsx'
 import s from './BasinStatus.module.css'
 
-function formatDamage(value, lang) {
-  const amount = Number(value) || 0
-  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M ${lang === 'ja' ? 'USD' : 'USD'}`
-  if (amount >= 1_000) return `${Math.round(amount / 1_000)}K ${lang === 'ja' ? 'USD' : 'USD'}`
-  return `${Math.round(amount)} USD`
+function formatPoints(value) {
+  return `${(Number(value) || 0).toFixed(1)} mana`
 }
 
-function formatPoints(value) {
-  return `${Number(value) || 0} pt`
+function formatYen(value) {
+  const amount = Number(value) || 0
+  if (amount >= 100_000_000) return `${(amount / 100_000_000).toFixed(1)}億円/年`
+  if (amount >= 10_000) return `${Math.round(amount / 10_000).toLocaleString()}万円/年`
+  return `${Math.round(amount).toLocaleString()}円/年`
 }
 
 export default function BasinStatus({ currentValues, history, budgetRow }) {
@@ -19,10 +19,10 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
 
   const indicators = [
     {
-      icon: '💧', labelKey: 'basin.flood.label',
-      getValue: cv => cv['Flood Damage'] ?? cv.flood_damage_cost ?? 0,
-      format: v => v < 1e7 ? { key: 'status.low', tier: 'good' }
-                : v < 2e8 ? { key: 'status.medium', tier: 'caution' }
+      icon: '🌊', labelKey: 'basin.flood.label',
+      getValue: cv => cv['Flood Damage JPY'] ?? ((cv['Flood Damage'] ?? cv.flood_damage_cost ?? 0) * 150),
+      format: v => v < 100_000_000 ? { key: 'status.low', tier: 'good' }
+                : v < 200_000_000 ? { key: 'status.medium', tier: 'caution' }
                            : { key: 'status.high', tier: 'critical' },
     },
     {
@@ -33,11 +33,11 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
                              : { key: 'status.critical', tier: 'critical' },
     },
     {
-      icon: '👥', labelKey: 'basin.burden.label',
-      getValue: cv => cv['Resident Burden'] ?? cv.resident_burden ?? 0,
-      format: v => v < 500  ? { key: 'status.manageable', tier: 'good' }
-                : v < 2000  ? { key: 'status.elevated', tier: 'caution' }
-                             : { key: 'status.severe', tier: 'critical' },
+      icon: '💴', labelKey: 'basin.burden.label',
+      getValue: cv => cv.available_budget_mana ?? cv.availableBudgetPoints ?? 10,
+      format: v => v > 5 ? { key: 'status.manageable', tier: 'good' }
+                : v > 3 ? { key: 'status.elevated', tier: 'caution' }
+                        : { key: 'status.severe', tier: 'critical' },
     },
     {
       icon: '🌿', labelKey: 'basin.eco.label',
@@ -65,9 +65,7 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
                 <div className={s.status}>
                   <span className={s.statusLabel}>{t(key)}</span>
                   {trend && (
-                    <span className={s.trend}>
-                      {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'}
-                    </span>
+                    <span className={s.trend}>{trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'}</span>
                   )}
                 </div>
               </div>
@@ -75,26 +73,27 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
           )
         })}
       </div>
+
       {budgetRow && (
         <div className={s.budgetNote}>
-          <div className={s.budgetLine}>
-            <span>{t('budget.appliedFloodDamage')}</span>
-            <strong>{formatDamage(budgetRow.appliedFloodDamage, lang)}</strong>
+          <div className={s.budgetHero}>
+            <span>{lang === 'ja' ? '使用可能マナ' : 'Available mana'}</span>
+            <strong>{`${formatPoints(budgetRow.availableBudgetPoints)} / 10`}</strong>
           </div>
           <div className={s.budgetLine}>
-            <span>{t('budget.pointReduction')}</span>
-            <strong>
-              {formatPoints(budgetRow.totalBudgetReduction)}
-              <span className={s.budgetBreakdown}>
-                {` (${t('budget.floodShort')} ${formatPoints(budgetRow.floodReduction)}, ${t('budget.relocationShort')} ${formatPoints(budgetRow.migrationReduction)})`}
-              </span>
-            </strong>
+            <span>{lang === 'ja' ? '前25年平均洪水被害' : 'Average flood damage in previous 25 years'}</span>
+            <strong>{formatYen(budgetRow.appliedFloodDamage)}</strong>
           </div>
-          <div className={s.budgetLine}>
-            <span>{t('budget.availablePoints')}</span>
-            <strong>{`${formatPoints(budgetRow.availableBudgetPoints)} / 10 pt`}</strong>
+          <div className={s.penaltyGrid}>
+            <div><span>{lang === 'ja' ? '人口減少' : 'Population'}</span><strong>{formatPoints(budgetRow.populationPenaltyMana)}</strong></div>
+            <div><span>{lang === 'ja' ? '洪水復旧' : 'Flood recovery'}</span><strong>{formatPoints(budgetRow.floodReduction)}</strong></div>
+            <div><span>{lang === 'ja' ? '移住後インフラ' : 'Relocation infra'}</span><strong>{formatPoints(budgetRow.migrationReduction)}</strong></div>
           </div>
-          <p className={s.budgetHint}>{t('budget.ruleNote')}</p>
+          <p className={s.budgetHint}>
+            {lang === 'ja'
+              ? '1マナは2,000万円/年を25年間継続する政策費です。洪水復旧ペナルティは、前ターン平均被害額をもとに次ターンの予算制約へ反映します。'
+              : '1 mana means JPY 20M/year sustained for 25 years. The flood recovery penalty uses average damage in the previous turn.'}
+          </p>
         </div>
       )}
     </div>

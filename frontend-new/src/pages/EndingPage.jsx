@@ -1,15 +1,19 @@
-import React, { useEffect, useRef, useState } from 'react'
+﻿import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from '../contexts/LanguageContext.jsx'
 import s from './EndingPage.module.css'
 
 const API = '/api'
 
+function floodJpy(row) {
+  return Number(row?.['Flood Damage JPY'] ?? ((row?.['Flood Damage'] ?? 0) * 150)) || 0
+}
+
 function classifyStrategy(history) {
   if (history.length === 0) return 'balanced'
-  const avgEcosystem  = history.reduce((a, r) => a + (r['Ecosystem Level'] ?? 0), 0) / history.length
-  const avgFloodDamage = history.reduce((a, r) => a + (r['Flood Damage'] ?? 0), 0) / history.length
+  const avgEcosystem = history.reduce((a, r) => a + (r['Ecosystem Level'] ?? 0), 0) / history.length
+  const avgFloodDamage = history.reduce((a, r) => a + floodJpy(r), 0) / history.length
   if (avgEcosystem > 70) return 'eco'
-  if (avgFloodDamage < 5e6) return 'engineer'
+  if (avgFloodDamage < 5_000_000) return 'engineer'
   return 'balanced'
 }
 
@@ -17,18 +21,18 @@ function getCityOutcome(history) {
   if (history.length === 0) return 'surviving'
   const last = history[history.length - 1]
   if ((last['Crop Yield'] ?? 0) > 3500 && (last['Ecosystem Level'] ?? 0) > 70) return 'thriving'
-  if ((last['Flood Damage'] ?? 0) > 3e8) return 'struggling'
+  if (floodJpy(last) > 300_000_000) return 'struggling'
   return 'surviving'
 }
 
-const PROFILE_ICONS = { eco: '🌿', engineer: '🛡', balanced: '⚖️' }
-const CITY_COLORS   = { thriving: '#4a8c5c', surviving: '#8c6b3d', struggling: '#8c3d3d' }
+const PROFILE_ICONS = { eco: '森', engineer: '堤', balanced: '均' }
+const CITY_COLORS = { thriving: '#4a8c5c', surviving: '#8c6b3d', struggling: '#8c3d3d' }
 
 function formatFloodDamage(value) {
   const amount = Number(value) || 0
-  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`
-  if (amount >= 1_000) return `${Math.round(amount / 1_000)}K`
-  return `${Math.round(amount)}`
+  if (amount >= 100_000_000) return `${(amount / 100_000_000).toFixed(1)}億円`
+  if (amount >= 10_000) return `${Math.round(amount / 10_000).toLocaleString()}万円`
+  return `${Math.round(amount).toLocaleString()}円`
 }
 
 function sumRows(rows, key) {
@@ -42,11 +46,11 @@ function avgRows(rows, key) {
 function buildComparisonSummary(history) {
   const rows = Array.isArray(history) ? history : []
   const last = rows[rows.length - 1] ?? {}
-  const flood = sumRows(rows, 'Flood Damage')
+  const flood = rows.reduce((sum, row) => sum + floodJpy(row), 0)
   const cropYield = Number(last['Crop Yield']) || avgRows(rows, 'Crop Yield')
   const ecosystem = Number(last['Ecosystem Level']) || avgRows(rows, 'Ecosystem Level')
   const burden = avgRows(rows, 'Resident Burden')
-  const floodScore = Math.max(0, 100 - (flood / 30_000_000) * 100)
+  const floodScore = Math.max(0, 100 - (flood / 3_000_000_000) * 100)
   const yieldScore = Math.max(0, Math.min(100, (cropYield / 5000) * 100))
   const ecoScore = Math.max(0, Math.min(100, ecosystem))
   const burdenScore = Math.max(0, 100 - (burden / 5000) * 100)
@@ -68,19 +72,14 @@ export default function EndingPage({ sim, onRestart, onCompare }) {
   const [personaError, setPersonaError] = useState(false)
   const savedComparisonRef = useRef(false)
   const strategyKey = classifyStrategy(history)
-  const outcomeKey  = getCityOutcome(history)
+  const outcomeKey = getCityOutcome(history)
   const last = history[history.length - 1] ?? {}
-  const cumulativeFloodDamage = history.reduce(
-    (sum, row) => sum + Math.max(Number(row?.['Flood Damage']) || 0, 0),
-    0
-  )
+  const cumulativeFloodDamage = history.reduce((sum, row) => sum + floodJpy(row), 0)
   const comparisonSummary = buildComparisonSummary(history)
-
   const headline = t('ending.headline').replace('{name}', userName)
 
   useEffect(() => {
     if (!history.length) return
-
     let cancelled = false
     setPersonaLoading(true)
     setPersonaError(false)
@@ -174,13 +173,8 @@ export default function EndingPage({ sim, onRestart, onCompare }) {
           </div>
         </div>
 
-        <button className={s.compareBtn} onClick={onCompare}>
-          {t('ending.compare')}
-        </button>
-
-        <button className={s.restartBtn} onClick={onRestart}>
-          {t('ending.restart')}
-        </button>
+        <button className={s.compareBtn} onClick={onCompare}>{t('ending.compare')}</button>
+        <button className={s.restartBtn} onClick={onRestart}>{t('ending.restart')}</button>
       </div>
     </div>
   )

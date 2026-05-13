@@ -4,7 +4,10 @@ import json
 import re
 from typing import Any, Dict, Iterable, List
 
-import ollama
+try:
+    import ollama
+except ModuleNotFoundError:
+    ollama = None
 
 from models import IntermediateEvaluationRequest, IntermediateEvaluationResponse
 

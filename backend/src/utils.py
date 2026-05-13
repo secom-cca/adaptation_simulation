@@ -1,7 +1,13 @@
 # utils.py
 
-import plotly.graph_objects as go
-import streamlit as st
+try:
+    import plotly.graph_objects as go
+except ModuleNotFoundError:
+    go = None
+try:
+    import streamlit as st
+except ModuleNotFoundError:
+    st = None
 import pandas as pd
 import numpy as np
 
@@ -9,7 +15,6 @@ BENCHMARK = {
     '収量':     dict(best=10_000, worst=0,     invert=False),
     '洪水被害': dict(best=0,       worst=200_000_000, invert=True),
     '生態系':   dict(best=100,     worst=0,     invert=False),
-    '都市利便性':dict(best=100,     worst=0,     invert=False),
     '予算':     dict(best=0, worst=1_000_000_000, invert=True),
     '森林面積':dict(best=10_000,     worst=0,     invert=False),
     '住民負担':dict(best=0, worst=100_000, invert=True),
@@ -31,7 +36,6 @@ def calculate_scenario_indicators(df: pd.DataFrame) -> dict:
         '森林面積': df['Forest Area'].mean(),
         '予算': df['Municipal Cost'].sum(),
         '住民負担': df['Resident Burden'].sum(),
-        '都市利便性': df['Urban Level'].mean(),
     }
 
 def aggregate_blocks(df: pd.DataFrame) -> list[dict]:
@@ -64,7 +68,6 @@ def _raw_values(df: pd.DataFrame, start: int, end: int) -> dict:
         '住民負担': df.loc[mask, 'Resident Burden'].sum(),
         '生態系': df.loc[mask, 'Ecosystem Level'].mean(),
         '森林面積': df.loc[mask, 'Forest Area'].mean(),
-        '都市利便性': df.loc[mask, 'Urban Level'].mean(),
     }
 
 

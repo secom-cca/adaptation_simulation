@@ -47,12 +47,13 @@
 
 /* ── CLD image ── */
 .cldWrap {
+  position: relative;
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px;
+  padding: 8px;
   min-height: 0;
 }
 

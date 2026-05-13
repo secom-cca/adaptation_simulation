@@ -35,6 +35,17 @@ class CurrentValues(BaseModel):
     resident_burden: Optional[float] = 0.0
     biodiversity_level: Optional[float] = 0.0
     paddy_dam_area: float = 0.0
+    cumulative_migrated_houses: Optional[float] = 0.0
+    cumulative_house_migration_mana: Optional[float] = 0.0
+    initial_risky_house_total: Optional[float] = None
+    initial_crop_yield: Optional[float] = None
+    events_state: Optional[Dict[str, Any]] = {}
+    available_budget_mana: Optional[float] = 10.0
+    population_budget_multiplier: Optional[float] = 1.0
+    population_decline_penalty_mana: Optional[float] = 0.0
+    migration_infra_penalty_mana: Optional[float] = 0.0
+    flood_recovery_penalty_mana: Optional[float] = 0.0
+    last_25y_avg_flood_damage_jpy: Optional[float] = 0.0
 
 class BlockRaw(BaseModel):
     period: str

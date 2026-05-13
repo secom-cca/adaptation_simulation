@@ -1,15 +1,37 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { POLICY_EFFECTS, getTier } from '../../data/policyEffects.js'
+import { POLICY_MANA_RULES } from '../../data/budget.js'
 import { useTranslation } from '../../contexts/LanguageContext.jsx'
 import s from './PolicySlider.module.css'
 
-export default function PolicySlider({ policy, value, onChange }) {
-  const { t, lang } = useTranslation()
+export default function PolicySlider({ policy, value, onChange, cumulativeStats, onPreview }) {
+  const { lang } = useTranslation()
   const tier = getTier(value)
   const effects = POLICY_EFFECTS[policy.key]?.[tier] ?? []
+  const rule = POLICY_MANA_RULES[policy.key] ?? {}
+  const stat = cumulativeStats?.find(item => item.key === policy.key)
+  const max = rule.maxPerTurn ?? 10
+  const hasStrictCap = rule.maxPerTurn != null
+  const isLevee = policy.key === 'dam_levee_construction_cost'
+  const wrapRef = useRef(null)
+
+  const showPreview = () => {
+    const rect = wrapRef.current?.getBoundingClientRect()
+    onPreview?.(policy.key, rect)
+  }
+
+  const hidePreview = () => {
+    onPreview?.(null)
+  }
 
   return (
-    <div className={s.wrap}>
+    <div
+      ref={wrapRef}
+      className={s.wrap}
+      onMouseLeave={hidePreview}
+      onPointerUp={hidePreview}
+      onPointerCancel={hidePreview}
+    >
       <div className={s.header}>
         <span className={s.icon}>{policy.icon}</span>
         <div className={s.info}>
@@ -26,20 +48,40 @@ export default function PolicySlider({ policy, value, onChange }) {
           <div className={s.zone} style={{ width: '30%', background: 'rgba(60,160,80,0.08)' }} />
         </div>
         <input
-          type="range" min={0} max={10} step={1} value={value}
+          type="range"
+          min={0}
+          max={max}
+          step={1}
+          value={Math.min(value, max)}
           className={s.slider}
-          onChange={e => onChange(Number(e.target.value))}
+          onPointerDown={showPreview}
+          onFocus={showPreview}
+          onBlur={hidePreview}
+          onChange={e => {
+            showPreview()
+            onChange(Number(e.target.value))
+          }}
         />
         <div className={s.tickLabels}>
-          <span>{t('tier.weak')} 0</span>
-          <span>{t('tier.standard')} 5</span>
-          <span>{t('tier.strong')} 10</span>
+          <span>0</span>
+          {isLevee && <span className={s.hardCap}>{lang === 'ja' ? '最低5' : 'min 5'}</span>}
+          <span className={hasStrictCap ? s.hardCap : ''}>
+            {hasStrictCap
+              ? (lang === 'ja' ? `1ターン上限 ${max}` : `turn cap ${max}`)
+              : (lang === 'ja' ? '予算内' : 'within budget')}
+          </span>
         </div>
       </div>
 
+      {stat?.cap != null && (
+        <div className={s.ruleLine}>
+          <strong>{lang === 'ja' ? `累計 ${stat.used}/${stat.cap}` : `cum. ${stat.used}/${stat.cap}`}</strong>
+        </div>
+      )}
+
       {effects.length > 0 && (
         <ul className={s.effectsList}>
-          {effects.slice(0, 3).map((e, i) => (
+          {effects.slice(0, 2).map((e, i) => (
             <li key={i} className={s.effectItem}>
               <span className={e.positive ? s.arrowUp : s.arrowDown}>
                 {e.positive ? '▲' : '▼'}

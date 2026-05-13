@@ -8,7 +8,11 @@ import pandas as pd
 import numpy as np
 from typing import Dict, Any, List
 
-from config import DEFAULT_PARAMS, rcp_climate_params, RANK_FILE, ACTION_LOG_FILE, YOUR_NAME_FILE
+from config import (
+    DEFAULT_PARAMS, rcp_climate_params, RANK_FILE, ACTION_LOG_FILE, YOUR_NAME_FILE,
+    MANA_JPY_PER_YEAR, BASE_POLICY_BUDGET_MANA, BASE_POLICY_BUDGET_JPY_PER_YEAR,
+    TURN_YEARS, POLICY_MANA_RULES, POLICY_EFFECT_METADATA, EVENT_THRESHOLDS,
+)
 from models import (
     SimulationRequest, SimulationResponse, CompareRequest, CompareResponse,
     DecisionVar, CurrentValues, BlockRaw,
@@ -58,6 +62,18 @@ COMPARISON_RESULTS_FILE = Path(__file__).parent / "data" / "comparison_results.t
 @app.get("/ping")
 def ping():
     return {"message": "pong"}
+
+@app.get("/policy-config")
+def get_policy_config():
+    return _json_safe({
+        "MANA_JPY_PER_YEAR": MANA_JPY_PER_YEAR,
+        "BASE_POLICY_BUDGET_MANA": BASE_POLICY_BUDGET_MANA,
+        "BASE_POLICY_BUDGET_JPY_PER_YEAR": BASE_POLICY_BUDGET_JPY_PER_YEAR,
+        "TURN_YEARS": TURN_YEARS,
+        "POLICY_MANA_RULES": POLICY_MANA_RULES,
+        "POLICY_EFFECT_METADATA": POLICY_EFFECT_METADATA,
+        "EVENT_THRESHOLDS": EVENT_THRESHOLDS,
+    })
 
 @app.post("/simulate", response_model=SimulationResponse)
 def run_simulation(req: SimulationRequest):

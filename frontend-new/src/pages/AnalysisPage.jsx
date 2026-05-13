@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { useTranslation } from '../contexts/LanguageContext.jsx'
 import { CHART_KEYS, fmtY } from '../data/indicators.js'
+import CausalExplorer from '../components/CausalExplorer/CausalExplorer.jsx'
 import s from './AnalysisPage.module.css'
 
 const CYCLE_COLORS = ['#3d6b8f', '#4a8c5c', '#c07a3a']
@@ -23,7 +24,7 @@ const CustomDot = (props) => {
 
 export default function AnalysisPage({ history }) {
   const { t, lang } = useTranslation()
-  const [xKey, setXKey] = useState('Flood Damage')
+  const [xKey, setXKey] = useState('Flood Damage JPY')
   const [yKey, setYKey] = useState('Crop Yield')
 
   const xInd = CHART_KEYS.find(i => i.key === xKey)
@@ -43,7 +44,7 @@ export default function AnalysisPage({ history }) {
           <span className={s.panelSub}>{t('analysis.cld.sub')}</span>
         </div>
         <div className={s.cldWrap}>
-          <img src="/system_dynamics_ja2.png" alt="System Dynamics" className={s.cldImg} />
+          <CausalExplorer embedded />
         </div>
       </div>
 
