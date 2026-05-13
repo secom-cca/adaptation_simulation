@@ -5,10 +5,10 @@ import s from './ResultComparisonPage.module.css'
 const API = '/api'
 
 const BASELINE_SUMMARY = {
-  flood: 29_800_000,
-  yield: 1308,
-  eco: 70.8,
-  burden: 461,
+  flood: 4_360_000_000,
+  yield: 1628,
+  eco: 71.6,
+  burden: 6055,
 }
 
 const METRICS = [
@@ -22,6 +22,10 @@ function sum(rows, key) {
   return rows.reduce((total, row) => total + (Number(row?.[key]) || 0), 0)
 }
 
+function floodJpy(row) {
+  return Number(row?.['Flood Damage JPY'] ?? ((row?.['Flood Damage'] ?? 0) * 150)) || 0
+}
+
 function avg(rows, key) {
   return rows.length ? sum(rows, key) / rows.length : 0
 }
@@ -30,7 +34,7 @@ function summarizeRows(rows = {}) {
   const list = Array.isArray(rows) ? rows : []
   const last = list[list.length - 1] ?? {}
   return {
-    flood: sum(list, 'Flood Damage'),
+    flood: list.reduce((total, row) => total + floodJpy(row), 0),
     yield: Number(last['Crop Yield']) || avg(list, 'Crop Yield'),
     eco: Number(last['Ecosystem Level']) || avg(list, 'Ecosystem Level'),
     burden: avg(list, 'Resident Burden'),
@@ -41,9 +45,9 @@ function formatValue(metric, value) {
   if (value == null) return '-'
   const numeric = Number(value) || 0
   if (metric === 'flood') {
-    if (numeric >= 1_000_000) return `${(numeric / 1_000_000).toFixed(1)}M`
-    if (numeric >= 1_000) return `${Math.round(numeric / 1_000)}K`
-    return String(Math.round(numeric))
+    if (numeric >= 100_000_000) return `${(numeric / 100_000_000).toFixed(1)}億円`
+    if (numeric >= 10_000) return `${Math.round(numeric / 10_000).toLocaleString()}万円`
+    return `${Math.round(numeric).toLocaleString()}円`
   }
   if (metric === 'eco') return numeric.toFixed(1)
   return String(Math.round(numeric))

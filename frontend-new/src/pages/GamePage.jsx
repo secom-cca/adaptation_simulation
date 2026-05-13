@@ -105,6 +105,8 @@ export default function GamePage({ sim }) {
         onAdvance={handleAdvance}
         loading={loading}
         year={year}
+        policyHistory={policyHistory}
+        budgetRow={currentBudgetRow}
       />
 
       {error && <div className={s.errorBanner}>{error}</div>}

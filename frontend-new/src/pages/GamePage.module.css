@@ -24,7 +24,7 @@
 
 /* team mode normal view needs more room */
 :global(.teamMode) .mainArea:not(.detailMode) {
-  padding-bottom: 56vh;
+  padding-bottom: min(50vh, 500px);
 }
 
 /* ── Simple view overlays ── */

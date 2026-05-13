@@ -1,205 +1,199 @@
-// Static projected outcome descriptions per policy × tier
-// tier: 'weak' (1-3), 'standard' (4-7), 'strong' (8-10)
-
 export const POLICIES = {
   upstream: [
     {
       key: 'planting_trees_amount',
-      label: { en: 'Forest Planting', ja: '植林・森林保全' },
-      description: { en: 'Reforestation for watershed protection', ja: '流域保護のための植林' },
       icon: '🌲',
+      label: { ja: '植林・森林保全', en: 'Forest restoration' },
+      description: { ja: '流域の保水力を高める長期対策', en: 'Long-term watershed retention' },
     },
     {
       key: 'dam_levee_construction_cost',
-      label: { en: 'Levee / Flood Protection', ja: '堤防・洪水対策' },
-      description: { en: 'Infrastructure investment for flood defense', ja: '洪水防御のためのインフラ投資' },
-      icon: '🛡',
+      icon: '🛡️',
+      label: { ja: '堤防・洪水対策', en: 'Levee / river works' },
+      description: { ja: '大雨の越流水を直接減らす大型事業', en: 'Large works that directly reduce overflow' },
     },
     {
       key: 'paddy_dam_construction_cost',
-      label: { en: 'Paddy Dam', ja: '田んぼダム' },
-      description: { en: 'Agricultural water retention infrastructure', ja: '農業用水保持インフラ' },
       icon: '🌾',
+      label: { ja: '田んぼダム', en: 'Paddy dam' },
+      description: { ja: '水田で雨水を一時的に受け止める', en: 'Stores runoff temporarily in paddy fields' },
     },
   ],
   downstream: [
     {
-      key: 'dam_levee_construction_cost',
-      label: { en: 'Levee / Flood Protection', ja: '堤防・洪水対策' },
-      description: { en: 'Infrastructure investment for flood defense', ja: '洪水防御のためのインフラ投資' },
-      icon: '🛡',
-    },
-    {
       key: 'house_migration_amount',
-      label: { en: 'Relocation / Adaptation', ja: '移住・適応支援' },
-      description: { en: 'Resident relocation and community resilience', ja: '居住者移転とコミュニティ強靭化' },
-      icon: '🏘',
+      icon: '🏘️',
+      label: { ja: '移住・適応支援', en: 'Relocation support' },
+      description: { ja: '浸水リスクの高い住宅を安全側へ移す', en: 'Moves exposed homes to safer areas' },
     },
     {
       key: 'capacity_building_cost',
-      label: { en: 'Disaster Training', ja: '防災能力構築' },
-      description: { en: 'Community disaster preparedness programs', ja: '地域防災プログラム' },
       icon: '📋',
+      label: { ja: '防災能力構築', en: 'Disaster preparedness' },
+      description: { ja: '避難訓練と地域防災プログラム', en: 'Evacuation drills and local preparedness' },
+    },
+    {
+      key: 'agricultural_RnD_cost',
+      icon: '🔬',
+      label: { ja: '農業技術研究', en: 'Agricultural adaptation R&D' },
+      description: { ja: '高温耐性品種と栽培技術の普及', en: 'Heat-tolerant crops and farming methods' },
     },
   ],
   team: [
     {
       key: 'planting_trees_amount',
-      label: { en: 'Forest Planting', ja: '植林・森林保全' },
-      description: { en: 'Reforestation for watershed protection', ja: '流域保護のための植林' },
       icon: '🌲',
+      label: { ja: '植林・森林保全', en: 'Forest restoration' },
+      description: { ja: '長期的に洪水・生態系を改善', en: 'Improves floods and ecosystems over time' },
     },
     {
       key: 'dam_levee_construction_cost',
-      label: { en: 'Levee / Flood Protection', ja: '堤防・洪水対策' },
-      description: { en: 'Infrastructure investment for flood defense', ja: '洪水防御のためのインフラ投資' },
-      icon: '🛡',
+      icon: '🛡️',
+      label: { ja: '堤防・洪水対策', en: 'Levee / river works' },
+      description: { ja: '最低5マナからの大型洪水対策', en: 'Large flood project, minimum 5 mana' },
     },
     {
       key: 'paddy_dam_construction_cost',
-      label: { en: 'Paddy Dam', ja: '田んぼダム' },
-      description: { en: 'Agricultural water retention infrastructure', ja: '農業用水保持インフラ' },
       icon: '🌾',
+      label: { ja: '田んぼダム', en: 'Paddy dam' },
+      description: { ja: '小さく積み上げる流域治水', en: 'Distributed flood mitigation' },
     },
     {
       key: 'house_migration_amount',
-      label: { en: 'Relocation', ja: '移住・適応支援' },
-      description: { en: 'Resident relocation and community resilience', ja: '居住者移転と強靭化' },
-      icon: '🏘',
+      icon: '🏘️',
+      label: { ja: '移住・適応支援', en: 'Relocation support' },
+      description: { ja: '被害を減らすが将来負担も生む', en: 'Cuts losses but raises future costs' },
     },
     {
       key: 'capacity_building_cost',
-      label: { en: 'Disaster Training', ja: '防災能力構築' },
-      description: { en: 'Community disaster preparedness', ja: '地域防災プログラム' },
       icon: '📋',
+      label: { ja: '防災能力構築', en: 'Disaster preparedness' },
+      description: { ja: '上限1マナの継続訓練', en: 'Turn cap 1 mana' },
     },
     {
       key: 'agricultural_RnD_cost',
-      label: { en: 'Agricultural R&D', ja: '農業技術研究' },
-      description: { en: 'Heat-resilient farming and crop innovation', ja: '耐熱農業・作物イノベーション' },
       icon: '🔬',
+      label: { ja: '農業技術研究', en: 'Agricultural adaptation R&D' },
+      description: { ja: '上限2マナの高温適応', en: 'Turn cap 2 mana' },
     },
   ],
 }
 
+const ja = text => ({ ja: text, en: text })
+
 export const POLICY_EFFECTS = {
   planting_trees_amount: {
     weak: [
-      { positive: false, text: { en: 'Minimal forest coverage gain', ja: '森林面積の増加はわずか' } },
-      { positive: true,  text: { en: 'Negligible budget impact', ja: '予算への影響はほぼなし' } },
+      { positive: true, text: ja('生態系を改善し、森林の保水力が少しずつ高まる') },
+      { positive: false, text: ja('効果発現には時間遅れがあり、直後の洪水被害は大きく変わりにくい') },
+      { positive: true, text: ja('予算への追加ペナルティはほぼない') },
     ],
     standard: [
-      { positive: true,  text: { en: 'Moderate runoff reduction over time', ja: '中期的に流出量が低下' } },
-      { positive: true,  text: { en: 'Improved ecosystem level', ja: '生態系レベルが改善' } },
-      { positive: false, text: { en: 'Long maturation period (30 yr)', ja: '効果発現に30年かかる' } },
+      { positive: true, text: ja('数十年後に流出ピークを抑え、洪水被害を下げ始める') },
+      { positive: true, text: ja('生態系指標にプラス') },
+      { positive: false, text: ja('短期の避難・浸水対策は別途必要') },
     ],
     strong: [
-      { positive: true,  text: { en: 'Significant flood buffering by 2075+', ja: '2075年以降に大きな洪水緩衝効果' } },
-      { positive: true,  text: { en: 'Substantial biodiversity recovery', ja: '生物多様性が大幅に回復' } },
-      { positive: false, text: { en: 'High upfront planting cost', ja: '初期植林コストが高い' } },
+      { positive: true, text: ja('長期的な洪水・生態系の両方に効く') },
+      { positive: false, text: ja('1ターン内の即効性は堤防や田んぼダムより弱い') },
+      { positive: true, text: ja('将来予算への直接圧迫は小さい') },
     ],
   },
   dam_levee_construction_cost: {
     weak: [
-      { positive: false, text: { en: 'Minimal flood protection improvement', ja: '洪水防御の改善はわずか' } },
-      { positive: true,  text: { en: 'Low fiscal burden', ja: '財政負担は低い' } },
+      { positive: false, text: ja('5マナ未満では事業化しない') },
+      { positive: true, text: ja('完成後は180mm級豪雨の越流水を段階的に削減') },
+      { positive: false, text: ja('大型工事のため生態系への負荷がある') },
     ],
     standard: [
-      { positive: true,  text: { en: 'Reduced flood damage by ~30%', ja: '洪水被害が約30%減少' } },
-      { positive: false, text: { en: 'Moderate fiscal burden increase', ja: '財政負担が中程度増加' } },
-      { positive: true,  text: { en: 'Lower resident stress downstream', ja: '下流域の住民ストレスが低下' } },
+      { positive: true, text: ja('20mm強化ごとに180mm級豪雨の被害を約25%削減') },
+      { positive: false, text: ja('完成まで時間遅れがある') },
+      { positive: false, text: ja('予算負担が大きく、生態系にはマイナス') },
     ],
     strong: [
-      { positive: true,  text: { en: 'Major flood risk reduction', ja: '洪水リスクが大幅に低下' } },
-      { positive: false, text: { en: 'High infrastructure investment', ja: 'インフラ投資コストが高い' } },
-      { positive: true,  text: { en: 'Long-term community resilience', ja: '長期的なコミュニティ強靭性' } },
+      { positive: true, text: ja('大規模洪水の被害を大きく下げる') },
+      { positive: false, text: ja('ほかの政策に使えるマナを圧迫しやすい') },
+      { positive: false, text: ja('自然環境とのトレードオフが大きい') },
     ],
   },
   paddy_dam_construction_cost: {
     weak: [
-      { positive: false, text: { en: 'Negligible water retention effect', ja: '水保持効果はほぼなし' } },
-      { positive: true,  text: { en: 'Minimal cost', ja: 'コストは最小限' } },
+      { positive: true, text: ja('小さな投資で下流ピークを少し下げる') },
+      { positive: true, text: ja('生態系への悪影響は小さい') },
+      { positive: false, text: ja('単独では大規模洪水を止めきれない') },
     ],
     standard: [
-      { positive: true,  text: { en: 'Moderate peak flow reduction', ja: 'ピーク流量が中程度減少' } },
-      { positive: true,  text: { en: 'Some improvement to crop water access', ja: '農業用水へのアクセスが改善' } },
-      { positive: false, text: { en: 'Requires paddy field cooperation', ja: '水田の協力が必要' } },
+      { positive: true, text: ja('累計3マナで180mm級豪雨の越流水を約6%削減') },
+      { positive: false, text: ja('農業収量に最大1%程度の小さな負担') },
+      { positive: true, text: ja('分散型で即効性がある') },
     ],
     strong: [
-      { positive: true,  text: { en: 'Significant downstream flood mitigation', ja: '下流の洪水緩和に大きな効果' } },
-      { positive: true,  text: { en: 'Improved agricultural resilience', ja: '農業の強靭性が向上' } },
-      { positive: false, text: { en: 'High coordination and construction cost', ja: '調整・建設コストが高い' } },
+      { positive: true, text: ja('累計6マナで最大効果、180mm級豪雨の越流水を約13%削減') },
+      { positive: true, text: ja('堤防より生態系負荷が小さい') },
+      { positive: false, text: ja('累計上限に達すると追加効果は増えない') },
     ],
   },
   house_migration_amount: {
     weak: [
-      { positive: false, text: { en: 'Most high-risk households remain', ja: '危険な住宅のほとんどが残る' } },
-      { positive: true,  text: { en: 'Low disruption to community', ja: 'コミュニティへの混乱は少ない' } },
+      { positive: true, text: ja('高リスク住宅の浸水被害を直接減らす') },
+      { positive: false, text: ja('累計1マナ超から将来インフラ費用が発生') },
+      { positive: false, text: ja('地域コミュニティへの負担がある') },
     ],
     standard: [
-      { positive: true,  text: { en: 'Moderate reduction in flood exposure', ja: '洪水リスクへの曝露が中程度低下' } },
-      { positive: false, text: { en: 'Resident burden temporarily elevated', ja: '一時的に住民負担が増加' } },
-      { positive: true,  text: { en: 'Long-term safety improvement', ja: '長期的な安全性が向上' } },
+      { positive: true, text: ja('大規模洪水時の住宅被害を大きく削減') },
+      { positive: false, text: ja('公共交通・道路・上下水道維持費が将来予算を圧迫') },
+      { positive: false, text: ja('累計20マナが上限') },
     ],
     strong: [
-      { positive: true,  text: { en: 'Substantial relocation from flood zones', ja: '洪水危険区域からの大規模移転' } },
-      { positive: false, text: { en: 'High per-household relocation cost', ja: '1世帯あたりの移転費用が高い' } },
-      { positive: true,  text: { en: 'Greatly reduced disaster casualties', ja: '災害による被害が大幅に減少' } },
+      { positive: true, text: ja('リスク曝露を根本的に下げる') },
+      { positive: false, text: ja('将来の使えるマナが大きく減る可能性') },
+      { positive: false, text: ja('生活再建支援と合意形成が重い') },
     ],
   },
   capacity_building_cost: {
     weak: [
-      { positive: false, text: { en: 'Minimal preparedness improvement', ja: '防災力の改善はわずか' } },
-      { positive: true,  text: { en: 'Very low cost', ja: 'コストは非常に低い' } },
+      { positive: true, text: ja('住民の避難判断と初動対応を高める') },
+      { positive: false, text: ja('上限1マナ。大量投入しても線形には伸びない') },
+      { positive: false, text: ja('訓練効果は継続しないと薄れる') },
     ],
     standard: [
-      { positive: true,  text: { en: 'Improved community risk awareness', ja: 'コミュニティのリスク意識が向上' } },
-      { positive: true,  text: { en: 'Faster disaster response', ja: '災害対応が迅速化' } },
-      { positive: false, text: { en: 'Ongoing training cost', ja: '継続的な訓練コストが発生' } },
+      { positive: true, text: ja('小〜中規模洪水で人的・生活被害を抑えやすい') },
+      { positive: false, text: ja('堤防のように浸水そのものを止める政策ではない') },
+      { positive: false, text: ja('1ターン上限1マナ') },
     ],
     strong: [
-      { positive: true,  text: { en: 'High community resilience capacity', ja: 'コミュニティの強靭性が大幅向上' } },
-      { positive: true,  text: { en: 'Reduced long-term disaster losses', ja: '長期的な災害損失が低下' } },
-      { positive: false, text: { en: 'Significant sustained investment needed', ja: '持続的な大規模投資が必要' } },
+      { positive: true, text: ja('地域の防災意識係数が高い水準に近づく') },
+      { positive: false, text: ja('上限1マナのため、このターンはこれ以上増やせない') },
+      { positive: true, text: ja('低コストで予算負担が小さい') },
     ],
   },
   agricultural_RnD_cost: {
     weak: [
-      { positive: false, text: { en: 'No threshold reached — no effect', ja: '閾値未達のため効果なし' } },
-      { positive: true,  text: { en: 'Low fiscal impact', ja: '財政への影響は低い' } },
+      { positive: true, text: ja('高温耐性品種・栽培技術で食糧生産を守る') },
+      { positive: false, text: ja('洪水被害は直接減らさない') },
+      { positive: false, text: ja('成果発現には累積投資の時間遅れがある') },
     ],
     standard: [
-      { positive: true,  text: { en: 'Heat-tolerant crop varieties developed', ja: '耐熱性作物品種が開発される' } },
-      { positive: true,  text: { en: 'Crop yield stabilization over time', ja: '収穫量が中期的に安定化' } },
-      { positive: false, text: { en: 'Minimum 5-year investment required', ja: '最低5年間の投資が必要' } },
+      { positive: true, text: ja('1マナで25年間に高温耐性が約0.4度向上') },
+      { positive: false, text: ja('上限2マナ。研究・普及には速度制約がある') },
+      { positive: true, text: ja('作物生産低下イベントを抑えやすい') },
     ],
     strong: [
-      { positive: true,  text: { en: 'Significant yield recovery under heat stress', ja: '高温ストレス下でも大幅な収穫回復' } },
-      { positive: true,  text: { en: 'Long-term food security improvement', ja: '長期的な食料安全保障の向上' } },
-      { positive: false, text: { en: 'High R&D investment with delayed return', ja: 'R&D投資は高く、効果発現が遅い' } },
+      { positive: true, text: ja('最大2マナで温暖化ペースにかなり追随') },
+      { positive: false, text: ja('このターンは上限2マナまで') },
+      { positive: false, text: ja('治水対策とは別に必要') },
     ],
   },
 }
 
 export function getTier(value) {
-  if (value < 3) return 'weak'
-  if (value < 8) return 'standard'
+  const v = Number(value) || 0
+  if (v <= 0) return 'weak'
+  if (v <= 2) return 'weak'
+  if (v <= 5) return 'standard'
   return 'strong'
 }
 
-// Map policy points 0-10 to backend parameter values.
-export const POLICY_SCALE = {
-  planting_trees_amount:       { min: 0,   max: 100  },
-  dam_levee_construction_cost: { min: 0,   max: 10   },
-  paddy_dam_construction_cost: { min: 0,   max: 10   },
-  house_migration_amount:      { min: 0,   max: 500  },
-  capacity_building_cost:      { min: 0,   max: 5    },
-  agricultural_RnD_cost:       { min: 0,   max: 5    },
-  transportation_invest:       { min: 0,   max: 5    },
-}
-
-export function sliderToBackend(policyKey, sliderValue) {
-  const { min, max } = POLICY_SCALE[policyKey]
-  const points = Math.max(0, Math.min(10, Number(sliderValue) || 0))
-  return min + (points / 10) * (max - min)
+export function sliderToBackend(_policyKey, sliderValue) {
+  return Math.max(0, Math.min(10, Math.round(Number(sliderValue) || 0)))
 }

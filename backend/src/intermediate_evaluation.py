@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List
 
-import ollama
+try:
+    import ollama
+except ModuleNotFoundError:
+    ollama = None
 
 from models import IntermediateEvaluationRequest, IntermediateEvaluationResponse
 
@@ -437,6 +440,8 @@ def generate_intermediate_evaluation(
     user_prompt, policy_summary, event_highlights = build_intermediate_evaluation_prompt(req)
 
     try:
+        if ollama is None:
+            raise RuntimeError("ollama package is not installed")
         response = ollama.chat(
             model=INTERMEDIATE_EVALUATION_MODEL,
             messages=[

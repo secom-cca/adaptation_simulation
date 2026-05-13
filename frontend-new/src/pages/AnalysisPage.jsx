@@ -23,7 +23,7 @@ const CustomDot = (props) => {
 
 export default function AnalysisPage({ history }) {
   const { t, lang } = useTranslation()
-  const [xKey, setXKey] = useState('Flood Damage')
+  const [xKey, setXKey] = useState('Flood Damage JPY')
   const [yKey, setYKey] = useState('Crop Yield')
 
   const xInd = CHART_KEYS.find(i => i.key === xKey)
