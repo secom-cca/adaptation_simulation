@@ -151,8 +151,8 @@ In addition to the above (React + FastAPI), run the following in **two more term
 3. **Start RealSense input handler** (Python):
 
 ```bash
-cd frontend
-python realsense.py
+cd camera
+python realsense_bridge.py
 ```
 
 4. **Start WebSocket relay server** (Node.js):
