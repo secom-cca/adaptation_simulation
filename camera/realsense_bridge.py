@@ -16,19 +16,32 @@ import os
 import cv2
 import numpy as np
 import pyrealsense2 as rs
-
-from .config import (
-    TIME_INTERVAL,
-    MARKER_CHECK_INTERVAL,
-    DRIFT_THRESHOLD,
-    CAMERA_HEIGHT,
-    CAMERA_WIDTH,
-)
-from .realsense_init import start_camera, get_aligned_frames
-from .aruco_detector import create_aruco_detector, detect_marker_bounds_2d, check_marker_positions
-from .object_detector import detect_objects_2d
-from .coordinate import compute_base_depth_map, compute_perspective_transform
-from .overlay import draw_detected_objects
+try:
+    from .config import (
+        TIME_INTERVAL,
+        MARKER_CHECK_INTERVAL,
+        DRIFT_THRESHOLD,
+        CAMERA_HEIGHT,
+        CAMERA_WIDTH,
+    )
+    from .realsense_init import start_camera, get_aligned_frames
+    from .aruco_detector import create_aruco_detector, detect_marker_bounds_2d, check_marker_positions
+    from .object_detector import detect_objects_2d
+    from .coordinate import compute_base_depth_map, compute_perspective_transform
+    from .overlay import draw_detected_objects
+except ImportError:
+    from config import (
+        TIME_INTERVAL,
+        MARKER_CHECK_INTERVAL,
+        DRIFT_THRESHOLD,
+        CAMERA_HEIGHT,
+        CAMERA_WIDTH,
+    )
+    from realsense_init import start_camera, get_aligned_frames
+    from aruco_detector import create_aruco_detector, detect_marker_bounds_2d, check_marker_positions
+    from object_detector import detect_objects_2d
+    from coordinate import compute_base_depth_map, compute_perspective_transform
+    from overlay import draw_detected_objects
 
 # --- TCP (既存フロントエンド互換) ---
 BACKEND_HOST = '127.0.0.1'

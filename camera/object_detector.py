@@ -4,8 +4,12 @@
 
 import cv2
 import numpy as np
-from .config import HEIGHT_THRESHOLD_M, HEIGHT_MAX_THRESHOLD_M, MIN_CONTOUR_AREA
-from .coordinate import transform_point_to_normalized
+try:
+    from .config import HEIGHT_THRESHOLD_M, HEIGHT_MAX_THRESHOLD_M, MIN_CONTOUR_AREA
+    from .coordinate import transform_point_to_normalized
+except ImportError:    
+    from config import HEIGHT_THRESHOLD_M, HEIGHT_MAX_THRESHOLD_M, MIN_CONTOUR_AREA
+    from coordinate import transform_point_to_normalized
 
 
 def detect_objects_2d(depth_frame, color_image, roi_points, base_depth_map, perspective_matrix,
