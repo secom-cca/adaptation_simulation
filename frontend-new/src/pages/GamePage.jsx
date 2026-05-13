@@ -10,8 +10,25 @@ import { buildBudgetRows, findAllowedPolicyPoints } from '../data/budget.js'
 import s from './GamePage.module.css'
 
 export default function GamePage({ sim }) {
-  const { gameState, advanceCycle, setGameView } = sim
-  const { year, cycle, mode, history, currentValues, loading, error, gameView, policyHistory = [] } = gameState
+  const { gameState, advanceCycle, setGameView, requestResidentInterview } = sim
+  const {
+    year,
+    cycle,
+    mode,
+    history,
+    currentValues,
+    loading,
+    error,
+    gameView,
+    policyHistory = [],
+    llmCommentary,
+    llmLoading,
+    residentCouncil,
+    residentCouncilLoading,
+    residentCouncilError,
+    residentInterviews = {},
+    residentInterviewLoading = {},
+  } = gameState
 
   const view = gameView ?? 'simple'
   const [hasNewResults, setHasNewResults] = useState(false)
@@ -90,7 +107,20 @@ export default function GamePage({ sim }) {
           </>
         )}
         {view === 'detail' && (
-          <DetailPanel history={history} currentValues={currentValues} cycle={cycle} year={year} />
+          <DetailPanel
+            history={history}
+            currentValues={currentValues}
+            cycle={cycle}
+            year={year}
+            llmCommentary={llmCommentary}
+            llmLoading={llmLoading}
+            residentCouncil={residentCouncil}
+            residentCouncilLoading={residentCouncilLoading}
+            residentCouncilError={residentCouncilError}
+            residentInterviews={residentInterviews}
+            residentInterviewLoading={residentInterviewLoading}
+            onRequestResidentInterview={requestResidentInterview}
+          />
         )}
         {view === 'analysis' && (
           <AnalysisPage history={history} />
@@ -113,4 +143,3 @@ export default function GamePage({ sim }) {
     </div>
   )
 }
-

@@ -18,7 +18,7 @@ function avg(rows, key) {
   return rows.reduce((sum, r) => sum + (r[key] ?? 0), 0) / rows.length
 }
 
-export default function CycleReport({ history, year, cycle, onViewDetails, llmCommentary, llmLoading }) {
+export default function CycleReport({ history, year, cycle, llmCommentary, llmLoading, onViewDetails }) {
   const { t } = useTranslation()
   const cycleStart = year - 25
   const cycleEnd = year - 1
