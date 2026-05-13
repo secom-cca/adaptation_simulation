@@ -9,6 +9,33 @@ import DecisionPanel from '../components/DecisionPanel/DecisionPanel.jsx'
 import { buildBudgetRows, findAllowedPolicyPoints } from '../data/budget.js'
 import s from './GamePage.module.css'
 
+const POLICY_PREVIEW_IMAGES = {
+  planting_trees_amount: {
+    file: 'forest.png',
+    label: { en: 'Forest Planting', ja: '植林・森林保全' },
+  },
+  dam_levee_construction_cost: {
+    file: 'levee.png',
+    label: { en: 'Levee Investment', ja: '堤防・洪水対策' },
+  },
+  paddy_dam_construction_cost: {
+    file: 'paddy-dam.png',
+    label: { en: 'Paddy Field Dam', ja: '田んぼダム' },
+  },
+  house_migration_amount: {
+    file: 'relocation.png',
+    label: { en: 'Relocation Support', ja: '移住・適応支援' },
+  },
+  capacity_building_cost: {
+    file: 'preparedness.png',
+    label: { en: 'Disaster Preparedness', ja: '防災能力構築' },
+  },
+  agricultural_RnD_cost: {
+    file: 'agri-rnd.png',
+    label: { en: 'Agricultural R&D', ja: '農業技術研究' },
+  },
+}
+
 export default function GamePage({ sim }) {
   const { gameState, advanceCycle, setGameView, requestResidentInterview } = sim
   const {
@@ -32,6 +59,7 @@ export default function GamePage({ sim }) {
 
   const view = gameView ?? 'simple'
   const [hasNewResults, setHasNewResults] = useState(false)
+  const [policyPreview, setPolicyPreview] = useState(null)
   const prevLoadingRef = useRef(false)
 
   useEffect(() => {
@@ -56,7 +84,7 @@ export default function GamePage({ sim }) {
     transportation_invest:       0,
   })
 
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const isTeam = mode === 'team'
   const goalText = t(`goal.${mode}.${Math.min(cycle, 3)}`)
   const budgetRows = buildBudgetRows(policyHistory, history, { year, sliders })
@@ -68,6 +96,22 @@ export default function GamePage({ sim }) {
       return { ...prev, [key]: allowedValue }
     })
   }, [history, policyHistory, year])
+
+  const handlePreviewPolicy = useCallback((key, rect) => {
+    if (!key) {
+      setPolicyPreview(null)
+      return
+    }
+
+    if (POLICY_PREVIEW_IMAGES[key] && rect) {
+      setPolicyPreview({
+        key,
+        left: rect.left + rect.width / 2,
+        top: rect.top - 12,
+        width: Math.min(460, Math.max(320, rect.width * 1.95)),
+      })
+    }
+  }, [])
 
   const handleAdvance = useCallback(() => {
     const budgetRowsForSelection = buildBudgetRows(policyHistory, history, { year, sliders })
@@ -125,6 +169,24 @@ export default function GamePage({ sim }) {
         {view === 'analysis' && (
           <AnalysisPage history={history} />
         )}
+
+        {policyPreview && POLICY_PREVIEW_IMAGES[policyPreview.key] && (
+          <div
+            className={s.policyPreview}
+            style={{
+              left: `${policyPreview.left}px`,
+              top: `${policyPreview.top}px`,
+              width: `${policyPreview.width}px`,
+            }}
+            aria-live="polite"
+          >
+            <img
+              className={s.policyPreviewImage}
+              src={`/causal-explorer-assets/policy-mini-maps/${lang === 'ja' ? 'ja' : 'en'}/${POLICY_PREVIEW_IMAGES[policyPreview.key].file}`}
+              alt={POLICY_PREVIEW_IMAGES[policyPreview.key].label[lang === 'ja' ? 'ja' : 'en']}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Fixed decision panel ── */}
@@ -132,6 +194,7 @@ export default function GamePage({ sim }) {
         mode={mode}
         sliders={sliders}
         onSliderChange={handleSliderChange}
+        onPreviewPolicy={handlePreviewPolicy}
         onAdvance={handleAdvance}
         loading={loading}
         year={year}

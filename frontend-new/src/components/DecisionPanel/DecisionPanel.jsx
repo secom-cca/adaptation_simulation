@@ -4,7 +4,7 @@ import { POLICIES } from '../../data/policyEffects.js'
 import { useTranslation } from '../../contexts/LanguageContext.jsx'
 import s from './DecisionPanel.module.css'
 
-export default function DecisionPanel({ mode, sliders, onSliderChange, onAdvance, loading, year }) {
+export default function DecisionPanel({ mode, sliders, onSliderChange, onPreviewPolicy, onAdvance, loading, year }) {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const policies = POLICIES[mode] ?? POLICIES.upstream
@@ -37,6 +37,7 @@ export default function DecisionPanel({ mode, sliders, onSliderChange, onAdvance
               policy={policy}
               value={sliders[policy.key] ?? 5}
               onChange={val => onSliderChange(policy.key, val)}
+              onPreview={onPreviewPolicy}
             />
           ))}
         </div>
