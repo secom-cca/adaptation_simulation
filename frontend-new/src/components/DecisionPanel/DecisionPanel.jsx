@@ -5,7 +5,17 @@ import { getCumulativePolicyStats } from '../../data/budget.js'
 import { useTranslation } from '../../contexts/LanguageContext.jsx'
 import s from './DecisionPanel.module.css'
 
-export default function DecisionPanel({ mode, sliders, onSliderChange, onAdvance, loading, year, policyHistory = [], budgetRow }) {
+export default function DecisionPanel({
+  mode,
+  sliders,
+  onSliderChange,
+  onPreviewPolicy,
+  onAdvance,
+  loading,
+  year,
+  policyHistory = [],
+  budgetRow,
+}) {
   const { t, lang } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const policies = POLICIES[mode] ?? POLICIES.upstream
@@ -53,6 +63,7 @@ export default function DecisionPanel({ mode, sliders, onSliderChange, onAdvance
               value={sliders[policy.key] ?? 0}
               onChange={val => onSliderChange(policy.key, val)}
               cumulativeStats={cumulativeStats}
+              onPreview={onPreviewPolicy}
             />
           ))}
         </div>

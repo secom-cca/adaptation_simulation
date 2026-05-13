@@ -37,6 +37,8 @@ frontend/build/
 frontend/dist/
 frontend-new/node_modules/
 frontend-new/dist/
+frontend-new/causal_explorer_backups/
+frontend-new/server.*.log
 
 # OS / editor
 .DS_Store
