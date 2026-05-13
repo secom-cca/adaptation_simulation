@@ -596,7 +596,7 @@ def generate_ai_commentary(results):
     """
 
     try:
-        response = ollama.chat(model='gemma2:2b', messages=[
+        response = ollama.chat(model='gemma4:2b', messages=[
             {'role': 'system', 'content': f'あなたは{agent["role"]}です。{agent["focus_point"]}を重視して話してください。'},
             {'role': 'user', 'content': prompt},
         ])
