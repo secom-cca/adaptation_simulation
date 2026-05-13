@@ -18,7 +18,7 @@ CAMERA_HEIGHT = 480
 
 # === ArUco マーカー設定 ===
 ARUCO_DICT_TYPE = "DICT_4X4_50"
-MARKER_ORDER = [0, 1, 3, 2]     # マーカーIDと配置順序（時計回り: 左上→右上→右下→左下）
+MARKER_ORDER = [1, 0, 3, 2]     # マーカーIDと配置順序（時計回り: 左上→右上→右下→左下）
 
 # === マーカーチェック設定 ===
 MARKER_CHECK_INTERVAL = 1.0     # マーカー確認間隔（秒）

@@ -83,6 +83,62 @@ export default function GamePage({ sim }) {
     advanceCycle(safeSliders)
   }, [advanceCycle, history, policyHistory, sliders, year])
 
+  // WebSocket 受信設定（カメラからのスライダー値反映）
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:3001')
+
+    ws.onopen = () => {
+      console.log('✅ WebSocket connected (frontend-new)')
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        console.log('📨 受信 (ws):', data)
+
+        // スライダーキー（6本の政策）
+        const POLICY_KEYS = [
+          'planting_trees_amount',
+          'dam_levee_construction_cost',
+          'agricultural_RnD_cost',
+          'house_migration_amount',
+          'paddy_dam_construction_cost',
+          'capacity_building_cost'
+        ]
+
+        // simulate_trigger の場合はスキップ（game は handleAdvance で進める）
+        if (data.simulate_trigger === true) {
+          console.log('🎬 simulate_trigger 受信')
+          return
+        }
+
+        // 各キーを処理
+        for (const [key, value] of Object.entries(data)) {
+          if (key === 'simulate_trigger' || key === 'simulate') continue
+          if (POLICY_KEYS.includes(key)) {
+            // カメラから送られた値（ポイント形式）をそのまま設定
+            const numValue = Number(value)
+            if (Number.isFinite(numValue)) {
+              handleSliderChange(key, numValue)
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ WebSocket メッセージ解析エラー:', e)
+      }
+    }
+
+    ws.onerror = (err) => {
+      console.error('❌ WebSocket error', err)
+    }
+
+    ws.onclose = () => {
+      console.warn('⚠️ WebSocket closed')
+    }
+
+    return () => ws.close()
+  }, [handleSliderChange])
+
   return (
     <div className={`${s.page} ${isTeam ? 'teamMode' : ''}`}>
       <TopBar
