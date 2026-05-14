@@ -51,7 +51,7 @@ BACKEND_PORT = 5000
 WS_URI = "ws://localhost:3001"
 
 #高さの閾値と単位
-height_threshold = 0.03
+height_threshold = 0.00
 height_unit = 0.01
 
 
@@ -282,7 +282,7 @@ def run_realsense_bridge():
                     ws_client = connect_ws_client()
 
                 # --- realsense.py 由来: ゾーン集計 & 制御送信 ---
-                if parameter_zones and object_positions_normalized:
+                if parameter_zones: #and object_positions_normalized:
                     counts = count_objects_per_zone(object_positions_normalized, parameter_zones)
                     current_trigger_count = int(counts.get("simulate_trigger", 0))
 
