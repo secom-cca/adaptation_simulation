@@ -125,7 +125,7 @@ python main.py
 2. **Start the frontend app** in another terminal:
 
 ```bash
-cd frontend
+cd frontend-new
 npm install       # only once
 npm run dev
 ```
@@ -158,7 +158,8 @@ python realsense_bridge.py
 4. **Start WebSocket relay server** (Node.js):
 
 ```bash
-cd frontend
+cd frontend-new
+cd src
 node ws_server.js
 ```
 
