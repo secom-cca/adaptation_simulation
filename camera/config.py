@@ -3,7 +3,7 @@
 """
 
 # === 物体検出閾値 ===
-HEIGHT_THRESHOLD_M = 0.03       # テーブルからの最小高さ (m) - これより低いものは無視
+HEIGHT_THRESHOLD_M = 0.01       # テーブルからの最小高さ (m) - これより低いものは無視
 HEIGHT_MAX_THRESHOLD_M = 0.30   # テーブルからの最大高さ (m) - これより高いものは無視
 MIN_CONTOUR_AREA = 30           # 検出する物体の最小面積 (ピクセル^2)
 
