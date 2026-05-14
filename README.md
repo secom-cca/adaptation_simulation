@@ -127,7 +127,7 @@ python main.py
 ```bash
 cd frontend
 npm install       # only once
-npm start
+npm run dev
 ```
 
 > Runs React at `http://localhost:3000`
@@ -167,7 +167,7 @@ node ws_server.js
 ```text
 Intel RealSense Camera
         ↓
-  realsense.py (Python)
+  realsense_bridge.py (Python)
         ↓
   ws_server.js (WebSocket relay)
         ↓
