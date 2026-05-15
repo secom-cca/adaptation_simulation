@@ -169,6 +169,7 @@ export function useSimulation() {
     residentCouncilLoading: false,
     residentCouncilError: false,
     residentInterviews: {},
+    residentInterviewCounts: {},
     residentInterviewLoading: {},
     lastEvaluationRequest: null,
     gameView: 'simple',
@@ -195,6 +196,7 @@ export function useSimulation() {
       residentCouncilLoading: false,
       residentCouncilError: false,
       residentInterviews: {},
+      residentInterviewCounts: {},
       residentInterviewLoading: {},
       lastEvaluationRequest: null,
       year: 2026,
@@ -287,6 +289,7 @@ export function useSimulation() {
         residentCouncilLoading: true,
         residentCouncilError: false,
         residentInterviews: {},
+        residentInterviewCounts: {},
         residentInterviewLoading: {},
         lastEvaluationRequest: evaluationRequest,
         currentValues: finalState,
@@ -336,9 +339,16 @@ export function useSimulation() {
   const requestResidentInterview = useCallback(async (personaKey, score) => {
     const request = gameState.lastEvaluationRequest
     if (!request || !personaKey) return
+    const interviewIndex = (gameState.residentInterviewCounts?.[personaKey] ?? 0) + 1
+    const focusOptions = ['lived_event', 'policy_effect', 'future_outlook']
+    const interviewFocus = focusOptions[(interviewIndex - 1) % focusOptions.length]
 
     setGameState(s => ({
       ...s,
+      residentInterviewCounts: {
+        ...(s.residentInterviewCounts ?? {}),
+        [personaKey]: interviewIndex,
+      },
       residentInterviewLoading: { ...(s.residentInterviewLoading ?? {}), [personaKey]: true },
     }))
 
@@ -350,6 +360,8 @@ export function useSimulation() {
           ...request,
           persona_key: personaKey,
           score,
+          interview_index: interviewIndex,
+          interview_focus: interviewFocus,
         }),
       })
       if (!res.ok) throw new Error(String(res.status))
@@ -417,6 +429,7 @@ export function useSimulation() {
       residentCouncilLoading: false,
       residentCouncilError: false,
       residentInterviews: {},
+      residentInterviewCounts: {},
       residentInterviewLoading: {},
       lastEvaluationRequest: null,
     }))
@@ -795,4 +808,3 @@ function applyExogenousEffect(state, key) {
   }
   return state
 }
-

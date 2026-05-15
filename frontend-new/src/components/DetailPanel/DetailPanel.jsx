@@ -149,7 +149,7 @@ export default function DetailPanel({
                 <div className={s.snsBody}>
                   <div className={s.snsUserRow}>
                     <div className={s.snsUser}>{resident.display_name} <span>{resident.handle}</span></div>
-                    <div className={s.scoreBadge}>{resident.score}/10</div>
+                    <div className={`${s.scoreBadge} ${getScoreBadgeClass(resident.score)}`}>{resident.score}/10</div>
                   </div>
                   <div className={s.snsText}>{resident.short_voice}</div>
                   <div className={s.snsMeta}>{resident.focus}</div>
@@ -170,6 +170,14 @@ export default function DetailPanel({
       </div>
     </div>
   )
+}
+
+function getScoreBadgeClass(score) {
+  const value = Number(score)
+  if (Number.isNaN(value)) return ''
+  if (value <= 3) return s.scoreLow
+  if (value <= 6) return s.scoreMedium
+  return s.scoreHigh
 }
 
 function AiEvaluationArticle({ article, t }) {

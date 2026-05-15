@@ -101,18 +101,19 @@ SYSTEM_PROMPT_JA = """
   headline, subheadline, lead, expert_comment, policy_assessment, article_body
 - headline と subheadline は同じ文にしないでください。
 - headline は短く、読者が一目で「何が山場だったか」分かる結論にしてください。
-- subheadline は headline を繰り返さず、「なぜそう読めるか」「どの政策効果を見るべきか」を1文で補足してください。
+- subheadline は headline を繰り返さず、「なぜその結論になるか」「どの政策効果を評価すべきか」を1文で補足してください。
 - 本文は3〜5文程度にしてください。
 - lead は、重大イベント年の被害と政策状態から読み手に役立つフィードバックを1文で書いてください。
 - policy_assessment は、政策タイプだけでなく、重大イベント時に政策がどう見えたかまで含む短い評価句にしてください。
-- article_body は、指標の数値を並べるのではなく、「何が要因で、何を読み取るべきか」が直感的に分かる2〜4文にしてください。
-- article_body は必ず「主因」「政策効果」「伝えたいこと」が読み取れる文章にしてください。抽象的な状況説明だけで終わらせないでください。
+- article_body は、指標の数値を並べるのではなく、「何が要因で、政策がどこまで効き、どこが不足したか」が直感的に分かる2〜4文にしてください。
+- article_body は必ず「主因」「政策効果」「伝えたいこと」が判断できる文章にしてください。抽象的な状況説明だけで終わらせないでください。
 - article_body では、実際に効いた政策、どう効いたか、逆にどの政策は足りなかったかを読者が直感的に分かる文章で書いてください。
 - article_body では具体的な数字や変化量を書かず、参考になる指標名を括弧で引用する形にしてください。
 - article_body では、参照すべきグラフ名を必ず括弧で書いてください。例: (収穫量)(利用可能水量)
 - article_body では、少なくとも1つの中間年の重大イベントと、その時点の政策状態を必ず結びつけてください。
 - 重大な被害イベントがある場合、「指標は概ね横ばい」といった総括を中心にしないでください。被害年を主語にして、政策が効いた点・足りなかった点・効果が確認しにくい点を評価してください。
 - 「収穫量はAからBへ改善した」のような期間始点・終点の数値比較文は禁止です。必ず被害イベント年の指標と政策状態を結びつけてください。
+- 「〜として読む」「読む必要がある」「読み取るべき」のような整理だけの表現は禁止です。政策が効いた点、足りなかった点、確認しにくい点を評価として言い切ってください。
 - expert_comment は、識者がズバッと言い切る明快な1文にしてください。
 - 将来の助言や「次にすべきこと」は書かないでください。
 - このシミュレータにおける政策の効き方メモと矛盾しないでください。
@@ -143,6 +144,7 @@ Required rules:
 - In article_body, connect at least one mid-period event to the policy state visible in that year.
 - If there is a major damage event, do not center the report on "flat" or "stable" indicators. Lead with the damage year and evaluate where policies absorbed the shock, fell short, or remained hard to confirm.
 - Do not write endpoint comparison sentences such as "crop yield improved from A to B." Tie the event-year damage to the policy state instead.
+- Do not use weak framing such as "read this as" or "should be read"; state what worked, what fell short, and what remains hard to confirm.
 - Make expert_comment one sharp, clear sentence.
 - Do not give future advice or recommendations.
 - Do not contradict the simulator notes about how each policy works.
@@ -317,7 +319,7 @@ def _build_mechanism_notes(decision_var: Dict[str, Any]) -> List[str]:
 
 def _build_metric_summary(rows: List[Dict[str, Any]]) -> List[str]:
     summaries: List[str] = []
-    summaries.append("- 注意: この集計は補助情報です。評価の主軸は、別項目の主要被害イベントと政策状態です。")
+    summaries.append("- 注意: この集計は補助情報です。評価の主軸は、別項目のイベントログ由来の重要イベントと政策状態です。")
     for key, label in METRIC_SPECS:
         value_rows = [
             (row, _to_float(row.get(key)))
@@ -409,21 +411,252 @@ def _top_middle_rows_by_metric(rows: List[Dict[str, Any]], key: str, count: int 
     return _top_rows_by_metric(middle_rows, key, count=count, reverse=reverse)
 
 
+def _row_events(row: Dict[str, Any]) -> List[Dict[str, Any]]:
+    raw_events = row.get("events")
+    if not isinstance(raw_events, list):
+        raw_events = row.get("Events")
+    if not isinstance(raw_events, list):
+        return []
+    return [event for event in raw_events if isinstance(event, dict)]
+
+
+def _event_kind(event: Dict[str, Any]) -> str:
+    category = str(event.get("category") or "").strip().lower()
+    event_id = str(event.get("id") or "").strip().lower()
+    if category == "agriculture" or event_id.startswith("crop_"):
+        return "crop"
+    if category == "budget" or "budget" in event_id:
+        return "burden"
+    if category == "resident":
+        return "resident"
+    if category == "ecosystem":
+        return "ecosystem"
+    if category == "climate":
+        return "climate"
+    if category == "policy_effect":
+        return "policy"
+    if category == "flood" or "flood" in event_id:
+        return "flood"
+    return category or "event"
+
+
+def _event_priority(event: Dict[str, Any], row: Dict[str, Any]) -> float:
+    severity_score = {
+        "critical": 500.0,
+        "warning": 400.0,
+        "info": 250.0,
+        "success": 220.0,
+    }.get(str(event.get("severity") or "").lower(), 180.0)
+    group_score = {
+        "damage_or_decline": 80.0,
+        "external_shock": 55.0,
+        "policy_effect": 35.0,
+    }.get(str(event.get("group") or "").lower(), 0.0)
+    category_score = {
+        "crop": 70.0,
+        "ecosystem": 68.0,
+        "burden": 66.0,
+        "resident": 62.0,
+        "flood": 58.0,
+        "climate": 54.0,
+        "policy": 45.0,
+    }.get(_event_kind(event), 30.0)
+    value = _to_float(event.get("value"))
+    threshold = _to_float(event.get("threshold"))
+    threshold_score = 0.0
+    if value is not None and threshold not in (None, 0.0):
+        threshold_score = max(-20.0, min(40.0, ((value / threshold) - 1.0) * 30.0))
+    return severity_score + group_score + category_score + threshold_score + ((_to_float(row.get("Year")) or 0.0) / 100000.0)
+
+
+def _logged_events_with_rows(rows: List[Dict[str, Any]]) -> List[tuple[Dict[str, Any], Dict[str, Any]]]:
+    logged: List[tuple[Dict[str, Any], Dict[str, Any]]] = []
+    for row in rows:
+        for event in _row_events(row):
+            logged.append((event, row))
+    return logged
+
+
+def _important_logged_events(
+    rows: List[Dict[str, Any]],
+    *,
+    limit: int = 6,
+    include_policy: bool = True,
+) -> List[tuple[Dict[str, Any], Dict[str, Any]]]:
+    candidates = [
+        (event, row)
+        for event, row in _logged_events_with_rows(rows)
+        if include_policy or _event_kind(event) != "policy"
+    ]
+    candidates.sort(key=lambda item: _event_priority(item[0], item[1]), reverse=True)
+
+    selected: List[tuple[Dict[str, Any], Dict[str, Any]]] = []
+    seen_categories: set[str] = set()
+    seen_ids: set[str] = set()
+
+    for event, row in candidates:
+        event_id = str(event.get("id") or "")
+        category = _event_kind(event)
+        if event_id in seen_ids or category in seen_categories:
+            continue
+        selected.append((event, row))
+        seen_ids.add(event_id)
+        seen_categories.add(category)
+        if len(selected) >= limit:
+            return selected
+
+    for event, row in candidates:
+        event_id = str(event.get("id") or "")
+        if event_id in seen_ids:
+            continue
+        selected.append((event, row))
+        seen_ids.add(event_id)
+        if len(selected) >= limit:
+            break
+
+    return selected
+
+
+def _with_selected_event(row: Dict[str, Any], event: Dict[str, Any]) -> Dict[str, Any]:
+    enriched = dict(row)
+    enriched["__selected_event"] = event
+    return enriched
+
+
+def _selected_event(row: Dict[str, Any] | None) -> Dict[str, Any] | None:
+    if not row:
+        return None
+    event = row.get("__selected_event")
+    return event if isinstance(event, dict) else None
+
+
+def _event_title(event: Dict[str, Any] | None, event_type: str, is_english: bool) -> str:
+    if event:
+        title = str(event.get("title") or "").strip()
+        if title:
+            return title
+    labels_en = {
+        "flood": "flood damage",
+        "crop": "harvest decline",
+        "burden": "resident burden",
+        "resident": "resident preparedness and exposure",
+        "ecosystem": "ecosystem stress",
+        "climate": "extreme weather",
+        "policy": "policy effect",
+    }
+    labels_ja = {
+        "flood": "洪水被害",
+        "crop": "収穫低迷",
+        "burden": "住民負担",
+        "resident": "住民・住宅リスク",
+        "ecosystem": "生態系への負荷",
+        "climate": "極端気象",
+        "policy": "政策効果",
+    }
+    return (labels_en if is_english else labels_ja).get(event_type, "event" if is_english else "イベント")
+
+
+def _event_message(event: Dict[str, Any] | None) -> str:
+    if not event:
+        return ""
+    return re.sub(r"\s+", " ", str(event.get("message") or "")).strip()
+
+
+def _compound_driver_text(row: Dict[str, Any], event_type: str, is_english: bool) -> str:
+    if is_english:
+        if event_type in {"flood", "climate"}:
+            return (
+                "Rainfall pressure, remaining exposed homes, river defenses, paddy-dam storage, and resident preparedness all shaped the outcome; "
+                "the evaluation is whether those protections had become strong enough before the shock."
+            )
+        if event_type == "crop":
+            return (
+                "Heat, water availability, paddy-dam storage, and heat-tolerant crops interacted; the evaluation is whether farm measures buffered the stress or arrived too weakly."
+            )
+        if event_type == "ecosystem":
+            return (
+                "Forest area, ecosystem level, flood pressure, and land-use policies moved together; the evaluation is whether the land base improved or only shifted the pressure elsewhere."
+            )
+        if event_type in {"burden", "resident"}:
+            return (
+                "Policy costs, flood exposure, relocation choices, and preparedness all became visible to residents; the evaluation is whether protection benefits outweighed the burden felt in daily life."
+            )
+        if event_type == "policy":
+            return (
+                "The policy output appeared, but completion alone is not the result; the evaluation is whether damage, burden, agriculture, and ecosystem indicators improved afterward."
+            )
+        return "Several drivers overlapped, so the evaluation must identify which policy path changed the outcome and which pressure remained."
+
+    if event_type in {"flood", "climate"}:
+        return "豪雨の外力に、高リスク住宅、堤防、田んぼダム、住民防災能力が重なって結果が決まり、評価の核心は衝撃の前に守りが十分な強さになっていたかにある。"
+    if event_type == "crop":
+        return "暑さ、水量、田んぼダム、高温耐性品種が同時に作用し、評価の核心は農業対策がストレスを和らげたのか、量やタイミングが足りなかったのかにある。"
+    if event_type == "ecosystem":
+        return "森林面積、生態系、水害圧力、土地利用政策がつながって表れ、評価の核心は土地の土台が改善したのか、別の指標に圧力を残したのかにある。"
+    if event_type in {"burden", "resident"}:
+        return "政策コスト、災害リスク、住宅移転、防災能力が住民の生活実感に同時に出ており、評価の核心は守りの利益が負担感を上回ったかにある。"
+    if event_type == "policy":
+        return "政策の実施や達成は途中経過にすぎず、評価の核心はその後に被害・負担・農業・生態系へ改善として波及したかにある。"
+    return "単一指標の変化ではなく複数の要因が重なったため、どの政策経路が効き、どの圧力が残ったかを評価する。"
+
+
+def _event_chart_names(event_type: str, is_english: bool) -> str:
+    if is_english:
+        mapping = {
+            "flood": "(Flood Damage)(High-Risk Households)(Levee Level)(Paddy Dam Area)(Resident Capacity)",
+            "climate": "(Extreme Precip Events)(Flood Damage)(Levee Level)(Paddy Dam Area)",
+            "crop": "(Crop Yield)(Available Water)(Hot Days)(High Temp Tolerance Level)(Paddy Dam Area)",
+            "ecosystem": "(Ecosystem Level)(Forest Area)(Flood Damage)(Paddy Dam Area)",
+            "burden": "(Resident Burden)(Municipal Cost)(Flood Damage)(High-Risk Households)",
+            "resident": "(Resident Capacity)(High-Risk Households)(Resident Burden)(Flood Damage)",
+            "policy": "(Flood Damage)(Crop Yield)(Ecosystem Level)(Resident Burden)",
+        }
+        return mapping.get(event_type, "(Flood Damage)(Crop Yield)(Ecosystem Level)(Resident Burden)")
+
+    mapping = {
+        "flood": "(洪水被害)(高リスク住宅数)(堤防レベル)(田んぼダム面積)(住民防災能力)",
+        "climate": "(極端降水回数)(洪水被害)(堤防レベル)(田んぼダム面積)",
+        "crop": "(収穫量)(利用可能水量)(猛暑日)(高温耐性レベル)(田んぼダム面積)",
+        "ecosystem": "(生態系レベル)(森林面積)(洪水被害)(田んぼダム面積)",
+        "burden": "(住民負担)(自治体コスト)(洪水被害)(高リスク住宅数)",
+        "resident": "(住民防災能力)(高リスク住宅数)(住民負担)(洪水被害)",
+        "policy": "(洪水被害)(収穫量)(生態系レベル)(住民負担)",
+    }
+    return mapping.get(event_type, "(洪水被害)(収穫量)(生態系レベル)(住民負担)")
+
+
 def _primary_damage_event(rows: List[Dict[str, Any]]) -> tuple[str, Dict[str, Any]] | None:
     if not rows:
         return None
 
+    logged_events = _important_logged_events(rows, limit=1, include_policy=False)
+    if not logged_events:
+        logged_events = _important_logged_events(rows, limit=1, include_policy=True)
+    if logged_events:
+        event, row = logged_events[0]
+        return _event_kind(event), _with_selected_event(row, event)
+
     flood_row = next(iter(_top_middle_rows_by_metric(rows, "Flood Damage", count=1, reverse=True)), None)
-    if flood_row and (_to_float(flood_row.get("Flood Damage")) or 0.0) > 0:
-        return "flood", flood_row
-
     crop_row = next(iter(_top_middle_rows_by_metric(rows, "Crop Yield", count=1, reverse=False)), None)
-    if crop_row and _to_float(crop_row.get("Crop Yield")) is not None:
-        return "crop", crop_row
-
     burden_row = next(iter(_top_middle_rows_by_metric(rows, "Resident Burden", count=1, reverse=True)), None)
+    ecosystem_row = next(iter(_top_middle_rows_by_metric(rows, "Ecosystem Level", count=1, reverse=False)), None)
+
+    candidates: List[tuple[float, str, Dict[str, Any]]] = []
+    if flood_row and (_to_float(flood_row.get("Flood Damage")) or 0.0) > 0:
+        candidates.append((_to_float(flood_row.get("Flood Damage")) or 0.0, "flood", flood_row))
+    if crop_row and _to_float(crop_row.get("Crop Yield")) is not None:
+        initial_crop = _to_float(rows[0].get("initial_crop_yield")) or _to_float(rows[0].get("Crop Yield")) or 1.0
+        crop_value = _to_float(crop_row.get("Crop Yield")) or initial_crop
+        candidates.append((max(0.0, (initial_crop - crop_value) / max(initial_crop, 1.0)) * 400000.0, "crop", crop_row))
     if burden_row and (_to_float(burden_row.get("Resident Burden")) or 0.0) > 0:
-        return "burden", burden_row
+        candidates.append(((_to_float(burden_row.get("Resident Burden")) or 0.0) * 3.0, "burden", burden_row))
+    if ecosystem_row and _to_float(ecosystem_row.get("Ecosystem Level")) is not None:
+        ecosystem_value = _to_float(ecosystem_row.get("Ecosystem Level")) or 0.0
+        candidates.append((max(0.0, 100.0 - ecosystem_value) * 3000.0, "ecosystem", ecosystem_row))
+
+    if candidates:
+        _, event_type, row = max(candidates, key=lambda item: item[0])
+        return event_type, row
 
     return None
 
@@ -431,10 +664,30 @@ def _primary_damage_event(rows: List[Dict[str, Any]]) -> tuple[str, Dict[str, An
 def _build_primary_event_focus(req: IntermediateEvaluationRequest) -> str:
     event = _primary_damage_event(req.simulation_rows)
     if not event:
-        return "- 主要被害イベント: 特定できる大きな被害イベントは少ない。"
+        return "- 主要イベント: イベントログ上で特定できる大きなイベントは少ない。"
 
     event_type, row = event
     is_english = req.language.lower().startswith("en")
+    logged_event = _selected_event(row)
+    if logged_event:
+        title = _event_title(logged_event, event_type, is_english)
+        message = _event_message(logged_event)
+        severity = str(logged_event.get("severity") or "n/a")
+        category = str(logged_event.get("category") or event_type)
+        if is_english:
+            return (
+                f"- Primary event from event log: {_row_year(row)} '{title}' "
+                f"(category={category}, severity={severity}). {message} "
+                f"Policy and indicator state that year: {_row_context(row)}. "
+                f"{_compound_driver_text(row, event_type, True)}"
+            )
+        return (
+            f"- イベントログ由来の主要イベント: {_row_year(row)}年「{title}」"
+            f"（カテゴリ={category}, 重要度={severity}）。{message} "
+            f"その年の状態: {_row_context(row)}。"
+            f"{_compound_driver_text(row, event_type, False)}"
+        )
+
     if is_english:
         if event_type == "flood":
             return (
@@ -467,7 +720,7 @@ def _build_primary_event_focus(req: IntermediateEvaluationRequest) -> str:
             f"防災能力{_format_number(_to_float(row.get('Resident capacity')), digits=2)}、"
             f"高リスク住宅{_format_number(_to_float(row.get('risky_house_total')))}、"
             f"田んぼダム{_format_number(_to_float(row.get('paddy_dam_area')))}。"
-            "評価では「期間全体は横ばい」とまとめず、この被害年に政策が衝撃をどこまで受け止めたかを中心に読む。"
+            "評価では「期間全体は横ばい」とまとめず、この被害年に政策が衝撃をどこまで受け止めたかを結論にする。"
         )
     if event_type == "crop":
         return (
@@ -489,15 +742,61 @@ def _build_primary_event_focus(req: IntermediateEvaluationRequest) -> str:
 def _build_policy_event_feedback(req: IntermediateEvaluationRequest) -> List[str]:
     event = _primary_damage_event(req.simulation_rows)
     if not event:
-        return ["- 主要被害イベントに結びつけて評価できる政策材料は限定的。"]
+        return ["- 主要イベントに結びつけて評価できる政策材料は限定的。"]
 
     decision_var = req.decision_var.model_dump()
     event_type, row = event
     event_year = _row_year(row)
     lines: List[str] = []
+    is_english = req.language.lower().startswith("en")
+    logged_event = _selected_event(row)
 
     def is_active(key: str) -> bool:
         return (_to_float(decision_var.get(key, 0)) or 0.0) > 0
+
+    if logged_event:
+        title = _event_title(logged_event, event_type, is_english)
+        if is_english:
+            lines.append(f"- Event-log focus: {event_year} '{title}'. {_compound_driver_text(row, event_type, True)}")
+            lines.append(
+                "- Interaction to evaluate: connect the event with rainfall/heat pressure, exposure, policy timing, household burden, and ecosystem or farm effects instead of naming only one policy."
+            )
+        else:
+            lines.append(f"- イベントログの焦点: {event_year}年「{title}」。{_compound_driver_text(row, event_type, False)}")
+            lines.append(
+                "- 評価の結論: 気候外力・リスクにさらされた対象・政策の効き始めるタイミング・住民負担・農業や生態系への波及を結び、どこに効き目と不足が出たかまで言い切る。"
+            )
+        if event_type in {"climate", "flood"}:
+            lines.append(
+                "- Compound flood/weather evidence: read extreme rainfall, flood damage, exposed homes, levees, paddy dams, and resident preparedness together."
+                if is_english
+                else "- 水害・気象の複合材料: 最大雨量/極端降水、洪水被害、高リスク住宅、堤防、田んぼダム、住民防災能力を突き合わせる。"
+            )
+        elif event_type == "crop":
+            lines.append(
+                "- Compound farm evidence: read crop yield, water, hot days, heat tolerance, and paddy-dam area together."
+                if is_english
+                else "- 農業の複合材料: 収穫量、水量、猛暑日、高温耐性、田んぼダム面積を突き合わせる。"
+            )
+        elif event_type == "ecosystem":
+            lines.append(
+                "- Compound ecosystem evidence: read ecosystem level, forest area, flood pressure, land use, and flood-control policy together."
+                if is_english
+                else "- 生態系の複合材料: 生態系、森林面積、水害圧力、土地利用・治水政策の関係を評価する。"
+            )
+        elif event_type in {"burden", "resident"}:
+            lines.append(
+                "- Compound livelihood evidence: read resident burden, municipal cost, flood damage, exposed homes, and preparedness together."
+                if is_english
+                else "- 生活影響の複合材料: 住民負担、自治体コスト、洪水被害、高リスク住宅、防災能力を突き合わせる。"
+            )
+        elif event_type == "policy":
+            lines.append(
+                "- Compound policy-effect evidence: do not stop at the completion year; check later damage, burden, agriculture, and ecosystem responses."
+                if is_english
+                else "- 政策効果の複合材料: 政策が達成された年だけでなく、その後の被害・負担・農業・生態系の反応で効果を判定する。"
+            )
+        return lines
 
     if event_type == "flood":
         lines.append(
@@ -555,7 +854,7 @@ def _build_policy_event_feedback(req: IntermediateEvaluationRequest) -> List[str
         if is_active("planting_trees_amount"):
             lines.append(
                 f"- 植林・森林保全: {event_year}年時点の森林面積は"
-                f"{_format_number(_to_float(row.get('Forest Area')))}。水循環や生態系への長期効果は、この25年では読み切りにくい。"
+                f"{_format_number(_to_float(row.get('Forest Area')))}。水循環や生態系への長期効果は、この25年では確認しにくい。"
             )
         return lines
 
@@ -692,63 +991,55 @@ def _build_policy_effect_snapshots(rows: List[Dict[str, Any]], decision_var: Dic
 def _build_event_highlights(rows: List[Dict[str, Any]]) -> List[str]:
     highlights: List[str] = []
 
-    primary_event = _primary_damage_event(rows)
-    if primary_event:
-        event_type, row = primary_event
-        if event_type == "flood":
+    represented: set[str] = set()
+    for event, row in _important_logged_events(rows, limit=7, include_policy=True):
+        event_type = _event_kind(event)
+        represented.add(event_type)
+        title = _event_title(event, event_type, False)
+        severity = str(event.get("severity") or "n/a")
+        category = str(event.get("category") or event_type)
+        message = _event_message(event)
+        highlights.append(
+            "イベントログ: "
+            f"{_row_year(row)}年「{title}」（カテゴリ={category}, 重要度={severity}）。"
+            f"{message} 状態: {_row_context(row)}。"
+            f"{_compound_driver_text(row, event_type, False)}"
+        )
+
+    if "flood" not in represented:
+        row = next(iter(_top_rows_by_metric(rows, "Flood Damage", count=1, reverse=True)), None)
+        if row and (_to_float(row.get("Flood Damage")) or 0.0) > 0:
             highlights.append(
-                "最優先で評価する被害イベント: "
-                f"{_row_year(row)}年の洪水被害={_format_number(_to_float(row.get('Flood Damage')))}。"
-                f"政策状態は堤防={_format_number(_to_float(row.get('Levee Level')))}、"
-                f"防災能力={_format_number(_to_float(row.get('Resident capacity')), digits=2)}、"
-                f"高リスク住宅={_format_number(_to_float(row.get('risky_house_total')))}、"
-                f"田んぼダム={_format_number(_to_float(row.get('paddy_dam_area')))}。"
-            )
-        elif event_type == "crop":
-            highlights.append(
-                "最優先で評価する被害イベント: "
-                f"{_row_year(row)}年の収穫量低迷={_format_number(_to_float(row.get('Crop Yield')))}。"
-                f"政策状態は水量={_format_number(_to_float(row.get('available_water')))}、"
-                f"猛暑日={_format_number(_to_float(row.get('Hot Days')))}、"
-                f"高温耐性={_format_number(_to_float(row.get('High Temp Tolerance Level')))}、"
-                f"田んぼダム={_format_number(_to_float(row.get('paddy_dam_area')))}。"
-            )
-        else:
-            highlights.append(
-                "最優先で評価する負担イベント: "
-                f"{_row_year(row)}年の住民負担={_format_number(_to_float(row.get('Resident Burden')))}。"
+                "補助指標: 洪水被害が大きい年: "
+                f"{_row_context(row)}。この年は降雨だけでなく、高リスク住宅・堤防・田んぼダム・住民防災能力を突き合わせて評価する。"
             )
 
-    for row in _top_rows_by_metric(rows, "Flood Damage", count=3, reverse=True):
-        highlights.append(
-            "洪水被害が大きい年: "
-            f"{_row_context(row)}。"
-            "この年は降雨の強さだけでなく、堤防・防災能力・高リスク住宅の状態も合わせて読む。"
-        )
+    if "crop" not in represented:
+        row = next(iter(_top_rows_by_metric(rows, "Crop Yield", count=1, reverse=False)), None)
+        if row:
+            highlights.append(
+                "補助指標: 収穫量が低い年: "
+                f"{_row_context(row)}。この年は水量・暑さ・高温耐性・田んぼダム面積を突き合わせて評価する。"
+            )
 
-    for row in _top_rows_by_metric(rows, "Crop Yield", count=2, reverse=False):
-        highlights.append(
-            "収穫量が低い年: "
-            f"{_row_context(row)}。"
-            "この年は水量・猛暑日・高温耐性・田んぼダム面積を合わせて読む。"
-        )
+    if "burden" not in represented:
+        row = next(iter(_top_rows_by_metric(rows, "Resident Burden", count=1, reverse=True)), None)
+        if row and (_to_float(row.get("Resident Burden")) or 0.0) > 0:
+            highlights.append(
+                "補助指標: 住民負担が重い年: "
+                f"{_row_context(row)}。政策コスト、被害、住宅移転後の維持費が生活実感にどう出たかを見る。"
+            )
 
-    for row in _top_rows_by_metric(rows, "Resident Burden", count=2, reverse=True):
-        highlights.append(
-            "住民負担が重い年: "
-            f"{_row_context(row)}。"
-            "この年は政策コストと被害の両方が生活実感に出やすい。"
-        )
-
-    ecosystem_low = next(iter(_top_rows_by_metric(rows, "Ecosystem Level", count=1, reverse=False)), None)
-    ecosystem_high = next(iter(_top_rows_by_metric(rows, "Ecosystem Level", count=1, reverse=True)), None)
-    if ecosystem_low and ecosystem_high:
-        highlights.append(
-            "生態系の注目年: "
-            f"最低は{_row_year(ecosystem_low)}年の{_format_number(_to_float(ecosystem_low.get('Ecosystem Level')))}、"
-            f"最高は{_row_year(ecosystem_high)}年の{_format_number(_to_float(ecosystem_high.get('Ecosystem Level')))}。"
-            "被害イベント年と重なるかを確認して読む。"
-        )
+    if "ecosystem" not in represented:
+        ecosystem_low = next(iter(_top_rows_by_metric(rows, "Ecosystem Level", count=1, reverse=False)), None)
+        ecosystem_high = next(iter(_top_rows_by_metric(rows, "Ecosystem Level", count=1, reverse=True)), None)
+        if ecosystem_low and ecosystem_high:
+            highlights.append(
+                "補助指標: 生態系の注目年: "
+                f"最低は{_row_year(ecosystem_low)}年の{_format_number(_to_float(ecosystem_low.get('Ecosystem Level')))}、"
+                f"最高は{_row_year(ecosystem_high)}年の{_format_number(_to_float(ecosystem_high.get('Ecosystem Level')))}。"
+                "森林・水害・土地利用のつながりで評価する。"
+            )
 
     return highlights
 
@@ -870,6 +1161,43 @@ def _policy_short_label(key: str, is_english: bool) -> str:
     return POLICY_SHORT_LABELS.get(key, {}).get(language_key, POLICY_LABELS.get(key, key))
 
 
+def _policy_keys_for_event_type(event_type: str | None) -> tuple[str, ...]:
+    if event_type in {"flood", "climate"}:
+        return (
+            "house_migration_amount",
+            "dam_levee_construction_cost",
+            "paddy_dam_construction_cost",
+            "capacity_building_cost",
+        )
+    if event_type == "crop":
+        return (
+            "paddy_dam_construction_cost",
+            "agricultural_RnD_cost",
+            "planting_trees_amount",
+        )
+    if event_type == "ecosystem":
+        return (
+            "planting_trees_amount",
+            "paddy_dam_construction_cost",
+            "dam_levee_construction_cost",
+        )
+    if event_type in {"burden", "resident"}:
+        return (
+            "house_migration_amount",
+            "capacity_building_cost",
+            "dam_levee_construction_cost",
+            "paddy_dam_construction_cost",
+        )
+    return (
+        "house_migration_amount",
+        "dam_levee_construction_cost",
+        "paddy_dam_construction_cost",
+        "capacity_building_cost",
+        "agricultural_RnD_cost",
+        "planting_trees_amount",
+    )
+
+
 def _active_policy_labels(
     decision_var: Dict[str, Any],
     keys: Iterable[str],
@@ -930,6 +1258,37 @@ def _build_fallback_subheadline(req: IntermediateEvaluationRequest) -> str:
     slow_labels = _active_policy_labels(decision_var, SLOW_RESPONSE_POLICY_KEYS, is_english)
     fast_text = _format_label_list(fast_labels[:2], is_english)
     slow_text = _format_label_list(slow_labels[:2], is_english)
+    primary_event = _primary_damage_event(rows)
+    if primary_event:
+        event_type, event_row = primary_event
+        logged_event = _selected_event(event_row)
+        if logged_event:
+            title = _event_title(logged_event, event_type, is_english)
+            if is_english:
+                return (
+                    f"The {_row_year(event_row)} event '{title}' exposed whether policy timing could reduce climate, exposure, and livelihood pressures at the same time."
+                )
+            return (
+                f"{_row_year(event_row)}年の「{title}」では、気候外力・残ったリスク・政策のタイミング・暮らしへの波及が同時に政策評価を決めた。"
+            )
+        if event_type == "crop":
+            if is_english:
+                return f"The {_row_year(event_row)} harvest low exposed the combined pressure from water, heat, and farm measures."
+            return f"{_row_year(event_row)}年の収穫低迷は、水量・猛暑・農業対策が同時に問われた山場だった。"
+        if event_type == "ecosystem":
+            if is_english:
+                return f"The {_row_year(event_row)} ecosystem stress showed how land, water, and protection policies moved together."
+            return f"{_row_year(event_row)}年の生態系ストレスは、土地・水・防災政策のつながりを見る山場だった。"
+        if event_type in {"burden", "resident"}:
+            if is_english:
+                return f"The {_row_year(event_row)} resident-impact event showed where costs, exposure, and preparedness met daily life."
+            return f"{_row_year(event_row)}年の住民影響は、負担・リスク・備えが生活にどう重なったかを見る山場だった。"
+        if event_type == "flood":
+            if is_english:
+                return (
+                    f"The {_row_year(event_row)} flood peak tested the whole protection package, not just one defense."
+                )
+            return f"{_row_year(event_row)}年の洪水被害ピークでは、単独の防災策ではなく対策全体の組み合わせが問われた。"
 
     if is_english:
         if flood_event:
@@ -945,7 +1304,7 @@ def _build_fallback_subheadline(req: IntermediateEvaluationRequest) -> str:
         if fast_text and slow_text and flood_state == "improved" and ecosystem_state != "improved":
             return (
                 f"From {req.period_start_year} to {req.period_end_year}, {fast_text} showed up earlier, "
-                f"while {slow_text} remained harder to read in the data."
+                f"while {slow_text} remained harder to confirm in the data."
             )
         if slow_text and ecosystem_state == "improved":
             return (
@@ -986,7 +1345,7 @@ def _build_fallback_subheadline(req: IntermediateEvaluationRequest) -> str:
     if fast_text and slow_text and flood_state == "improved" and ecosystem_state != "improved":
         return (
             f"{req.period_start_year}年から{req.period_end_year}年では、{fast_text}が先に動き、"
-            f"{slow_text}はまだデータで読み切りにくかった。"
+            f"{slow_text}はまだデータで確認しにくかった。"
         )
     if slow_text and ecosystem_state == "improved":
         return (
@@ -1025,6 +1384,12 @@ def _build_fallback_expert_comment(req: IntermediateEvaluationRequest) -> str:
     if is_english:
         if event:
             event_type, row = event
+            logged_event = _selected_event(row)
+            if logged_event:
+                title = _event_title(logged_event, event_type, True)
+                return (
+                    f"The {_row_year(row)} '{title}' event shows that this result came from interacting climate, exposure, policy timing, and livelihood effects."
+                )
             if event_type == "flood":
                 return (
                     f"The {_row_year(row)} flood damage event was the real test of how much levees, relocation, and preparedness absorbed the shock."
@@ -1047,13 +1412,17 @@ def _build_fallback_expert_comment(req: IntermediateEvaluationRequest) -> str:
             )
         if slow_labels:
             return (
-                f"This 25-year window was still too short to read the full effect of "
+                f"This 25-year window was still too short to confirm the full effect of "
                 f"{_format_label_list(slow_labels[:2], True)}."
             )
         return "This 25-year window was shaped more by year-to-year swings than by any single policy turning point."
 
     if event:
         event_type, row = event
+        logged_event = _selected_event(row)
+        if logged_event:
+            title = _event_title(logged_event, event_type, False)
+            return f"{_row_year(row)}年の「{title}」は、気候・リスク・政策タイミング・暮らしへの波及が同時に出た政策評価の山場だった。"
         if event_type == "flood":
             return (
                 f"{_row_year(row)}年の洪水被害は、堤防・移転・防災能力が衝撃をどこまで受け止めたかを示す山場だった。"
@@ -1072,7 +1441,7 @@ def _build_fallback_expert_comment(req: IntermediateEvaluationRequest) -> str:
     if fast_labels:
         return f"この25年は、{_format_label_list(fast_labels[:2], False)}のような比較的早く効く対策が先に動きやすい期間だった。"
     if slow_labels:
-        return f"この25年は、{_format_label_list(slow_labels[:2], False)}のような時間差の大きい対策を読み切るにはまだ短い期間だった。"
+        return f"この25年は、{_format_label_list(slow_labels[:2], False)}のような時間差の大きい対策の効果を確認しきるにはまだ短い期間だった。"
     return "この25年は、大きな政策差よりも洪水被害や収穫量の年ごとの振れ幅が前に出た期間だった。"
 
 
@@ -1117,10 +1486,14 @@ def _build_policy_assessment(req: IntermediateEvaluationRequest) -> str:
     label = _pick_policy_assessment(decision_var, is_english)
     primary_event = _primary_damage_event(req.simulation_rows)
     event_type, event_row = primary_event if primary_event else (None, None)
+    logged_event = _selected_event(event_row)
     flood_row = event_row if event_type == "flood" else next(iter(_top_rows_by_metric(req.simulation_rows, "Flood Damage", count=1, reverse=True)), None)
     crop_row = event_row if event_type == "crop" else next(iter(_top_rows_by_metric(req.simulation_rows, "Crop Yield", count=1, reverse=False)), None)
 
     if is_english:
+        if logged_event and event_row:
+            title = _event_title(logged_event, event_type or "event", True)
+            return f"{label}: the {_row_year(event_row)} '{title}' event tested the combined timing of protection, exposure, burden, and environmental effects."
         if event_type == "crop" and crop_row:
             return (
                 f"{label}: the hardest harvest year was {_row_year(crop_row)}, with water at "
@@ -1136,6 +1509,9 @@ def _build_policy_assessment(req: IntermediateEvaluationRequest) -> str:
             )
         return label
 
+    if logged_event and event_row:
+        title = _event_title(logged_event, event_type or "event", False)
+        return f"{label}: {_row_year(event_row)}年の「{title}」で、防災・農業・住民負担・生態系への波及をまとめて試された。"
     if event_type == "crop" and crop_row:
         return (
             f"{label}: 収穫が最も落ちた{_row_year(crop_row)}年に、水量"
@@ -1161,6 +1537,16 @@ def _event_headline(req: IntermediateEvaluationRequest) -> str:
 
     event_type, row = event
     year = _row_year(row)
+    logged_event = _selected_event(row)
+    if logged_event:
+        title = _event_title(logged_event, event_type, is_english)
+        if is_english:
+            return f"{year} Event Revealed Linked Impacts"
+        title = re.sub(r"(の効果)?が見え始めました$", "", title).strip()
+        title = re.sub(r"(が発生|が普及|が完成|が向上|が低下|が縮小|に到達).*?$", "", title).strip()
+        title = re.sub(r"(しました|しています|ます|です)[。.]?$", "", title).strip()
+        title = title or _event_title(None, event_type, False)
+        return f"{year}年、{title}の複合影響"
     if is_english:
         if event_type == "flood":
             return f"{year} Flood Tested Local Defenses"
@@ -1183,6 +1569,34 @@ def _event_subheadline(req: IntermediateEvaluationRequest) -> str:
 
     event_type, row = event
     decision_var = req.decision_var.model_dump()
+    logged_event = _selected_event(row)
+    if logged_event:
+        title = _event_title(logged_event, event_type, is_english)
+        labels = _active_policy_labels(
+            decision_var,
+            _policy_keys_for_event_type(event_type),
+            is_english,
+        )
+        policy_text = _format_label_list(labels[:3], is_english)
+        if is_english:
+            if policy_text:
+                if event_type == "crop":
+                    return f"The '{title}' event tested whether {policy_text} softened heat and water stress before the harvest fell."
+                if event_type == "ecosystem":
+                    return f"The '{title}' event tested whether {policy_text} strengthened the land and water base or left ecosystem stress in place."
+                if event_type in {"burden", "resident"}:
+                    return f"The '{title}' event tested whether {policy_text} delivered enough protection to outweigh household burden."
+                return f"The '{title}' event tested whether {policy_text} reduced exposure, burden, agriculture, and ecosystem pressure together."
+            return f"The '{title}' event exposed linked climate, exposure, burden, agriculture, and ecosystem pressure."
+        if policy_text:
+            if event_type == "crop":
+                return f"「{title}」では、{policy_text}が水不足と暑さをどこまで和らげ、収穫低迷を抑えたかが評価の中心になった。"
+            if event_type == "ecosystem":
+                return f"「{title}」では、{policy_text}が土地と水の土台を強めたのか、生態系ストレスを残したのかが評価の中心になった。"
+            if event_type in {"burden", "resident"}:
+                return f"「{title}」では、{policy_text}による守りの利益が住民負担を上回ったかが評価の中心になった。"
+            return f"「{title}」では、{policy_text}がリスク・負担・農業・生態系を同時にどこまで抑えたかが評価の中心になった。"
+        return f"「{title}」では、気候外力・リスク・負担・農業・生態系が重なり、政策の不足が見えやすくなった。"
     if is_english:
         if event_type == "flood":
             labels = _active_policy_labels(
@@ -1266,6 +1680,18 @@ def _event_lead(req: IntermediateEvaluationRequest) -> str:
         return _build_fallback_subheadline(req)
 
     event_type, row = event
+    logged_event = _selected_event(row)
+    if logged_event:
+        title = _event_title(logged_event, event_type, is_english)
+        if is_english:
+            return (
+                f"The clearest feedback is the {_row_year(row)} event '{title}': "
+                f"{_compound_driver_text(row, event_type, True)}"
+            )
+        return (
+            f"評価の中心は{_row_year(row)}年の「{title}」で、"
+            f"{_compound_driver_text(row, event_type, False)}"
+        )
     if is_english:
         if event_type == "flood":
             return (
@@ -1317,6 +1743,12 @@ def _event_body_sentence(req: IntermediateEvaluationRequest) -> str:
         )
 
     event_type, row = event
+    logged_event = _selected_event(row)
+    if logged_event:
+        title = _event_title(logged_event, event_type, is_english)
+        if is_english:
+            return f"Main driver: the {_row_year(row)} '{title}' event was not a single-cause result. {_compound_driver_text(row, event_type, True)}"
+        return f"主因: {_row_year(row)}年の「{title}」は単独要因ではなく、{_compound_driver_text(row, event_type, False)}"
     if is_english:
         if event_type == "flood":
             return (
@@ -1362,6 +1794,69 @@ def _policy_factor_sentence(req: IntermediateEvaluationRequest) -> str:
     event_type = event[0] if event else None
     row = event[1] if event else req.simulation_rows[-1]
     first_row = req.simulation_rows[0]
+    logged_event = _selected_event(row)
+
+    if logged_event:
+        active_labels = _active_policy_labels(
+            decision_var,
+            _policy_keys_for_event_type(event_type),
+            is_english,
+        )
+        if is_english:
+            if active_labels:
+                if event_type in {"flood", "climate"}:
+                    return (
+                        "Policies that actually moved: "
+                        f"{_format_label_list(active_labels[:4], True)} changed different parts of the same risk chain, but the event shows whether exposure, defenses, and preparedness were strong enough by that year."
+                    )
+                if event_type == "crop":
+                    return (
+                        "Policies that actually moved: "
+                        f"{_format_label_list(active_labels[:4], True)} mattered only if they cushioned heat and water stress before the harvest low; otherwise the policy timing was too weak for farm stability."
+                    )
+                if event_type == "ecosystem":
+                    return (
+                        "Policies that actually moved: "
+                        f"{_format_label_list(active_labels[:4], True)} affected land, water, and habitat pathways, so the event tests whether ecosystem recovery was real or only offset by remaining flood pressure."
+                    )
+                if event_type in {"burden", "resident"}:
+                    return (
+                        "Policies that actually moved: "
+                        f"{_format_label_list(active_labels[:4], True)} created protection benefits and costs at the same time, so the event tests whether residents felt relief or only added burden."
+                    )
+                return (
+                    "Policies that actually moved: "
+                    f"{_format_label_list(active_labels[:4], True)} produced an output, but the evaluation depends on whether later damage, burden, agriculture, and ecosystem indicators improved."
+                )
+            return (
+                "Policies that actually moved: no major policy lever clearly absorbed the event, so the outcome reflected exposure and climate pressure more directly."
+            )
+        if active_labels:
+            if event_type in {"flood", "climate"}:
+                return (
+                    "実際に効いた政策: "
+                    f"{_format_label_list(active_labels[:4], False)}はリスクの母数・守りの強さ・住民の備えを別々の経路で動かしたが、このイベントではそれが被害を抑える水準まで届いたかが問われた。"
+                )
+            if event_type == "crop":
+                return (
+                    "実際に効いた政策: "
+                    f"{_format_label_list(active_labels[:4], False)}は水不足と暑さを和らげる材料になったが、収穫低迷が残るなら量かタイミングが農業の安定には足りなかった。"
+                )
+            if event_type == "ecosystem":
+                return (
+                    "実際に効いた政策: "
+                    f"{_format_label_list(active_labels[:4], False)}は土地・水・生態系の土台を動かす政策だが、このイベントでは回復よりも残った水害圧力や土地利用の影響が前に出たかが焦点になった。"
+                )
+            if event_type in {"burden", "resident"}:
+                return (
+                    "実際に効いた政策: "
+                    f"{_format_label_list(active_labels[:4], False)}は守りと費用を同時に生むため、このイベントでは住民が安心を感じたのか、負担だけが先に見えたのかが評価の分かれ目になった。"
+                )
+            return (
+                "実際に効いた政策: "
+                f"{_format_label_list(active_labels[:4], False)}は実施されたが、評価は達成そのものではなく、その後の被害・負担・農業・生態系の改善に表れたかで決まる。"
+            )
+        return "実際に効いた政策: 目立つ政策の受け止めが弱く、気候外力や残ったリスクが結果に直接出やすい状態だった。"
 
     if is_english:
         if event_type == "flood":
@@ -1512,30 +2007,42 @@ def _chart_reference_sentence(req: IntermediateEvaluationRequest) -> str:
     event = _primary_damage_event(req.simulation_rows)
     is_english = req.language.lower().startswith("en")
     event_type = event[0] if event else None
+    row = event[1] if event else None
+    logged_event = _selected_event(row)
+
+    if logged_event and event_type:
+        charts = _event_chart_names(event_type, is_english)
+        if is_english:
+            return (
+                f"Evaluation point: the event-log item can improve in one indicator while leaving burden or delay in another. Check {charts}."
+            )
+        return (
+            f"評価上の注意: イベントログの出来事は単一の指標だけでは判断できず、ある指標で改善しても別の指標で負担や遅れが残る。見るべきグラフ: {charts}。"
+        )
 
     if is_english:
         if event_type == "crop":
             return (
-                "Critical read: support measures moved, but the harvest still fell, so the scale or timing was not enough. Check (Crop Yield), (Available Water), and (Paddy Dam Area)."
+                "Evaluation point: support measures moved, but the harvest still fell, so the scale or timing was not enough. Check (Crop Yield), (Available Water), and (Paddy Dam Area)."
             )
         if event_type == "flood":
             return (
-                "Critical read: intermediate protections moved, but the flood peak still arrived, so the scale or timing was not enough. Check (Flood Damage), (High-Risk Households), (Levee Level), and (Paddy Dam Area)."
+                "Evaluation point: intermediate protections moved, but the flood peak still arrived, so the scale or timing was not enough. Check (Flood Damage), (High-Risk Households), (Levee Level), and (Paddy Dam Area)."
             )
         return (
-            "Critical read: judge the event by whether policy had become real protection by that year. Check (Resident Burden) and the related damage graphs."
+            "Evaluation point: the event depends on whether policy had become real protection by that year. Check (Resident Burden) and the related damage graphs."
         )
 
     if event_type == "crop":
         return (
-            "批判的に見ると、支える政策は動いていても収穫低迷は起きており、政策の量かタイミングが水不足・暑さに追いつかなかった。見るべきグラフ: (収穫量)(利用可能水量)(田んぼダム面積)。"
+            "評価上の注意: 支える政策は動いていても収穫低迷は起きており、政策の量かタイミングが水不足・暑さに追いつかなかった。見るべきグラフ: (収穫量)(利用可能水量)(田んぼダム面積)。"
         )
     if event_type == "flood":
         return (
-            "批判的に見ると、中間指標は改善していても洪水被害の山場は残っており、政策の量かタイミングが強い雨に追いつかなかった。見るべきグラフ: (洪水被害)(高リスク住宅数)(堤防レベル)(田んぼダム面積)(住民防災能力)。"
+            "評価上の注意: 中間指標は改善していても洪水被害の山場は残っており、政策の量かタイミングが強い雨に追いつかなかった。見るべきグラフ: (洪水被害)(高リスク住宅数)(堤防レベル)(田んぼダム面積)(住民防災能力)。"
         )
     return (
-        "批判的に見ると、政策の効果より先に住民側の負担が表に出ている。見るべきグラフ: (住民負担)(洪水被害)(財政コスト)。"
+        "評価上の注意: 政策の効果より先に住民側の負担が表に出ている。見るべきグラフ: (住民負担)(洪水被害)(財政コスト)。"
     )
 
 
@@ -1557,9 +2064,9 @@ def _format_article_body_sections(text: str, is_english: bool) -> str:
         return ""
 
     labels = (
-        ("Main driver:", "Policies that actually moved:", "Critical read:")
+        ("Main driver:", "Policies that actually moved:", "Evaluation point:")
         if is_english
-        else ("主因:", "実際に効いた政策:", "批判的に見ると")
+        else ("主因:", "実際に効いた政策:", "評価上の注意:")
     )
 
     for label in labels[1:]:
@@ -1616,14 +2123,14 @@ def _article_body_lacks_clear_point(text: str, is_english: bool) -> bool:
         return not (
             "main driver" in lowered
             and ("policies that actually moved" in lowered or "policy effect" in lowered)
-            and ("critical read" in lowered or "takeaway" in lowered or "what this shows" in lowered)
+            and ("evaluation point" in lowered or "critical read" in lowered or "takeaway" in lowered or "what this shows" in lowered)
             and "check (" in lowered
         )
 
     return not (
         "主因" in text
         and ("実際に効いた政策" in text or "政策効果" in text)
-        and ("批判的" in text or "伝えたいこと" in text or "読み取るべき" in text)
+        and ("評価上の注意" in text or "批判的" in text or "伝えたいこと" in text)
         and "見るべきグラフ" in text
     )
 
@@ -1765,6 +2272,31 @@ def _is_disallowed_summary_sentence(text: str, is_english: bool) -> bool:
     return _has_generic_flat_summary(text, is_english) or _has_endpoint_comparison_summary(text, is_english)
 
 
+def _has_weak_reading_phrase(text: str, is_english: bool) -> bool:
+    if not text:
+        return False
+    lowered = text.lower()
+    if is_english:
+        return any(
+            phrase in lowered
+            for phrase in (
+                "read this as",
+                "should be read",
+                "must be read",
+                "read through",
+            )
+        )
+    return any(
+        phrase in text
+        for phrase in (
+            "として読む",
+            "読む必要",
+            "読むべき",
+            "読み取るべき",
+        )
+    )
+
+
 def _strip_generic_flat_sentences(text: str, event_year: str, is_english: bool) -> str:
     if not text:
         return ""
@@ -1806,8 +2338,15 @@ def _ensure_event_focused_article(
         if (
             _article_body_looks_too_numeric(focused.get("article_body", ""))
             or _article_body_lacks_clear_point(focused.get("article_body", ""), is_english)
+            or _has_weak_reading_phrase(focused.get("article_body", ""), is_english)
         ):
             focused["article_body"] = _build_readable_article_body(req)
+        if _has_weak_reading_phrase(focused.get("subheadline", ""), is_english):
+            focused["subheadline"] = _event_subheadline(req) or _build_fallback_subheadline(req)
+        if _has_weak_reading_phrase(focused.get("lead", ""), is_english):
+            focused["lead"] = _event_lead(req)
+        if _has_weak_reading_phrase(focused.get("expert_comment", ""), is_english):
+            focused["expert_comment"] = _build_fallback_expert_comment(req)
         focused["article_body"] = _format_article_body_sections(focused.get("article_body", ""), is_english)
         return _ensure_distinct_headline_and_subheadline(focused, req)
 
@@ -1825,15 +2364,26 @@ def _ensure_event_focused_article(
         focused["lead"] = _event_lead(req)
 
     focused["policy_assessment"] = _build_policy_assessment(req)
-    if _is_disallowed_summary_sentence(focused.get("expert_comment", ""), is_english):
+    if (
+        _is_disallowed_summary_sentence(focused.get("expert_comment", ""), is_english)
+        or _has_weak_reading_phrase(focused.get("expert_comment", ""), is_english)
+    ):
         focused["expert_comment"] = _build_fallback_expert_comment(req)
 
     event_sentence = _event_body_sentence(req)
     body = _strip_generic_flat_sentences(focused.get("article_body", ""), event_year, is_english)
-    if _article_body_looks_too_numeric(body) or _article_body_lacks_clear_point(body, is_english):
+    if (
+        _article_body_looks_too_numeric(body)
+        or _article_body_lacks_clear_point(body, is_english)
+        or _has_weak_reading_phrase(body, is_english)
+    ):
         body = _build_readable_article_body(req)
     elif event_sentence and event_year not in body:
         body = f"{event_sentence} {body}".strip()
+    if _has_weak_reading_phrase(focused.get("subheadline", ""), is_english):
+        focused["subheadline"] = _event_subheadline(req)
+    if _has_weak_reading_phrase(focused.get("lead", ""), is_english):
+        focused["lead"] = _event_lead(req)
     focused["article_body"] = body or _build_readable_article_body(req) or focused.get("article_body", "")
     focused["article_body"] = _format_article_body_sections(focused["article_body"], is_english)
 
@@ -1862,10 +2412,10 @@ Policies:
 How these policies work in the simulator:
 {chr(10).join(mechanism_notes)}
 
-Primary damage event to evaluate first:
+Primary event from the event log to evaluate first:
 {primary_event_focus}
 
-Policy feedback at that event:
+Policy feedback and compound effects at that event:
 {chr(10).join(policy_event_feedback)}
 
 Early/mid/late phase comparison:
@@ -1893,10 +2443,10 @@ Return JSON only.
 政策の効き方メモ:
 {chr(10).join(mechanism_notes)}
 
-最優先で評価する被害イベント:
+最優先で評価するイベントログ由来の重要イベント:
 {primary_event_focus}
 
-その被害イベントに対する政策フィードバック:
+そのイベントに対する政策フィードバックと複合影響:
 {chr(10).join(policy_event_feedback)}
 
 前半・中盤・後半の比較:
@@ -1939,11 +2489,15 @@ def _generate_expert_comment(
 
     response_text = _extract_message_content(response)
     payload = _extract_json_object(response_text)
-    generated = ""
     if isinstance(payload, dict):
         generated = _to_sentence(payload.get("expert_comment"), is_english)
-    if not generated:
-        generated = _to_sentence(response_text, is_english)
+        return generated or fallback_comment
+
+    cleaned_response = response_text.strip()
+    if cleaned_response.startswith("{") or cleaned_response.startswith("```") or "```" in cleaned_response:
+        return fallback_comment
+
+    generated = _to_sentence(cleaned_response, is_english)
     return generated or fallback_comment
 
 
@@ -1999,10 +2553,10 @@ Policies selected at the beginning of this period:
 How each policy works in this simulator:
 {chr(10).join(mechanism_notes)}
 
-Primary damage event to evaluate first:
+Primary event from the event log to evaluate first:
 {primary_event_focus}
 
-Policy feedback at that event:
+Policy feedback and compound effects at that event:
 {chr(10).join(policy_event_feedback)}
 
 Early/mid/late phase comparison:
@@ -2030,8 +2584,11 @@ Output requirements:
 - Make lead explain what the major event year and policy state reveal for the player
 - Use at least one event or sharp change from the middle of the 25-year period in subheadline, lead, or article_body
 - Make article_body explain the cause-and-effect in plain language. Do not list many metric values there.
-- In article_body, avoid exact numbers and change amounts; reference useful chart names in parentheses instead.
-- If the primary damage event exists, make it the main frame of the report. Do not say the indicators were flat/stable as the main conclusion.
+	- In article_body, avoid exact numbers and change amounts; reference useful chart names in parentheses instead.
+	- If a primary event exists, make it the main frame of the report. Do not say the indicators were flat/stable as the main conclusion.
+	- Use the event log as evidence. Do not default to flood damage if agriculture, ecosystem, budget, resident, climate, or policy-effect events are more important.
+	- Explain compound impacts: climate pressure, exposed assets, policy timing, household burden, agriculture, and ecosystem effects can interact.
+- Do not use weak framing such as "read this as" or "should be read"; state what worked, what fell short, and what remains hard to confirm as an evaluation.
 - Do not use endpoint-comparison wording such as "improved from A to B" or "worsened from A to B".
 - Avoid generic phrases about short-term vs slow policies unless the yearly data directly supports them
 - expert_comment must be one sharp sentence
@@ -2052,10 +2609,10 @@ Output requirements:
 このシミュレータにおける政策の効き方メモ:
 {chr(10).join(mechanism_notes)}
 
-最優先で評価する被害イベント:
+最優先で評価するイベントログ由来の重要イベント:
 {primary_event_focus}
 
-その被害イベントに対する政策フィードバック:
+そのイベントに対する政策フィードバックと複合影響:
 {chr(10).join(policy_event_feedback)}
 
 前半・中盤・後半の比較:
@@ -2079,20 +2636,23 @@ Output requirements:
 - JSON オブジェクトのみを返す
 - headline と subheadline は同じ文章にしない
 - headline は短く、「何が山場だったか」が一目で分かる結論にする
-- subheadline は headline を繰り返さず、「なぜそう読めるか」「どの政策効果を見るべきか」を1文で補足する
+- subheadline は headline を繰り返さず、「なぜその結論になるか」「どの政策効果を評価すべきか」を1文で補足する
 - 本文は3〜5文程度
 - lead は、重大イベント年の被害と政策状態から読み手に役立つフィードバックを1文で書く
 - subheadline, lead, article_body のどれかで、25年の中間で起きたイベントまたは急変年を少なくとも1つ取り上げる
-- 重大イベントを取り上げる時は、その年の堤防・防災能力・高リスク住宅・田んぼダム・高温耐性など政策状態も一緒に読む
-- article_body は、指標の数字を並べず、「何が要因で、何を読み取るべきか」を直感的に説明する
+- 重大イベントを取り上げる時は、その年の堤防・防災能力・高リスク住宅・田んぼダム・高温耐性など政策状態と結びつけて評価する
+- article_body は、指標の数字を並べず、「何が要因で、政策がどこまで効き、どこが不足したか」を直感的に説明する
 - article_body は、「主因は何か」「政策は効いたのか／効きにくかったのか」「結局何を伝えたいのか」が分かる2〜4文にする
 - article_body では、実際に効いた政策、どう効いたか、逆にどの政策は足りなかったかを読者が直感的に分かる文章で書く
 - article_body の具体的な数字や変化量は書かず、詳しい値や年ごとの動きは括弧内の指標グラフで確認できると自然に案内する
 - article_body では、参照すべきグラフ名を必ず括弧で書く。例: (収穫量)(利用可能水量)
-- article_body では指標名をただ羅列せず、原因・政策の効き方・批判的な読み取りの3点を中心に書く
-- 最優先の被害イベントがある場合、それをレポートの主軸にする。「指標は横ばい・安定」だけを主結論にしない
+	- article_body では指標名をただ羅列せず、原因・政策の効き方・評価上の注意の3点を中心に書く
+	- 最優先の重要イベントがある場合、それをレポートの主軸にする。「指標は横ばい・安定」だけを主結論にしない
+	- イベントログを証拠として使う。農業・生態系・予算・住民・気候・政策効果のイベントが重要な場合、洪水被害に自動的に寄せない
+	- 複合的な影響を説明する。気候外力、リスクにさらされた対象、政策のタイミング、住民負担、農業、生態系は相互に影響しうる
 - 「収穫量はAからBへ改善した」「洪水被害はAからBへ悪化した」のような期間始点・終点の比較文は禁止
 - 年次データに基づかない「短期で効く」「時間差がある」だけの定型的な総括は避ける
+- 「〜として読む」「読む必要がある」「読み取るべき」のような整理止まりの表現は禁止。政策が効いた点、足りない点、確認しにくい点を評価として言い切る
 - expert_comment は、識者がズバッと言う1文にする
 - 新聞一面の語り口で書く
 - 中学生にも分かるやさしい日本語にする
