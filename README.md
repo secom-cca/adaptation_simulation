@@ -86,7 +86,7 @@ This project uses **gemma4:e2b** via **Ollama** for AI-agent features. Please se
 1. **Install Ollama**: Download and install from [ollama.com](https://ollama.com).
 2. **Download Gemma Model**: Run the following command in your terminal to pull the required model:
    ```bash
-   ollama pull gemma2:2b
+   ollama pull gemma4:e2b
 ---
 
 ## 🚀 Usage Options
