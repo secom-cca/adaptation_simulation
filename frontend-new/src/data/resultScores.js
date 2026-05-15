@@ -37,7 +37,7 @@ export const SCORE_BOUNDS = {
   },
   ecosystem: {
     bad: 67.5,
-    good: 74.5,
+    good: 80.0,
   },
 }
 

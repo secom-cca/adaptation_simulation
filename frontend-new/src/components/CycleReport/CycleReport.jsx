@@ -1,6 +1,5 @@
 ﻿import React from 'react'
 import { useTranslation } from '../../contexts/LanguageContext.jsx'
-import { fmtY } from '../../data/indicators.js'
 import { scoresForRow, round1 } from '../../data/resultScores.js'
 import s from '../../pages/ConsequencePage.module.css'
 import own from './CycleReport.module.css'
@@ -8,26 +7,94 @@ import own from './CycleReport.module.css'
 const REPORT_COLOR = '#5a6a7a'
 
 const METRICS = [
-  { key: 'floodScore', rawKey: 'Flood Damage JPY', icon: '🌊', label: '洪水被害スコア', good: (v, p) => p != null && v > p },
-  { key: 'cropScore', rawKey: 'Crop Yield', icon: '🌾', label: '農作物生産スコア', good: (v, p) => p != null && v > p },
-  { key: 'ecosystemScore', rawKey: 'Ecosystem Level', icon: '🌿', label: '生態系スコア', good: (v, p) => p != null && v > p },
+  {
+    key: 'floodScore',
+    icon: '🌊',
+    label: '洪水被害スコア',
+    rawLabel: '25年累計',
+    rawValue: summary => formatJpyShort(summary.floodDamageTotal),
+    good: (v, p) => p != null && v > p,
+  },
+  {
+    key: 'cropScore',
+    icon: '🌾',
+    label: '農作物生産スコア',
+    rawLabel: '25年平均',
+    rawValue: summary => fmtNumber(summary.cropYieldAvg, 1),
+    good: (v, p) => p != null && v > p,
+  },
+  {
+    key: 'ecosystemScore',
+    icon: '🌿',
+    label: '生態系スコア',
+    rawLabel: '25年平均',
+    rawValue: summary => fmtNumber(summary.ecosystemAvg, 1),
+    good: (v, p) => p != null && v > p,
+  },
 ]
 
 function avg(rows, key) {
   if (!rows.length) return 0
-  return rows.reduce((sum, r) => sum + (r[key] ?? 0), 0) / rows.length
+  return rows.reduce((sum, r) => sum + (Number(r[key]) || 0), 0) / rows.length
+}
+
+function sum(rows, key) {
+  return rows.reduce((total, r) => total + (Number(r[key]) || 0), 0)
+}
+
+function fmtNumber(value, digits = 0) {
+  return Number(value || 0).toLocaleString(undefined, {
+    maximumFractionDigits: digits,
+  })
+}
+
+function formatJpyShort(value) {
+  const amount = Number(value) || 0
+  if (amount >= 100_000_000) return `${(amount / 100_000_000).toFixed(1)}億円`
+  if (amount >= 10_000) return `${Math.round(amount / 10_000).toLocaleString()}万円`
+  return `${Math.round(amount).toLocaleString()}円`
+}
+
+function summarizeCycleRows(rows = [], year) {
+  const lastRow = rows[rows.length - 1] ?? {}
+
+  const floodDamageTotal = sum(rows, 'Flood Damage JPY')
+  const cropYieldAvg = avg(rows, 'Crop Yield')
+  const ecosystemAvg = avg(rows, 'Ecosystem Level')
+
+  return {
+    floodDamageTotal,
+    cropYieldAvg,
+    ecosystemAvg,
+    scoreRow: {
+      ...lastRow,
+
+      // サイクル代表値に差し替え
+      // 洪水：25年累計
+      // 農作物：25年平均
+      // 生態系：25年平均
+      'Flood Damage JPY': floodDamageTotal,
+      'Crop Yield': cropYieldAvg,
+      'Ecosystem Level': ecosystemAvg,
+
+      year,
+    },
+  }
 }
 
 export default function CycleReport({ history, year, cycle, llmCommentary, llmLoading, onViewDetails }) {
   const { t } = useTranslation()
   const cycleStart = year - 25
   const cycleEnd = year - 1
+
   const thisRows = history.slice(-25)
   const prevRows = history.length > 25 ? history.slice(-50, -25) : []
-  const lastRow = thisRows[thisRows.length - 1] ?? {}
-  const prevLastRow = prevRows[prevRows.length - 1] ?? null
-  const currentScores = scoresForRow(lastRow, cycleEnd)
-  const prevScores = prevLastRow ? scoresForRow(prevLastRow, cycleStart - 1) : null
+
+  const cycleSummary = summarizeCycleRows(thisRows, cycleEnd)
+  const prevSummary = prevRows.length ? summarizeCycleRows(prevRows, cycleStart - 1) : null
+
+  const currentScores = scoresForRow(cycleSummary.scoreRow, cycleEnd)
+  const prevScores = prevSummary ? scoresForRow(prevSummary.scoreRow, cycleStart - 1) : null
 
   return (
     <div className={s.page} style={{ '--event-color': REPORT_COLOR }}>
@@ -46,16 +113,22 @@ export default function CycleReport({ history, year, cycle, llmCommentary, llmLo
               const prev = prevScores ? prevScores[m.key] : null
               const delta = prev != null ? val - prev : null
               const isGood = m.good(val, prev)
+
               return (
                 <div key={m.key} className={own.stat}>
                   <span className={own.statIcon}>{m.icon}</span>
                   <span className={own.statLabel}>{m.label}</span>
                   <span className={own.statVal}>{round1(val).toFixed(1)}点</span>
+
                   {delta != null && (
                     <span className={`${own.statDelta} ${isGood ? own.good : own.bad}`}>
                       {delta > 0 ? '+' : ''}{round1(delta).toFixed(1)}
                     </span>
                   )}
+
+                  <span className={own.statRaw}>
+                    {m.rawLabel}: {m.rawValue(cycleSummary)}
+                  </span>
                 </div>
               )
             })}
