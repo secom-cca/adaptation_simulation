@@ -5,7 +5,6 @@ import {
 } from 'recharts'
 import { useTranslation } from '../contexts/LanguageContext.jsx'
 import { CHART_KEYS, fmtY } from '../data/indicators.js'
-import CausalExplorer from '../components/CausalExplorer/CausalExplorer.jsx'
 import s from './AnalysisPage.module.css'
 
 const CYCLE_COLORS = ['#3d6b8f', '#4a8c5c', '#c07a3a']
@@ -36,26 +35,22 @@ export default function AnalysisPage({ history }) {
 
   return (
     <div className={s.page}>
-
-      {/* ── Left: CLD diagram ── */}
       <div className={s.cldPanel}>
         <div className={s.panelHeader}>
           <span className={s.panelTitle}>{t('analysis.cld.title')}</span>
           <span className={s.panelSub}>{t('analysis.cld.sub')}</span>
         </div>
         <div className={s.cldWrap}>
-          <CausalExplorer embedded />
+          <img className={s.systemImage} src="/system_dynamics_ja2.png" alt="システムダイナミクス図" />
         </div>
       </div>
 
-      {/* ── Right: Scatter plot ── */}
       <div className={s.scatterPanel}>
         <div className={s.panelHeader}>
           <span className={s.panelTitle}>{t('analysis.scatter.title')}</span>
           <span className={s.panelSub}>{t('analysis.scatter.sub')}</span>
         </div>
 
-        {/* axis selectors */}
         <div className={s.selectors}>
           <div className={s.selectorGroup}>
             <span className={s.selectorLabel}>{t('analysis.scatter.y')}</span>
@@ -79,9 +74,8 @@ export default function AnalysisPage({ history }) {
           </div>
         </div>
 
-        {/* legend */}
         <div className={s.legend}>
-          {['2026–2050', '2051–2075', '2076–2100'].map((label, i) => (
+          {['2026-2050', '2051-2075', '2076-2100'].map((label, i) => (
             <span key={i} className={s.legendItem}>
               <span className={s.legendDot} style={{ background: CYCLE_COLORS[i] }} />
               {label}
@@ -130,7 +124,6 @@ export default function AnalysisPage({ history }) {
           )}
         </div>
       </div>
-
     </div>
   )
 }

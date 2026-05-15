@@ -36,6 +36,39 @@ const POLICY_PREVIEW_IMAGES = {
   },
 }
 
+const BACKGROUND_VIDEO_BY_TIER = {
+  T1D1: '/bg.mp4',
+  T1D2: '/videos/T1D2.mp4',
+  T1D3: '/videos/T1D3.mp4',
+  T2D1: '/videos/T2D1.mp4',
+  T2D2: '/bg.mp4',
+  T2D3: '/videos/T2D3.mp4',
+  T3D1: '/videos/T3D1.mp4',
+  T3D2: '/videos/T3D2.mp4',
+  T3D3: '/videos/T3D3.mp4',
+}
+
+function cumulativeSliderPoints(policyHistory = [], key) {
+  return policyHistory.reduce((sum, entry) => sum + (Number(entry?.sliders?.[key]) || 0), 0)
+}
+
+function tierFromPoints(points) {
+  if (points >= 10) return 3
+  if (points >= 5) return 2
+  return 1
+}
+
+function backgroundVideoForState(policyHistory = [], sliders = {}) {
+  const treePoints = cumulativeSliderPoints(policyHistory, 'planting_trees_amount')
+    + (Number(sliders.planting_trees_amount) || 0)
+  const defensePoints = cumulativeSliderPoints(policyHistory, 'dam_levee_construction_cost')
+    + cumulativeSliderPoints(policyHistory, 'paddy_dam_construction_cost')
+    + (Number(sliders.dam_levee_construction_cost) || 0)
+    + (Number(sliders.paddy_dam_construction_cost) || 0)
+  const key = `T${tierFromPoints(treePoints)}D${tierFromPoints(defensePoints)}`
+  return BACKGROUND_VIDEO_BY_TIER[key] ?? BACKGROUND_VIDEO_BY_TIER.T1D1
+}
+
 export default function GamePage({ sim }) {
   const { gameState, advanceCycle, setGameView, requestResidentInterview } = sim
   const {
@@ -89,6 +122,7 @@ export default function GamePage({ sim }) {
   const goalText = t(`goal.${mode}.${Math.min(cycle, 3)}`)
   const budgetRows = buildBudgetRows(policyHistory, history, { year, sliders })
   const currentBudgetRow = budgetRows[budgetRows.length - 1] ?? null
+  const backgroundVideo = backgroundVideoForState(policyHistory, sliders)
 
   const handleSliderChange = useCallback((key, value) => {
     setSliders(prev => {
@@ -199,7 +233,19 @@ export default function GamePage({ sim }) {
       <div className={`${s.mainArea} ${view !== 'simple' ? s.detailMode : ''}`}>
         {view === 'simple' && (
           <>
-            <video className={s.bgCanvas} src="/bg.mp4" autoPlay loop muted playsInline />
+            <video
+              key={backgroundVideo}
+              className={s.bgCanvas}
+              src={backgroundVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              onError={event => {
+                event.currentTarget.onerror = null
+                event.currentTarget.src = '/bg.mp4'
+              }}
+            />
             <BasinStatus currentValues={currentValues} history={history} budgetRow={currentBudgetRow} />
             <div className={s.rightArea}>
               <ScenarioBriefing year={year} cycle={cycle} />

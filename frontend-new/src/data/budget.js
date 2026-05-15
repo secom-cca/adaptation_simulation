@@ -1,4 +1,4 @@
-export const MANA_JPY_PER_YEAR = 20_000_000
+﻿export const MANA_JPY_PER_YEAR = 20_000_000
 export const TURN_YEARS = 25
 export const BASE_POLICY_BUDGET_MANA = 10
 export const MIN_POLICY_BUDGET_MANA = 0
@@ -32,26 +32,26 @@ export const POLICY_MANA_RULES = {
     min: 1,
     maxPerTurn: null,
     cumulativeCap: null,
-    summaryJa: '時間差で保水力と生態系を改善。洪水被害はゆっくり下がる',
-    summaryEn: 'Delayed watershed and ecosystem gains; flood reduction is gradual',
+    summaryJa: '時間差で保水力と生態系を支えます。',
+    summaryEn: 'Delayed retention and habitat support.',
   },
   house_migration_amount: {
-    labelJa: '移住・適応支援',
+    labelJa: '住宅移転',
     labelEn: 'Relocation support',
     min: 1,
     maxPerTurn: null,
     cumulativeCap: 20,
-    summaryJa: '浸水リスクを直接減らす。累計1マナ超から将来インフラ負担が発生',
-    summaryEn: 'Directly lowers exposure; infra penalty starts after 1 cumulative mana',
+    summaryJa: '洪水リスクの高い地域に残る住宅を減らします。',
+    summaryEn: 'Directly lowers housing exposure.',
   },
   dam_levee_construction_cost: {
-    labelJa: '堤防・洪水対策',
+    labelJa: '堤防・河川改修',
     labelEn: 'Levee / river works',
     min: 5,
     maxPerTurn: null,
     cumulativeCap: null,
-    summaryJa: '最低5マナで事業化。20mm強化で180mm豪雨被害を約25%削減',
-    summaryEn: 'Minimum 5 mana; +20mm cuts 180mm-rain overflow by about 25%',
+    summaryJa: '最低5ポイントから実施する大規模治水対策です。',
+    summaryEn: 'Minimum 5 points; large flood-control works.',
   },
   paddy_dam_construction_cost: {
     labelJa: '田んぼダム',
@@ -59,48 +59,53 @@ export const POLICY_MANA_RULES = {
     min: 1,
     maxPerTurn: null,
     cumulativeCap: 6,
-    summaryJa: '累計6マナで最大。180mm豪雨の越流水を最大約13%削減',
-    summaryEn: 'Capped at 6 cumulative mana; cuts 180mm-rain overflow by up to about 13%',
+    summaryJa: '水田に雨水を一時貯留します。累積6ポイントが上限です。',
+    summaryEn: 'Capped at 6 cumulative points.',
   },
   agricultural_RnD_cost: {
-    labelJa: '農業技術研究',
+    labelJa: '農業R&D',
     labelEn: 'Agricultural adaptation R&D',
     min: 1,
     maxPerTurn: 2,
     cumulativeCap: null,
-    summaryJa: '上限2マナ。温暖化に追随するが、一気に解決はできない',
-    summaryEn: 'Turn cap 2 mana; follows warming over time, not instant',
+    summaryJa: '高温に強い品種や栽培技術を広げます。1ターン最大2ポイントです。',
+    summaryEn: 'Turn cap 2 points; improves heat tolerance.',
   },
   capacity_building_cost: {
-    labelJa: '防災能力構築',
+    labelJa: '防災訓練',
     labelEn: 'Disaster preparedness',
     min: 1,
     maxPerTurn: 1,
     cumulativeCap: null,
-    summaryJa: '上限1マナ。住民対応力を高める継続訓練',
-    summaryEn: 'Turn cap 1 mana; sustained training improves resident capacity',
+    summaryJa: '住民の災害対応力を高めます。1ターン最大1ポイントです。',
+    summaryEn: 'Turn cap 1 point; improves preparedness.',
   },
 }
 
 export function normalizePolicyPoints(value) {
   return Math.max(0, Math.min(POLICY_POINT_MAX, Math.round(Number(value) || 0)))
 }
+export function normalizeBudgetPoints(value) {
+  return Math.max(MIN_POLICY_BUDGET_MANA, Math.round(Number(value) || 0))
+}
 
 export function normalizePolicyMana(key, value, policyHistory = [], sliders = {}) {
   const rule = POLICY_MANA_RULES[key] ?? {}
-  let mana = normalizePolicyPoints(value)
-  if (mana > 0 && rule.min != null && mana < rule.min) mana = 0
-  if (rule.maxPerTurn != null) mana = Math.min(mana, rule.maxPerTurn)
+  let points = normalizePolicyPoints(value)
+  if (points > 0 && rule.min != null && points < rule.min) points = 0
+  if (rule.maxPerTurn != null) points = Math.min(points, rule.maxPerTurn)
   if (rule.cumulativeCap != null) {
     const used = getCumulativePolicyMana(policyHistory, key)
     const current = normalizePolicyPoints(sliders[key])
-    mana = Math.min(mana, Math.max(0, rule.cumulativeCap - used + current))
+    points = Math.min(points, Math.max(0, rule.cumulativeCap - used + current))
   }
-  return mana
+  return points
 }
 
-export function getUsedPolicyPoints(sliders = {}) {
-  return POLICY_POINT_KEYS.reduce((sum, key) => sum + normalizePolicyPoints(sliders[key]), 0)
+export function getUsedPolicyPoints(sliders = {}, policyHistory = []) {
+  return POLICY_POINT_KEYS.reduce((sum, key) => {
+    return sum + normalizePolicyMana(key, sliders[key], policyHistory, sliders)
+  }, 0)
 }
 
 export function interpolatePopulationMultiplier(year) {
@@ -164,17 +169,21 @@ export function buildBudgetRows(policyHistory = [], simulationRows = [], pending
   return allEntries.map((entry, index) => {
     const sliders = entry?.sliders ?? {}
     const year = entry?.year
-    const usedPolicyPoints = getUsedPolicyPoints(sliders)
+    const usedPolicyPoints = getUsedPolicyPoints(sliders, allEntries.slice(0, index))
     const populationMultiplier = interpolatePopulationMultiplier(year ?? 2026)
     const populationPenaltyMana = BASE_POLICY_BUDGET_MANA * Math.max(0, 1 - populationMultiplier)
     const appliedFloodDamage = index === 0 ? 0 : getFloodDamageForPeriod(simulationRows, index - 1) / TURN_YEARS
     const floodPenaltyMana = appliedFloodDamage * FLOOD_RECOVERY_COST_COEF / MANA_JPY_PER_YEAR
     const cumulativeMigrationMana = getCumulativePolicyMana(allEntries.slice(0, index), 'house_migration_amount')
     const chargeableMigrationMana = Math.max(0, cumulativeMigrationMana - MIGRATION_INFRA_PENALTY_START_MANA)
-    const housesPerMana = MANA_JPY_PER_YEAR * TURN_YEARS / COST_PER_MIGRATION
-    const migrationPenaltyMana = chargeableMigrationMana * housesPerMana * INFRA_COST_PER_MIGRATED_HOUSE_PER_YEAR / MANA_JPY_PER_YEAR
+    const housesPerPoint = MANA_JPY_PER_YEAR * TURN_YEARS / COST_PER_MIGRATION
+    const migrationPenaltyMana = chargeableMigrationMana * housesPerPoint * INFRA_COST_PER_MIGRATED_HOUSE_PER_YEAR / MANA_JPY_PER_YEAR
     const totalBudgetReduction = populationPenaltyMana + floodPenaltyMana + migrationPenaltyMana
-    const availableBudgetPoints = Math.max(MIN_POLICY_BUDGET_MANA, BASE_POLICY_BUDGET_MANA - totalBudgetReduction)
+    const rawAvailableBudgetPoints = Math.max(
+    MIN_POLICY_BUDGET_MANA,
+    BASE_POLICY_BUDGET_MANA - totalBudgetReduction
+    )
+    const availableBudgetPoints = normalizeBudgetPoints(rawAvailableBudgetPoints)
     const periodLabel = `${year ?? '-'} - ${Number.isFinite(year) ? year + 24 : '-'}`
 
     return {
@@ -203,6 +212,7 @@ export function findAllowedPolicyPoints(policyHistory, simulationRows, year, sli
     const candidateSliders = { ...sliders, [key]: candidateValue }
     const rows = buildBudgetRows(policyHistory, simulationRows, { year, sliders: candidateSliders })
     const budgetRow = rows[rows.length - 1]
+
     if (!budgetRow || budgetRow.usedPolicyPoints <= budgetRow.availableBudgetPoints) {
       return candidateValue
     }

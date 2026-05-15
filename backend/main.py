@@ -101,16 +101,58 @@ def run_simulation(req: SimulationRequest):
     if mode == "Monte Carlo Simulation Mode":
         results = []
         for sim in range(req.num_simulations):
+            # Use a per-sim seed so each sim differs, but pair scenario and baseline with same seed
+            params_sim = params.copy()
+            base_seed = params.get("SIMULATION_RANDOM_SEED", None)
+            if base_seed is not None:
+                params_sim["SIMULATION_RANDOM_SEED"] = int(base_seed) + int(sim)
+
+            # run scenario simulation
             sim_result = simulate_simulation(
-                years=params['years'],
+                years=params_sim['years'],
                 initial_values=req.current_year_index_seq.model_dump(),
                 decision_vars_list=decision_df,
-                params=params,
+                params=params_sim,
                 fixed_seed=True
             )
+
+            # prepare a zero/no-policy decision set for baseline (same structure)
+            zero_decisions = None
+            if isinstance(decision_df, pd.DataFrame) and not decision_df.empty:
+                zero_df = decision_df.copy()
+                for c in zero_df.columns:
+                    zero_df[c] = 0
+                zero_decisions = zero_df
+            elif isinstance(decision_df, list) and decision_df:
+                zero_list = []
+                for _ in decision_df:
+                    zero_list.append({k: 0 for k in decision_df[0].keys()})
+                zero_decisions = zero_list
+            else:
+                zero_decisions = decision_df
+
+            # run explicit baseline simulation using same params_sim (seed)
+            baseline_result = simulate_simulation(
+                years=params_sim['years'],
+                initial_values=req.current_year_index_seq.model_dump(),
+                decision_vars_list=zero_decisions,
+                params=params_sim,
+                fixed_seed=True
+            )
+
             df_sim = pd.DataFrame(sim_result)
-            df_sim["Simulation"] = sim
-            results.append(df_sim)
+            df_base = pd.DataFrame(baseline_result)
+
+            # attach explicit baseline flood and difference per year (align by Year)
+            if not df_base.empty and not df_sim.empty:
+                df_merged = df_sim.merge(df_base[['Year', 'Flood Damage JPY']], on='Year', how='left', suffixes=('', '_baseline_explicit'))
+                df_merged['Baseline Flood Damage JPY (explicit)'] = df_merged['Flood Damage JPY_baseline_explicit']
+                df_merged['Damage Difference JPY (baseline - scenario)'] = df_merged['Baseline Flood Damage JPY (explicit)'] - df_merged['Flood Damage JPY']
+            else:
+                df_merged = df_sim
+
+            df_merged["Simulation"] = sim
+            results.append(df_merged)
         all_df = pd.concat(results, ignore_index=True)
         block_scores = []
 
@@ -215,11 +257,16 @@ def get_ranking():
         return []
     df = pd.read_csv(rank_file, sep='\t')
     latest = df.sort_values('timestamp').drop_duplicates(['user_name', 'scenario_name', 'period'], keep='last')
+    score_columns = ["total_score", "flood_damage_score", "crop_production_score", "ecosystem_score"]
+    for col in score_columns:
+        if col not in latest.columns:
+            latest[col] = 0.0
+    # MayFest 2026: ranking tie-breaks by total, flood, crop, then ecosystem score.
     rank_df = (
-        latest.groupby('user_name')['total_score']
+        latest.groupby('user_name')[score_columns]
         .mean()
         .reset_index()
-        .sort_values('total_score', ascending=False)
+        .sort_values(score_columns, ascending=[False, False, False, False])
         .reset_index(drop=True)
     )
     rank_df['rank'] = rank_df.index + 1
@@ -272,11 +319,10 @@ def get_comparison_results():
 def save_comparison_result(result: Dict[str, Any] = Body(...)):
     required = [
         "user_name",
-        "cumulative_flood_damage",
-        "final_crop_yield",
-        "final_ecosystem_level",
-        "average_resident_burden",
         "total_score",
+        "flood_damage_score",
+        "crop_production_score",
+        "ecosystem_score",
     ]
     missing = [key for key in required if key not in result]
     if missing:
@@ -286,11 +332,20 @@ def save_comparison_result(result: Dict[str, Any] = Body(...)):
     row = {
         "user_name": str(result.get("user_name") or "Guest"),
         "mode": str(result.get("mode") or ""),
-        "cumulative_flood_damage": float(result.get("cumulative_flood_damage") or 0),
-        "final_crop_yield": float(result.get("final_crop_yield") or 0),
-        "final_ecosystem_level": float(result.get("final_ecosystem_level") or 0),
-        "average_resident_burden": float(result.get("average_resident_burden") or 0),
+        # MayFest 2026: ranking uses the three radar scores and their simple average.
         "total_score": float(result.get("total_score") or 0),
+        "flood_damage_score": float(result.get("flood_damage_score") or 0),
+        "crop_production_score": float(result.get("crop_production_score") or 0),
+        "ecosystem_score": float(result.get("ecosystem_score") or 0),
+        "metrics_2050": _json_safe(result.get("metrics_2050") or {}),
+        "metrics_2075": _json_safe(result.get("metrics_2075") or {}),
+        "metrics_2100": _json_safe(result.get("metrics_2100") or {}),
+        "scores_2050": _json_safe(result.get("scores_2050") or {}),
+        "scores_2075": _json_safe(result.get("scores_2075") or {}),
+        "scores_2100": _json_safe(result.get("scores_2100") or {}),
+        "turn_1_policy_points": _json_safe(result.get("turn_1_policy_points") or {}),
+        "turn_2_policy_points": _json_safe(result.get("turn_2_policy_points") or {}),
+        "turn_3_policy_points": _json_safe(result.get("turn_3_policy_points") or {}),
         "timestamp": pd.Timestamp.utcnow(),
     }
 

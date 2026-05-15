@@ -1,190 +1,175 @@
+const policy = (key, icon, iconFile, labelJa, labelEn, descriptionJa, descriptionEn) => ({
+  key,
+  icon,
+  iconFile,
+  label: { ja: labelJa, en: labelEn },
+  description: { ja: descriptionJa, en: descriptionEn },
+})
+
+const allPolicies = [
+  policy(
+    'planting_trees_amount',
+    'forest',
+    'forest.png',
+    '植林・森林保全',
+    'Forest restoration',
+    '森林を回復し、雨水を一時的にためる力と生きもののすみかを支えます。',
+    'Restores forest retention and habitat.',
+  ),
+  policy(
+    'dam_levee_construction_cost',
+    'levee',
+    'levee.png',
+    '堤防・河川改修',
+    'Levee / river works',
+    '堤防や河川改修により、大雨時の越流水を減らします。最低5ポイントから実施できます。',
+    'Large flood-control works; minimum 5 points.',
+  ),
+  policy(
+    'paddy_dam_construction_cost',
+    'paddy',
+    'paddy.png',
+    '田んぼダム',
+    'Paddy dam',
+    '水田に雨水を一時的にため、導入面積に応じて洪水時の流出を抑えます。',
+    'Stores runoff temporarily in paddy fields.',
+  ),
+  policy(
+    'house_migration_amount',
+    'relocation',
+    'relocation.png',
+    '住宅移転',
+    'Relocation support',
+    '洪水リスクの高い地域に残る住宅を減らします。',
+    'Moves exposed homes to safer areas.',
+  ),
+  policy(
+    'capacity_building_cost',
+    'preparedness',
+    'preparedness.png',
+    '防災訓練',
+    'Disaster preparedness',
+    '避難訓練や防災訓練で住民の災害対応力を高めます。1ターン最大1ポイントです。',
+    'Improves preparedness; turn cap 1 point.',
+  ),
+  policy(
+    'agricultural_RnD_cost',
+    'agri-rnd',
+    'research.png',
+    '農業R&D',
+    'Agricultural R&D',
+    '高温に強い品種や栽培技術を広げます。1ターン最大2ポイントです。',
+    'Improves heat tolerance; turn cap 2 points.',
+  ),
+]
+
 export const POLICIES = {
-  upstream: [
-    {
-      key: 'planting_trees_amount',
-      icon: '🌲',
-      label: { ja: '植林・森林保全', en: 'Forest restoration' },
-      description: { ja: '流域の保水力を高める長期対策', en: 'Long-term watershed retention' },
-    },
-    {
-      key: 'dam_levee_construction_cost',
-      icon: '🛡️',
-      label: { ja: '堤防・洪水対策', en: 'Levee / river works' },
-      description: { ja: '大雨の越流水を直接減らす大型事業', en: 'Large works that directly reduce overflow' },
-    },
-    {
-      key: 'paddy_dam_construction_cost',
-      icon: '🌾',
-      label: { ja: '田んぼダム', en: 'Paddy dam' },
-      description: { ja: '水田で雨水を一時的に受け止める', en: 'Stores runoff temporarily in paddy fields' },
-    },
-  ],
-  downstream: [
-    {
-      key: 'house_migration_amount',
-      icon: '🏘️',
-      label: { ja: '移住・適応支援', en: 'Relocation support' },
-      description: { ja: '浸水リスクの高い住宅を安全側へ移す', en: 'Moves exposed homes to safer areas' },
-    },
-    {
-      key: 'capacity_building_cost',
-      icon: '📋',
-      label: { ja: '防災能力構築', en: 'Disaster preparedness' },
-      description: { ja: '避難訓練と地域防災プログラム', en: 'Evacuation drills and local preparedness' },
-    },
-    {
-      key: 'agricultural_RnD_cost',
-      icon: '🔬',
-      label: { ja: '農業技術研究', en: 'Agricultural adaptation R&D' },
-      description: { ja: '高温耐性品種と栽培技術の普及', en: 'Heat-tolerant crops and farming methods' },
-    },
-  ],
-  team: [
-    {
-      key: 'planting_trees_amount',
-      icon: '🌲',
-      label: { ja: '植林・森林保全', en: 'Forest restoration' },
-      description: { ja: '長期的に洪水・生態系を改善', en: 'Improves floods and ecosystems over time' },
-    },
-    {
-      key: 'dam_levee_construction_cost',
-      icon: '🛡️',
-      label: { ja: '堤防・洪水対策', en: 'Levee / river works' },
-      description: { ja: '最低5マナからの大型洪水対策', en: 'Large flood project, minimum 5 mana' },
-    },
-    {
-      key: 'paddy_dam_construction_cost',
-      icon: '🌾',
-      label: { ja: '田んぼダム', en: 'Paddy dam' },
-      description: { ja: '小さく積み上げる流域治水', en: 'Distributed flood mitigation' },
-    },
-    {
-      key: 'house_migration_amount',
-      icon: '🏘️',
-      label: { ja: '移住・適応支援', en: 'Relocation support' },
-      description: { ja: '被害を減らすが将来負担も生む', en: 'Cuts losses but raises future costs' },
-    },
-    {
-      key: 'capacity_building_cost',
-      icon: '📋',
-      label: { ja: '防災能力構築', en: 'Disaster preparedness' },
-      description: { ja: '上限1マナの継続訓練', en: 'Turn cap 1 mana' },
-    },
-    {
-      key: 'agricultural_RnD_cost',
-      icon: '🔬',
-      label: { ja: '農業技術研究', en: 'Agricultural adaptation R&D' },
-      description: { ja: '上限2マナの高温適応', en: 'Turn cap 2 mana' },
-    },
-  ],
+  upstream: allPolicies.filter(p => ['planting_trees_amount', 'dam_levee_construction_cost', 'paddy_dam_construction_cost'].includes(p.key)),
+  downstream: allPolicies.filter(p => ['house_migration_amount', 'capacity_building_cost', 'agricultural_RnD_cost'].includes(p.key)),
+  team: allPolicies,
 }
 
 const ja = text => ({ ja: text, en: text })
 
-export const POLICY_EFFECTS = {
+// ここを編集すると、政策スライダー下の「プラス面 / マイナス面」の文章を変更できます。
+export const POLICY_EFFECT_DRAFT_TEXTS = {
   planting_trees_amount: {
     weak: [
-      { positive: true, text: ja('生態系を改善し、森林の保水力が少しずつ高まる') },
-      { positive: false, text: ja('効果発現には時間遅れがあり、直後の洪水被害は大きく変わりにくい') },
-      { positive: true, text: ja('予算への追加ペナルティはほぼない') },
+      { positive: true, text: '森林が成長すると、雨水を一時的にためる力と生態系のすみかが少しずつ回復します。' },
+      { positive: false, text: '効果が出るまで時間がかかるため、短期の洪水被害には別の対策も必要です。' },
     ],
     standard: [
-      { positive: true, text: ja('数十年後に流出ピークを抑え、洪水被害を下げ始める') },
-      { positive: true, text: ja('生態系指標にプラス') },
-      { positive: false, text: ja('短期の避難・浸水対策は別途必要') },
+      { positive: true, text: '将来の森林面積の回復につながり、流域の保水力を高めます。' },
+      { positive: true, text: '生きもののすみかが増え、生態系指標を支えます。' },
     ],
     strong: [
-      { positive: true, text: ja('長期的な洪水・生態系の両方に効く') },
-      { positive: false, text: ja('1ターン内の即効性は堤防や田んぼダムより弱い') },
-      { positive: true, text: ja('将来予算への直接圧迫は小さい') },
+      { positive: true, text: '長期的な流域の回復を強く後押しします。' },
+      { positive: false, text: '治水対策や被害を軽減するための対策を取る必要があります。' },
     ],
   },
   dam_levee_construction_cost: {
     weak: [
-      { positive: false, text: ja('5マナ未満では事業化しない') },
-      { positive: true, text: ja('完成後は180mm級豪雨の越流水を段階的に削減') },
-      { positive: false, text: ja('大型工事のため生態系への負荷がある') },
+      { positive: false, text: '5ポイント未満では事業化されません。' },
+      { positive: true, text: '完成後は大雨時の越流水を減らします。' },
     ],
     standard: [
-      { positive: true, text: ja('20mm強化ごとに180mm級豪雨の被害を約25%削減') },
-      { positive: false, text: ja('完成まで時間遅れがある') },
-      { positive: false, text: ja('予算負担が大きく、生態系にはマイナス') },
+      { positive: true, text: '20mm刻みで防御水準が上がります。' },
+      { positive: false, text: '完成まで時間がかかるため、その間の被害軽減策も必要です。' },
     ],
     strong: [
-      { positive: true, text: ja('大規模洪水の被害を大きく下げる') },
-      { positive: false, text: ja('ほかの政策に使えるマナを圧迫しやすい') },
-      { positive: false, text: ja('自然環境とのトレードオフが大きい') },
+      { positive: true, text: '大きな洪水被害を抑えやすくなります。' },
+      { positive: false, text: '自然環境とのバランスに注意が必要です。' },
     ],
   },
   paddy_dam_construction_cost: {
     weak: [
-      { positive: true, text: ja('小さな投資で下流ピークを少し下げる') },
-      { positive: true, text: ja('生態系への悪影響は小さい') },
-      { positive: false, text: ja('単独では大規模洪水を止めきれない') },
+      { positive: true, text: '水田に雨水をためる取り組みが始まります。' },
+      { positive: true, text: '小規模でも分散型治水の効果があります。' },
     ],
     standard: [
-      { positive: true, text: ja('累計3マナで180mm級豪雨の越流水を約6%削減') },
-      { positive: false, text: ja('農業収量に最大1%程度の小さな負担') },
-      { positive: true, text: ja('分散型で即効性がある') },
+      { positive: true, text: '導入面積が広がり、洪水時の流出を抑えやすくなります。' },
+      { positive: false, text: '単独では大規模洪水を止めきれないため、他の治水対策も必要です。' },
     ],
     strong: [
-      { positive: true, text: ja('累計6マナで最大効果、180mm級豪雨の越流水を約13%削減') },
-      { positive: true, text: ja('堤防より生態系負荷が小さい') },
-      { positive: false, text: ja('累計上限に達すると追加効果は増えない') },
+      { positive: true, text: '導入上限に近づき、分散型治水の効果が大きくなります。' },
+      { positive: false, text: '導入可能面積に近づくと、追加効果は小さくなります。' },
     ],
   },
   house_migration_amount: {
     weak: [
-      { positive: true, text: ja('高リスク住宅の浸水被害を直接減らす') },
-      { positive: false, text: ja('累計1マナ超から将来インフラ費用が発生') },
-      { positive: false, text: ja('地域コミュニティへの負担がある') },
+      { positive: true, text: '洪水リスクの高い地域に残る住宅が減ります。' },
+      { positive: false, text: '移転後のインフラ維持費が将来予算を圧迫する場合があります。' },
     ],
     standard: [
-      { positive: true, text: ja('大規模洪水時の住宅被害を大きく削減') },
-      { positive: false, text: ja('公共交通・道路・上下水道維持費が将来予算を圧迫') },
-      { positive: false, text: ja('累計20マナが上限') },
+      { positive: true, text: '住宅被害リスクを直接下げやすくなります。' },
+      { positive: false, text: '累積20ポイントが上限です。' },
     ],
     strong: [
-      { positive: true, text: ja('リスク曝露を根本的に下げる') },
-      { positive: false, text: ja('将来の使えるマナが大きく減る可能性') },
-      { positive: false, text: ja('生活再建支援と合意形成が重い') },
+      { positive: true, text: '高リスク地域の住宅被害リスクを大きく下げます。' },
+      { positive: false, text: '移転可能な住宅が少なくなると追加効果は小さくなります。' },
     ],
   },
   capacity_building_cost: {
     weak: [
-      { positive: true, text: ja('住民の避難判断と初動対応を高める') },
-      { positive: false, text: ja('上限1マナ。大量投入しても線形には伸びない') },
-      { positive: false, text: ja('訓練効果は継続しないと薄れる') },
+      { positive: true, text: '洪水時にどう行動すればよいかを学ぶ取り組みです。' },
+      { positive: false, text: '1ターン最大1ポイントです。' },
     ],
     standard: [
-      { positive: true, text: ja('小〜中規模洪水で人的・生活被害を抑えやすい') },
-      { positive: false, text: ja('堤防のように浸水そのものを止める政策ではない') },
-      { positive: false, text: ja('1ターン上限1マナ') },
+      { positive: true, text: '継続すると住民の災害対応力が高まります。' },
+      { positive: false, text: '洪水そのものを止める政策ではありません。' },
     ],
     strong: [
-      { positive: true, text: ja('地域の防災意識係数が高い水準に近づく') },
-      { positive: false, text: ja('上限1マナのため、このターンはこれ以上増やせない') },
-      { positive: true, text: ja('低コストで予算負担が小さい') },
+      { positive: true, text: '初動対応が改善し、被害軽減につながります。' },
+      { positive: false, text: 'このターンはこれ以上増やせません。' },
     ],
   },
   agricultural_RnD_cost: {
     weak: [
-      { positive: true, text: ja('高温耐性品種・栽培技術で食糧生産を守る') },
-      { positive: false, text: ja('洪水被害は直接減らさない') },
-      { positive: false, text: ja('成果発現には累積投資の時間遅れがある') },
+      { positive: true, text: '高温に強い品種や栽培技術の開発が進みます。' },
+      { positive: false, text: '洪水被害は直接減らしません。' },
     ],
     standard: [
-      { positive: true, text: ja('1マナで25年間に高温耐性が約0.4度向上') },
-      { positive: false, text: ja('上限2マナ。研究・普及には速度制約がある') },
-      { positive: true, text: ja('作物生産低下イベントを抑えやすい') },
+      { positive: true, text: '高温による品質低下や収量低下を抑えやすくなります。' },
+      { positive: false, text: '研究と普及には時間がかかります。' },
     ],
     strong: [
-      { positive: true, text: ja('最大2マナで温暖化ペースにかなり追随') },
-      { positive: false, text: ja('このターンは上限2マナまで') },
-      { positive: false, text: ja('治水対策とは別に必要') },
+      { positive: true, text: '温暖化への追随力が高まります。' },
+      { positive: false, text: '1ターン最大2ポイントです。' },
     ],
   },
 }
+
+export const POLICY_EFFECTS = Object.fromEntries(
+  Object.entries(POLICY_EFFECT_DRAFT_TEXTS).map(([key, tiers]) => [
+    key,
+    Object.fromEntries(
+      Object.entries(tiers).map(([tier, items]) => [
+        tier,
+        items.map(item => ({ ...item, text: ja(item.text) })),
+      ]),
+    ),
+  ]),
+)
 
 export function getTier(value) {
   const v = Number(value) || 0

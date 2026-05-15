@@ -1,0 +1,10 @@
+﻿seed,paddy_dam_flood_coef,scenario,label,max_flood_damage_jpy,severe_flood_count,major_flood_count,final_ecosystem_level,paddy_dam_5mm_year,paddy_dam_full_year
+857,10.0,02_hard_infra,堤防偏重,259375999.9,0,0,68.64,,
+857,10.0,03_nature_based,自然共生偏重,378647739.4,1,1,73.59,2038,2050
+857,10.0,06_balanced,バランス型,314114541.5,0,1,72.33,2076,
+857,12.5,02_hard_infra,堤防偏重,259375999.9,0,0,68.64,,
+857,12.5,03_nature_based,自然共生偏重,372363454.8,1,1,73.59,2035,2045
+857,12.5,06_balanced,バランス型,311803705.5,0,1,72.33,2068,2098
+857,15.0,02_hard_infra,堤防偏重,259375999.9,0,0,68.64,,
+857,15.0,03_nature_based,自然共生偏重,366079354.7,1,1,73.59,2034,2042
+857,15.0,06_balanced,バランス型,309484574.9,0,1,72.33,2063,2088

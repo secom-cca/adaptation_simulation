@@ -50,6 +50,13 @@
   flex-shrink: 0;
 }
 
+.icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
 .info { flex: 1; min-width: 0; }
 
 .label {

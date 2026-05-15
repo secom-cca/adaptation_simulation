@@ -1,32 +1,43 @@
 .page {
+  min-height: 100vh;
   height: 100vh;
   overflow-y: auto;
   display: flex;
   justify-content: center;
-  padding: 48px 24px;
-  background: var(--color-bg);
+  padding: 44px 24px 56px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(74, 140, 92, 0.10), transparent 30%),
+    radial-gradient(circle at 85% 12%, rgba(61, 107, 143, 0.10), transparent 34%),
+    var(--color-bg);
 }
 
 .content {
-  width: 580px;
+  width: min(980px, 100%);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .yearTag {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(61, 107, 143, 0.10);
+  color: var(--color-accent);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--color-text-secondary);
+  font-weight: 800;
+  letter-spacing: 0.12em;
 }
 
 .headline {
-  font-size: 26px;
-  font-weight: 800;
+  margin: 0;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 900;
+  line-height: 1.25;
   color: var(--color-text-primary);
 }
 
+/* Legacy cards kept for compatibility */
 .profileCard {
   background: var(--color-surface);
   border-radius: var(--radius-md);
@@ -37,7 +48,10 @@
   box-shadow: var(--shadow-card);
 }
 
-.profileIcon { font-size: 36px; flex-shrink: 0; }
+.profileIcon {
+  font-size: 36px;
+  flex-shrink: 0;
+}
 
 .profileEn {
   font-size: 11px;
@@ -113,49 +127,434 @@
   white-space: pre-wrap;
 }
 
-.stats {
+/* Radar */
+.radarCard {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.90);
+  border: 1px solid rgba(84, 103, 120, 0.14);
+  border-radius: 24px;
+  padding: 16px;
+  box-shadow: 0 14px 36px rgba(42, 56, 70, 0.12);
+}
+
+.radarCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(61, 107, 143, 0.10), transparent 28%),
+    radial-gradient(circle at 88% 30%, rgba(74, 140, 92, 0.10), transparent 32%);
+}
+
+.radarCard > * {
+  position: relative;
+  z-index: 1;
+}
+
+.radarLarge {
+  padding: 22px 22px 18px;
+}
+
+.radarTitle {
+  margin-bottom: 6px;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.scoreLine {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-accent);
+  line-height: 1.7;
+}
+
+.radarLegend {
   display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+}
+
+.radarLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.userDot,
+.aiDot,
+.baselineDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.userDot {
+  background: #3d6b8f;
+}
+
+.baselineDot {
+  background: #9b6b3f;
+}
+
+.aiDot {
+  background: #4a8c5c;
+}
+
+.smallRadars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* AI plan */
+.aiPlan {
+  background:
+    linear-gradient(135deg, rgba(74, 140, 92, 0.12), rgba(255, 255, 255, 0.86));
+  border: 1px solid rgba(74, 140, 92, 0.22);
+  border-radius: 22px;
+  padding: 16px 18px;
+  box-shadow: 0 12px 30px rgba(42, 56, 70, 0.10);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.policyTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--color-text-primary);
+}
+
+.policyTitle::before {
+  content: "";
+  width: 8px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+
+.policyRow {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.policyRow strong {
+  color: var(--color-text-primary);
+}
+
+/* Stats */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
 .stat {
-  flex: 1;
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.90);
+  border: 1px solid rgba(84, 103, 120, 0.12);
+  border-radius: 20px;
   padding: 16px;
   text-align: center;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 10px 26px rgba(42, 56, 70, 0.10);
 }
 
 .statVal {
-  font-size: 24px;
-  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: clamp(20px, 2.2vw, 28px);
+  font-weight: 900;
   color: var(--color-text-primary);
+}
+
+.statVal small {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--color-accent);
 }
 
 .statLabel {
   font-size: 11px;
+  font-weight: 700;
   color: var(--color-text-secondary);
+  margin-top: 6px;
+}
+
+/* Result comparison */
+.resultComparison {
+  display: grid;
+  gap: 14px;
   margin-top: 4px;
 }
 
+.comparisonCard {
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.90);
+  box-shadow: 0 12px 30px rgba(42, 56, 70, 0.10);
+  border: 1px solid rgba(84, 103, 120, 0.14);
+}
+
+.comparisonCard::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: var(--color-accent);
+  opacity: 0.9;
+}
+
+.comparisonHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.comparisonTitle {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--color-text-primary);
+}
+
+.comparisonSub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.comparisonScore {
+  min-width: 86px;
+  text-align: right;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--color-accent);
+}
+
+.comparisonGrid,
+.comparisonYears,
+.comparisonMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.comparisonGrid > div,
+.comparisonYears > div,
+.comparisonMetrics > div {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 15px;
+  background: rgba(245, 248, 250, 0.92);
+  border: 1px solid rgba(84, 103, 120, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comparisonGrid strong,
+.comparisonYears strong,
+.comparisonMetrics strong {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.comparisonGrid span,
+.comparisonYears span,
+.comparisonMetrics span {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.comparisonGrid {
+  margin-top: 8px;
+}
+
+.comparisonYears {
+  background: rgba(61, 107, 143, 0.05);
+  border-radius: 18px;
+  padding: 8px;
+}
+
+.comparisonMetrics {
+  background: rgba(74, 140, 92, 0.05);
+  border-radius: 18px;
+  padding: 8px;
+}
+
+.comparisonPolicies {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(74, 140, 92, 0.07);
+}
+
+/* User policy summary */
+.policySummary {
+  background: rgba(255, 255, 255, 0.90);
+  border-radius: 22px;
+  padding: 16px 18px;
+  box-shadow: 0 10px 26px rgba(42, 56, 70, 0.10);
+  border: 1px solid rgba(84, 103, 120, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Buttons */
 .compareBtn,
 .restartBtn {
-  padding: 14px;
-  border: none;
-  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  border-radius: 18px;
   font-size: 15px;
-  font-weight: 600;
-  transition: opacity 0.15s;
+  font-weight: 800;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease,
+    box-shadow 0.15s ease;
+  cursor: pointer;
 }
+
 .compareBtn {
-  background: var(--color-surface);
+  background: rgba(255, 255, 255, 0.88);
   color: var(--color-accent);
   border: 1px solid var(--color-accent);
 }
+
 .restartBtn {
+  border: none;
   background: var(--color-accent);
   color: white;
+  box-shadow: 0 10px 26px rgba(42, 56, 70, 0.14);
 }
+
 .compareBtn:hover,
-.restartBtn:hover { opacity: 0.85; }
+.restartBtn:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.compareBtn:active,
+.restartBtn:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 860px) {
+  .page {
+    padding: 32px 16px 44px;
+  }
+
+  .content {
+    gap: 16px;
+  }
+
+  .smallRadars,
+  .stats,
+  .comparisonGrid,
+  .comparisonYears,
+  .comparisonMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .comparisonHeader {
+    flex-direction: column;
+  }
+
+  .comparisonScore {
+    text-align: left;
+  }
+
+  .policyRow {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+@media (max-width: 520px) {
+  .headline {
+    font-size: 22px;
+  }
+
+  .radarLarge {
+    padding: 16px 10px;
+  }
+
+  .radarCard {
+    padding: 14px 10px;
+  }
+
+  .statVal {
+    font-size: 20px;
+  }
+
+  .comparisonCard {
+    padding: 14px;
+  }
+}
+/* --- Fix: large 2100 radar should not collapse --- */
+
+.radarCard {
+  min-height: 280px;
+}
+
+.radarLarge {
+  min-height: 470px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.radarLarge :global(.recharts-responsive-container) {
+  min-height: 340px;
+}
+
+.radarTitle {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.scoreLine {
+  flex-shrink: 0;
+}
+
+/* 2100 large radar should feel like the main result area */
+.radarLarge .scoreLine {
+  margin-top: 2px;
+}
+
+/* If the title pill is becoming too compressed */
+.radarLarge {
+  border-radius: 28px;
+  padding: 22px 24px 18px;
+}

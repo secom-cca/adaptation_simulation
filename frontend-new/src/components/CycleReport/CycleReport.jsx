@@ -1,16 +1,16 @@
 ﻿import React from 'react'
 import { useTranslation } from '../../contexts/LanguageContext.jsx'
 import { fmtY } from '../../data/indicators.js'
+import { scoresForRow, round1 } from '../../data/resultScores.js'
 import s from '../../pages/ConsequencePage.module.css'
 import own from './CycleReport.module.css'
 
 const REPORT_COLOR = '#5a6a7a'
 
 const METRICS = [
-  { key: 'Flood Damage JPY', icon: '🌊', labelKey: 'report.flood', good: (v, p) => p != null && v < p },
-  { key: 'Crop Yield', icon: '🌾', labelKey: 'report.crop', good: (v, p) => p != null && v > p },
-  { key: 'Ecosystem Level', icon: '🌿', labelKey: 'report.eco', good: (v, p) => p != null && v > p },
-  { key: 'Resident Burden', icon: '💴', labelKey: 'report.burden', good: (v, p) => p != null && v < p },
+  { key: 'floodScore', rawKey: 'Flood Damage JPY', icon: '🌊', label: '洪水被害スコア', good: (v, p) => p != null && v > p },
+  { key: 'cropScore', rawKey: 'Crop Yield', icon: '🌾', label: '農作物生産スコア', good: (v, p) => p != null && v > p },
+  { key: 'ecosystemScore', rawKey: 'Ecosystem Level', icon: '🌿', label: '生態系スコア', good: (v, p) => p != null && v > p },
 ]
 
 function avg(rows, key) {
@@ -18,13 +18,16 @@ function avg(rows, key) {
   return rows.reduce((sum, r) => sum + (r[key] ?? 0), 0) / rows.length
 }
 
-export default function CycleReport({ history, year, cycle, onViewDetails }) {
+export default function CycleReport({ history, year, cycle, llmCommentary, llmLoading, onViewDetails }) {
   const { t } = useTranslation()
   const cycleStart = year - 25
   const cycleEnd = year - 1
   const thisRows = history.slice(-25)
   const prevRows = history.length > 25 ? history.slice(-50, -25) : []
-  const cycleEvents = collectCycleEvents(thisRows)
+  const lastRow = thisRows[thisRows.length - 1] ?? {}
+  const prevLastRow = prevRows[prevRows.length - 1] ?? null
+  const currentScores = scoresForRow(lastRow, cycleEnd)
+  const prevScores = prevLastRow ? scoresForRow(prevLastRow, cycleStart - 1) : null
 
   return (
     <div className={s.page} style={{ '--event-color': REPORT_COLOR }}>
@@ -39,53 +42,23 @@ export default function CycleReport({ history, year, cycle, onViewDetails }) {
 
           <div className={own.stats}>
             {METRICS.map(m => {
-              const val = avg(thisRows, m.key)
-              const prev = prevRows.length ? avg(prevRows, m.key) : null
+              const val = currentScores[m.key] ?? 0
+              const prev = prevScores ? prevScores[m.key] : null
               const delta = prev != null ? val - prev : null
               const isGood = m.good(val, prev)
               return (
                 <div key={m.key} className={own.stat}>
                   <span className={own.statIcon}>{m.icon}</span>
-                  <span className={own.statLabel}>{t(m.labelKey)}</span>
-                  <span className={own.statVal}>{fmtY(val)}</span>
+                  <span className={own.statLabel}>{m.label}</span>
+                  <span className={own.statVal}>{round1(val).toFixed(1)}点</span>
                   {delta != null && (
                     <span className={`${own.statDelta} ${isGood ? own.good : own.bad}`}>
-                      {delta > 0 ? '+' : ''}{fmtY(delta)}
+                      {delta > 0 ? '+' : ''}{round1(delta).toFixed(1)}
                     </span>
                   )}
                 </div>
               )
             })}
-          </div>
-
-          <div className={own.eventSection}>
-            <div className={own.eventHeader}>
-              <span>{cycleEvents.length > 0 ? 'この25年で起きたイベント' : 'この25年のイベント'}</span>
-              <strong>{cycleEvents.length}</strong>
-            </div>
-            <div className={own.eventCards}>
-              {cycleEvents.length > 0 ? cycleEvents.slice(0, 6).map((ev, i) => (
-                <div key={`${ev.year}-${ev.title}-${i}`} className={`${own.eventCard} ${own[ev.severity]}`}>
-                  <div className={own.eventTop}>
-                    <span className={own.eventIcon}>{ev.icon}</span>
-                    <span className={own.eventYear}>{ev.year}</span>
-                    <span className={own.eventCategory}>{ev.category}</span>
-                  </div>
-                  <div className={own.eventTitle}>{ev.title}</div>
-                  <p className={own.eventBody}>{ev.body}</p>
-                </div>
-              )) : (
-                <div className={`${own.eventCard} ${own.ok}`}>
-                  <div className={own.eventTop}>
-                    <span className={own.eventIcon}>✓</span>
-                    <span className={own.eventYear}>{cycleStart}-{cycleEnd}</span>
-                    <span className={own.eventCategory}>Status</span>
-                  </div>
-                  <div className={own.eventTitle}>大きな閾値イベントはありません</div>
-                  <p className={own.eventBody}>この期間は、参加者に強調して知らせる水準の洪水・生態系・食糧生産・予算イベントは発生しませんでした。</p>
-                </div>
-              )}
-            </div>
           </div>
 
           <div className={own.reportActions}>
@@ -121,7 +94,7 @@ function eventBody(ev, row = {}) {
     const maxRain = Number(row['Extreme Precip Events'] ?? row.max_rain_event ?? 0) || 0
     const floodDamage = Number(row['Flood Damage JPY'] ?? ((row['Flood Damage'] ?? 0) * 150)) || 0
     if (maxRain >= 160 || floodDamage > 0) {
-      const rainText = maxRain >= 160 ? `この年は最大${maxRain.toFixed(0)}mmの極端降雨が発生し、` : ''
+      const rainText = maxRain >= 160 ? `この年は大雨が発生し、` : ''
       const damageText = floodDamage > 0 ? `洪水被害は${formatJpyInline(floodDamage)}でした。` : ''
       return `${rainText}${damageText} その影響で農作物生産が初期水準を下回っています。`
     }

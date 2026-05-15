@@ -20,8 +20,10 @@ export default function DecisionPanel({
   const [collapsed, setCollapsed] = useState(false)
   const policies = POLICIES[mode] ?? POLICIES.upstream
   const isTeam = mode === 'team'
-  const nextYear = year + 25
+  const nextYear = year + 24
   const cumulativeStats = getCumulativePolicyStats(policyHistory).filter(item => item.used > 0 || item.cap != null)
+  const availablePoints = Math.round(budgetRow?.availableBudgetPoints ?? 10)
+  const usedPoints = Math.round(budgetRow?.usedPolicyPoints ?? 0)
 
   return (
     <div className={`${s.panel} ${isTeam ? s.teamPanel : ''} ${collapsed ? s.collapsed : ''}`}>
@@ -32,7 +34,7 @@ export default function DecisionPanel({
       >
         <span className={s.handleLine} />
         {collapsed && <span className={s.handleLabel}>{t('decision.title')}</span>}
-        <span className={s.handleArrow}>{collapsed ? '↑' : '↓'}</span>
+        <span className={s.handleArrow}>{collapsed ? '▲' : '▼'}</span>
         <span className={s.handleLine} />
       </button>
 
@@ -45,9 +47,9 @@ export default function DecisionPanel({
           <div className={s.headerActions}>
             <div className={s.budgetStrip}>
               <span>{lang === 'ja' ? '使用可能' : 'Available'}</span>
-              <strong>{(budgetRow?.availableBudgetPoints ?? 10).toFixed(1)} / 10</strong>
+              <strong>{availablePoints} / 10 ポイント</strong>
               <span>{lang === 'ja' ? '配分' : 'Used'}</span>
-              <strong>{budgetRow?.usedPolicyPoints ?? 0}</strong>
+              <strong>{usedPoints} ポイント</strong>
             </div>
             <button className={s.advanceBtn} onClick={onAdvance} disabled={loading}>
               {loading ? t('decision.loading') : t('decision.advance')}
@@ -71,7 +73,7 @@ export default function DecisionPanel({
         <div className={s.footer}>
           {cumulativeStats.length > 0 && (
             <div className={s.cumulativeBox}>
-              <span className={s.cumulativeTitle}>{lang === 'ja' ? '累計上限' : 'Cumulative caps'}</span>
+              <span className={s.cumulativeTitle}>{lang === 'ja' ? '累積上限' : 'Cumulative caps'}</span>
               <div className={s.cumulativeItems}>
                 {cumulativeStats.map(item => (
                   <span key={item.key} className={s.cumulativeChip}>

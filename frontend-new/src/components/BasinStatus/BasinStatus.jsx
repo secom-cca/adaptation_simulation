@@ -3,7 +3,8 @@ import { useTranslation } from '../../contexts/LanguageContext.jsx'
 import s from './BasinStatus.module.css'
 
 function formatPoints(value) {
-  return `${(Number(value) || 0).toFixed(1)} mana`
+  // MayFest 2026: user-facing budget unit is points, rounded to nearest integer for display.
+  return `${Math.round(Number(value) || 0)}ポイント`
 }
 
 function formatYen(value) {
@@ -61,7 +62,7 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
             <div key={ind.labelKey} className={`${s.card} ${s[tier]}`}>
               <span className={s.icon}>{ind.icon}</span>
               <div className={s.info}>
-                <div className={s.indLabel}>{t(ind.labelKey)}</div>
+                <div className={s.indLabel}>{ind.labelKey === 'basin.burden.label' ? '政策ポイント' : t(ind.labelKey)}</div>
                 <div className={s.status}>
                   <span className={s.statusLabel}>{t(key)}</span>
                   {trend && (
@@ -77,7 +78,7 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
       {budgetRow && (
         <div className={s.budgetNote}>
           <div className={s.budgetHero}>
-            <span>{lang === 'ja' ? '使用可能マナ' : 'Available mana'}</span>
+            <span>{lang === 'ja' ? '使用可能ポイント' : 'Available points'}</span>
             <strong>{`${formatPoints(budgetRow.availableBudgetPoints)} / 10`}</strong>
           </div>
           <div className={s.budgetLine}>
@@ -91,8 +92,8 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
           </div>
           <p className={s.budgetHint}>
             {lang === 'ja'
-              ? '1マナは2,000万円/年を25年間継続する政策費です。洪水復旧ペナルティは、前ターン平均被害額をもとに次ターンの予算制約へ反映します。'
-              : '1 mana means JPY 20M/year sustained for 25 years. The flood recovery penalty uses average damage in the previous turn.'}
+              ? '1ポイントは2,000万円/年を25年間継続する政策費です。洪水復旧ペナルティは、前ターン平均被害額をもとに次ターンの予算制約へ反映します。'
+              : '1 point means JPY 20M/year sustained for 25 years. The flood recovery penalty uses average damage in the previous turn.'}
           </p>
         </div>
       )}
