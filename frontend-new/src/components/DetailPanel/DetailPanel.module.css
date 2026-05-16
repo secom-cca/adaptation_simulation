@@ -348,10 +348,18 @@
 
 .scoreBadge {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 2px 6px;
   border-radius: 6px;
   font-size: 10px;
   font-weight: 800;
+  white-space: nowrap;
+}
+
+.scoreBadge span {
+  font-weight: 700;
 }
 
 .scoreLow {
