@@ -5,14 +5,15 @@ from src.simulation import generate_ai_commentary
 
 # サンプルのシミュレーション結果を生成（75年分）
 sample_results = []
-for year in range(2026, 2101):
+for year in range(2026, 2076):
     sample_results.append({
+        'Year': year,
         'Temperature (℃)': 15.5 + (year - 2026) * 0.02,  # 徐々に上昇
         'Hot Days': 30 + (year - 2026) * 0.1,
-        'Extreme Precip Events': 150 + (year - 2026) * 0.5,
+        'Precipitation (mm)': 1000 + (year - 2026) * 0.5,
         'Levee Level': 50 + (year - 2026) * 0.3,
         'Urban Level': 75 - (year - 2026) * 0.1,
-        'Flood Damage': 500000 - (year - 2026) * 1000,
+        'Flood Damage JPY': 500000 - (year - 2026) * 1000,
         'Resident Burden': 5000 + (year - 2026) * 10,
         'Crop Yield': 4000 - (year - 2026) * 5,
         'Resident capacity': 0.3 + (year - 2026) * 0.002,
@@ -22,10 +23,11 @@ for year in range(2026, 2101):
 
 # テスト実行
 print("🧪 Testing generate_ai_commentary...")
-result = generate_ai_commentary(sample_results)
+result = generate_ai_commentary(1, "test", sample_results)
 
 print("\n✅ Agent Profile:")
 print(f"  Name: {result['agent_name']}")
+print(f"  Score: {result['score']:.2f}")
 print(f"  Role: {result['agent_role']}")
 print(f"  Focus: {result['agent_focus']}")
 print(f"  Years to 85: {result['years_to_85']}")

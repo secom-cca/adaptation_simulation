@@ -105,7 +105,7 @@ def count_objects_per_zone(object_positions_normalized, parameter_zones):
                         h = float(obj.get("height", 0.0))
                     except Exception:
                         h = 0.0
-                    total_point += min(int(max(0.0, h - height_threshold) / height_unit),5)  # 高さに基づく影響量を計算（例: 0.03m以上で影響開始、0.01mごとに1ポイント、最大5ポイント）
+                    total_point += int(max(0.0, h - height_threshold) / height_unit) # 高さに基づく影響量を計算（例: 0.03m以上で影響開始、0.01mごとに1ポイント）
             counts[param] = float(total_point)
     return counts
 
@@ -126,9 +126,9 @@ def decide_parameter_values_normalized(object_positions_normalized, parameter_zo
                     h = float(obj.get("height", 0.0))
                 except Exception:
                     h = 0.0
-                total_point += min(int(max(0.0, h - height_threshold) / height_unit), 5)
+                total_point += int(max(0.0, h - height_threshold) / height_unit)
 
-        param_values[param] = min(total_point, 10)
+        param_values[param] = float(total_point)
 
         """
         これまでの段階的な閾値方式は廃止し、物体の高さに基づく連続値方式に変更した。
