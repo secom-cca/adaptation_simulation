@@ -1,35 +1,47 @@
 {
-  "objective": 69.0794,
+  "objective": 65.1588,
   "actions": [
     {
-      "planting_trees_amount": 5,
-      "house_migration_amount": 0,
-      "dam_levee_construction_cost": 0,
-      "paddy_dam_construction_cost": 2,
-      "capacity_building_cost": 1,
-      "agricultural_RnD_cost": 2
+      "turn": 1,
+      "policyPoints": {
+        "planting_trees_amount": 5,
+        "house_migration_amount": 0,
+        "dam_levee_construction_cost": 0,
+        "paddy_dam_construction_cost": 2,
+        "capacity_building_cost": 1,
+        "agricultural_RnD_cost": 2
+      },
+      "availableBudget": 10
     },
     {
-      "planting_trees_amount": 1,
-      "house_migration_amount": 0,
-      "dam_levee_construction_cost": 0,
-      "paddy_dam_construction_cost": 4,
-      "capacity_building_cost": 0,
-      "agricultural_RnD_cost": 3
+      "turn": 2,
+      "policyPoints": {
+        "planting_trees_amount": 1,
+        "house_migration_amount": 0,
+        "dam_levee_construction_cost": 1,
+        "paddy_dam_construction_cost": 3,
+        "capacity_building_cost": 1,
+        "agricultural_RnD_cost": 2
+      },
+      "availableBudget": 8
     },
     {
-      "planting_trees_amount": 1,
-      "house_migration_amount": 0,
-      "dam_levee_construction_cost": 0,
-      "paddy_dam_construction_cost": 2,
-      "capacity_building_cost": 0,
-      "agricultural_RnD_cost": 3
+      "turn": 3,
+      "policyPoints": {
+        "planting_trees_amount": 0,
+        "house_migration_amount": 0,
+        "dam_levee_construction_cost": 0,
+        "paddy_dam_construction_cost": 1,
+        "capacity_building_cost": 1,
+        "agricultural_RnD_cost": 2
+      },
+      "availableBudget": 5
     }
   ],
   "policiesJa": [
     "T1: 植林5 / 田んぼダム2 / 防災訓練1 / 農業R&D2",
-    "T2: 植林1 / 田んぼダム4 / 農業R&D3",
-    "T3: 植林1 / 田んぼダム2 / 農業R&D3"
+    "T2: 植林1 / 堤防1 / 田んぼダム3 / 防災訓練1 / 農業R&D2",
+    "T3: 田んぼダム1 / 防災訓練1 / 農業R&D2"
   ],
   "years": {
     "2050": {
@@ -38,59 +50,133 @@
       "ecosystemLevel": 73.89
     },
     "2075": {
-      "floodDamageJpy": 588338898,
-      "cropYield": 4693.3,
+      "floodDamageJpy": 489762150,
+      "cropYield": 4737.0,
       "ecosystemLevel": 72.21
     },
     "2100": {
-      "floodDamageJpy": 1844485118,
-      "cropYield": 4159.8,
+      "floodDamageJpy": 1586217744,
+      "cropYield": 4267.1,
       "ecosystemLevel": 71.52
     }
   },
   "scores": {
     "2050": {
-      "floodScore": 89.87,
-      "cropScore": 100.0,
-      "ecosystemScore": 100.0,
-      "totalScore": 96.62
+      "floodScore": 92.36,
+      "cropScore": 91.58,
+      "ecosystemScore": 54.23,
+      "totalScore": 79.39
     },
     "2075": {
-      "floodScore": 99.41,
-      "cropScore": 74.6,
-      "ecosystemScore": 39.35,
-      "totalScore": 71.12
+      "floodScore": 81.23,
+      "cropScore": 79.88,
+      "ecosystemScore": 51.29,
+      "totalScore": 70.8
     },
     "2100": {
-      "floodScore": 100.0,
-      "cropScore": 4.35,
-      "ecosystemScore": 14.14,
-      "totalScore": 39.5
+      "floodScore": 39.21,
+      "cropScore": 43.94,
+      "ecosystemScore": 50.07,
+      "totalScore": 44.41
     }
   },
   "scoreBounds": {
     "flood": {
       "2050": {
-        "good": 196718331.74736243,
-        "bad": 222135170.70363104
+        "good": 0.0,
+        "bad": 2609404565.254367,
+        "stats": {
+          "min": 181673578.63035804,
+          "max": 225133701.4180528,
+          "p05": 196465443.4544931,
+          "p10": 196718331.74736243,
+          "p90": 216887741.95339304,
+          "p95": 221010721.68572292
+        },
+        "goodSourceCandidateId": "levee_heavy",
+        "badSourceCandidateId": "baseline",
+        "globalMin": 181673578.63035804,
+        "globalMax": 2269047448.0472755,
+        "note": "Flood uses 25-year cumulative damage. All target years share one range: good is 0 JPY damage, bad is 115% of the largest 25-year cumulative damage across baseline, beam-search, and extreme-pattern candidates. This avoids forcing the first-turn baseline to 0 while preserving warming-driven worsening; lower is better."
       },
       "2075": {
-        "good": 587843591.4949598,
-        "bad": 671321241.4539138
+        "good": 0.0,
+        "bad": 2609404565.254367,
+        "stats": {
+          "min": 324845701.825343,
+          "max": 761025577.0769459,
+          "p05": 456485051.22847897,
+          "p10": 485777225.882868,
+          "p90": 635371977.7247709,
+          "p95": 659961485.2597286
+        },
+        "goodSourceCandidateId": "flood_control_mix",
+        "badSourceCandidateId": "baseline",
+        "globalMin": 181673578.63035804,
+        "globalMax": 2269047448.0472755,
+        "note": "Flood uses 25-year cumulative damage. All target years share one range: good is 0 JPY damage, bad is 115% of the largest 25-year cumulative damage across baseline, beam-search, and extreme-pattern candidates. This avoids forcing the first-turn baseline to 0 while preserving warming-driven worsening; lower is better."
       },
       "2100": {
-        "good": 1863478903.9395034,
-        "bad": 1924043222.9470224
+        "good": 0.0,
+        "bad": 2609404565.254367,
+        "stats": {
+          "min": 1084308112.2946281,
+          "max": 2269047448.0472755,
+          "p05": 1499245201.0500913,
+          "p10": 1706629572.244313,
+          "p90": 1832333233.3441677,
+          "p95": 1897772036.4959488
+        },
+        "goodSourceCandidateId": "flood_control_mix",
+        "badSourceCandidateId": "baseline",
+        "globalMin": 181673578.63035804,
+        "globalMax": 2269047448.0472755,
+        "note": "Flood uses 25-year cumulative damage. All target years share one range: good is 0 JPY damage, bad is 115% of the largest 25-year cumulative damage across baseline, beam-search, and extreme-pattern candidates. This avoids forcing the first-turn baseline to 0 while preserving warming-driven worsening; lower is better."
       }
     },
     "crop": {
-      "bad": 4126.797774164267,
-      "good": 4886.127611010859
+      "good": 5000.0,
+      "bad": 3692.713082228059,
+      "note": "Crop uses 25-year period averages."
     },
     "ecosystem": {
-      "bad": 71.12737958287025,
-      "good": 73.89101091835971
+      "good": 100.0,
+      "bad": 42.95705705936331,
+      "badSourceCandidateId": "hard_infra_only",
+      "note": "Ecosystem uses 25-year period averages. The bad bound is anchored by baseline and levee-heavy / hard-infrastructure-biased scenarios; code can be switched to point-in-time values later."
     }
   },
-  "note": "Objective maximizes equal-weight average of flood, crop, and ecosystem scores over 2050, 2075, and 2100 periods."
+  "note": "Selected from Pareto-optimal candidates using the balance-penalized equal-weight average score.",
+  "candidateId": "beam_0032",
+  "source": "beam_search",
+  "pattern": "",
+  "metrics": {
+    "2050": {
+      "floodDamageJpy": 199292489,
+      "cropYield": 4889.9,
+      "ecosystemLevel": 73.89
+    },
+    "2075": {
+      "floodDamageJpy": 489762150,
+      "cropYield": 4737.0,
+      "ecosystemLevel": 72.21
+    },
+    "2100": {
+      "floodDamageJpy": 1586217744,
+      "cropYield": 4267.1,
+      "ecosystemLevel": 71.52
+    }
+  },
+  "averageScores": {
+    "floodScore": 70.93,
+    "cropScore": 71.8,
+    "ecosystemScore": 51.86,
+    "totalScore": 64.87
+  },
+  "objectiveScoreNoPenalty": 64.866,
+  "objectiveScoreWithBalancePenalty": 65.1588,
+  "selectedObjectiveType": "with_balance_penalty",
+  "objectiveScore": 65.1588,
+  "isParetoOptimal": true,
+  "selectedAsBest": true
 }

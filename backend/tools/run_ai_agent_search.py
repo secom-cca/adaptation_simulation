@@ -63,7 +63,7 @@ OBJECTIVE_WEIGHTS = {
 BEAM_WIDTH_BY_TURN = {
     1: 8,
     2: 5,
-    3: 1,
+    3: 3,
 }
 
 # 動作確認で重ければ 8 / 8 / 8 に下げてよい。
@@ -81,6 +81,16 @@ SEED = int(SIMULATION_RANDOM_SEED)
 
 OUTPUT_DIR = BACKEND_DIR / "data"
 FRONTEND_DATA_DIR = PROJECT_DIR / "frontend-new" / "src" / "data"
+PADDY_DAM_MAX_PER_TURN = 6
+POLICY_MAX_PER_TURN = {
+    "paddy_dam_construction_cost": 6,
+    "agricultural_RnD_cost": 2,
+    "capacity_building_cost": 1,
+}
+POLICY_CUMULATIVE_CAP = {
+    "paddy_dam_construction_cost": 6,
+    "house_migration_amount": 20,
+}
 
 
 # ============================================================
@@ -223,10 +233,13 @@ def action_sum(action: Dict[str, int]) -> int:
 
 
 def sanitize_action(action: Dict[str, int]) -> Dict[str, int]:
-    return {
+    sanitized = {
         key: max(0, int(round(float(action.get(key, 0) or 0))))
         for key in POLICY_KEYS
     }
+    for key, max_value in POLICY_MAX_PER_TURN.items():
+        sanitized[key] = min(sanitized.get(key, 0), max_value)
+    return sanitized
 
 
 def normalize_action_to_budget(action: Dict[str, int], budget: int) -> Dict[str, int]:
@@ -292,7 +305,12 @@ def fill_action_to_budget(action: Dict[str, int], budget: int, turn: int) -> Dic
 
     i = 0
     while action_sum(action) < budget:
-        action[priority[i % len(priority)]] += 1
+        key = priority[i % len(priority)]
+        max_value = POLICY_MAX_PER_TURN.get(key)
+        if max_value is None or action[key] < max_value:
+            action[key] += 1
+        if i > len(priority) * (budget + PADDY_DAM_MAX_PER_TURN + 2):
+            break
         i += 1
 
     return action
@@ -405,6 +423,15 @@ def run_path(
     seed: int = SEED,
     params: Dict[str, Any] | None = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    rows, state, _budgets = run_path_detailed(actions, seed=seed, params=params)
+    return rows, state
+
+
+def run_path_detailed(
+    actions: List[Dict[str, int]],
+    seed: int = SEED,
+    params: Dict[str, Any] | None = None,
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any], List[int]]:
     """
     actions:
       1個ならT1のみ実行
@@ -419,9 +446,11 @@ def run_path(
 
     state = build_initial_values(params)
     rows: List[Dict[str, Any]] = []
+    budgets: List[int] = []
 
     start_year = int(params.get("start_year", 2026))
     turn_years = int(params.get("TURN_YEARS", 25))
+    cumulative_policy_points = {key: 0 for key in POLICY_KEYS}
 
     for turn_index, raw_action in enumerate(actions, start=1):
         turn_start = start_year + (turn_index - 1) * turn_years
@@ -438,8 +467,19 @@ def run_path(
         current_budget = int(math.floor(float(
             state.get("available_budget_mana", params.get("BASE_POLICY_BUDGET_MANA", 10))
         )))
+        budgets.append(current_budget)
 
-        action = normalize_action_to_budget(raw_action, current_budget)
+        action = sanitize_action(raw_action)
+        for key, cap in POLICY_CUMULATIVE_CAP.items():
+            remaining = max(0, cap - cumulative_policy_points.get(key, 0))
+            action[key] = min(action.get(key, 0), remaining)
+        action = normalize_action_to_budget(action, current_budget)
+        for key, cap in POLICY_CUMULATIVE_CAP.items():
+            remaining = max(0, cap - cumulative_policy_points.get(key, 0))
+            action[key] = min(action.get(key, 0), remaining)
+        actions[turn_index - 1] = action
+        for key in POLICY_KEYS:
+            cumulative_policy_points[key] += int(action.get(key, 0))
 
         for year in range(turn_start, turn_end + 1):
             decision_var = build_decision_var(year, action)
@@ -458,7 +498,7 @@ def run_path(
             }
             rows.append(output)
 
-    return rows, state
+    return rows, state, budgets
 
 
 def run_baseline(seed: int = SEED) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
@@ -888,6 +928,419 @@ def run_policy_search(seed: int = SEED) -> Tuple[FinalCandidate, Dict[str, Any]]
 
 
 # ============================================================
+# Full logged search
+# ============================================================
+
+def zero_action() -> Dict[str, int]:
+    return {key: 0 for key in POLICY_KEYS}
+
+
+def make_action(
+    forest: int = 0,
+    migration: int = 0,
+    levee: int = 0,
+    paddy: int = 0,
+    drill: int = 0,
+    rnd: int = 0,
+) -> Dict[str, int]:
+    return sanitize_action({
+        "planting_trees_amount": forest,
+        "house_migration_amount": migration,
+        "dam_levee_construction_cost": levee,
+        "paddy_dam_construction_cost": paddy,
+        "capacity_building_cost": drill,
+        "agricultural_RnD_cost": rnd,
+    })
+
+
+def extreme_paths() -> List[Tuple[str, List[Dict[str, int]]]]:
+    z = zero_action()
+    return [
+        ("baseline", [z, z, z]),
+        ("forest_heavy", [make_action(forest=8, paddy=2), make_action(forest=6, rnd=2, paddy=2), make_action(forest=5, rnd=2, paddy=3)]),
+        ("paddy_heavy", [make_action(paddy=6, forest=2, rnd=2), make_action(paddy=6, rnd=2, drill=1, forest=1), make_action(paddy=6, rnd=2, levee=1, drill=1)]),
+        ("rnd_heavy", [make_action(rnd=2, forest=5, paddy=3), make_action(rnd=2, paddy=4, levee=3, drill=1), make_action(rnd=2, paddy=4, levee=3, drill=1)]),
+        ("levee_heavy", [make_action(levee=8, drill=1, paddy=1), make_action(levee=8, paddy=1, rnd=1), make_action(levee=8, paddy=1, rnd=1)]),
+        ("relocation_heavy", [make_action(migration=3, levee=5, paddy=2), make_action(migration=2, levee=5, paddy=2, rnd=1), make_action(migration=1, levee=5, paddy=2, rnd=2)]),
+        ("drill_heavy", [make_action(drill=1, forest=4, paddy=3, rnd=2), make_action(drill=1, paddy=4, rnd=2, levee=3), make_action(drill=1, paddy=4, rnd=2, levee=3)]),
+        ("flood_control_mix", [make_action(levee=5, paddy=4, drill=1), make_action(levee=5, paddy=4, drill=1), make_action(levee=5, paddy=4, drill=1)]),
+        ("green_infra_mix", [make_action(forest=5, paddy=5), make_action(forest=4, paddy=6), make_action(forest=4, paddy=6)]),
+        ("agri_ecosystem_mix", [make_action(forest=7, rnd=2, drill=1), make_action(forest=6, rnd=2, paddy=2), make_action(forest=5, rnd=2, paddy=3)]),
+        ("paddy_rnd_mix", [make_action(paddy=6, rnd=2, forest=2), make_action(paddy=6, rnd=2, levee=1, drill=1), make_action(paddy=6, rnd=2, levee=1, drill=1)]),
+        ("balanced", [make_action(forest=3, paddy=3, rnd=2, levee=1, drill=1), make_action(forest=2, paddy=3, rnd=2, levee=2, drill=1), make_action(forest=1, paddy=3, rnd=2, levee=3, drill=1)]),
+        ("early_forest_late_rnd", [make_action(forest=8, paddy=2), make_action(rnd=2, paddy=4, forest=2, drill=1, levee=1), make_action(rnd=2, paddy=4, levee=3, drill=1)]),
+        ("early_paddy_late_rnd", [make_action(paddy=6, forest=3, drill=1), make_action(paddy=6, rnd=2, forest=1, drill=1), make_action(rnd=2, paddy=4, levee=3, drill=1)]),
+        ("no_hard_infra", [make_action(forest=4, paddy=4, rnd=2), make_action(forest=3, paddy=5, rnd=2), make_action(forest=2, paddy=6, rnd=2)]),
+        ("hard_infra_only", [make_action(levee=7, migration=3), make_action(levee=8, migration=2), make_action(levee=9, migration=1)]),
+    ]
+
+
+def run_beam_search_records(seed: int, bounds: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rng = random.Random(seed)
+    params = load_default_params()
+    initial_budget = int(math.floor(float(params.get("BASE_POLICY_BUDGET_MANA", 10))))
+    beams: List[SearchNode] = [
+        SearchNode([], [], build_initial_values(params), initial_budget, 0.0)
+    ]
+    records: List[Dict[str, Any]] = []
+
+    for turn in [1, 2, 3]:
+        expanded: List[SearchNode] = []
+        for beam in beams:
+            for action in generate_actions(turn, max(0, int(beam.next_budget)), rng):
+                next_actions = beam.actions + [action]
+                rows, final_state, budgets = run_path_detailed(next_actions, seed=seed, params=params)
+                next_budget = int(math.floor(float(final_state.get(
+                    "available_budget_mana",
+                    params.get("BASE_POLICY_BUDGET_MANA", 10),
+                ))))
+                expanded.append(SearchNode(
+                    actions=next_actions,
+                    rows=rows,
+                    final_state=final_state,
+                    next_budget=next_budget,
+                    rank=rank_partial(rows, next_actions, bounds, turn),
+                ))
+                if turn == 3:
+                    records.append({
+                        "candidateId": f"beam_{len(records) + 1:04d}",
+                        "source": "beam_search",
+                        "pattern": "",
+                        "actions": next_actions,
+                        "rows": rows,
+                        "budgets": budgets,
+                    })
+        expanded.sort(key=lambda node: node.rank, reverse=True)
+        beams = expanded[:BEAM_WIDTH_BY_TURN[turn]]
+        print(f"T{turn}: kept {len(beams)} candidates", flush=True)
+
+    return records
+
+
+def run_extreme_records(seed: int) -> List[Dict[str, Any]]:
+    params = load_default_params()
+    records: List[Dict[str, Any]] = []
+    for pattern, actions in extreme_paths():
+        rows, _state, budgets = run_path_detailed(actions, seed=seed, params=params)
+        records.append({
+            "candidateId": pattern,
+            "source": "baseline" if pattern == "baseline" else "extreme_pattern",
+            "pattern": pattern,
+            "actions": actions,
+            "rows": rows,
+            "budgets": budgets,
+        })
+    return records
+
+
+def build_score_bounds_for_records(records: List[Dict[str, Any]]) -> Dict[str, Any]:
+    params = load_default_params()
+    baseline = next(record for record in records if record["candidateId"] == "baseline")
+    baseline_metrics = baseline["metrics"]
+    all_metrics = [record["metrics"] for record in records]
+
+    flood: Dict[str, Any] = {}
+    flood_values_all_periods = [
+        metrics[year].floodDamageJpy
+        for metrics in all_metrics
+        for year in TARGET_PERIODS
+    ]
+    global_flood_min = min(flood_values_all_periods)
+    global_flood_max = max(flood_values_all_periods)
+    shared_flood_good = 0.0
+    shared_flood_bad = max(global_flood_max * 1.15, 1.0)
+    for year in TARGET_PERIODS:
+        values = [metrics[year].floodDamageJpy for metrics in all_metrics]
+        min_record = min(records, key=lambda record: record["metrics"][year].floodDamageJpy)
+        max_record = max(records, key=lambda record: record["metrics"][year].floodDamageJpy)
+        stats = {
+            "min": min(values),
+            "max": max(values),
+            "p05": percentile(values, 0.05),
+            "p10": percentile(values, 0.10),
+            "p90": percentile(values, 0.90),
+            "p95": percentile(values, 0.95),
+        }
+        good = shared_flood_good
+        bad = shared_flood_bad
+        if abs(bad - good) < 1e-9:
+            good = stats["min"]
+            bad = stats["max"] if stats["max"] > stats["min"] else stats["min"] + 1.0
+        flood[str(year)] = {
+            "good": good,
+            "bad": bad,
+            "stats": stats,
+            "goodSourceCandidateId": min_record["candidateId"],
+            "badSourceCandidateId": max_record["candidateId"],
+            "globalMin": global_flood_min,
+            "globalMax": global_flood_max,
+            "note": "Flood uses 25-year cumulative damage. All target years share one range: good is 0 JPY damage, bad is 115% of the largest 25-year cumulative damage across baseline, beam-search, and extreme-pattern candidates. This avoids forcing the first-turn baseline to 0 while preserving warming-driven worsening; lower is better.",
+        }
+
+    crop_bad = min(baseline_metrics[year].cropYield for year in TARGET_PERIODS)
+    ecosystem_bad_source_ids = {
+        "baseline",
+        "levee_heavy",
+        "flood_control_mix",
+        "hard_infra_only",
+    }
+    ecosystem_bad_records = [
+        record for record in records
+        if record["candidateId"] in ecosystem_bad_source_ids
+        or record.get("pattern") in ecosystem_bad_source_ids
+    ] or [baseline]
+    ecosystem_bad_record = min(
+        ecosystem_bad_records,
+        key=lambda record: min(record["metrics"][year].ecosystemLevel for year in TARGET_PERIODS),
+    )
+    eco_bad = min(
+        record["metrics"][year].ecosystemLevel
+        for record in ecosystem_bad_records
+        for year in TARGET_PERIODS
+    )
+    crop_max = max(metrics[year].cropYield for metrics in all_metrics for year in TARGET_PERIODS)
+    eco_max = max(metrics[year].ecosystemLevel for metrics in all_metrics for year in TARGET_PERIODS)
+    crop_initial = float(params.get("max_potential_yield", crop_max))
+    eco_initial = 100.0
+    crop_good = crop_initial if crop_max <= crop_initial * 1.05 else crop_max
+    eco_good = eco_initial if eco_max <= eco_initial * 1.05 else eco_max
+
+    if abs(crop_good - crop_bad) < 1e-9:
+        crop_good = crop_bad + 1.0
+    if abs(eco_good - eco_bad) < 1e-9:
+        eco_good = eco_bad + 1.0
+
+    return {
+        "flood": flood,
+        "crop": {
+            "good": crop_good,
+            "bad": crop_bad,
+            "note": "Crop uses 25-year period averages.",
+        },
+        "ecosystem": {
+            "good": eco_good,
+            "bad": eco_bad,
+            "badSourceCandidateId": ecosystem_bad_record["candidateId"],
+            "note": "Ecosystem uses 25-year period averages. The bad bound is anchored by baseline and levee-heavy / hard-infrastructure-biased scenarios; code can be switched to point-in-time values later.",
+        },
+    }
+
+
+def average_score_values(scores: Dict[int, PeriodScores]) -> Dict[str, float]:
+    return {
+        "floodScore": mean(scores[year].floodScore for year in TARGET_PERIODS),
+        "cropScore": mean(scores[year].cropScore for year in TARGET_PERIODS),
+        "ecosystemScore": mean(scores[year].ecosystemScore for year in TARGET_PERIODS),
+        "totalScore": mean(scores[year].totalScore for year in TARGET_PERIODS),
+    }
+
+
+def mark_pareto_and_best(records: List[Dict[str, Any]]) -> Dict[str, Any]:
+    for record in records:
+        record["isParetoOptimal"] = True
+        a = record["averageScores"]
+        for other in records:
+            if other is record:
+                continue
+            b = other["averageScores"]
+            dominates = (
+                b["floodScore"] >= a["floodScore"]
+                and b["cropScore"] >= a["cropScore"]
+                and b["ecosystemScore"] >= a["ecosystemScore"]
+                and (
+                    b["floodScore"] > a["floodScore"]
+                    or b["cropScore"] > a["cropScore"]
+                    or b["ecosystemScore"] > a["ecosystemScore"]
+                )
+            )
+            if dominates:
+                record["isParetoOptimal"] = False
+                break
+
+    pareto = [record for record in records if record["isParetoOptimal"]]
+    for record in records:
+        avg = record["averageScores"]
+        objective_no_penalty = (avg["floodScore"] + avg["cropScore"] + avg["ecosystemScore"]) / 3.0
+        variance = mean((avg[key] - objective_no_penalty) ** 2 for key in ["floodScore", "cropScore", "ecosystemScore"])
+        balance_std = math.sqrt(variance)
+        record["objectiveScoreNoPenalty"] = objective_no_penalty
+        min_metric_score = min(avg["floodScore"], avg["cropScore"], avg["ecosystemScore"])
+        record["minMetricScoreAvg"] = min_metric_score
+        record["balanceStd"] = balance_std
+        record["objectiveScoreWithBalancePenalty"] = (
+            objective_no_penalty
+            - 0.25 * balance_std
+            + 0.05 * min_metric_score
+        )
+        record["objectiveScore"] = record["objectiveScoreWithBalancePenalty"]
+        record["selectedObjectiveType"] = "with_balance_penalty"
+        record["selectedAsBest"] = False
+
+    best = max(pareto, key=lambda record: record["objectiveScore"])
+    best["selectedAsBest"] = True
+    return best
+
+
+def enrich_records(records: List[Dict[str, Any]], bounds: Dict[str, Any]) -> None:
+    for record in records:
+        record["metrics"] = aggregate_all_periods(record["rows"])
+        record["scores"] = score_periods(record["metrics"], bounds)
+        record["averageScores"] = average_score_values(record["scores"])
+
+
+def record_to_json(record: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "candidateId": record["candidateId"],
+        "source": record["source"],
+        "pattern": record.get("pattern", ""),
+        "actions": [
+            {
+                "turn": index + 1,
+                "policyPoints": {key: int(action.get(key, 0)) for key in POLICY_KEYS},
+                "availableBudget": int(record.get("budgets", [0, 0, 0])[index]) if index < len(record.get("budgets", [])) else None,
+            }
+            for index, action in enumerate(record["actions"])
+        ],
+        "metrics": metrics_to_json(record["metrics"]),
+        "scores": scores_to_json(record["scores"]),
+        "averageScores": {
+            "floodScore": round(record["averageScores"]["floodScore"], 2),
+            "cropScore": round(record["averageScores"]["cropScore"], 2),
+            "ecosystemScore": round(record["averageScores"]["ecosystemScore"], 2),
+            "totalScore": round(record["averageScores"]["totalScore"], 2),
+        },
+        "objectiveScoreNoPenalty": round(record["objectiveScoreNoPenalty"], 4),
+        "objectiveScoreWithBalancePenalty": round(record["objectiveScoreWithBalancePenalty"], 4),
+        "selectedObjectiveType": record["selectedObjectiveType"],
+        "objectiveScore": round(record["objectiveScore"], 4),
+        "isParetoOptimal": bool(record["isParetoOptimal"]),
+        "selectedAsBest": bool(record["selectedAsBest"]),
+    }
+
+
+def record_to_csv_row(record: Dict[str, Any]) -> Dict[str, Any]:
+    metrics = record["metrics"]
+    scores = record["scores"]
+    avg = record["averageScores"]
+    row: Dict[str, Any] = {
+        "candidate_id": record["candidateId"],
+        "source": record["source"],
+        "is_baseline": record["candidateId"] == "baseline",
+        "is_pareto_optimal": record["isParetoOptimal"],
+        "selected_as_best": record["selectedAsBest"],
+        "objective_score": round(record["objectiveScore"], 4),
+        "objective_score_no_penalty": round(record["objectiveScoreNoPenalty"], 4),
+        "objective_score_with_balance_penalty": round(record["objectiveScoreWithBalancePenalty"], 4),
+        "selected_objective_type": record["selectedObjectiveType"],
+        "total_score_avg": round(avg["totalScore"], 4),
+        "flood_score_avg": round(avg["floodScore"], 4),
+        "crop_score_avg": round(avg["cropScore"], 4),
+        "ecosystem_score_avg": round(avg["ecosystemScore"], 4),
+        "notes": record.get("pattern", ""),
+    }
+    for year in TARGET_PERIODS:
+        row[f"total_score_{year}"] = round(scores[year].totalScore, 4)
+        row[f"flood_score_{year}"] = round(scores[year].floodScore, 4)
+        row[f"crop_score_{year}"] = round(scores[year].cropScore, 4)
+        row[f"ecosystem_score_{year}"] = round(scores[year].ecosystemScore, 4)
+        row[f"flood_damage_jpy_{year}"] = round(metrics[year].floodDamageJpy)
+        row[f"crop_yield_{year}"] = round(metrics[year].cropYield, 4)
+        row[f"ecosystem_level_{year}"] = round(metrics[year].ecosystemLevel, 4)
+    budgets = record.get("budgets", [])
+    for index in range(3):
+        action = record["actions"][index] if index < len(record["actions"]) else zero_action()
+        turn = index + 1
+        for key in POLICY_KEYS:
+            row[f"t{turn}_{key}"] = int(action.get(key, 0))
+        row[f"t{turn}_available_budget"] = int(budgets[index]) if index < len(budgets) else ""
+    return row
+
+
+def write_search_logs(records: List[Dict[str, Any]], best: Dict[str, Any], bounds: Dict[str, Any]) -> None:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    FRONTEND_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    pareto = [record for record in records if record["isParetoOptimal"]]
+
+    csv_rows = [record_to_csv_row(record) for record in records]
+    fieldnames = [
+        "candidate_id", "source", "is_baseline", "is_pareto_optimal", "selected_as_best",
+        "objective_score", "objective_score_no_penalty", "objective_score_with_balance_penalty",
+        "selected_objective_type", "total_score_avg", "flood_score_avg", "crop_score_avg", "ecosystem_score_avg",
+        "total_score_2050", "total_score_2075", "total_score_2100",
+        "flood_score_2050", "flood_score_2075", "flood_score_2100",
+        "crop_score_2050", "crop_score_2075", "crop_score_2100",
+        "ecosystem_score_2050", "ecosystem_score_2075", "ecosystem_score_2100",
+        "flood_damage_jpy_2050", "flood_damage_jpy_2075", "flood_damage_jpy_2100",
+        "crop_yield_2050", "crop_yield_2075", "crop_yield_2100",
+        "ecosystem_level_2050", "ecosystem_level_2075", "ecosystem_level_2100",
+    ]
+    for turn in [1, 2, 3]:
+        fieldnames.extend([f"t{turn}_{key}" for key in POLICY_KEYS])
+        fieldnames.append(f"t{turn}_available_budget")
+    fieldnames.append("notes")
+
+    with (OUTPUT_DIR / "agent_search_log.csv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(csv_rows)
+
+    (OUTPUT_DIR / "agent_search_log.json").write_text(
+        json.dumps([record_to_json(record) for record in records], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    pareto_rows = [record_to_csv_row(record) for record in pareto]
+    with (OUTPUT_DIR / "pareto_candidates.csv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(pareto_rows)
+
+    (OUTPUT_DIR / "pareto_candidates.json").write_text(
+        json.dumps([record_to_json(record) for record in pareto], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    baseline = next(record for record in records if record["candidateId"] == "baseline")
+    write_outputs(
+        baseline_metrics=baseline["metrics"],
+        baseline_scores=baseline["scores"],
+        best=FinalCandidate(
+            actions=best["actions"],
+            rows=best["rows"],
+            metrics=best["metrics"],
+            scores=best["scores"],
+            objective=best["objectiveScore"],
+        ),
+        bounds=bounds,
+    )
+
+    best_payload = json.loads((OUTPUT_DIR / "best_agent_result.json").read_text(encoding="utf-8"))
+    best_payload.update(record_to_json(best))
+    best_payload["note"] = "Selected from Pareto-optimal candidates using the balance-penalized equal-weight average score."
+    (OUTPUT_DIR / "best_agent_result.json").write_text(
+        json.dumps(best_payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def run_logged_search(seed: int = SEED) -> Tuple[List[Dict[str, Any]], Dict[str, Any], Dict[str, Any]]:
+    print("Building provisional bounds for beam ranking...", flush=True)
+    ranking_bounds = build_bounds(seed)
+    print("Running extreme patterns...", flush=True)
+    records = run_extreme_records(seed)
+    print("Running beam search...", flush=True)
+    records.extend(run_beam_search_records(seed, ranking_bounds))
+
+    for record in records:
+        record["metrics"] = aggregate_all_periods(record["rows"])
+    bounds = build_score_bounds_for_records(records)
+    enrich_records(records, bounds)
+    best = mark_pareto_and_best(records)
+    write_search_logs(records, best, bounds)
+    return records, best, bounds
+
+
+# ============================================================
 # Output
 # ============================================================
 
@@ -1027,30 +1480,22 @@ def write_outputs(
 
 def main() -> None:
     print("run_ai_agent_search.py started", flush=True)
-
-    print("Running baseline...", flush=True)
-    baseline_rows, _baseline_state = run_baseline(seed=SEED)
-
-    print("Running policy search...", flush=True)
-    best, bounds = run_policy_search(seed=SEED)
-
-    baseline_metrics = aggregate_all_periods(baseline_rows)
-    baseline_scores = score_periods(baseline_metrics, bounds)
-
-    write_outputs(
-        baseline_metrics=baseline_metrics,
-        baseline_scores=baseline_scores,
-        best=best,
-        bounds=bounds,
-    )
+    records, best, _bounds = run_logged_search(seed=SEED)
 
     print("\nDone.", flush=True)
-    print(f"Best objective: {best.objective:.3f}", flush=True)
+    print(f"Candidates logged: {len(records)}", flush=True)
+    print(f"Pareto candidates: {sum(1 for record in records if record['isParetoOptimal'])}", flush=True)
+    print(f"Best candidate: {best['candidateId']}", flush=True)
+    print(f"Best objective: {best['objectiveScore']:.3f}", flush=True)
     print("Best policies:", flush=True)
-    for i, action in enumerate(best.actions, start=1):
+    for i, action in enumerate(best["actions"], start=1):
         print(" ", action_to_ja(i, action), flush=True)
 
     print("\nFiles written:", flush=True)
+    print(" - backend/data/agent_search_log.csv", flush=True)
+    print(" - backend/data/agent_search_log.json", flush=True)
+    print(" - backend/data/pareto_candidates.csv", flush=True)
+    print(" - backend/data/pareto_candidates.json", flush=True)
     print(" - backend/data/score_bounds.json", flush=True)
     print(" - backend/data/best_agent_result.json", flush=True)
     print(" - backend/data/best_agent_summary.csv", flush=True)

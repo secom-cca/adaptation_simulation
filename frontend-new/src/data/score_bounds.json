@@ -1,24 +1,66 @@
 {
   "flood": {
     "2050": {
-      "good": 196718331.74736243,
-      "bad": 222135170.70363104
+      "good": 0.0,
+      "bad": 2609404565.254367,
+      "stats": {
+        "min": 181673578.63035804,
+        "max": 225133701.4180528,
+        "p05": 196465443.4544931,
+        "p10": 196718331.74736243,
+        "p90": 216887741.95339304,
+        "p95": 221010721.68572292
+      },
+      "goodSourceCandidateId": "levee_heavy",
+      "badSourceCandidateId": "baseline",
+      "globalMin": 181673578.63035804,
+      "globalMax": 2269047448.0472755,
+      "note": "Flood uses 25-year cumulative damage. All target years share one range: good is 0 JPY damage, bad is 115% of the largest 25-year cumulative damage across baseline, beam-search, and extreme-pattern candidates. This avoids forcing the first-turn baseline to 0 while preserving warming-driven worsening; lower is better."
     },
     "2075": {
-      "good": 587843591.4949598,
-      "bad": 671321241.4539138
+      "good": 0.0,
+      "bad": 2609404565.254367,
+      "stats": {
+        "min": 324845701.825343,
+        "max": 761025577.0769459,
+        "p05": 456485051.22847897,
+        "p10": 485777225.882868,
+        "p90": 635371977.7247709,
+        "p95": 659961485.2597286
+      },
+      "goodSourceCandidateId": "flood_control_mix",
+      "badSourceCandidateId": "baseline",
+      "globalMin": 181673578.63035804,
+      "globalMax": 2269047448.0472755,
+      "note": "Flood uses 25-year cumulative damage. All target years share one range: good is 0 JPY damage, bad is 115% of the largest 25-year cumulative damage across baseline, beam-search, and extreme-pattern candidates. This avoids forcing the first-turn baseline to 0 while preserving warming-driven worsening; lower is better."
     },
     "2100": {
-      "good": 1863478903.9395034,
-      "bad": 1924043222.9470224
+      "good": 0.0,
+      "bad": 2609404565.254367,
+      "stats": {
+        "min": 1084308112.2946281,
+        "max": 2269047448.0472755,
+        "p05": 1499245201.0500913,
+        "p10": 1706629572.244313,
+        "p90": 1832333233.3441677,
+        "p95": 1897772036.4959488
+      },
+      "goodSourceCandidateId": "flood_control_mix",
+      "badSourceCandidateId": "baseline",
+      "globalMin": 181673578.63035804,
+      "globalMax": 2269047448.0472755,
+      "note": "Flood uses 25-year cumulative damage. All target years share one range: good is 0 JPY damage, bad is 115% of the largest 25-year cumulative damage across baseline, beam-search, and extreme-pattern candidates. This avoids forcing the first-turn baseline to 0 while preserving warming-driven worsening; lower is better."
     }
   },
   "crop": {
-    "bad": 4126.797774164267,
-    "good": 4886.127611010859
+    "good": 5000.0,
+    "bad": 3692.713082228059,
+    "note": "Crop uses 25-year period averages."
   },
   "ecosystem": {
-    "bad": 71.12737958287025,
-    "good": 73.89101091835971
+    "good": 100.0,
+    "bad": 42.95705705936331,
+    "badSourceCandidateId": "hard_infra_only",
+    "note": "Ecosystem uses 25-year period averages. The bad bound is anchored by baseline and levee-heavy / hard-infrastructure-biased scenarios; code can be switched to point-in-time values later."
   }
 }

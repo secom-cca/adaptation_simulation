@@ -191,16 +191,20 @@ def run_simulation(req: SimulationRequest):
         df_csv['scenario_name'] = scenario_name
         df_csv['timestamp'] = pd.Timestamp.utcnow()
         df_csv['user_name'].to_csv(YOUR_NAME_FILE, index=False)
-        if RANK_FILE.exists():
-            old = pd.read_csv(RANK_FILE, sep='\t')
-            merged = (
-                old.set_index(['user_name', 'scenario_name', 'period'])
-                .combine_first(df_csv.set_index(['user_name', 'scenario_name', 'period']))
-                .reset_index()
-            )
-            merged.to_csv(RANK_FILE, sep='\t', index=False)
-        else:
-            df_csv.to_csv(RANK_FILE, sep='\t', index=False)
+        try:
+            if RANK_FILE.exists():
+                try:
+                    old = pd.read_csv(RANK_FILE, sep='\t', encoding='utf-8')
+                except UnicodeDecodeError:
+                    old = pd.read_csv(RANK_FILE, sep='\t', encoding='utf-8', encoding_errors='replace')
+                merged = pd.concat([old, df_csv], ignore_index=True)
+                merged.to_csv(RANK_FILE, sep='\t', index=False)
+            else:
+                df_csv.to_csv(RANK_FILE, sep='\t', index=False)
+        except Exception as e:
+            # Ranking persistence is non-critical for gameplay. If the terminal
+            # file is locked or malformed, keep the simulation response alive.
+            print(f"[WARN] Skipped rank file write: {RANK_FILE}: {e}")
 
     
     elif mode == "Predict Simulation Mode":

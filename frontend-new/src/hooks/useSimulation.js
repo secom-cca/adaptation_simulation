@@ -9,6 +9,7 @@ import {
   INFRA_COST_PER_MIGRATED_HOUSE_PER_YEAR,
   MIGRATION_INFRA_PENALTY_START_MANA,
 } from '../data/budget.js'
+import { formatJpyInline } from '../utils/formatJpy'
 
 const API = '/api'
 
@@ -550,7 +551,14 @@ function collectTurnEvents(yearlyResults = []) {
         id: ev.id,
         year: ev.year ?? row.year,
         title,
-        message: ev.message ?? '',
+        message: isFloodEvent(ev)
+          ? explicitFloodEventMessage(
+            ev,
+            row,
+            explicitBaselineValueForEvent(ev, row),
+            explicitBaselineDiffForEvent(ev, row),
+          )
+          : ev.message ?? '',
         severity: ev.severity ?? 'warning',
         category,
         related_policy: ev.related_policy,
@@ -566,6 +574,38 @@ function collectTurnEvents(yearlyResults = []) {
   })
 
   return events.sort((a, b) => (a.year - b.year) || (a.sortIndex - b.sortIndex))
+}
+
+function isFloodEvent(event = {}) {
+  const id = String(event.id ?? '')
+  return event.category === 'flood'
+    || event.metric === 'annual_flood_damage_jpy'
+    || id.startsWith('flood_damage_')
+    || id.startsWith('major_flood_damage_')
+    || id.startsWith('large_flood_damage_')
+    || id.startsWith('severe_flood_damage_')
+}
+
+function explicitFloodEventMessage(event = {}, row = {}, baselineValue, diffFromBaseline) {
+  const currentDamage = Number(event.value ?? row['Flood Damage JPY'] ?? ((row['Flood Damage'] ?? 0) * 150)) || 0
+  const baselineDamage = Number(baselineValue)
+  const diff = Number(diffFromBaseline)
+  const safeBaseline = Number.isFinite(baselineDamage) ? baselineDamage : Number(event.baselineValue) || 0
+  const safeDiff = Number.isFinite(diff) ? diff : safeBaseline - currentDamage
+
+  if (safeDiff >= 0) {
+    return (
+      `この年の洪水被害額は${formatJpyInline(currentDamage)}でした。` +
+      `同じ雨が何も対策しなかった流域に降った場合の被害額${formatJpyInline(safeBaseline)}と比べると、` +
+      `${formatJpyInline(safeDiff)}の被害を抑えています。`
+    )
+  }
+
+  return (
+    `この年の洪水被害額は${formatJpyInline(currentDamage)}でした。` +
+    `同じ雨が何も対策しなかった流域に降った場合の被害額${formatJpyInline(safeBaseline)}と比べると、` +
+    `${formatJpyInline(Math.abs(safeDiff))}被害が増えています。`
+  )
 }
 
 function collectPolicyStartEvents(sliders = {}, policyHistory = [], year) {
@@ -733,7 +773,7 @@ function migrationEventHouseValue(event = {}, row = {}) {
 
 function explicitBaselineValueForEvent(event = {}, row = {}) {
   const id = String(event.id ?? '')
-  if (id.startsWith('flood_damage_') || id.startsWith('major_flood_damage_') || id.startsWith('severe_flood_damage_')) {
+  if (isFloodEvent(event)) {
     return row['Baseline Flood Damage JPY (explicit)'] ?? event.baselineValue
   }
   if (id.startsWith('crop_production_')) {
@@ -747,7 +787,7 @@ function explicitBaselineValueForEvent(event = {}, row = {}) {
 
 function explicitBaselineDiffForEvent(event = {}, row = {}) {
   const id = String(event.id ?? '')
-  if (id.startsWith('flood_damage_') || id.startsWith('major_flood_damage_') || id.startsWith('severe_flood_damage_')) {
+  if (isFloodEvent(event)) {
     return row['Damage Difference JPY (baseline - scenario)'] ?? event.diffFromBaseline
   }
   if (id.startsWith('crop_production_')) {

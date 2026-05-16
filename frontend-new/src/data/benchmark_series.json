@@ -25,8 +25,8 @@
     "labelEn": "AI optimal",
     "policiesJa": [
       "T1: 植林5 / 田んぼダム2 / 防災訓練1 / 農業R&D2",
-      "T2: 植林1 / 田んぼダム4 / 農業R&D3",
-      "T3: 植林1 / 田んぼダム2 / 農業R&D3"
+      "T2: 植林1 / 堤防1 / 田んぼダム3 / 防災訓練1 / 農業R&D2",
+      "T3: 田んぼダム1 / 防災訓練1 / 農業R&D2"
     ],
     "years": {
       "2050": {
@@ -35,13 +35,13 @@
         "ecosystemLevel": 73.89
       },
       "2075": {
-        "floodDamageJpy": 588338898,
-        "cropYield": 4693.3,
+        "floodDamageJpy": 489762150,
+        "cropYield": 4737.0,
         "ecosystemLevel": 72.21
       },
       "2100": {
-        "floodDamageJpy": 1844485118,
-        "cropYield": 4159.8,
+        "floodDamageJpy": 1586217744,
+        "cropYield": 4267.1,
         "ecosystemLevel": 71.52
       }
     }

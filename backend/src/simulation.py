@@ -1,4 +1,4 @@
-# simulation.py
+﻿# simulation.py
 
 import random
 import numpy as np
@@ -136,6 +136,26 @@ def _emit_event(events, state, event_id, year, turn_index, severity, category, t
     if cooldown_years is not None and last_year is not None and year - int(last_year) < cooldown_years:
         return
     state[event_id] = year
+    if category == "flood" and metric == "annual_flood_damage_jpy":
+        current_damage = float(value or 0.0)
+        baseline_damage = float(baseline_value or 0.0)
+        reduction = max(float(diff_from_baseline or 0.0), baseline_damage - current_damage, 0.0)
+
+        def _format_jpy(amount):
+            amount = float(amount or 0.0)
+            if amount >= 100_000_000:
+                return f"約{amount / 100_000_000:.1f}億円"
+            if amount >= 10_000:
+                return f"約{amount / 10_000:,.0f}万円"
+            return f"約{amount:,.0f}円"
+
+        title = "洪水被害が発生しました"
+        message = (
+            f"この年の洪水被害額は{_format_jpy(current_damage)}でした。"
+            f"同じ雨が何も対策しなかった流域に降った場合の被害額"
+            f"{_format_jpy(baseline_damage)}と比べると、"
+            f"{_format_jpy(reduction)}の被害を抑えています。"
+        )
     events.append({
         "id": event_id,
         "year": year,

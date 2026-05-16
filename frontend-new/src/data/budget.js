@@ -57,10 +57,10 @@ export const POLICY_MANA_RULES = {
     labelJa: '田んぼダム',
     labelEn: 'Paddy dam',
     min: 1,
-    maxPerTurn: null,
+    maxPerTurn: 6,
     cumulativeCap: 6,
-    summaryJa: '水田に雨水を一時貯留します。累積6ポイントが上限です。',
-    summaryEn: 'Capped at 6 cumulative points.',
+    summaryJa: '水田に雨水を一時貯留します。1ターン最大6ポイントです。',
+    summaryEn: 'Capped at 6 points per turn.',
   },
   agricultural_RnD_cost: {
     labelJa: '農業R&D',

@@ -1,4 +1,4 @@
-from pathlib import Path, PosixPath
+﻿from pathlib import Path, PosixPath
 import numpy as np
 
 DATA_DIR: PosixPath = Path("data")
@@ -41,81 +41,79 @@ POLICY_INPUT_UNIT = "mana"
 
 POLICY_MANA_RULES = {
     "planting_trees_amount": {
-        "label": "植林・森林保全",
+        "label": "Forest restoration",
         "min_mana_per_use": 1,
         "max_mana_per_turn": None,
         "cumulative_mana_cap": None,
         "optional_max_forest_share": 0.70,
         "enable_max_forest_share": False,
-        "description": "長期的に森林面積を増やし、保水力と生態系を改善する。累積マナ上限は設けない。",
+        "description": "Delayed flood retention and ecosystem support.",
     },
     "capacity_building_cost": {
-        "label": "避難訓練・防災訓練",
+        "label": "Disaster preparedness",
         "min_mana_per_use": 1,
         "max_mana_per_turn": 1,
         "cumulative_mana_cap": None,
-        "description": "住民の対応力を高める。1ターン最大1マナ。",
+        "description": "Turn cap 1 point; improves resident preparedness.",
     },
     "house_migration_amount": {
-        "label": "住宅移転",
+        "label": "Relocation support",
         "min_mana_per_use": 1,
         "max_mana_per_turn": None,
         "cumulative_mana_cap": 20,
         "max_migration_share": 1.00,
         "alternative_cumulative_mana_cap": 10,
         "alternative_max_migration_share": 0.50,
-        "description": "高リスク住宅を安全な地域に移す。累計1マナ超から将来インフラ費用ペナルティが発生する。",
+        "description": "Moves houses away from high-risk flood areas.",
     },
     "agricultural_RnD_cost": {
-        "label": "農業R&D・高温適応技術普及",
+        "label": "Agricultural adaptation R&D",
         "min_mana_per_use": 1,
         "max_mana_per_turn": 2,
         "cumulative_mana_cap": None,
-        "description": "高温耐性品種・栽培技術を導入・実証・普及する。1ターン最大2マナ。",
+        "description": "Turn cap 2 points; improves heat tolerance.",
     },
     "dam_levee_construction_cost": {
-        "label": "堤防・河川改修",
+        "label": "Levee / river works",
         "min_mana_per_use": 5,
         "max_mana_per_turn": None,
         "cumulative_mana_cap": None,
-        "description": "最低5マナから事業化する大型洪水対策。累積上限は設けない。",
+        "description": "Minimum 5 points; hard flood-control works.",
     },
     "paddy_dam_construction_cost": {
-        "label": "田んぼダム",
+        "label": "Paddy dam",
         "min_mana_per_use": 1,
-        "max_mana_per_turn": None,
+        "max_mana_per_turn": 6,
         "cumulative_mana_cap": 6,
-        "description": "水田の一時貯留機能を使う流域治水策。累計6マナで最大効果。",
+        "description": "Turn cap 6 points; temporary retention in paddy fields.",
     },
 }
-
 POLICY_EFFECT_METADATA = {
     "planting_trees_amount": {
-        "meaning_per_mana": "1マナで25年間に約86.6ha相当の植林。効果発現には時間遅れがある。",
-        "side_effect": "直接の予算ペナルティは小さいが、短期の洪水対策にはなりにくい。",
+        "meaning_per_mana": "Forest restoration matures with delay.",
+        "side_effect": "Low immediate budget penalty; delayed flood and ecosystem benefits.",
     },
     "capacity_building_cost": {
-        "meaning_per_mana": "1マナで既存モデルの2単位分の訓練効果。",
-        "side_effect": "同じターンに大量投入しても線形に効きにくいため、1ターン最大1マナ。",
+        "meaning_per_mana": "Improves resident preparedness.",
+        "side_effect": "Turn cap 1 point.",
     },
     "house_migration_amount": {
-        "meaning_per_mana": "1マナで25年間に約513戸を移転できる。",
-        "side_effect": "累計1マナ超から、移転住宅1戸あたり年1万円のインフラ維持費ペナルティ。",
+        "meaning_per_mana": "Moves houses away from high-risk areas.",
+        "side_effect": "Can increase future infrastructure maintenance burden.",
     },
     "agricultural_RnD_cost": {
-        "meaning_per_mana": "1マナで25年間に高温耐性が約0.4度向上する目安。",
-        "side_effect": "洪水被害は直接減らさない。研究・普及の速度制約により1ターン最大2マナ。",
+        "meaning_per_mana": "Improves heat tolerance for crops.",
+        "side_effect": "Turn cap 2 points; benefits are delayed.",
     },
     "dam_levee_construction_cost": {
-        "meaning_per_mana": "最低5マナで事業化。20mm強化で代表的な180mm豪雨の越流水を約25%削減。",
-        "side_effect": "高コストで、生態系指標には負荷がある。",
+        "meaning_per_mana": "Increases levee / river defense level.",
+        "side_effect": "Minimum 5 points; can pressure ecosystem indicators.",
     },
     "paddy_dam_construction_cost": {
-        "meaning_per_mana": "1マナで180mm豪雨の越流水を約2%削減、累計6マナで最大約13%削減。",
-        "side_effect": "最大効果は堤防より小さく、収量に最大1%程度の小さな負担。",
+        "meaning_per_mana": "Adds temporary retention in paddy fields.",
+        "side_effect": "Turn cap 6 points; can slightly reduce crop yield.",
     },
 }
-
 EVENT_THRESHOLDS = {
     "major_extreme_rain_mm": 160,
     "warning_extreme_rain_mm": 210,
@@ -267,3 +265,6 @@ __all__ = [
     "TURN_YEARS", "FLOOD_RECOVERY_COST_COEF", "INFRA_COST_PER_MIGRATED_HOUSE_PER_YEAR",
     "POLICY_MANA_RULES", "POLICY_EFFECT_METADATA", "EVENT_THRESHOLDS",
 ]
+
+
+

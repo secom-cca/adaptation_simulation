@@ -1,5 +1,6 @@
 ﻿import React from 'react'
 import { useTranslation } from '../../contexts/LanguageContext.jsx'
+import { SCORE_BOUNDS } from '../../data/resultScores.js'
 import s from './BasinStatus.module.css'
 
 function formatPoints(value) {
@@ -14,6 +15,39 @@ function formatYen(value) {
   return `${Math.round(amount).toLocaleString()}円/年`
 }
 
+function rowFloodDamage(row = {}) {
+  return Number(row['Flood Damage JPY'] ?? ((row['Flood Damage'] ?? row.flood_damage_cost ?? 0) * 150)) || 0
+}
+
+function latestFloodStatusValue(currentValues = {}, history = []) {
+  if (history.length >= 25) {
+    return history.slice(-25).reduce((sum, row) => sum + rowFloodDamage(row), 0)
+  }
+  return rowFloodDamage(currentValues)
+}
+
+function previousFloodStatusValue(history = []) {
+  if (history.length < 50) return null
+  return history.slice(-50, -25).reduce((sum, row) => sum + rowFloodDamage(row), 0)
+}
+
+function latestTargetYear(history = []) {
+  if (history.length >= 75) return 2100
+  if (history.length >= 50) return 2075
+  return 2050
+}
+
+function floodStatusFromScore(value, history = []) {
+  const targetYear = latestTargetYear(history)
+  const bounds = SCORE_BOUNDS.flood[targetYear] ?? SCORE_BOUNDS.flood[String(targetYear)] ?? SCORE_BOUNDS.flood[2100]
+  const good = Number(bounds?.good) || 0
+  const bad = Number(bounds?.bad) || 1
+  const score = ((bad - value) / Math.max(bad - good, 1e-9)) * 100
+  if (score >= 66) return { key: 'status.low', tier: 'good' }
+  if (score >= 33) return { key: 'status.medium', tier: 'caution' }
+  return { key: 'status.high', tier: 'critical' }
+}
+
 export default function BasinStatus({ currentValues, history, budgetRow }) {
   const { t, lang } = useTranslation()
   const prev = history.length > 25 ? history[history.length - 26] : null
@@ -21,10 +55,8 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
   const indicators = [
     {
       icon: '🌊', labelKey: 'basin.flood.label',
-      getValue: cv => cv['Flood Damage JPY'] ?? ((cv['Flood Damage'] ?? cv.flood_damage_cost ?? 0) * 150),
-      format: v => v < 100_000_000 ? { key: 'status.low', tier: 'good' }
-                : v < 200_000_000 ? { key: 'status.medium', tier: 'caution' }
-                           : { key: 'status.high', tier: 'critical' },
+      getValue: cv => latestFloodStatusValue(cv, history),
+      format: v => floodStatusFromScore(v, history),
     },
     {
       icon: '🌾', labelKey: 'basin.food.label',
@@ -56,7 +88,9 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
         {indicators.map(ind => {
           const val = ind.getValue(currentValues)
           const { key, tier } = ind.format(val)
-          const prevVal = prev ? ind.getValue(prev) : null
+          const prevVal = ind.labelKey === 'basin.flood.label'
+            ? previousFloodStatusValue(history)
+            : prev ? ind.getValue(prev) : null
           const trend = prevVal === null ? null : val > prevVal ? 'up' : val < prevVal ? 'down' : 'flat'
           return (
             <div key={ind.labelKey} className={`${s.card} ${s[tier]}`}>
@@ -100,3 +134,4 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
     </div>
   )
 }
+

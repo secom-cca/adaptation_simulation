@@ -3,6 +3,9 @@ import { useTranslation } from '../../contexts/LanguageContext.jsx'
 import { scoresForRow, round1 } from '../../data/resultScores.js'
 import s from '../../pages/ConsequencePage.module.css'
 import own from './CycleReport.module.css'
+import { formatJpyInline, formatJpyShort, formatJpy } from '../../utils/formatJpy'
+
+
 
 const REPORT_COLOR = '#5a6a7a'
 
@@ -48,12 +51,7 @@ function fmtNumber(value, digits = 0) {
   })
 }
 
-function formatJpyShort(value) {
-  const amount = Number(value) || 0
-  if (amount >= 100_000_000) return `${(amount / 100_000_000).toFixed(1)}億円`
-  if (amount >= 10_000) return `${Math.round(amount / 10_000).toLocaleString()}万円`
-  return `${Math.round(amount).toLocaleString()}円`
-}
+// format helpers moved to ../../utils/formatJpy
 
 function summarizeCycleRows(rows = [], year) {
   const lastRow = rows[rows.length - 1] ?? {}
@@ -176,19 +174,9 @@ function eventBody(ev, row = {}) {
   return `${value}${ev.message ?? ''}`.trim()
 }
 
-function formatJpyInline(value) {
-  const amount = Number(value) || 0
-  if (amount >= 100_000_000) return `約${(amount / 100_000_000).toFixed(1)}億円`
-  if (amount >= 10_000) return `約${Math.round(amount / 10_000).toLocaleString()}万円`
-  return `約${Math.round(amount).toLocaleString()}円`
-}
 
-function formatJpy(value) {
-  const amount = Number(value) || 0
-  if (amount >= 100_000_000) return `被害額 約${(amount / 100_000_000).toFixed(1)}億円。`
-  if (amount >= 10_000) return `被害額 約${Math.round(amount / 10_000).toLocaleString()}万円。`
-  return `被害額 約${Math.round(amount).toLocaleString()}円。`
-}
+
+// format helpers moved to ../../utils/formatJpy
 
 function eventIcon(category) {
   if (category === 'flood' || category === 'climate') return '🌊'

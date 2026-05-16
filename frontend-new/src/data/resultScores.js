@@ -1,3 +1,6 @@
+import generatedBenchmarkSeries from './benchmark_series.json'
+import generatedScoreBounds from './score_bounds.json'
+
 export const TARGET_YEARS = [2050, 2075, 2100]
 
 export const TARGET_YEAR_PERIODS = {
@@ -16,7 +19,7 @@ export const TARGET_YEAR_PERIODS = {
  * - baseline は 2050 → 2075 → 2100 でだんだん悪化
  * - AI最適解は悪化を完全には止めないが、踏みとどまる
  */
-export const SCORE_BOUNDS = {
+export const FALLBACK_SCORE_BOUNDS = {
   flood: {
     2050: {
       good: 400_000_000,
@@ -41,7 +44,7 @@ export const SCORE_BOUNDS = {
   },
 }
 
-export const BENCHMARK_SERIES = {
+export const FALLBACK_BENCHMARK_SERIES = {
   baseline: {
     labelJa: 'ベースライン（対策なし）',
     labelEn: 'Baseline',
@@ -90,6 +93,9 @@ export const BENCHMARK_SERIES = {
     },
   },
 }
+
+export const SCORE_BOUNDS = generatedScoreBounds ?? FALLBACK_SCORE_BOUNDS
+export const BENCHMARK_SERIES = generatedBenchmarkSeries ?? FALLBACK_BENCHMARK_SERIES
 
 export function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, Number(value) || 0))
