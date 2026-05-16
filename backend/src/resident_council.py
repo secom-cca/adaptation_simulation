@@ -30,6 +30,44 @@ from models import (
 
 
 RESIDENT_COUNCIL_MODEL = INTERMEDIATE_EVALUATION_MODEL
+RESIDENT_COUNCIL_MODEL_ATTEMPTS = (
+    (
+        RESIDENT_COUNCIL_MODEL,
+        {"temperature": 0.35, "num_predict": 1200},
+        45.0,
+    ),
+    (
+        "gemma2:2b",
+        {"temperature": 0.35, "num_predict": 700},
+        30.0,
+    ),
+)
+RESIDENT_INTERVIEW_MODEL_ATTEMPTS = (
+    (
+        RESIDENT_COUNCIL_MODEL,
+        {"temperature": 0.85, "top_p": 0.9, "num_predict": 900},
+        45.0,
+    ),
+    (
+        "gemma2:2b",
+        {"temperature": 0.85, "top_p": 0.9, "num_predict": 360},
+        30.0,
+    ),
+)
+RESIDENT_SHORT_VOICE_MODEL_ATTEMPTS = (
+    (
+        "gemma2:2b",
+        {"temperature": 0.8, "top_p": 0.9, "num_predict": 120},
+        20.0,
+    ),
+)
+RESIDENT_PERSONA_EVALUATION_MODEL_ATTEMPTS = (
+    (
+        "gemma2:2b",
+        {"temperature": 0.45, "top_p": 0.9, "num_predict": 220},
+        25.0,
+    ),
+)
 
 PERSONAS: Dict[str, Dict[str, str]] = {
     "child_future": {
@@ -556,6 +594,30 @@ def _build_fallback_short_voice(persona_key: str, score: int, req: IntermediateE
     return f"{crop_year}の収穫の落ち込みは忘れられん。これでは若い者に『残れ』とはよう言えん。"
 
 
+def _normalize_interview_focus(req: ResidentInterviewRequest) -> str:
+    focus = (req.interview_focus or "").strip()
+    allowed = {"lived_event", "policy_effect", "future_outlook"}
+    if focus in allowed:
+        return focus
+    interview_index = max(1, int(req.interview_index or 1))
+    return ("lived_event", "policy_effect", "future_outlook")[(interview_index - 1) % 3]
+
+
+def _interview_focus_instruction(req: ResidentInterviewRequest, is_english: bool) -> str:
+    focus = _normalize_interview_focus(req)
+    if is_english:
+        return {
+            "lived_event": "Main angle: speak from the strongest lived event in the simulation period and how it felt in daily life.",
+            "policy_effect": "Main angle: judge one policy effect through this persona's values, including whether it really reached everyday life.",
+            "future_outlook": "Main angle: describe this persona's outlook for continuing life in the town after seeing the simulation results.",
+        }[focus]
+    return {
+        "lived_event": "主な切り口: シミュレーション期間内で最も生活実感に残った出来事を起点に語る。",
+        "policy_effect": "主な切り口: このペルソナの価値観から、政策効果が暮らしに届いたかを評価する。",
+        "future_outlook": "主な切り口: シミュレーション結果を見た後、この町で暮らし続ける見通しを語る。",
+    }[focus]
+
+
 def _build_fallback_detailed_voice(persona_key: str, score: int, req: ResidentInterviewRequest) -> str:
     persona = PERSONAS[persona_key]
     tone = _score_tone(score)
@@ -566,24 +628,73 @@ def _build_fallback_detailed_voice(persona_key: str, score: int, req: ResidentIn
     hot_year = _main_event_year(rows, "Hot Days", reverse=True) or "暑さがきつかった年"
     policy_clause = _voice_policy_clause(req, persona_key, score)
     period = f"{req.period_start_year}年から{req.period_end_year}年"
+    focus = _normalize_interview_focus(req)
 
     if persona_key == "child_future":
+        if focus == "policy_effect":
+            return (
+                f"僕は{persona['role']}として、{period}の政策を自分の遊び場に置き換えて考えました。"
+                f"{policy_clause}。でも{hot_year}のような暑さを覚えると、数字が少し良くても、外に出る気持ちまで戻るかは別です。"
+                "未来が守られているなら、川や森で安心して遊べる実感として見えてほしいです。"
+            )
+        if focus == "future_outlook":
+            return (
+                f"僕は{persona['role']}として、{period}の先を{tone}に想像しています。{hot_year}の暑さが心に残って、"
+                "この町で大人になるころも同じように外へ出られるのか不安です。"
+                f"政策については、{policy_clause}。未来への約束としては、まだ生活の安心に届いたかを見ています。"
+            )
         return (
             f"僕は{persona['role']}として、{period}を{tone}に見ています。いちばん残るのは{hot_year}の暑さで、"
             f"外で遊ぶ場所がだんだん細っていく感じがしました。政策については、{policy_clause}。"
             "それが毎日の安心まで届かないなら、未来を守ったとは言い切れません。"
         )
     if persona_key == "entrepreneur":
+        if focus == "policy_effect":
+            return (
+                f"私は{persona['role']}として、政策が商売の継続にどう効いたかを見ています。{policy_clause}。"
+                f"ただ、{burden_year}のように負担が重く見える年があると、採用や投資の判断は鈍ります。"
+                "事業者にとっては、理念よりも災害後に店を開け続けられるかが評価の分かれ目です。"
+            )
+        if focus == "future_outlook":
+            return (
+                f"私は{persona['role']}として、{period}の先にこの町で挑戦できるかを考えています。"
+                f"{burden_year}の負担を見ると慎重になりますが、{policy_clause}。"
+                "暮らしと事業の土台が揺れ続けるなら、若い会社ほどこの町に賭けにくくなります。"
+            )
         return (
             f"私は{persona['role']}として、{period}の評価は{tone}です。{burden_year}のように負担が跳ねると、"
             f"採用も設備投資も一気に慎重になります。政策については、{policy_clause}。"
             "災害やコストで街が止まる不安が残る限り、起業家は強気に賭けきれません。"
         )
     if persona_key == "council_member":
+        if focus == "policy_effect":
+            return (
+                f"私は{persona['role']}として、政策効果を住民に説明できるかを重く見ます。{flood_year}の記憶がある人には、"
+                f"{policy_clause}と具体的に言えるかが問われます。負担だけが見えると合意は崩れるので、"
+                "守れた部分と守れなかった部分を同じ重さで語る必要があります。"
+            )
+        if focus == "future_outlook":
+            return (
+                f"私は{persona['role']}として、{period}の先に説明責任が積み残されていないかを見ています。"
+                f"{flood_year}のような年を経験した住民に、{policy_clause}と言える材料はあります。"
+                "ただし、負担の痛みが残るなら、政策への信頼は次の災害まで持ちません。"
+            )
         return (
             f"私は{persona['role']}として、{period}の結果を住民説明の場で考えます。{flood_year}を覚えている住民には、"
             f"{policy_clause}と正面から言えるかが重要です。一方で負担の痛みも残るので、"
             "政策を選んだ理由と、守れなかった部分の説明から逃げてはいけません。"
+        )
+    if focus == "policy_effect":
+        return (
+            f"わしは{persona['role']}として、政策が田畑にどう届いたかを見とる。{policy_clause}。"
+            f"けれど{crop_year}のような年があると、机の上の評価より、収穫が減る怖さのほうが先に来る。"
+            "農家にとっては、効果があると言われるだけでは足りん。畑で安心できるかがすべてじゃ。"
+        )
+    if focus == "future_outlook":
+        return (
+            f"わしは{persona['role']}として、{period}の先に田畑を渡せるかを考えとる。"
+            f"{crop_year}の落ち込みは重いが、{policy_clause}。"
+            "若い者に残れと言うには、気候が荒れても暮らしが続くという腹の底の安心が要るんじゃ。"
         )
     return (
         f"わしは{persona['role']}として、{period}を{tone}に受け止めとる。忘れられんのは{crop_year}の収穫の落ち込みじゃ。"
@@ -612,6 +723,239 @@ def _build_fallback_residents(
             )
         )
     return residents
+
+
+def _build_resident_short_voice_prompt(
+    req: IntermediateEvaluationRequest,
+    persona_key: str,
+    score: int,
+) -> str:
+    persona = PERSONAS[persona_key]
+    decision_var = req.decision_var.model_dump()
+    policy_summary = _build_policy_summary(decision_var)
+    phase_summaries = _build_phase_summaries(req.simulation_rows)
+    persona_evidence = _persona_event_briefs(req, persona_key)
+
+    if req.language.lower().startswith("en"):
+        return f"""
+You are this resident:
+- Name: {persona['display_name']}
+- Role: {persona['role']}
+- Main concerns: {persona['focus']}
+- Satisfaction score: {score}/10
+
+Period: {req.period_start_year}-{req.period_end_year}
+Policies:
+{chr(10).join(policy_summary)}
+
+Trend evidence:
+{chr(10).join(phase_summaries)}
+
+Evidence this resident would remember:
+{chr(10).join(persona_evidence)}
+
+Write one short first-person resident reaction.
+Use only the simulation evidence above. Do not write a policy memo.
+Include one concrete event, policy effect, burden, harvest, heat, or preparedness point if possible.
+No markdown, no JSON, no heading. Keep it one sentence, under 35 words.
+""".strip()
+
+    return f"""
+あなたは次の住民です。
+- 名前: {persona['display_name']}
+- 立場: {persona['role']}
+- 重視すること: {persona['focus']}
+- 満足度: {score}/10
+
+対象期間: {req.period_start_year}年-{req.period_end_year}年
+政策一覧:
+{chr(10).join(policy_summary)}
+
+前半・中盤・後半の比較:
+{chr(10).join(phase_summaries)}
+
+この住民が記憶しやすい材料:
+{chr(10).join(persona_evidence)}
+
+この住民本人として、短い一言を1文だけ書いてください。
+分析レポートではなく、生活者としての反応にしてください。
+可能なら、出来事の年、政策効果、負担、収穫、暑さ、防災能力のどれか1つを具体的に入れてください。
+JSON、Markdown、見出しは禁止です。対象期間外の年や実在しない出来事は禁止です。
+45〜90文字程度にしてください。
+""".strip()
+
+
+def _clean_short_voice(text: str) -> str:
+    cleaned = _clean_interview_text(text)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    if cleaned.startswith("{") or cleaned.startswith("["):
+        return ""
+    return cleaned
+
+
+def _generate_resident_short_voice_with_llm(
+    req: IntermediateEvaluationRequest,
+    persona_key: str,
+    score: int,
+) -> tuple[str, str]:
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "あなたは指定された住民ペルソナです。"
+                "対象期間内のシミュレーション結果だけを根拠に、生活者として短く率直に反応してください。"
+                "政策解説ではなく、その住民なら何を感じるかを一人称で答えてください。"
+            ),
+        },
+        {"role": "user", "content": _build_resident_short_voice_prompt(req, persona_key, score)},
+    ]
+
+    for model_name, options, timeout in RESIDENT_SHORT_VOICE_MODEL_ATTEMPTS:
+        try:
+            response = _chat_ollama(
+                model=model_name,
+                messages=messages,
+                options=options,
+                timeout=timeout,
+            )
+            short_voice = _clean_short_voice(_extract_message_content(response))
+        except Exception:
+            short_voice = ""
+
+        if short_voice and not _short_voice_is_weak(short_voice, req):
+            return short_voice, model_name
+
+    return "", ""
+
+
+def _payload_score_keys(payload: Dict[str, Any] | None) -> set[str]:
+    keys: set[str] = set()
+    if not isinstance(payload, dict):
+        return keys
+
+    scores = payload.get("scores")
+    if isinstance(scores, dict):
+        for key in PERSONA_KEYS:
+            if _coerce_score(scores.get(key)) is not None:
+                keys.add(key)
+
+    residents = payload.get("residents")
+    if isinstance(residents, list):
+        for item in residents:
+            if not isinstance(item, dict):
+                continue
+            key = item.get("persona_key")
+            if key in PERSONA_KEYS and _coerce_score(item.get("score")) is not None:
+                keys.add(key)
+
+    return keys
+
+
+def _build_persona_evaluation_prompt(req: IntermediateEvaluationRequest, persona_key: str) -> str:
+    persona = PERSONAS[persona_key]
+    decision_var = req.decision_var.model_dump()
+    policy_summary = _build_policy_summary(decision_var)
+    metric_summary = _build_metric_summary(req.simulation_rows)
+    snapshots = _build_policy_effect_snapshots(req.simulation_rows, decision_var)
+    phase_summaries = _build_phase_summaries(req.simulation_rows)
+    persona_evidence = _persona_event_briefs(req, persona_key)
+
+    if req.language.lower().startswith("en"):
+        return f"""
+You are this resident:
+- Name: {persona['display_name']}
+- Role: {persona['role']}
+- Main concerns: {persona['focus']}
+
+Period: {req.period_start_year}-{req.period_end_year}
+Policies:
+{chr(10).join(policy_summary)}
+
+Observed policy evidence:
+{chr(10).join(snapshots)}
+
+Early/mid/late phase comparison:
+{chr(10).join(phase_summaries)}
+
+Metric summary:
+{chr(10).join(metric_summary)}
+
+Evidence this resident would remember:
+{chr(10).join(persona_evidence)}
+
+Decide this resident's satisfaction score.
+Score scale: 1-10 integer only. 5 is neutral, 1-4 means dissatisfied, 6-10 means satisfied.
+Judge from this persona's values, not from the overall average.
+Return only JSON: {{"score":5,"short_voice":"one vivid first-person sentence"}}
+""".strip()
+
+    return f"""
+あなたは次の住民です。
+- 名前: {persona['display_name']}
+- 立場: {persona['role']}
+- 重視すること: {persona['focus']}
+
+対象期間: {req.period_start_year}年-{req.period_end_year}年
+政策一覧:
+{chr(10).join(policy_summary)}
+
+政策ごとの観測証拠:
+{chr(10).join(snapshots)}
+
+前半・中盤・後半の比較:
+{chr(10).join(phase_summaries)}
+
+実績サマリー:
+{chr(10).join(metric_summary)}
+
+この住民が記憶しやすい材料:
+{chr(10).join(persona_evidence)}
+
+この住民の満足度を採点してください。
+点数ルール: 1〜10の整数のみ。5は中立、1〜4は不満寄り、6〜10は満足寄りです。
+全体平均ではなく、このペルソナが重視する価値から判断してください。
+JSONのみを返してください: {{"score":5,"short_voice":"住民本人の一人称の短い一言"}}
+""".strip()
+
+
+def _generate_persona_evaluation_with_llm(
+    req: IntermediateEvaluationRequest,
+    persona_key: str,
+) -> tuple[int | None, str, str]:
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "あなたは指定された住民ペルソナです。"
+                "対象期間内のシミュレーション結果だけを根拠に、その住民の満足度を1〜10で判断してください。"
+                "5は中立、低いほど不満、高いほど満足です。出力はJSONだけにしてください。"
+            ),
+        },
+        {"role": "user", "content": _build_persona_evaluation_prompt(req, persona_key)},
+    ]
+
+    for model_name, options, timeout in RESIDENT_PERSONA_EVALUATION_MODEL_ATTEMPTS:
+        try:
+            response = _chat_ollama(
+                model=model_name,
+                messages=messages,
+                options=options,
+                response_format="json",
+                timeout=timeout,
+            )
+            payload = _extract_json_object(_extract_message_content(response))
+        except Exception:
+            payload = None
+
+        if not isinstance(payload, dict):
+            continue
+
+        score = _coerce_score(payload.get("score"))
+        short_voice = _clean_short_voice(str(payload.get("short_voice") or ""))
+        if score is not None:
+            return score, short_voice, model_name
+
+    return None, "", ""
 
 
 def _mentions_outside_period(text: str, start_year: int, end_year: int) -> bool:
@@ -792,6 +1136,8 @@ def _build_resident_interview_prompt(req: ResidentInterviewRequest, score: int) 
     snapshots = _build_policy_effect_snapshots(req.simulation_rows, decision_var)
     phase_summaries = _build_phase_summaries(req.simulation_rows)
     persona_evidence = _persona_event_briefs(req, req.persona_key)
+    interview_index = max(1, int(req.interview_index or 1))
+    focus_instruction = _interview_focus_instruction(req, req.language.lower().startswith("en"))
 
     if req.language.lower().startswith("en"):
         return f"""
@@ -800,6 +1146,7 @@ You are being interviewed as this resident:
 - Role: {persona['role']}
 - Main concerns: {persona['focus']}
 - Satisfaction score: {score}/10
+- Interview round: {interview_index}
 
 Period: {req.period_start_year}-{req.period_end_year}
 Policies:
@@ -814,8 +1161,11 @@ Early/mid/late phase comparison:
 Evidence this persona is likely to remember:
 {chr(10).join(persona_evidence)}
 
+{focus_instruction}
+
 Output priorities:
 - Answer as the resident, not as an analyst.
+- This is interview round {interview_index}. Do not repeat a generic or stock answer; choose a concrete opinion that follows from this persona and the simulation evidence.
 - Focus on the strongest lived event or turning point, one policy that clearly helped or failed, and the emotion behind the score.
 - Do not recite all metrics. Use metric names only as background.
 - Do not invent exact ages, years outside {req.period_start_year}-{req.period_end_year}, or events not in the data.
@@ -831,6 +1181,7 @@ Keep it around 90-140 words.
 - 立場: {persona['role']}
 - 重視すること: {persona['focus']}
 - 満足度: {score}/10
+- インタビュー回数: {interview_index}回目
 
 対象期間: {req.period_start_year}年-{req.period_end_year}年
 政策一覧:
@@ -845,8 +1196,11 @@ Keep it around 90-140 words.
 この住民が記憶しやすい材料:
 {chr(10).join(persona_evidence)}
 
+{focus_instruction}
+
 このインタビューで重要視する出力:
 - 分析者ではなく、この住民本人として答える。
+- これは{interview_index}回目のインタビューです。定型文や汎用的な回答を繰り返さず、このペルソナとシミュレーション結果から出る具体的な意見を答える。
 - 一番記憶に残った出来事または転換点を1つ選び、生活実感として語る。
 - 実際に効いた政策、または足りなかった政策批評を1つ以上入れる。
 - 満足度 {score}/10 と矛盾しない、納得・怒り・不安・希望の温度を出す。
@@ -881,40 +1235,137 @@ def _interview_voice_is_invalid(req: ResidentInterviewRequest, text: str) -> boo
     return False
 
 
+def _build_resident_interview_messages(req: ResidentInterviewRequest, score: int) -> List[Dict[str, str]]:
+    return [
+        {
+            "role": "system",
+            "content": (
+                "あなたは指定された住民ペルソナです。"
+                "対象期間内のシミュレーション結果だけを根拠に、その住民なら何を考えるかを生活者として率直に語ってください。"
+                "政策評価ではなく、ペルソナの価値観から出る意見として答えてください。"
+                "分析レポート、箇条書き、JSON、対象期間外の具体年や固定されていない年齢設定は禁止です。"
+            ),
+        },
+        {"role": "user", "content": _build_resident_interview_prompt(req, score)},
+    ]
+
+
+def _generate_resident_interview_with_llm(req: ResidentInterviewRequest, score: int) -> tuple[str, str]:
+    messages = _build_resident_interview_messages(req, score)
+
+    for model_name, options, timeout in RESIDENT_INTERVIEW_MODEL_ATTEMPTS:
+        try:
+            response = _chat_ollama(
+                model=model_name,
+                messages=messages,
+                options=options,
+                timeout=timeout,
+            )
+            detailed_voice = _clean_interview_text(_extract_message_content(response))
+        except Exception:
+            detailed_voice = ""
+
+        if detailed_voice and not _interview_voice_is_invalid(req, detailed_voice):
+            return detailed_voice, model_name
+
+    return "", ""
+
+
+def _generate_resident_council_payload_with_llm(req: IntermediateEvaluationRequest) -> tuple[Dict[str, Any] | None, str]:
+    messages = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT_EN if req.language.lower().startswith("en") else SYSTEM_PROMPT_JA,
+        },
+        {"role": "user", "content": _build_resident_council_prompt(req)},
+    ]
+
+    for model_name, options, timeout in RESIDENT_COUNCIL_MODEL_ATTEMPTS:
+        try:
+            response = _chat_ollama(
+                model=model_name,
+                messages=messages,
+                options=options,
+                response_format="json",
+                timeout=timeout,
+            )
+            payload = _extract_json_object(_extract_message_content(response))
+        except Exception:
+            payload = None
+
+        if isinstance(payload, dict) and isinstance(payload.get("residents"), list):
+            return payload, model_name
+
+    return None, ""
+
+
 def generate_resident_council(req: IntermediateEvaluationRequest) -> ResidentCouncilResponse:
     if not req.simulation_rows:
         raise ValueError("simulation_rows must not be empty")
 
     fallback_scores = _build_fallback_scores(req)
-    payload: Dict[str, Any] | None = None
-
-    try:
-        response = _chat_ollama(
-            model=RESIDENT_COUNCIL_MODEL,
-            messages=[
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT_EN if req.language.lower().startswith("en") else SYSTEM_PROMPT_JA,
-                },
-                {"role": "user", "content": _build_resident_council_prompt(req)},
-            ],
-            options={"temperature": 0.35, "num_predict": 320},
-            response_format="json",
-            timeout=12.0,
-        )
-        payload = _extract_json_object(_extract_message_content(response))
-    except Exception:
-        payload = None
+    payload, model_name = _generate_resident_council_payload_with_llm(req)
 
     scores = _normalize_scores(payload, fallback_scores)
     residents = _normalize_residents(payload, req, scores)
+    llm_score_keys = _payload_score_keys(payload)
+    score_models: List[str] = []
+    score_fallback_keys: List[str] = []
+    residents_by_key = {resident.persona_key: resident for resident in residents}
+
+    for key in PERSONA_KEYS:
+        if key in llm_score_keys:
+            continue
+
+        llm_score, llm_short_voice, score_model = _generate_persona_evaluation_with_llm(req, key)
+        if llm_score is None:
+            score_fallback_keys.append(key)
+            continue
+
+        scores[key] = llm_score
+        residents_by_key[key].score = llm_score
+        if llm_short_voice and not _short_voice_is_weak(llm_short_voice, req):
+            residents_by_key[key].short_voice = llm_short_voice
+        score_models.append(score_model)
+
+    residents = [residents_by_key[key] for key in PERSONA_KEYS]
+    fallback_voices = {
+        resident.persona_key: resident.short_voice
+        for resident in _build_fallback_residents(req, scores)
+    }
+    short_voice_models: List[str] = []
+
+    for resident in residents:
+        should_regenerate = (
+            resident.short_voice == fallback_voices.get(resident.persona_key)
+            or _short_voice_is_weak(resident.short_voice, req)
+        )
+        if not should_regenerate:
+            continue
+
+        short_voice, short_voice_model = _generate_resident_short_voice_with_llm(
+            req,
+            resident.persona_key,
+            scores[resident.persona_key],
+        )
+        if short_voice:
+            resident.short_voice = short_voice
+            short_voice_models.append(short_voice_model)
+
+    model_parts = [model for model in [model_name, *score_models, *short_voice_models] if model]
+    if model_parts:
+        model_name = " + ".join(dict.fromkeys(model_parts))
+    else:
+        model_name = f"{RESIDENT_COUNCIL_MODEL} (fallback)"
+    if score_fallback_keys:
+        model_name = f"{model_name}; score fallback: {', '.join(score_fallback_keys)}"
 
     return ResidentCouncilResponse(
         stage_index=req.stage_index,
         checkpoint_year=req.checkpoint_year,
         period_start_year=req.period_start_year,
         period_end_year=req.period_end_year,
-        model=RESIDENT_COUNCIL_MODEL,
+        model=model_name,
         scores=scores,
         residents=residents,
     )
@@ -930,38 +1381,18 @@ def generate_resident_interview(req: ResidentInterviewRequest) -> ResidentInterv
     score = req.score if req.score is not None else fallback_scores[req.persona_key]
     score = max(1, min(10, int(score)))
     persona = PERSONAS[req.persona_key]
-    detailed_voice = ""
-
-    try:
-        response = _chat_ollama(
-            model=RESIDENT_COUNCIL_MODEL,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "あなたは指定された住民ペルソナです。"
-                        "対象期間内のデータだけを根拠に、生活者として率直に語ってください。"
-                        "分析レポート、箇条書き、JSON、対象期間外の具体年や固定されていない年齢設定は禁止です。"
-                    ),
-                },
-                {"role": "user", "content": _build_resident_interview_prompt(req, score)},
-            ],
-            options={"temperature": 0.6, "num_predict": 260},
-            timeout=20.0,
-        )
-        detailed_voice = _clean_interview_text(_extract_message_content(response))
-    except Exception:
-        detailed_voice = ""
+    detailed_voice, model_name = _generate_resident_interview_with_llm(req, score)
 
     if not detailed_voice or _interview_voice_is_invalid(req, detailed_voice):
         detailed_voice = _build_fallback_detailed_voice(req.persona_key, score, req)
+        model_name = f"{RESIDENT_COUNCIL_MODEL} (fallback)"
 
     return ResidentInterviewResponse(
         stage_index=req.stage_index,
         checkpoint_year=req.checkpoint_year,
         period_start_year=req.period_start_year,
         period_end_year=req.period_end_year,
-        model=RESIDENT_COUNCIL_MODEL,
+        model=model_name,
         persona_key=req.persona_key,
         display_name=persona["display_name"],
         detailed_voice=detailed_voice,

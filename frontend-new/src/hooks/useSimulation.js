@@ -37,6 +37,9 @@ const INITIAL_VALUES = {
   paddy_dam_area: 0.0,
   cumulative_migrated_houses: 0.0,
   cumulative_house_migration_mana: 0.0,
+  cumulative_planting_mana: 0.0,
+  cumulative_agricultural_RnD_mana: 0.0,
+  cumulative_defense_mana: 0.0,
   initial_risky_house_total: 10000.0,
   initial_crop_yield: 4500.0,
   events_state: {},
@@ -46,6 +49,16 @@ const INITIAL_VALUES = {
   migration_infra_penalty_mana: 0.0,
   flood_recovery_penalty_mana: 0.0,
   last_25y_avg_flood_damage_jpy: 0.0,
+}
+
+const ZERO_SLIDERS = {
+  planting_trees_amount: 0,
+  dam_levee_construction_cost: 0,
+  paddy_dam_construction_cost: 0,
+  house_migration_amount: 0,
+  capacity_building_cost: 0,
+  agricultural_RnD_cost: 0,
+  transportation_invest: 0,
 }
 
 function buildDecisionVar({ year, sliders, rcpValue }) {
@@ -90,6 +103,9 @@ function extractState(prev, row) {
     paddy_dam_area:          row['paddy_dam_area']             ?? prev.paddy_dam_area,
     cumulative_migrated_houses: row['cumulative_migrated_houses'] ?? prev.cumulative_migrated_houses,
     cumulative_house_migration_mana: row['cumulative_house_migration_mana'] ?? prev.cumulative_house_migration_mana,
+    cumulative_planting_mana: row['cumulative_planting_mana'] ?? prev.cumulative_planting_mana,
+    cumulative_agricultural_RnD_mana: row['cumulative_agricultural_RnD_mana'] ?? prev.cumulative_agricultural_RnD_mana,
+    cumulative_defense_mana: row['cumulative_defense_mana'] ?? prev.cumulative_defense_mana,
     initial_risky_house_total: row['initial_risky_house_total'] ?? prev.initial_risky_house_total,
     initial_crop_yield:      row['initial_crop_yield']          ?? prev.initial_crop_yield,
     events_state:            row['events_state']                ?? prev.events_state,
@@ -148,6 +164,30 @@ async function advance25Years({ currentValues, sliders, year, scenarioName, user
   return { newState: state, yearlyResults }
 }
 
+function attachExplicitBaselineRows(scenarioRows = [], baselineRows = []) {
+  const baselineByYear = new Map(baselineRows.map(row => [row.year ?? row.Year, row]))
+  return scenarioRows.map(row => {
+    const year = row.year ?? row.Year
+    const baseline = baselineByYear.get(year) ?? {}
+    const baselineFlood = Number(baseline['Flood Damage JPY'])
+    const flood = Number(row['Flood Damage JPY'])
+    const baselineCrop = Number(baseline['Crop Yield'])
+    const crop = Number(row['Crop Yield'])
+    const baselineEco = Number(baseline['Ecosystem Level'])
+    const eco = Number(row['Ecosystem Level'])
+
+    return {
+      ...row,
+      'Baseline Flood Damage JPY (explicit)': Number.isFinite(baselineFlood) ? baselineFlood : undefined,
+      'Damage Difference JPY (baseline - scenario)': Number.isFinite(baselineFlood) && Number.isFinite(flood) ? baselineFlood - flood : undefined,
+      'Baseline Crop Yield (explicit)': Number.isFinite(baselineCrop) ? baselineCrop : undefined,
+      'Crop Yield Difference (scenario - baseline)': Number.isFinite(baselineCrop) && Number.isFinite(crop) ? crop - baselineCrop : undefined,
+      'Baseline Ecosystem Level (explicit)': Number.isFinite(baselineEco) ? baselineEco : undefined,
+      'Ecosystem Difference (scenario - baseline)': Number.isFinite(baselineEco) && Number.isFinite(eco) ? eco - baselineEco : undefined,
+    }
+  })
+}
+
 export function useSimulation() {
   const [gameState, setGameState] = useState({
     phase: 'entry',       // 'entry' | 'game' | 'consequence' | 'ending'
@@ -158,7 +198,9 @@ export function useSimulation() {
     mode: 'upstream',     // 'upstream' | 'downstream' | 'both'
     rcpValue: 4.5,
     currentValues: INITIAL_VALUES,
+    baselineValues: INITIAL_VALUES,
     history: [],          // [{year, ...indicators}] accumulated across all cycles
+    baselineHistory: [],
     policyHistory: [],    // [{year, sliders}] completed policy allocations
     blockScores: [],
     pendingEvents: [],
@@ -169,6 +211,7 @@ export function useSimulation() {
     residentCouncilLoading: false,
     residentCouncilError: false,
     residentInterviews: {},
+    residentInterviewCounts: {},
     residentInterviewLoading: {},
     lastEvaluationRequest: null,
     gameView: 'simple',
@@ -186,7 +229,9 @@ export function useSimulation() {
       mode,
       rcpValue: rcpValue ?? 4.5,
       currentValues: INITIAL_VALUES,
+      baselineValues: INITIAL_VALUES,
       history: [],
+      baselineHistory: [],
       policyHistory: [],
       emittedEventKeys: [],
       llmCommentary: '',
@@ -195,6 +240,7 @@ export function useSimulation() {
       residentCouncilLoading: false,
       residentCouncilError: false,
       residentInterviews: {},
+      residentInterviewCounts: {},
       residentInterviewLoading: {},
       lastEvaluationRequest: null,
       year: 2026,
@@ -208,7 +254,8 @@ export function useSimulation() {
 
     try {
       const s = gameState
-      const { newState, yearlyResults } = await advance25Years({
+      const [scenarioRun, baselineRun] = await Promise.all([
+        advance25Years({
         currentValues: s.currentValues,
         sliders,
         year: s.year,
@@ -217,15 +264,31 @@ export function useSimulation() {
         rcpValue: s.rcpValue,
         policyHistory: s.policyHistory ?? [],
         history: s.history ?? [],
-      })
+        }),
+        advance25Years({
+          currentValues: s.baselineValues ?? INITIAL_VALUES,
+          sliders: ZERO_SLIDERS,
+          year: s.year,
+          scenarioName: `${s.userName}_baseline_cycle${s.cycle}`,
+          userName: s.userName,
+          rcpValue: s.rcpValue,
+          policyHistory: [],
+          history: s.baselineHistory ?? [],
+        }),
+      ])
+
+      const newState = scenarioRun.newState
+      const yearlyResults = attachExplicitBaselineRows(scenarioRun.yearlyResults, baselineRun.yearlyResults)
+      const newBaselineState = baselineRun.newState
 
       const nextYear = s.year + 25
       const nextCycle = s.cycle + 1
       const newHistory = [...s.history, ...yearlyResults]
+      const newBaselineHistory = [...(s.baselineHistory ?? []), ...baselineRun.yearlyResults]
       const newPolicyHistory = [...(s.policyHistory ?? []), { year: s.year, sliders: { ...sliders } }]
 
       const modelEvents = dedupeEvents([
-        ...collectPolicyStartEvents(sliders, s.policyHistory ?? [], s.year),
+        // MayFest 2026: policy-effect copy now comes from backend so IDs/data stay consistent.
         ...collectTurnEvents(yearlyResults),
       ])
       const consequenceKey = modelEvents.length > 0 ? null : detectConsequenceEvent(yearlyResults)
@@ -287,10 +350,13 @@ export function useSimulation() {
         residentCouncilLoading: true,
         residentCouncilError: false,
         residentInterviews: {},
+        residentInterviewCounts: {},
         residentInterviewLoading: {},
         lastEvaluationRequest: evaluationRequest,
         currentValues: finalState,
+        baselineValues: newBaselineState,
         history: newHistory,
+        baselineHistory: newBaselineHistory,
         policyHistory: newPolicyHistory,
         year: nextYear,
         cycle: nextCycle,
@@ -336,9 +402,16 @@ export function useSimulation() {
   const requestResidentInterview = useCallback(async (personaKey, score) => {
     const request = gameState.lastEvaluationRequest
     if (!request || !personaKey) return
+    const interviewIndex = (gameState.residentInterviewCounts?.[personaKey] ?? 0) + 1
+    const focusOptions = ['lived_event', 'policy_effect', 'future_outlook']
+    const interviewFocus = focusOptions[(interviewIndex - 1) % focusOptions.length]
 
     setGameState(s => ({
       ...s,
+      residentInterviewCounts: {
+        ...(s.residentInterviewCounts ?? {}),
+        [personaKey]: interviewIndex,
+      },
       residentInterviewLoading: { ...(s.residentInterviewLoading ?? {}), [personaKey]: true },
     }))
 
@@ -350,6 +423,8 @@ export function useSimulation() {
           ...request,
           persona_key: personaKey,
           score,
+          interview_index: interviewIndex,
+          interview_focus: interviewFocus,
         }),
       })
       if (!res.ok) throw new Error(String(res.status))
@@ -407,8 +482,10 @@ export function useSimulation() {
       year: 2026,
       cycle: 1,
       history: [],
+      baselineHistory: [],
       policyHistory: [],
       currentValues: INITIAL_VALUES,
+      baselineValues: INITIAL_VALUES,
       pendingEvents: [],
       emittedEventKeys: [],
       llmCommentary: '',
@@ -417,6 +494,7 @@ export function useSimulation() {
       residentCouncilLoading: false,
       residentCouncilError: false,
       residentInterviews: {},
+      residentInterviewCounts: {},
       residentInterviewLoading: {},
       lastEvaluationRequest: null,
     }))
@@ -477,8 +555,11 @@ function collectTurnEvents(yearlyResults = []) {
         category,
         related_policy: ev.related_policy,
         metric: ev.metric,
-        value: ev.value,
+        value: migrationEventHouseValue(ev, row) ?? ev.value,
         threshold: ev.threshold,
+        baselineValue: explicitBaselineValueForEvent(ev, row),
+        diffFromBaseline: explicitBaselineDiffForEvent(ev, row),
+        cumulativeMigratedHouses: row.cumulative_migrated_houses,
         sortIndex: index,
       })
     })
@@ -535,7 +616,7 @@ function buildPolicyStartEvents(sliders = {}, policyHistory = []) {
     house_migration_amount: {
       id: 'relocation_effect_started',
       title: '住宅移転を開始しました',
-      message: `この25年で約${movedHouses.toLocaleString()}戸を高リスク区域から移転します。浸水にさらされる住宅は約${exposureReductionPct.toFixed(1)}%減り、大雨時の洪水被害を直接下げます。一方で将来の公共インフラ維持費により、次ターン以降の予算制約は約${migrationBudgetPenalty.toFixed(2)}マナ悪化します。`,
+      message: `この25年で約${movedHouses.toLocaleString()}戸を高リスク区域から移転します。浸水にさらされる住宅は約${exposureReductionPct.toFixed(1)}%減り、大雨時の洪水被害を直接下げます。一方で将来の公共インフラ維持費により、次ターン以降の予算制約は約${migrationBudgetPenalty.toFixed(2)}ポイント悪化します。`,
     },
     dam_levee_construction_cost: {
       id: 'levee_started',
@@ -545,7 +626,7 @@ function buildPolicyStartEvents(sliders = {}, policyHistory = []) {
     paddy_dam_construction_cost: {
       id: 'paddy_dam_started',
       title: '田んぼダムを開始しました',
-      message: `この25年で約${paddyAreaHa.toLocaleString()}ha、貯留効果は約${paddyLevelMm.toFixed(1)}mm分増えます。1マナあたり約333ha、180mm豪雨の越流水を約2%減らし、農作物生産には最大1%程度の小さな負担があります。`,
+      message: `この25年で約${paddyAreaHa.toLocaleString()}ha、貯留効果は約${paddyLevelMm.toFixed(1)}mm分増えます。1ポイントあたり約333ha、180mm豪雨の越流水を約2%減らし、農作物生産には最大1%程度の小さな負担があります。`,
     },
     capacity_building_cost: {
       id: 'resident_capacity_started',
@@ -597,6 +678,8 @@ function isExtremeRainEventId(id) {
 
 function isHiddenEventId(id) {
   if (id.startsWith('heavy_rain_')) return true
+  // MayFest 2026: extreme rainfall is shown only through flood damage events.
+  if (id.startsWith('extreme_rain_') || id.startsWith('extreme_rain_record_')) return true
   if (id.startsWith('extreme_rain_frequency_')) return true
 
   if (id === 'budget_low') return true
@@ -617,23 +700,63 @@ function isHiddenEventId(id) {
 }
 
 function getOncePerTurnGroup(id) {
-  if (id.startsWith('flood_damage_')) return 'flood_damage'
-  if (id.startsWith('major_flood_damage_')) return 'flood_damage'
-  if (id.startsWith('severe_flood_damage_')) return 'flood_damage'
-
   if (id.startsWith('flood_policy_gap_')) return 'flood_policy_gap'
 
   if (id.startsWith('crop_production_low')) return 'crop_production'
   if (id.startsWith('crop_production_critical')) return 'crop_production'
+  if (id.startsWith('crop_production_avoided')) return 'crop_production'
 
   if (id.startsWith('ecosystem_low')) return 'ecosystem'
   if (id.startsWith('ecosystem_critical')) return 'ecosystem'
+  if (id.startsWith('ecosystem_decline_avoided')) return 'ecosystem'
 
   if (id.startsWith('forest_area_low')) return 'forest'
   if (id.startsWith('forest_degradation')) return 'forest'
   if (id === 'forest_policy_needed') return 'forest'
 
   return null
+}
+
+function migrationEventHouseValue(event = {}, row = {}) {
+  const id = String(event.id ?? '')
+  if (
+    id === 'house_migration_started' ||
+    id === 'relocation_effect_started' ||
+    id.startsWith('house_migration_step_') ||
+    id === 'house_migration_near_cap'
+  ) {
+    const houses = Number(row.cumulative_migrated_houses)
+    return Number.isFinite(houses) ? houses : null
+  }
+  return null
+}
+
+function explicitBaselineValueForEvent(event = {}, row = {}) {
+  const id = String(event.id ?? '')
+  if (id.startsWith('flood_damage_') || id.startsWith('major_flood_damage_') || id.startsWith('severe_flood_damage_')) {
+    return row['Baseline Flood Damage JPY (explicit)'] ?? event.baselineValue
+  }
+  if (id.startsWith('crop_production_')) {
+    return row['Baseline Crop Yield (explicit)'] ?? event.baselineValue
+  }
+  if (id.startsWith('ecosystem_')) {
+    return row['Baseline Ecosystem Level (explicit)'] ?? event.baselineValue
+  }
+  return event.baselineValue
+}
+
+function explicitBaselineDiffForEvent(event = {}, row = {}) {
+  const id = String(event.id ?? '')
+  if (id.startsWith('flood_damage_') || id.startsWith('major_flood_damage_') || id.startsWith('severe_flood_damage_')) {
+    return row['Damage Difference JPY (baseline - scenario)'] ?? event.diffFromBaseline
+  }
+  if (id.startsWith('crop_production_')) {
+    return row['Crop Yield Difference (scenario - baseline)'] ?? event.diffFromBaseline
+  }
+  if (id.startsWith('ecosystem_')) {
+    return row['Ecosystem Difference (scenario - baseline)'] ?? event.diffFromBaseline
+  }
+  return event.diffFromBaseline
 }
 
 function isOneShotEventId(id) {
@@ -650,6 +773,11 @@ function isOneShotEventId(id) {
 
     'resident_capacity_improved',
     'resident_capacity_high',
+    'resident_capacity_turn_effect',
+    'resident_capacity_near_cap',
+    'house_migration_started',
+    'house_migration_near_cap',
+    'rnd_tolerance_near_cap',
 
     // policy start events from the frontend
     'forest_investment_started',
@@ -659,8 +787,10 @@ function isOneShotEventId(id) {
   ])
 
   if (exactOneShotIds.has(id)) return true
+  if (/^house_migration_step_\d+point$/.test(id)) return true
   if (/^levee_20mm_step_\d+$/.test(id)) return true
   if (/^rnd_tolerance_improved_\d+$/.test(id)) return true
+  if (/^rnd_tolerance_step_\d+$/.test(id)) return true
 
   return false
 }
@@ -711,7 +841,7 @@ function filterConsequenceEvents(events = [], options = {}) {
       return
     }
 
-    // 2. 極端豪雨・記録的豪雨は必ず表示する。
+    // 2. MayFest 2026: heavy-rain records are consolidated into flood damage display.
     if (isExtremeRainEventId(id)) {
       filtered.push(event)
       return
@@ -795,4 +925,3 @@ function applyExogenousEffect(state, key) {
   }
   return state
 }
-

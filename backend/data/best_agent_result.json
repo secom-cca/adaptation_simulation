@@ -1,0 +1,96 @@
+{
+  "objective": 69.0794,
+  "actions": [
+    {
+      "planting_trees_amount": 5,
+      "house_migration_amount": 0,
+      "dam_levee_construction_cost": 0,
+      "paddy_dam_construction_cost": 2,
+      "capacity_building_cost": 1,
+      "agricultural_RnD_cost": 2
+    },
+    {
+      "planting_trees_amount": 1,
+      "house_migration_amount": 0,
+      "dam_levee_construction_cost": 0,
+      "paddy_dam_construction_cost": 4,
+      "capacity_building_cost": 0,
+      "agricultural_RnD_cost": 3
+    },
+    {
+      "planting_trees_amount": 1,
+      "house_migration_amount": 0,
+      "dam_levee_construction_cost": 0,
+      "paddy_dam_construction_cost": 2,
+      "capacity_building_cost": 0,
+      "agricultural_RnD_cost": 3
+    }
+  ],
+  "policiesJa": [
+    "T1: 植林5 / 田んぼダム2 / 防災訓練1 / 農業R&D2",
+    "T2: 植林1 / 田んぼダム4 / 農業R&D3",
+    "T3: 植林1 / 田んぼダム2 / 農業R&D3"
+  ],
+  "years": {
+    "2050": {
+      "floodDamageJpy": 199292489,
+      "cropYield": 4889.9,
+      "ecosystemLevel": 73.89
+    },
+    "2075": {
+      "floodDamageJpy": 588338898,
+      "cropYield": 4693.3,
+      "ecosystemLevel": 72.21
+    },
+    "2100": {
+      "floodDamageJpy": 1844485118,
+      "cropYield": 4159.8,
+      "ecosystemLevel": 71.52
+    }
+  },
+  "scores": {
+    "2050": {
+      "floodScore": 89.87,
+      "cropScore": 100.0,
+      "ecosystemScore": 100.0,
+      "totalScore": 96.62
+    },
+    "2075": {
+      "floodScore": 99.41,
+      "cropScore": 74.6,
+      "ecosystemScore": 39.35,
+      "totalScore": 71.12
+    },
+    "2100": {
+      "floodScore": 100.0,
+      "cropScore": 4.35,
+      "ecosystemScore": 14.14,
+      "totalScore": 39.5
+    }
+  },
+  "scoreBounds": {
+    "flood": {
+      "2050": {
+        "good": 196718331.74736243,
+        "bad": 222135170.70363104
+      },
+      "2075": {
+        "good": 587843591.4949598,
+        "bad": 671321241.4539138
+      },
+      "2100": {
+        "good": 1863478903.9395034,
+        "bad": 1924043222.9470224
+      }
+    },
+    "crop": {
+      "bad": 4126.797774164267,
+      "good": 4886.127611010859
+    },
+    "ecosystem": {
+      "bad": 71.12737958287025,
+      "good": 73.89101091835971
+    }
+  },
+  "note": "Objective maximizes equal-weight average of flood, crop, and ecosystem scores over 2050, 2075, and 2100 periods."
+}

@@ -121,9 +121,13 @@ EVENT_THRESHOLDS = {
     "warning_extreme_rain_mm": 210,
     "record_extreme_rain_mm": 260,
     "extreme_rain_event_count_per_year": 1,
-    "flood_damage_notice_jpy": 250_000_000,
-    "major_flood_damage_jpy": 300_000_000,
-    "severe_flood_damage_jpy": 350_000_000,
+    # Flood damage thresholds (three severity levels)
+    # - flood_damage_notice_jpy: shown for any extreme-rain year (display threshold kept for reference)
+    # - major_flood_damage_jpy: larger damage
+    # - severe_flood_damage_jpy: most severe damage
+    "flood_damage_notice_jpy": 100_000_000,
+    "major_flood_damage_jpy": 200_000_000,
+    "severe_flood_damage_jpy": 500_000_000,
     "ecosystem_low_threshold": 72.0,
     "ecosystem_critical_threshold": 68.0,
     "crop_production_low_ratio": 0.86,
@@ -134,7 +138,7 @@ EVENT_THRESHOLDS = {
     "available_budget_critical_mana": 3.0,
     "levee_increment_event_mm": 20,
     "forest_effect_area_threshold_ha": 100,
-    "forest_effect_matured_thresholds_ha": [100, 300],
+    "forest_effect_matured_thresholds_ha": [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000],
     "forest_effect_share_threshold": 0.01,
     "forest_area_low_threshold_ha": 3_100,
     "forest_area_low_after_years": 25,

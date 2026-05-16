@@ -1,0 +1,7 @@
+series,year,floodDamageJpy,cropYield,ecosystemLevel,floodScore,cropScore,ecosystemScore,totalScore
+baseline,2050,225133701,4860.2,73.89,0.0,96.6,100.0,65.5
+baseline,2075,761025577,4493.4,71.43,0.0,48.3,10.8,19.7
+baseline,2100,2269047448,3692.7,69.41,0.0,0.0,0.0,0.0
+aiOptimal,2050,199292489,4889.9,73.89,89.9,100.0,100.0,96.6
+aiOptimal,2075,588338898,4693.3,72.21,99.4,74.6,39.3,71.1
+aiOptimal,2100,1844485118,4159.8,71.52,100.0,4.4,14.1,39.5

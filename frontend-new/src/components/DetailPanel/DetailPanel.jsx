@@ -25,7 +25,6 @@ export default function DetailPanel({
   const activeInd = CHART_KEYS.find(i => i.key === activeKey)
   const activeLabel = lang === 'ja' ? activeInd?.labelJa : activeInd?.labelEn
 
-  const events = getEvents(history, t)
   const residents = residentCouncil?.residents ?? []
   const article = parseAiEvaluation(llmCommentary)
 
@@ -38,25 +37,7 @@ export default function DetailPanel({
         </div>
         <div className={s.chipRow}>
           <span className={s.chipGroupLabel}>{lang === 'ja' ? '結果' : 'OUTCOME'}</span>
-          {CHART_KEYS.slice(0, 5).map(i => (
-            <button key={i.key} className={`${s.chip} ${activeKey === i.key ? s.chipActive : ''}`}
-              style={activeKey === i.key ? { borderColor: i.color, color: i.color, background: `${i.color}12` } : {}}
-              onClick={() => setActiveKey(i.key)}>
-              {lang === 'ja' ? i.labelJa : i.labelEn}
-            </button>
-          ))}
-          <span className={s.chipDivider} />
-          <span className={s.chipGroupLabel}>{lang === 'ja' ? '気候' : 'CLIMATE'}</span>
-          {CHART_KEYS.slice(5, 8).map(i => (
-            <button key={i.key} className={`${s.chip} ${activeKey === i.key ? s.chipActive : ''}`}
-              style={activeKey === i.key ? { borderColor: i.color, color: i.color, background: `${i.color}12` } : {}}
-              onClick={() => setActiveKey(i.key)}>
-              {lang === 'ja' ? i.labelJa : i.labelEn}
-            </button>
-          ))}
-          <span className={s.chipDivider} />
-          <span className={s.chipGroupLabel}>{lang === 'ja' ? '中間' : 'INTERMEDIATE'}</span>
-          {CHART_KEYS.slice(8).map(i => (
+          {CHART_KEYS.map(i => (
             <button key={i.key} className={`${s.chip} ${activeKey === i.key ? s.chipActive : ''}`}
               style={activeKey === i.key ? { borderColor: i.color, color: i.color, background: `${i.color}12` } : {}}
               onClick={() => setActiveKey(i.key)}>
@@ -105,29 +86,6 @@ export default function DetailPanel({
 
       <div className={s.cell}>
         <div className={s.cellHeader}>
-          <span className={s.cellTitle}>{t('detail.events.title')}</span>
-          <span className={s.cellSubtitle}>{t('detail.events.sub')}</span>
-        </div>
-        <div className={s.eventList}>
-          {events.length === 0
-            ? <div className={s.empty}>{t('detail.events.empty')}</div>
-            : events.map((ev, i) => (
-              <div key={i} className={`${s.eventCard} ${s[ev.severity]}`}>
-                <div className={s.eventCardTop}>
-                  <span className={s.eventIcon}>{ev.icon}</span>
-                  <span className={s.eventYear}>{ev.year}</span>
-                  {ev.category && <span className={s.eventCategory}>{ev.category}</span>}
-                </div>
-                <div className={s.eventTitle}>{ev.title}</div>
-                <div className={s.eventText}>{ev.body}</div>
-              </div>
-            ))
-          }
-        </div>
-      </div>
-
-      <div className={s.cell}>
-        <div className={s.cellHeader}>
           <span className={s.cellTitle}>{t('detail.sns.title')}</span>
           <span className={s.cellSubtitle}>{t('detail.sns.sub')}</span>
         </div>
@@ -149,7 +107,7 @@ export default function DetailPanel({
                 <div className={s.snsBody}>
                   <div className={s.snsUserRow}>
                     <div className={s.snsUser}>{resident.display_name} <span>{resident.handle}</span></div>
-                    <div className={s.scoreBadge}>{resident.score}/10</div>
+                    <div className={`${s.scoreBadge} ${getScoreBadgeClass(resident.score)}`}>{resident.score}/10</div>
                   </div>
                   <div className={s.snsText}>{resident.short_voice}</div>
                   <div className={s.snsMeta}>{resident.focus}</div>
@@ -170,6 +128,14 @@ export default function DetailPanel({
       </div>
     </div>
   )
+}
+
+function getScoreBadgeClass(score) {
+  const value = Number(score)
+  if (Number.isNaN(value)) return ''
+  if (value <= 3) return s.scoreLow
+  if (value <= 6) return s.scoreMedium
+  return s.scoreHigh
 }
 
 function AiEvaluationArticle({ article, t }) {

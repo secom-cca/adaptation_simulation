@@ -126,6 +126,8 @@ class ResidentCouncilResponse(BaseModel):
 class ResidentInterviewRequest(IntermediateEvaluationRequest):
     persona_key: str
     score: Optional[int] = None
+    interview_index: Optional[int] = 1
+    interview_focus: Optional[str] = None
 
 
 class ResidentInterviewResponse(BaseModel):

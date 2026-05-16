@@ -105,9 +105,34 @@ def _event_group_for_category(category):
     return "damage_or_decline"
 
 
+def _format_jpy_japanese(value):
+    """MayFest 2026: user-facing money text uses rounded Japanese units."""
+    amount = float(value or 0)
+    if amount >= 100_000_000:
+        return f"約{amount / 100_000_000:.1f}億円"
+    if amount >= 10_000:
+        return f"約{round(amount / 10_000):,}万円"
+    return f"約{round(amount):,}円"
+
+
+def _capacity_after_years(initial_capacity, annual_investment, years, params):
+    """MayFest 2026: benchmark disaster-training progress against one full 25-year turn."""
+    capacity = float(initial_capacity or 0.0)
+    for _ in range(int(years)):
+        capacity = min(
+            0.99,
+            max(
+                0.0,
+                capacity * (1 - params.get("resident_capacity_degrade_ratio", 0.05))
+                + float(annual_investment or 0.0) * params.get("capacity_building_coefficient", 0.02),
+            ),
+        )
+    return capacity
+
+
 def _emit_event(events, state, event_id, year, turn_index, severity, category, title, message,
                 related_policy=None, metric=None, value=None, threshold=None, once=False,
-                cooldown_years=None, group=None):
+                cooldown_years=None, group=None, baseline_value=None, diff_from_baseline=None):
     last_year = state.get(event_id)
     if once and last_year is not None:
         return
@@ -127,6 +152,9 @@ def _emit_event(events, state, event_id, year, turn_index, severity, category, t
         "metric": metric,
         "value": value,
         "threshold": threshold,
+        # MayFest 2026: display components can explain policy effect versus no-policy baseline.
+        "baselineValue": baseline_value,
+        "diffFromBaseline": diff_from_baseline,
     })
 
 def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
@@ -165,6 +193,17 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
     agricultural_RnD_cost        = decision_vars.get('agricultural_RnD_cost', 0)
     transportation_invest        = decision_vars.get('transportation_invest', 0)
     flow_irrigation_level        = decision_vars.get('flow_irrigation_level', 0)
+    is_turn_start_year = year in {params.get("start_year", 2026), params.get("start_year", 2026) + 25, params.get("start_year", 2026) + 50}
+    cumulative_planting_mana = prev_values.get("cumulative_planting_mana", 0.0)
+    cumulative_agricultural_RnD_mana = prev_values.get("cumulative_agricultural_RnD_mana", 0.0)
+    cumulative_defense_mana = prev_values.get("cumulative_defense_mana", 0.0)
+    if is_turn_start_year:
+        cumulative_planting_mana += policy_mana.get("planting_trees_amount", 0.0)
+        cumulative_agricultural_RnD_mana += policy_mana.get("agricultural_RnD_cost", 0.0)
+        cumulative_defense_mana += (
+            policy_mana.get("dam_levee_construction_cost", 0.0)
+            + policy_mana.get("paddy_dam_construction_cost", 0.0)
+        )
 
     # --- パラメータを展開 ---
     start_year                    = params['start_year']
@@ -417,6 +456,7 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
     #     flood_impact += flood_impact * effective_protection
 
     flood_impact_total = 0.0
+    baseline_flood_impact_total = 0.0
     max_rain = 0.0
     max_overflow = 0.0
     event_thresholds_for_rain = params.get("EVENT_THRESHOLDS", {})
@@ -428,6 +468,8 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
         if rain >= major_rain_threshold:
             major_rain_events.append((rain, overflow))
         base_damage = overflow * flood_damage_coefficient
+        # MayFest 2026: no-policy baseline for event copy uses the same rain with initial levee and no distributed/behavioral mitigation.
+        baseline_flood_impact_total += max(rain - 100.0, 0.0) * flood_damage_coefficient
         # 小規模時=対策効く（mult<1）、大規模時=効きにくい（→mult→1）
         response = 1 / (1 + np.exp(-0.02 * (overflow - 200)))
         mitigation_mult = (1 - resident_capacity*(1 - response))*(1 - migration_ratio*(1 - response))
@@ -435,12 +477,25 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
         if rain > max_rain:
             max_rain = rain
     current_flood_damage = max(flood_impact_total, 0.0)
+    baseline_flood_damage_jpy = max(baseline_flood_impact_total, current_flood_damage)
 
     
     # # current_flood_damage = extreme_precip_events * flood_impact
     # current_flood_damage = flood_impact * (1 - resident_capacity) * (1 - migration_ratio)
     # current_flood_damage = max(flood_impact,0.0)
     current_crop_yield = max(current_crop_yield - current_flood_damage * flood_crop_damage_coef, 0)
+    # MayFest 2026: approximate no-R&D crop baseline for display only; internal model values remain unrounded.
+    baseline_temp_impact, _baseline_act = estimate_rice_yield_loss(
+        temp_mean_annual=temp,
+        high_temp_tolerance_level=0.0,
+        irrigation_mm=flow_irrigation_level,
+        I50=300.0,
+        k_cool=6.0,
+        water_supply_ratio=water_impact,
+        cooling_cap_degC=5.0
+    )
+    baseline_crop_yield = max((max_potential_yield * (1 - baseline_temp_impact)) * water_impact * (1 - paddy_dam_yield_impact), 0)
+    baseline_crop_yield = max(baseline_crop_yield - baseline_flood_damage_jpy * flood_crop_damage_coef, 0)
 
 
     # ---------------------------------------------------------
@@ -468,6 +523,9 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
     # ecosystem_level = (w1 * ecological_base + w2 * disturbance_resistance + w3 * human_pressure) * 100
     ecosystem_level = (w1 * ecological_base + w2 * water_base + w3 * human_pressure) * 100
     ecosystem_level = max(0.0, ecosystem_level - current_levee_level * levee_ecosystem_damage_coef)
+    # MayFest 2026: display-only no-policy baseline approximation for event copy.
+    forest_policy_gain = max(0.0, cumulative_planting_mana - 5.0) * params.get("forest_ecosystem_boost_coef", 0.01) * 18.0
+    baseline_ecosystem_level = max(0.0, ecosystem_level - forest_policy_gain)
 
     # ---------------------------------------------------------
     # 9. 都市の居住可能性の評価（交通面のみ）→ 一旦，土地のすみやすさ，ばらつきを表現
@@ -509,7 +567,8 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
     flood_reduction_pct_180 = 0.0
     if initial_overflow_180 > 0:
         flood_reduction_pct_180 = max(0.0, min(100.0, (1.0 - current_overflow_180 / initial_overflow_180) * 100.0))
-    if extreme_precip_events > 0:
+    # MayFest 2026: extreme rainfall is kept in the model, but not emitted as a user-facing event.
+    if False and extreme_precip_events > 0:
         if max_rain >= thresholds.get("record_extreme_rain_mm", 260):
             rain_event_id = f"extreme_rain_record_{year}"
             rain_title = "記録的豪雨が発生しました"
@@ -567,50 +626,110 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
             f"最大降雨量が{max_rain:.0f}mmに達しました。現在の堤防・田んぼダム水準では、代表的な180mm豪雨の越流水を初期状態より約{flood_reduction_pct_180:.0f}%削減する想定です。",
             metric="max_rain_event_mm", value=max_rain, threshold=thresholds.get("major_extreme_rain_mm", 220),
         )
-    if extreme_precip_events > 0 and current_flood_damage_jpy >= thresholds.get("severe_flood_damage_jpy", 330_000_000):
+    flood_diff_from_baseline = max(0.0, baseline_flood_damage_jpy - current_flood_damage_jpy)
+
+    if extreme_precip_events > 0 and current_flood_damage_jpy >= thresholds.get("severe_flood_damage_jpy", 300_000_000):
         _emit_event(
-            events, events_state, f"severe_flood_damage_{year}", year, turn_index, "critical", "flood",
+            events,
+            events_state,
+            f"severe_flood_damage_{year}",
+            year,
+            turn_index,
+            "critical",
+            "flood",
             "甚大な洪水被害が発生しました",
             (
                 f"洪水被害額が約{current_flood_damage_jpy:,.0f}円となり、"
-                f"甚大被害の目安である{thresholds.get('severe_flood_damage_jpy', 330_000_000):,.0f}円を超えました。"
-                "堤防・田んぼダムだけでなく、高リスク住宅の移転や防災訓練も組み合わせて検討する必要があります。"
+                f"甚大被害の目安である{thresholds.get('severe_flood_damage_jpy', 300_000_000):,.0f}円を超えました。"
             ),
-            metric="annual_flood_damage_jpy", value=current_flood_damage_jpy,
-            threshold=thresholds.get("severe_flood_damage_jpy", 330_000_000),
-            group="damage_or_decline",
+            metric="annual_flood_damage_jpy",
+            value=current_flood_damage_jpy,
+            threshold=thresholds.get("severe_flood_damage_jpy", 300_000_000),
+            diff_from_baseline=flood_diff_from_baseline,
+            baseline_value=baseline_flood_damage_jpy,
         )
-    elif extreme_precip_events > 0 and current_flood_damage_jpy >= thresholds.get("major_flood_damage_jpy", 300_000_000):
+
+    elif extreme_precip_events > 0 and current_flood_damage_jpy >= thresholds.get("large_flood_damage_jpy", 250_000_000):
         _emit_event(
-            events, events_state, f"major_flood_damage_{year}", year, turn_index, "warning", "flood",
-            "大規模な洪水被害が発生しました",
+            events,
+            events_state,
+            f"large_flood_damage_{year}",
+            year,
+            turn_index,
+            "warning",
+            "flood",
+            "かなり大きな洪水被害が発生しました",
             (
                 f"洪水被害額が約{current_flood_damage_jpy:,.0f}円となり、"
-                f"大規模被害の目安である{thresholds.get('major_flood_damage_jpy', 300_000_000):,.0f}円を超えました。"
-                "治水対策に加えて、高リスク住宅の移転や住民の防災対応力の強化も重要になります。"
+                f"かなり大きな被害の目安である{thresholds.get('large_flood_damage_jpy', 250_000_000):,.0f}円を超えました。"
             ),
-            metric="annual_flood_damage_jpy", value=current_flood_damage_jpy,
-            threshold=thresholds.get("major_flood_damage_jpy", 300_000_000),
-            group="damage_or_decline",
+            metric="annual_flood_damage_jpy",
+            value=current_flood_damage_jpy,
+            threshold=thresholds.get("large_flood_damage_jpy", 250_000_000),
+            diff_from_baseline=flood_diff_from_baseline,
+            baseline_value=baseline_flood_damage_jpy,
         )
-    elif extreme_precip_events > 0 and current_flood_damage_jpy >= thresholds.get("flood_damage_notice_jpy", 250_000_000):
+
+    elif extreme_precip_events > 0 and current_flood_damage_jpy >= thresholds.get("major_flood_damage_jpy", 200_000_000):
         _emit_event(
-            events, events_state, f"flood_damage_{year}", year, turn_index, "info", "flood",
+            events,
+            events_state,
+            f"major_flood_damage_{year}",
+            year,
+            turn_index,
+            "warning",
+            "flood",
+            "大きな洪水被害が発生しました",
+            (
+                f"洪水被害額が約{current_flood_damage_jpy:,.0f}円となり、"
+                f"大規模被害の目安である{thresholds.get('major_flood_damage_jpy', 200_000_000):,.0f}円を超えました。"
+            ),
+            metric="annual_flood_damage_jpy",
+            value=current_flood_damage_jpy,
+            threshold=thresholds.get("major_flood_damage_jpy", 200_000_000),
+            diff_from_baseline=flood_diff_from_baseline,
+            baseline_value=baseline_flood_damage_jpy,
+        )
+
+    elif extreme_precip_events > 0 and current_flood_damage_jpy >= thresholds.get("flood_damage_notice_jpy", 100_000_000):
+        _emit_event(
+            events,
+            events_state,
+            f"flood_damage_{year}",
+            year,
+            turn_index,
+            "info",
+            "flood",
             "洪水被害が発生しました",
             (
                 f"洪水被害額が約{current_flood_damage_jpy:,.0f}円となり、"
-                f"注意水準の{thresholds.get('flood_damage_notice_jpy', 250_000_000):,.0f}円を超えました。"
-                "治水対策だけでなく、高リスク住宅の移転や防災訓練も検討対象になります。"
+                f"注意水準の{thresholds.get('flood_damage_notice_jpy', 100_000_000):,.0f}円を超えました。"
             ),
-            metric="annual_flood_damage_jpy", value=current_flood_damage_jpy,
-            threshold=thresholds.get("flood_damage_notice_jpy", 250_000_000),
-            group="damage_or_decline",
+            metric="annual_flood_damage_jpy",
+            value=current_flood_damage_jpy,
+            threshold=thresholds.get("flood_damage_notice_jpy", 100_000_000),
+            diff_from_baseline=flood_diff_from_baseline,
+            baseline_value=baseline_flood_damage_jpy,
         )
+    ecosystem_diff_from_baseline = max(0.0, ecosystem_level - baseline_ecosystem_level)
     if ecosystem_level <= thresholds.get("ecosystem_critical_threshold", 25.0):
+        _emit_event(events, events_state, "ecosystem_critical", year, turn_index, "critical", "ecosystem",
+                    "生態系への負荷が大きくなっています",
+                    f"地球温暖化による気温上昇や水環境の変化などにより、地域の生態系への負荷が大きくなっています。現在の対策により、何も対策をしていなかった場合よりは{ecosystem_diff_from_baseline:.1f}ポイント高く保たれていますが、地域の自然環境や生きもののすみかは損なわれつつあります。",
+                    metric="Ecosystem Level", value=ecosystem_level, threshold=thresholds.get("ecosystem_critical_threshold", 25.0),
+                    baseline_value=baseline_ecosystem_level, diff_from_baseline=ecosystem_diff_from_baseline, once=True)
+    elif ecosystem_level <= thresholds.get("ecosystem_low_threshold", 40.0):
+        _emit_event(events, events_state, "ecosystem_low", year, turn_index, "warning", "ecosystem",
+                    "生態系への負荷が高まっています",
+                    f"地球温暖化による気温上昇や水環境の変化などにより、地域の生態系への負荷が高まっています。一方で、現在の対策により、何も対策をしていなかった場合と比べて生態系指標は{ecosystem_diff_from_baseline:.1f}ポイント高く保たれています。",
+                    metric="Ecosystem Level", value=ecosystem_level, threshold=thresholds.get("ecosystem_low_threshold", 40.0),
+                    baseline_value=baseline_ecosystem_level, diff_from_baseline=ecosystem_diff_from_baseline,
+                    once=True)
+    if False and ecosystem_level <= thresholds.get("ecosystem_critical_threshold", 25.0):
         _emit_event(events, events_state, "ecosystem_critical", year, turn_index, "critical", "ecosystem",
                     "生態系指標が深刻に低下", "生態系指標が低い水準まで下がっています。洪水対策と自然環境保全のバランスに注意が必要です。",
                     metric="Ecosystem Level", value=ecosystem_level, threshold=thresholds.get("ecosystem_critical_threshold", 25.0), once=True)
-    elif ecosystem_level <= thresholds.get("ecosystem_low_threshold", 40.0):
+    elif False and ecosystem_level <= thresholds.get("ecosystem_low_threshold", 40.0):
         _emit_event(events, events_state, "ecosystem_low", year, turn_index, "warning", "ecosystem",
                     "生態系への負荷が高まっています", "堤防整備や土地利用変化の影響により、生態系指標が低下しています。",
                     metric="Ecosystem Level", value=ecosystem_level, threshold=thresholds.get("ecosystem_low_threshold", 40.0),
@@ -619,15 +738,58 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
     crop_event_age = year - start_year
     crop_event_allowed = crop_event_age >= thresholds.get("crop_production_low_after_years", 25)
     temp_driven_crop_decline = temp_impact >= thresholds.get("crop_temp_impact_event_threshold", 0.02)
+    crop_diff_from_baseline = max(0.0, current_crop_yield - baseline_crop_yield)
     if crop_event_allowed and temp_driven_crop_decline and crop_ratio <= thresholds.get("crop_production_critical_ratio", 0.6):
+        _emit_event(events, events_state, "crop_production_critical", year, turn_index, "critical", "agriculture",
+                    "農作物生産への影響が大きくなっています",
+                    f"高温の影響により、高温障害、品質低下、水稲の白濁化などが深刻化し、作物生産性が{current_crop_yield:.0f}kg/haまで下がりました。現在の対策により、何も対策をしていなかった場合よりは{crop_diff_from_baseline:.0f}kg/ha高く保たれていますが、農作物生産への影響は大きくなっています。",
+                    metric="Crop Yield", value=current_crop_yield, threshold=thresholds.get("crop_production_critical_ratio", 0.6),
+                    baseline_value=baseline_crop_yield, diff_from_baseline=crop_diff_from_baseline, once=True)
+    elif crop_event_allowed and temp_driven_crop_decline and crop_ratio <= thresholds.get("crop_production_low_ratio", 0.8):
+        _emit_event(events, events_state, "crop_production_low", year, turn_index, "warning", "agriculture",
+                    "農作物生産性が低下しています",
+                    f"高温の影響により、高温障害、品質低下、水稲の白濁化などが起き、作物生産性が{current_crop_yield:.0f}kg/haまで下がりました。それでも、農業R&Dなどの対策により、何も対策をしていなかった場合と比べて{crop_diff_from_baseline:.0f}kg/ha分の生産性を守ることができています。",
+                    metric="Crop Yield", value=current_crop_yield, threshold=thresholds.get("crop_production_low_ratio", 0.8),
+                    baseline_value=baseline_crop_yield, diff_from_baseline=crop_diff_from_baseline,
+                    once=True)
+    if False and crop_event_allowed and temp_driven_crop_decline and crop_ratio <= thresholds.get("crop_production_critical_ratio", 0.6):
         _emit_event(events, events_state, "crop_production_critical", year, turn_index, "critical", "agriculture",
                     "農業生産が深刻に低下", "高温や洪水被害の影響により、農作物生産高が初期水準を大きく下回っています。",
                     metric="crop_production_ratio", value=crop_ratio, threshold=thresholds.get("crop_production_critical_ratio", 0.6), once=True)
-    elif crop_event_allowed and temp_driven_crop_decline and crop_ratio <= thresholds.get("crop_production_low_ratio", 0.8):
+    elif False and crop_event_allowed and temp_driven_crop_decline and crop_ratio <= thresholds.get("crop_production_low_ratio", 0.8):
         _emit_event(events, events_state, "crop_production_low", year, turn_index, "warning", "agriculture",
                     "農作物生産が低下しています", "高温や洪水被害の影響により、農作物生産高が初期水準を下回っています。",
                     metric="crop_production_ratio", value=crop_ratio, threshold=thresholds.get("crop_production_low_ratio", 0.8),
                     once=True)
+    if (
+        crop_event_allowed
+        and (temp_driven_crop_decline or year >= start_year + 49)
+        and crop_ratio > thresholds.get("crop_production_low_ratio", 0.8)
+        and baseline_crop_yield < current_crop_yield
+        and cumulative_agricultural_RnD_mana >= 3.0
+    ):
+        _emit_event(
+            events, events_state, "crop_production_avoided", year, turn_index, "success", "agriculture",
+            "農作物生産の低下を抑えました",
+            f"農業R&Dの累積投資により、何も対策をしていなかった場合より{crop_diff_from_baseline:.0f}kg/ha高い生産性を保ち、農作物生産の大きな低下を回避しました。",
+            related_policy="agricultural_RnD_cost", metric="Crop Yield", value=current_crop_yield,
+            threshold=thresholds.get("crop_production_low_ratio", 0.8),
+            baseline_value=baseline_crop_yield, diff_from_baseline=crop_diff_from_baseline, once=True
+        )
+    if (
+        year >= start_year + thresholds.get("forest_area_low_after_years", 25)
+        and ecosystem_level > thresholds.get("ecosystem_low_threshold", 40.0)
+        and baseline_ecosystem_level < ecosystem_level
+        and cumulative_planting_mana >= 5.0
+    ):
+        _emit_event(
+            events, events_state, "ecosystem_decline_avoided", year, turn_index, "success", "ecosystem",
+            "生態系の低下を抑えました",
+            f"植林・森林保全の累積投資により、何も対策をしていなかった場合より生態系指標を{ecosystem_diff_from_baseline:.1f}ポイント高く保ち、生態系低下を回避しました。",
+            related_policy="planting_trees_amount", metric="Ecosystem Level", value=ecosystem_level,
+            threshold=thresholds.get("ecosystem_low_threshold", 40.0),
+            baseline_value=baseline_ecosystem_level, diff_from_baseline=ecosystem_diff_from_baseline, once=True
+        )
     if budget_components["available_budget_mana"] <= thresholds.get("available_budget_critical_mana", 3.0):
         _emit_event(events, events_state, "budget_critical", year, turn_index, "critical", "budget",
                     "政策予算が大きく縮小しています", "人口減少、洪水被害、住宅移転後の公共インフラ維持費により、次ターンに使える政策予算が大きく減少しています。",
@@ -639,11 +801,32 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
     if budget_components.get("migration_infra_penalty_mana", 0.0) > thresholds.get("migration_budget_pressure_event_threshold", 0.05):
         _emit_event(events, events_state, "migration_budget_pressure", year, turn_index, "warning", "budget",
                     "住宅移転後のインフラ費用が発生しています",
-                    "住宅移転が累計1マナを超えたため、公共交通・道路・上下水道などの維持費が次ターンの政策予算を圧迫し始めています。",
+                    "住宅移転が累計1ポイントを超えたため、公共交通・道路・上下水道などの維持費が次ターンの政策予算を圧迫し始めています。",
                     related_policy="house_migration_amount", metric="migration_infra_penalty_mana",
                     value=budget_components.get("migration_infra_penalty_mana", 0.0),
                     threshold=thresholds.get("migration_budget_pressure_event_threshold", 0.05),
                     once=True, cooldown_years=25)
+    # MayFest 2026: housing relocation is immediate/linear, with visible progress every 4 points.
+    if policy_mana.get("house_migration_amount", 0.0) > 0 or house_migration_amount > 0:
+        _emit_event(events, events_state, "house_migration_started", year, turn_index, "success", "policy_effect",
+                    "住宅移転が始まりました",
+                    "洪水リスクの高い地域から住宅を移す取り組みが始まりました。洪水時に住宅被害を受けるリスクが下がっています。",
+                    related_policy="house_migration_amount", metric="cumulative_house_migration_mana",
+                    value=cumulative_house_migration_mana, threshold=0.0, once=True)
+    for step_point in [4, 8, 12, 16, 20]:
+        if cumulative_house_migration_mana >= step_point:
+            _emit_event(events, events_state, f"house_migration_step_{step_point}point", year, turn_index, "success", "policy_effect",
+                        "住宅移転が進んでいます",
+                        f"住宅移転への累積投資が約{step_point}ポイントに達しました。洪水リスクの高い地域に残る住宅が減り、洪水時に住宅被害を受けるリスクが下がっています。",
+                        related_policy="house_migration_amount", metric="cumulative_house_migration_mana",
+                        value=cumulative_house_migration_mana, threshold=step_point, once=True)
+    migration_progress = cumulative_migrated_houses / max(migration_cap_total, 1e-9)
+    if migration_progress >= 0.8:
+        _emit_event(events, events_state, "house_migration_near_cap", year, turn_index, "success", "policy_effect",
+                    "住宅移転が大きく進みました",
+                    "洪水リスクの高い地域からの住宅移転が大きく進みました。移転可能な住宅は少なくなっており、これ以上の追加投資では効果の伸びは小さくなっていきます。",
+                    related_policy="house_migration_amount", metric="migration_progress",
+                    value=migration_progress, threshold=0.8, once=True)
     if current_levee_level - prev_levee_level >= thresholds.get("levee_increment_event_mm", 20):
         levee_step = int(current_levee_level // max(thresholds.get("levee_increment_event_mm", 20), 1))
         _emit_event(events, events_state, "levee_completed", year, turn_index, "success", "policy_effect",
@@ -692,7 +875,21 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
         _emit_event(events, events_state, "rnd_started", year, turn_index, "success", "policy_effect",
                     "高温対応品種の開発を始めました", "農業R&D・高温適応技術への投資により、高温に強い品種と栽培技術の開発・普及が始まっています。",
                     related_policy="agricultural_RnD_cost", metric="agricultural_RnD_cost", value=agricultural_RnD_cost, threshold=0.0, once=True)
-    if high_temp_tolerance_level - prev_high_temp_tolerance_level >= thresholds.get("rnd_tolerance_increment_threshold", 0.2):
+    # MayFest 2026: agricultural R&D display steps are 0.5C, not 0.2C.
+    for step_value, suffix in [(0.5, "05"), (1.0, "10"), (1.5, "15"), (2.0, "20")]:
+        if high_temp_tolerance_level >= step_value:
+            _emit_event(events, events_state, f"rnd_tolerance_step_{suffix}", year, turn_index, "success", "policy_effect",
+                        "農業R&Dの効果が広がっています",
+                        f"農業R&Dの蓄積により、作物の高温耐性が約{step_value:.1f}℃向上しました。高温による品質低下や収量低下を抑えやすくなっています。",
+                        related_policy="agricultural_RnD_cost", metric="High Temp Tolerance Level",
+                        value=high_temp_tolerance_level, threshold=step_value, once=True)
+    if high_temp_tolerance_level >= params.get("HIGH_TEMP_TOLERANCE_CAP", 2.5) * 0.8:
+        _emit_event(events, events_state, "rnd_tolerance_near_cap", year, turn_index, "success", "policy_effect",
+                    "農業R&Dの普及が上限に近づいています",
+                    "高温に強い品種や栽培技術がかなり普及しました。これ以上の追加投資では、効果の伸びは小さくなっていきます。",
+                    related_policy="agricultural_RnD_cost", metric="High Temp Tolerance Level",
+                    value=high_temp_tolerance_level, threshold=params.get("HIGH_TEMP_TOLERANCE_CAP", 2.5) * 0.8, once=True)
+    if False and high_temp_tolerance_level - prev_high_temp_tolerance_level >= thresholds.get("rnd_tolerance_increment_threshold", 0.2):
         rnd_step = int(round(high_temp_tolerance_level / max(thresholds.get("rnd_tolerance_increment_threshold", 0.2), 0.01)))
         _emit_event(events, events_state, f"rnd_tolerance_improved_{rnd_step}", year, turn_index, "success", "policy_effect",
                     "高温適応技術が普及しました", "農業R&D・高温適応技術普及への累積投資により、作物の高温耐性が0.2℃向上しました。",
@@ -720,11 +917,28 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
         _emit_event(events, events_state, "resident_capacity_started", year, turn_index, "success", "resident",
                     "防災訓練を始めました", "避難訓練・防災訓練への投資により、住民の災害対応力を高める取り組みが始まっています。",
                     related_policy="capacity_building_cost", metric="capacity_building_cost", value=capacity_building_cost, threshold=0.0, once=True)
-    if resident_capacity >= thresholds.get("resident_capacity_high_threshold", 0.5):
+    # MayFest 2026: disaster training progress is judged at turn end against max annual investment.
+    turn_years = params.get("TURN_YEARS", 25)
+    full_turn_capacity = _capacity_after_years(prev_values.get("resident_capacity", 0.0), 1.0, turn_years, params)
+    turn_effect_threshold = full_turn_capacity * 0.85
+    near_cap_threshold = 0.99 * 0.9
+    if (year - start_year + 1) % turn_years == 0 and resident_capacity >= turn_effect_threshold:
+        _emit_event(events, events_state, "resident_capacity_turn_effect", year, turn_index, "success", "resident",
+                    "25年間の防災訓練の効果が出ています",
+                    "25年間の避難訓練・防災訓練により、洪水時にどう行動すればよいかを理解している住民が増えています。洪水による被害を軽減しやすい状態になってきました。",
+                    related_policy="capacity_building_cost", metric="Resident capacity",
+                    value=resident_capacity, threshold=turn_effect_threshold, once=False, cooldown_years=25)
+    if resident_capacity >= near_cap_threshold:
+        _emit_event(events, events_state, "resident_capacity_near_cap", year, turn_index, "success", "resident",
+                    "防災訓練の効果が上限に近づいています",
+                    "継続的な防災訓練により、住民の災害対応力がほぼ上限に達しました。これ以上の追加投資では、効果の伸びは小さくなっていきます。",
+                    related_policy="capacity_building_cost", metric="Resident capacity",
+                    value=resident_capacity, threshold=near_cap_threshold, once=True)
+    if False and resident_capacity >= thresholds.get("resident_capacity_high_threshold", 0.5):
         _emit_event(events, events_state, "resident_capacity_high", year, turn_index, "success", "resident",
                     "住民の防災対応力が高い水準に到達しました", "継続的な避難訓練・防災訓練により、住民の災害対応力が高まっています。",
                     related_policy="capacity_building_cost", metric="Resident capacity", value=resident_capacity, threshold=thresholds.get("resident_capacity_high_threshold", 0.5), once=True)
-    elif resident_capacity >= thresholds.get("resident_capacity_threshold", 0.3):
+    elif False and resident_capacity >= thresholds.get("resident_capacity_threshold", 0.3):
         _emit_event(events, events_state, "resident_capacity_improved", year, turn_index, "success", "resident",
                     "住民の防災対応力が向上しました", "避難訓練・防災訓練により、小〜中規模洪水での被害軽減効果が期待できます。",
                     related_policy="capacity_building_cost", metric="Resident capacity", value=resident_capacity, threshold=thresholds.get("resident_capacity_threshold", 0.3), once=False, cooldown_years=25)
@@ -823,6 +1037,8 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
         'Municipal Demand': current_municipal_demand,
         'Flood Damage': current_flood_damage,
         'Flood Damage JPY': current_flood_damage_jpy,
+        'Baseline Flood Damage JPY': baseline_flood_damage_jpy,
+        'Flood Damage Reduced JPY': max(0.0, baseline_flood_damage_jpy - current_flood_damage_jpy),
         'Levee Level': current_levee_level,
         'High Temp Tolerance Level': high_temp_tolerance_level,
         'Hot Days': hot_days,
@@ -830,6 +1046,8 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
         'Extreme Precip Events': max_rain,
         'Max Overflow': max_overflow,
         'Ecosystem Level': ecosystem_level,
+        'Baseline Crop Yield': baseline_crop_yield,
+        'Baseline Ecosystem Level': baseline_ecosystem_level,
         'Municipal Cost': municipal_cost, # resident_burdenと重複
         'Urban Level': urban_level,
         'Resident Burden': resident_burden,
@@ -845,6 +1063,9 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
         'paddy_dam_area' : paddy_dam_area,
         'cumulative_migrated_houses': cumulative_migrated_houses,
         'cumulative_house_migration_mana': cumulative_house_migration_mana,
+        'cumulative_planting_mana': cumulative_planting_mana,
+        'cumulative_agricultural_RnD_mana': cumulative_agricultural_RnD_mana,
+        'cumulative_defense_mana': cumulative_defense_mana,
         'initial_risky_house_total': initial_risky_house_total,
         'initial_crop_yield': initial_crop_yield,
         'Events': events,
@@ -888,6 +1109,9 @@ def simulate_year(year, prev_values, decision_vars, params, fixed_seed=True):
         'paddy_dam_area' : paddy_dam_area,
         'cumulative_migrated_houses': cumulative_migrated_houses,
         'cumulative_house_migration_mana': cumulative_house_migration_mana,
+        'cumulative_planting_mana': cumulative_planting_mana,
+        'cumulative_agricultural_RnD_mana': cumulative_agricultural_RnD_mana,
+        'cumulative_defense_mana': cumulative_defense_mana,
         'initial_risky_house_total': initial_risky_house_total,
         'initial_crop_yield': initial_crop_yield,
         'events_state': events_state,
