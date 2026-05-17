@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, Body
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
+from threading import Lock
 from typing import Dict, Any, List
 
 from config import (
@@ -34,12 +35,30 @@ app.add_middleware(
 )
 
 scenarios_data: Dict[str, pd.DataFrame] = {}
+_SIMULATION_LOG_LOCK = Lock()
+_RANK_KEY_COLUMNS = ["user_name", "scenario_name", "period"]
 
 def _data_file(path: Path) -> Path:
     if path.exists():
         return path
     backend_data_path = Path(__file__).parent / "data" / path.name
     return backend_data_path
+
+def _read_csv_lenient(path: Path, *, sep: str = ",") -> pd.DataFrame:
+    try:
+        return pd.read_csv(path, sep=sep)
+    except (FileNotFoundError, pd.errors.EmptyDataError):
+        return pd.DataFrame()
+    except pd.errors.ParserError:
+        try:
+            return pd.read_csv(path, sep=sep, engine="python", on_bad_lines="skip")
+        except (FileNotFoundError, pd.errors.EmptyDataError, pd.errors.ParserError):
+            return pd.DataFrame()
+
+def _valid_rank_rows(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty or not all(col in df.columns for col in _RANK_KEY_COLUMNS):
+        return pd.DataFrame(columns=df.columns)
+    return df.dropna(subset=_RANK_KEY_COLUMNS)
 
 def _json_safe(value):
     if isinstance(value, dict):
@@ -175,16 +194,17 @@ def run_simulation(req: SimulationRequest):
         block_scores = aggregate_blocks(all_df)
 
         # ログ保存
-        df_log = pd.DataFrame([dv.model_dump() for dv in req.decision_vars])
-        df_log['user_name'] = req.user_name
-        df_log['scenario_name'] = scenario_name
-        df_log['timestamp'] = pd.Timestamp.utcnow()
-        if ACTION_LOG_FILE.exists():
-            df_old = pd.read_csv(ACTION_LOG_FILE)
-            df_combined = pd.concat([df_old, df_log], ignore_index=True)
-        else:
-            df_combined = df_log
-        df_combined.to_csv(ACTION_LOG_FILE, index=False)
+        with _SIMULATION_LOG_LOCK:
+            df_log = pd.DataFrame([dv.model_dump() for dv in req.decision_vars])
+            df_log['user_name'] = req.user_name
+            df_log['scenario_name'] = scenario_name
+            df_log['timestamp'] = pd.Timestamp.utcnow()
+            if ACTION_LOG_FILE.exists():
+                df_old = _read_csv_lenient(ACTION_LOG_FILE)
+                df_combined = pd.concat([df_old, df_log], ignore_index=True, sort=False) if not df_old.empty else df_log
+            else:
+                df_combined = df_log
+            df_combined.to_csv(ACTION_LOG_FILE, index=False)
 
         df_csv = pd.DataFrame(block_scores)
         df_csv['user_name'] = req.user_name
@@ -205,6 +225,24 @@ def run_simulation(req: SimulationRequest):
             # Ranking persistence is non-critical for gameplay. If the terminal
             # file is locked or malformed, keep the simulation response alive.
             print(f"[WARN] Skipped rank file write: {RANK_FILE}: {e}")
+            df_csv = pd.DataFrame(block_scores)
+            df_csv['user_name'] = req.user_name
+            df_csv['scenario_name'] = scenario_name
+            df_csv['timestamp'] = pd.Timestamp.utcnow()
+            df_csv['user_name'].to_csv(YOUR_NAME_FILE, index=False)
+            if all(col in df_csv.columns for col in _RANK_KEY_COLUMNS):
+                if RANK_FILE.exists():
+                    old = _valid_rank_rows(_read_csv_lenient(RANK_FILE, sep='\t'))
+                    if not old.empty:
+                        old = old.drop_duplicates(subset=_RANK_KEY_COLUMNS, keep='first')
+                        current = df_csv.drop_duplicates(subset=_RANK_KEY_COLUMNS, keep='first')
+                        merged = pd.concat([old, current], ignore_index=True, sort=False)
+                        merged = merged.drop_duplicates(subset=_RANK_KEY_COLUMNS, keep='first')
+                    else:
+                        merged = df_csv
+                    merged.to_csv(RANK_FILE, sep='\t', index=False)
+                else:
+                    df_csv.to_csv(RANK_FILE, sep='\t', index=False)
 
     
     elif mode == "Predict Simulation Mode":
@@ -259,12 +297,17 @@ def get_ranking():
     rank_file = _data_file(RANK_FILE)
     if not rank_file.exists():
         return []
-    df = pd.read_csv(rank_file, sep='\t')
+    df = _valid_rank_rows(_read_csv_lenient(rank_file, sep='\t'))
+    if df.empty:
+        return []
+    if 'timestamp' not in df.columns:
+        df['timestamp'] = ''
     latest = df.sort_values('timestamp').drop_duplicates(['user_name', 'scenario_name', 'period'], keep='last')
     score_columns = ["total_score", "flood_damage_score", "crop_production_score", "ecosystem_score"]
     for col in score_columns:
         if col not in latest.columns:
             latest[col] = 0.0
+        latest[col] = pd.to_numeric(latest[col], errors='coerce').fillna(0.0)
     # MayFest 2026: ranking tie-breaks by total, flood, crop, then ecosystem score.
     rank_df = (
         latest.groupby('user_name')[score_columns]
@@ -300,7 +343,7 @@ def get_block_scores():
     if not rank_file.exists():
         return []
     try:
-        df = pd.read_csv(rank_file, sep="\t")
+        df = _valid_rank_rows(_read_csv_lenient(rank_file, sep="\t"))
         df = df.replace([np.inf, -np.inf], np.nan).where(pd.notnull(df), None)
         return _json_safe(df.to_dict(orient="records"))
     except Exception as e:

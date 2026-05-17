@@ -107,7 +107,10 @@ export default function DetailPanel({
                 <div className={s.snsBody}>
                   <div className={s.snsUserRow}>
                     <div className={s.snsUser}>{resident.display_name} <span>{resident.handle}</span></div>
-                    <div className={`${s.scoreBadge} ${getScoreBadgeClass(resident.score)}`}>{resident.score}/10</div>
+                    <div className={`${s.scoreBadge} ${getScoreBadgeClass(resident.score)}`}>
+                      <span>{t('detail.sns.satisfaction_score')}</span>
+                      {resident.score}/10
+                    </div>
                   </div>
                   <div className={s.snsText}>{resident.short_voice}</div>
                   <div className={s.snsMeta}>{resident.focus}</div>

@@ -255,8 +255,7 @@ export function useSimulation() {
 
     try {
       const s = gameState
-      const [scenarioRun, baselineRun] = await Promise.all([
-        advance25Years({
+      const scenarioRun = await advance25Years({
         currentValues: s.currentValues,
         sliders,
         year: s.year,
@@ -265,18 +264,17 @@ export function useSimulation() {
         rcpValue: s.rcpValue,
         policyHistory: s.policyHistory ?? [],
         history: s.history ?? [],
-        }),
-        advance25Years({
-          currentValues: s.baselineValues ?? INITIAL_VALUES,
-          sliders: ZERO_SLIDERS,
-          year: s.year,
-          scenarioName: `${s.userName}_baseline_cycle${s.cycle}`,
-          userName: s.userName,
-          rcpValue: s.rcpValue,
-          policyHistory: [],
-          history: s.baselineHistory ?? [],
-        }),
-      ])
+      })
+      const baselineRun = await advance25Years({
+        currentValues: s.baselineValues ?? INITIAL_VALUES,
+        sliders: ZERO_SLIDERS,
+        year: s.year,
+        scenarioName: `${s.userName}_baseline_cycle${s.cycle}`,
+        userName: s.userName,
+        rcpValue: s.rcpValue,
+        policyHistory: [],
+        history: s.baselineHistory ?? [],
+      })
 
       const newState = scenarioRun.newState
       const yearlyResults = attachExplicitBaselineRows(scenarioRun.yearlyResults, baselineRun.yearlyResults)
@@ -332,13 +330,14 @@ export function useSimulation() {
       // 2076-2100 の結果を見せずに即終了しないようにする。
       const nextPhase = queuedEvents.length > 0 ? 'consequence' : 'report'
       const evalDecisionVar = buildDecisionVar({ year: s.year, sliders, rcpValue: s.rcpValue })
+      const evaluationRows = scenarioRun.yearlyResults
       const evaluationRequest = {
         stage_index: s.cycle,
         checkpoint_year: nextYear,
         period_start_year: s.year,
         period_end_year: nextYear - 1,
         decision_var: evalDecisionVar,
-        simulation_rows: yearlyResults,
+        simulation_rows: evaluationRows,
         language: 'ja',
       }
 

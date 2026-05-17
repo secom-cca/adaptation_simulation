@@ -10,6 +10,9 @@ except ModuleNotFoundError:
 from scipy.stats import gumbel_r
 from config import SIMULATION_RANDOM_SEED
 from src.utils import estimate_rice_yield_loss
+import re  
+import csv
+import os
 
 POLICY_KEYS = [
     "planting_trees_amount",
@@ -1189,21 +1192,21 @@ def simulate_simulation(years, initial_values, decision_vars_list, params, fixed
 
     return results
 
-def create_random_agent():
+def create_agent(id):
     """
     固定された年齢リストからエージェントを生成する
+    id 0: 15歳の小学生、id 1: 25歳の若手起業家、id 2: 45歳の市議会議員、id 3: 70歳の隠居中の元農家
     """
     # 年齢のプリセット
-    AGE_PRESETS = [12, 25, 45, 78]
-    rng = random.SystemRandom()
-    age = rng.choice(AGE_PRESETS)
+    AGE_PRESETS = [15, 25, 45, 70]
+    age = AGE_PRESETS[id]
     
     # 年齢に紐づいた詳細設定
     settings = {
-        12: {"role": "小学生", "pronoun": "僕", "focus": "未来の地球"},
+        15: {"role": "小学生", "pronoun": "僕", "focus": "未来の地球"},
         25: {"role": "若手起業家", "pronoun": "私", "focus": "都市の利便性と持続可能性"},
         45: {"role": "市議会議員", "pronoun": "私", "focus": "予算効率と防災インフラ"},
-        78: {"role": "隠居中の元農家", "pronoun": "わし", "focus": "日々の平穏と伝統的な田畑"}
+        70: {"role": "隠居中の元農家", "pronoun": "わし", "focus": "日々の平穏と伝統的な田畑"}
     }
     
     selected = settings[age]
@@ -1273,55 +1276,120 @@ def build_fallback_persona_commentary(agent, target_results, duration):
         "次の世代に渡すには、被害の抑制と生活負担の軽減をもう一段強めてほしいです。"
     )
 
-def generate_ai_commentary(results):
+def generate_ai_commentary(id,user_name,results):
     """
     指定されたペルソナが、85歳までの残り人生を全データから読み解く
     """
-    agent = create_random_agent()
-    age = agent['age']
-    years_to_85 = 85 - age
+    agent = create_agent(id)
     
-    # 85歳までの期間（またはシミュレーション全期間）を抽出
-    target_results = results[-years_to_85:] if len(results) > years_to_85 else results
-    duration = len(target_results)
+    # シミュレーションの実際の開始年を取得
+    sim_start_year = results[0]['Year']
+    sim_end_year = results[-1]['Year']
+    
+    # 2025年からの経過年数を計算（2026年開始なら1年、2030年開始なら5年）
+    years_elapsed = sim_start_year - 2025
+    
+    # シミュレーション開始時点でのエージェントの年齢を算出
+    age_at_start = agent['age'] + years_elapsed
+    
+    # 85歳になるまで「あと何年シミュレーションを続けるか」を計算
+    years_to_85 = 85 - age_at_start
+    
+    # もし開始時点で既に85歳以上の場合は、期間を0（または最小限の1年）にする防衛策
+    if years_to_85 <= 0:
+        years_to_85 = 1 
 
-    # --- 全データの集計（outputsにある全項目を網羅） ---
-    def avg(key): return sum(r[key] for r in target_results) / duration
+    # 時系列順にソート
+    results.sort(key=lambda x: x['Year'])
+    
+    # シミュレーション開始（先頭）から、85歳になるまでの期間を切り出す
+    target_results = results[:years_to_85]
+    duration = len(target_results)
+    
+    block_size = 5 # 5年ごとの平均を取るためのブロックサイズ
+    # 5年ごとの平均をリスト化する関数
+    def get_period_trends(key):
+        trends = []
+        # 開始年から終了年まで、block_sizeごとにループ
+        current_start = sim_start_year
+        max_year = target_results[-1]['Year']
+
+        while current_start <= max_year:
+            current_end = current_start + block_size - 1
+            # その期間に該当するデータを抽出
+            block = [r for r in target_results if current_start <= r['Year'] <= current_end]
+            
+            # データが存在する場合のみ計算
+            if block:
+                avg_val = sum(r[key] for r in block) / len(block)
+                # 洪水被害など桁が大きいものは整数、それ以外は小数第1位
+                format_str = ".0f" if "Damage" in key else ".1f"
+                trends.append(f"[{current_start}-{current_end}] {avg_val:{format_str}}")
+            
+            current_start += block_size
+            
+        return " → ".join(trends) if trends else "データなし"
 
     # AIに渡す情報の整理
+    #判断基準は以下
     data_summary = {
+        "シミュレーション期間": f"{sim_start_year}年～{sim_end_year}年 ({duration}年間)",
+        "集計単位": f"{block_size}年ごとの平均値推移",
         "気象・環境": {
-            "気温": f"{avg('Temperature (℃)'):.1f}℃",
-            "猛暑日": f"{avg('Hot Days'):.1f}日",
-            "最大豪雨": f"{max(r['Extreme Precip Events'] for r in target_results):.1f}mm"
+            "気温推移(℃)": get_period_trends("Temperature (℃)"),
+            "年降水量(mm)":get_period_trends("Precipitation (mm)")
         },
-        "インフラ・安全": {
-            "堤防強度": f"{target_results[-1]['Levee Level']:.1f}",
-            "住みやすさスコア": f"{avg('Urban Level'):.1f}/100",
-            "直近の水害被害": f"{target_results[-1]['Flood Damage']:.1f} USD"
+        "安全・インフラ": {
+            "洪水被害(平均)": get_period_trends("Flood Damage JPY")
         },
         "経済・社会": {
-            "住民負担": f"{avg('Resident Burden'):.1f} USD",
-            "作物の収穫量": f"{avg('Crop Yield'):.1f}",
-            "住民の防災意識": f"{avg('Resident capacity'):.2f}"
+            "住民負担": get_period_trends("Resident Burden"),
+            "食糧生産(kg/ha)": get_period_trends("Crop Yield"),
         },
         "自然資源": {
-            "生態系スコア": f"{avg('Ecosystem Level'):.1f}/100",
-            "森林面積": f"{avg('Forest Area'):.1f}ha"
+            "生態系指標": get_period_trends("Ecosystem Level"),
+            
         }
     }
 
-    # --- ペルソナを徹底的に反映させたプロンプト ---
+    import re  # 先頭でインポートしてください
+
+# --- ペルソナを徹底的に反映させたプロンプト ---
     prompt = f"""
     あなたは、この街に暮らす「{agent['role']}」として、自治体の政策によって変化した街の姿（シミュレーション結果）を厳しく、あるいは温かく講評してください。
     あなたは予算配分の内訳を知らされていません。目の前にある「数値」と「街の変化」だけが、あなたの判断材料です。
 
     ### 【あなたの設定：市民ペルソナ】
     - 名前・役職: {agent['role']}
-    - 年齢: {age}歳（85歳まで残り{years_to_85}年）
+    - 年齢: {age_at_start}歳（85歳まで残り{years_to_85}年）
     - 一人称: {agent['pronoun']}
     - 最優先の関心事: {agent['focus_point']}
-    - 性格・口調: {age}歳にふさわしい話し方（例：小学生なら素直に、農家なら土の匂いがするような落ち着いた口調で）。
+    - 性格・口調: {age_at_start}歳にふさわしい話し方（例：小学生なら素直に、農家なら土の匂いがするような落ち着いた口調で）。
+
+    ### 【分析の前提：100回試行の期間平均】
+    ターン 1：2026-2050
+    気温(℃): 15.9874
+    年降水量(mm): 1701.1178
+    洪水被害(JPY): 28,457,447.84
+    住民負担: 3002.0453
+    食糧生産(kg/ha): 4673.4159
+    生態系指標: 76.8207
+
+    ターン 2：2051-2075
+    気温(℃): 16.9861
+    年降水量(mm): 1699.8506
+    洪水被害(JPY): 57,936,422.07
+    住民負担: 5893.0907
+    食糧生産(kg/ha): 4265.1148
+    生態系指標: 74.4435
+
+    ターン 3：2076-2100
+    気温(℃): 17.9635
+    年降水量(mm): 1698.9235
+    洪水被害(JPY): 88,919,277.57
+    住民負担: 8895.1334
+    食糧生産(kg/ha): 3836.3774
+    生態系指標: 72.9476
 
     ### 【分析対象：これからの{years_to_85}年間の平均データ】
     {data_summary}
@@ -1333,27 +1401,78 @@ def generate_ai_commentary(results):
     3. **トレードオフへの言及**:
     - どこかが良くなってどこかが悪くなっている点（例：住みやすさは上がったが、住民負担も増えたなど）を、市民の生活実感として指摘してください。
     4. **人生の幸福度判断**: 自身の余命（85歳まで）を考えたとき、この街で暮らし続けることに希望が持てるか、総合的に判断してください。
-    5. **文字数**: 180文字〜250文字程度。
-    6. **市長への評価**: 最後の一文で、市長の「適応政策のセンス」をどの程度支持するか、ズバッと述べてください。
-
+    5. **文字数**: 講評文は180文字〜250文字程度。
+    6. **市長への評価と点数**: 
+       - 【分析の前提：100回試行の期間平均】と【分析対象（あなたへのデータ）】を厳密に比較して採点してください。
+       - あなたの関心事である「{agent['focus_point']}」が前提平均より明らかに改善していれば【8~10点の高得点】、悪化していれば【0~3点の酷評】、平均並みなら【4~7点】としてください。
+       - 最後の一文で市長を評価した後、改行して必ず【支持率】X点/10点 の形式（Xは0~10の整数）のみを出力してください。5点付近に甘んじず、データに基づいて0点や10点を大胆に付けてください。
     ### 【出力イメージ】
     「{agent['pronoun']}はXXで働くXX。最近の街を見て思うんだが……（中略）……こんなに住民負担が増えてちゃ、孫の代までこの街に残れるか不安だよ。市長、あんたのやり方は少し~だね。」
+    【支持率】7点/10点
     """
 
     try:
         response = ollama.chat(model='gemma4:e2b', messages=[
-            {'role': 'system', 'content': f'あなたは{agent["role"]}です。{agent["focus_point"]}を重視して話してください。'},
+            {'role': 'system', 'content': f'あなたは{agent["role"]}です。{agent["focus_point"]}を重視して話してください。必ず出力イメージのフォーマットを守ってください。'},
             {'role': 'user', 'content': prompt},
         ])
-        comment = response['message']['content']
+        output_text = response['message']['content']
+        
+        # 正規表現で「【支持率】X点」の部分を抽出
+        score_match = re.search(r'【支持率】(\d+)点', output_text)
+        if score_match:
+            score = int(score_match.group(1))
+            # 本文から【支持率】の行を消す（画面表示をきれいにするため）
+            comment = re.sub(r'【支持率】\d+点/10点', '', output_text).strip()
+        else:
+            score = 5  # パース失敗時のデフォルト
+            comment = output_text
+
     except Exception:
         comment = build_fallback_persona_commentary(agent, target_results, duration)
+        score = 5 # フォールバック時のデフォルト点数
 
-    return {
-        "text": comment,
+    # 保存するデータの辞書を作成
+    result_data = {
+        "user_name":user_name,
+        "sim_end_year": sim_end_year,
+        "text": comment.replace('\n', ' '),  # 改行がCSVを崩さないようにスペースに置換
+        "score": score,
         "agent_name": agent['name'],
         "agent_role": agent['role'],
         "agent_focus": agent['focus_point'],
         "years_to_85": years_to_85
     }
 
+    # 1. このファイル（simulation.py）がある「src」フォルダの絶対パスを取得
+    src_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # 2. 「src」の1つ上の階層（backendフォルダ）のパスを取得
+    backend_dir = os.path.dirname(src_dir)
+    
+    # 3. backendの中の「data」フォルダのパスを作成
+    data_dir = os.path.join(backend_dir, "data")
+    
+    # 4. もし「data」フォルダがまだ存在しない場合は自動で作成する（エラー防止）
+    os.makedirs(data_dir, exist_ok=True)
+    
+    # 5. 最終的なCSVファイルのパスを決定
+    csv_file_path = os.path.join(data_dir, "ai_commentary_log.csv")
+    
+    # ファイルが既に存在するかチェック
+    file_exists = os.path.exists(csv_file_path)
+
+    # 'a' モード（追記モード）でファイルを開く
+    # encoding='utf-8-sig' にするとExcelで開いたときに文字化けしません
+    with open(csv_file_path, mode='a', newline='', encoding='utf-8-sig') as f:
+        writer = csv.DictWriter(f, fieldnames=result_data.keys())
+        
+        # 新規ファイルの場合のみヘッダー（列名）を書き込む
+        if not file_exists:
+            writer.writeheader()
+            
+        # データを1行追記
+        writer.writerow(result_data)
+
+    # 既存の戻り値処理
+    return result_data
