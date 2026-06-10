@@ -165,21 +165,22 @@ regime_mode = st.sidebar.selectbox(
         "1) Keep Crop Yield threshold always (single regime)",
         "2) Remove Crop Yield threshold from start (single regime)",
         "3) Adaptive regime shift: ATP metrics toggle on/off stochastically (two-layer)",
+        "4) Adaptive regime shift: endogenous target-strain trigger (two-layer)",
     ],
     index=2,
     key="regime_mode",
 )
 
-st.sidebar.caption("Two-layer: each year, Crop Yield constraint toggles ON/OFF with probability about 1/X.")
+st.sidebar.caption("Two-layer (mode 3): each year, Crop Yield constraint toggles ON/OFF with probability about 1/X.")
 metric_toggle_interval_years = st.sidebar.number_input(
-    "Regime shift: expected toggle interval X (years)",
+    "Regime shift: expected toggle interval X (years) [mode 3 only]",
     min_value=1,
     max_value=200,
-    value=30,
+    value=50,
     step=1,
     key="metric_toggle_interval_years",
 )
-cooldown_years = st.sidebar.number_input("Regime shift: cooldown years after exercise", min_value=0, max_value=100, value=50, step=1, key="cooldown_years")
+cooldown_years = st.sidebar.number_input("Regime shift: cooldown years after exercise", min_value=0, max_value=100, value=100, step=1, key="cooldown_years")
 regime_switch_cost = st.sidebar.number_input(
     "Regime shift: exercise cost (currency units)",
     min_value=0.0,
@@ -198,6 +199,39 @@ policy_switch_cost = st.sidebar.number_input(
     format="%.0f",
     key="policy_switch_cost",
 )
+
+# --- Endogenous Target-Strain params (mode 4) ---
+st.sidebar.markdown("---")
+st.sidebar.caption("**Mode 4: Endogenous TargetStrain parameters**")
+target_strain_window_years = st.sidebar.number_input(
+    "TargetStrain: window (years)",
+    min_value=1, max_value=50, value=10, step=1,
+    key="target_strain_window_years",
+)
+target_strain_threshold = st.sidebar.number_input(
+    "TargetStrain: trigger threshold",
+    min_value=0.0, max_value=1.0, value=0.6, step=0.05, format="%.2f",
+    key="target_strain_threshold",
+)
+min_crop_failure_years_for_regime_shift = st.sidebar.number_input(
+    "TargetStrain: min crop failure years",
+    min_value=1, max_value=50, value=5, step=1,
+    key="min_crop_failure_years_for_regime_shift",
+)
+allow_regime_reactivation = st.sidebar.checkbox(
+    "TargetStrain: allow regime reactivation",
+    value=False,
+    key="allow_regime_reactivation",
+)
+st.sidebar.caption("TargetStrain component weights (will be normalized to sum=1):")
+_w_col1, _w_col2 = st.sidebar.columns(2)
+with _w_col1:
+    w_crop = st.number_input("w_crop", min_value=0.0, max_value=1.0, value=0.30, step=0.05, format="%.2f", key="w_crop")
+    w_persistence = st.number_input("w_persist", min_value=0.0, max_value=1.0, value=0.30, step=0.05, format="%.2f", key="w_persistence")
+    w_lockin = st.number_input("w_lockin", min_value=0.0, max_value=1.0, value=0.20, step=0.05, format="%.2f", key="w_lockin")
+with _w_col2:
+    w_ecosystem = st.number_input("w_eco", min_value=0.0, max_value=1.0, value=0.10, step=0.05, format="%.2f", key="w_ecosystem")
+    w_flood = st.number_input("w_flood", min_value=0.0, max_value=1.0, value=0.10, step=0.05, format="%.2f", key="w_flood")
 
 # -------------------------- Quick probe: discover available metrics --------------------------
 @st.cache_data(show_spinner=False)
@@ -227,7 +261,7 @@ st.caption("dir: 'max' means metric must be ≤ threshold; 'min' means metric mu
 
 DEFAULT_THRESHOLDS = [
     {"metric": "Flood Damage", "threshold": 1_000_000.0, "dir": "max"},
-    {"metric": "available_water", "threshold": 1000.0, "dir": "min"},
+    # {"metric": "available_water", "threshold": 1000.0, "dir": "min"},
     {"metric": "Crop Yield", "threshold": 4_700.0, "dir": "min"},
     {"metric": "Ecosystem Level", "threshold": 70.0, "dir": "min"},
     # {"metric": "Resident Burden", "threshold": 100_000.0, "dir": "max"},
@@ -750,6 +784,127 @@ def _minmax_norm(values: List[float]) -> List[float]:
     return ((arr - lo) / (hi - lo)).astype(float).tolist()
 
 
+def _get_threshold_value(thresholds_df: pd.DataFrame, metric: str, default: float = np.nan) -> float:
+    """Extract threshold value for a specific metric from a thresholds DataFrame."""
+    if thresholds_df is None or thresholds_df.empty:
+        return default
+    rows = thresholds_df[thresholds_df["metric"].astype(str).str.strip() == metric]
+    if rows.empty:
+        return default
+    try:
+        return float(rows.iloc[0]["threshold"])
+    except Exception:
+        return default
+
+
+# Agriculture lock-in policy names (used for TargetStrain AgriLockInShare)
+_AGRI_LOCK_POLICIES_DEFAULT = ["AgriR&D-Boost", "All-Boost"]
+# Irreversible commitment policies (first 20 years) for scorecard
+_IRREVERSIBLE_POLICIES_DEF = ["AgriR&D-Boost", "Levee-Boost", "Relocation-Boost", "All-Boost"]
+# Flexible / option-preserving policies for scorecard
+_FLEXIBLE_POLICIES_DEF = ["NoRegret-Lite", "Nature-Boost"]
+
+
+def compute_target_strain_components(
+    history_rows: List[dict],
+    window: int,
+    crop_threshold: float,
+    eco_threshold: float,
+    flood_threshold: float,
+    agri_lock_policies: List[str],
+    w_crop: float,
+    w_persistence: float,
+    w_lockin: float,
+    w_ecosystem: float,
+    w_flood: float,
+) -> dict:
+    """
+    Compute TargetStrain and its components from recent simulation history.
+
+    TargetStrain = weighted average of five 0-1 normalized components:
+      CropViolationSeverity  : current-year crop yield deficit depth
+      CropFailureShare       : fraction of window years below crop threshold
+      AgriLockInShare        : fraction of window years under agri lock-in policy
+      EcosystemViolationSeverity: current-year ecosystem deficit depth
+      FloodViolationSeverity : current-year flood excess depth
+    """
+    empty = {
+        "TargetStrain": 0.0,
+        "CropViolationSeverity": 0.0,
+        "CropFailureShare": 0.0,
+        "CropFailureYears": 0,
+        "AgriLockInShare": 0.0,
+        "EcosystemViolationSeverity": 0.0,
+        "FloodViolationSeverity": 0.0,
+    }
+    if not history_rows:
+        return empty
+
+    current = history_rows[-1]
+    recent = history_rows[-window:] if len(history_rows) >= window else history_rows
+
+    # CropViolationSeverity (current year)
+    crop_yield = float(current.get("Crop Yield", np.nan))
+    if np.isfinite(crop_yield) and np.isfinite(crop_threshold) and crop_threshold > 1e-12:
+        crop_sev = float(np.clip((crop_threshold - crop_yield) / (crop_threshold + 1e-9), 0.0, 1.0))
+    else:
+        crop_sev = 0.0
+
+    # CropFailureShare / CropFailureYears (window)
+    crop_fail_count = 0
+    crop_total = 0
+    for row in recent:
+        cy = float(row.get("Crop Yield", np.nan))
+        if np.isfinite(cy) and np.isfinite(crop_threshold):
+            crop_total += 1
+            if cy < crop_threshold:
+                crop_fail_count += 1
+    crop_fail_share = float(crop_fail_count) / max(1, crop_total)
+
+    # AgriLockInShare (window)
+    agri_lock_count = 0
+    policy_total = 0
+    for row in recent:
+        p = str(row.get("Policy", ""))
+        if p:
+            policy_total += 1
+            if p in agri_lock_policies:
+                agri_lock_count += 1
+    agri_lock_share = float(agri_lock_count) / max(1, policy_total)
+
+    # EcosystemViolationSeverity (current year)
+    eco_level = float(current.get("Ecosystem Level", np.nan))
+    if np.isfinite(eco_level) and np.isfinite(eco_threshold) and eco_threshold > 1e-12:
+        eco_sev = float(np.clip((eco_threshold - eco_level) / (eco_threshold + 1e-9), 0.0, 1.0))
+    else:
+        eco_sev = 0.0
+
+    # FloodViolationSeverity (current year)
+    flood_dmg = float(current.get("Flood Damage", np.nan))
+    if np.isfinite(flood_dmg) and np.isfinite(flood_threshold) and flood_threshold > 1e-12:
+        flood_sev = float(np.clip((flood_dmg - flood_threshold) / (flood_threshold + 1e-9), 0.0, 1.0))
+    else:
+        flood_sev = 0.0
+
+    # Weighted average (normalize weights)
+    w_total = max(1e-12, w_crop + w_persistence + w_lockin + w_ecosystem + w_flood)
+    target_strain = float(np.clip(
+        (w_crop * crop_sev + w_persistence * crop_fail_share + w_lockin * agri_lock_share
+         + w_ecosystem * eco_sev + w_flood * flood_sev) / w_total,
+        0.0, 1.0
+    ))
+
+    return {
+        "TargetStrain": target_strain,
+        "CropViolationSeverity": crop_sev,
+        "CropFailureShare": crop_fail_share,
+        "CropFailureYears": crop_fail_count,
+        "AgriLockInShare": agri_lock_share,
+        "EcosystemViolationSeverity": eco_sev,
+        "FloodViolationSeverity": flood_sev,
+    }
+
+
 def _select_next_policy(
     decision_mode: str,
     current_policy_name: str,
@@ -931,13 +1086,29 @@ def build_pathway_two_layer(
     lookahead_window_years: int,
     lookahead_weights: Dict[str, float],
     lookahead_switch_penalty: float,
+    # endogenous regime shift params
+    regime_shift_logic: str = "stochastic",
+    target_strain_window_years: int = 10,
+    target_strain_threshold: float = 0.6,
+    min_crop_failure_years_for_regime_shift: int = 5,
+    allow_regime_reactivation: bool = False,
+    w_crop: float = 0.30,
+    w_persistence: float = 0.30,
+    w_lockin: float = 0.20,
+    w_ecosystem: float = 0.10,
+    w_flood: float = 0.10,
+    agri_lock_policies: Optional[List[str]] = None,
 ) -> Tuple[pd.DataFrame, List[Tuple[int, str, str]], List[Tuple[int, str, str]], float]:
     """
     Two-layer simulation:
       - Policy layer: ATP detection under current regime thresholds.
-      - Regime layer: ATP threshold metrics toggle ON/OFF with frequency ~ once per X years.
-      - NEW: trigger_map and ladder can differ by regime (minimal modification objective).
+      - Regime layer (stochastic): toggle ON/OFF with frequency ~1/X years.
+      - Regime layer (endogenous_target_strain): trigger when TargetStrain >= threshold
+        AND CropFailureYears >= min threshold (state-dependent, not random).
     """
+    if agri_lock_policies is None:
+        agri_lock_policies = list(_AGRI_LOCK_POLICIES_DEFAULT)
+
     ladder_on_local = ladder_by_regime.get("CropConstraintON", [])
     if not ladder_on_local:
         raise ValueError("ladder_by_regime['CropConstraintON'] is empty")
@@ -964,10 +1135,46 @@ def build_pathway_two_layer(
     npv_switch_cost = 0.0
     y0 = int(years[0]) if years else 0
 
+    # Extract thresholds for TargetStrain computation (endogenous mode)
+    _thr_on = thresholds_by_regime.get("CropConstraintON", pd.DataFrame())
+    _crop_thr = _get_threshold_value(_thr_on, "Crop Yield", default=4700.0)
+    _eco_thr = _get_threshold_value(_thr_on, "Ecosystem Level", default=70.0)
+    _flood_thr = _get_threshold_value(_thr_on, "Flood Damage", default=1_000_000.0)
+
     for y in years:
         y = int(y)
         prev_values, outputs = sim.simulate_year(y, prev_values, current_policy, params)
         outputs = outputs.to_dict() if isinstance(outputs, pd.Series) else dict(outputs)
+
+        # Set Policy early so TargetStrain window includes correct policy label
+        outputs["Year"] = y
+        outputs["Policy"] = str(current_policy_name)
+
+        # --- TargetStrain computation (always computed; NaN for stochastic) ---
+        if regime_shift_logic == "endogenous_target_strain":
+            ts_comps = compute_target_strain_components(
+                history_rows=out_rows + [outputs],
+                window=int(target_strain_window_years),
+                crop_threshold=float(_crop_thr),
+                eco_threshold=float(_eco_thr),
+                flood_threshold=float(_flood_thr),
+                agri_lock_policies=agri_lock_policies,
+                w_crop=float(w_crop),
+                w_persistence=float(w_persistence),
+                w_lockin=float(w_lockin),
+                w_ecosystem=float(w_ecosystem),
+                w_flood=float(w_flood),
+            )
+        else:
+            ts_comps = {
+                "TargetStrain": np.nan,
+                "CropViolationSeverity": np.nan,
+                "CropFailureShare": np.nan,
+                "CropFailureYears": np.nan,
+                "AgriLockInShare": np.nan,
+                "EcosystemViolationSeverity": np.nan,
+                "FloodViolationSeverity": np.nan,
+            }
 
         # --- Regime layer ---
         lookahead_fail_abs = np.nan
@@ -975,40 +1182,88 @@ def build_pathway_two_layer(
         regime_trigger_met = False
         toggled_metric = None
         toggle_action = None
-        if cooldown_left > 0:
-            cooldown_left -= 1
-        else:
-            p_toggle = 1.0 / max(1, int(metric_toggle_interval_years))
-            regime_trigger_met = bool(np.random.random() < p_toggle)
-            regime_trigger_run = regime_trigger_run + 1 if regime_trigger_met else 0
+        regime_shift_reason = ""
 
-            if regime_trigger_met:
-                toggled_metric = "Crop Yield"
-                if toggled_metric in active_metrics:
-                    active_now = bool(active_metrics.get(toggled_metric, True))
-                    active_metrics[toggled_metric] = (not active_now)
-                    toggle_action = "OFF" if active_now else "ON"
+        if regime_shift_logic == "stochastic":
+            if cooldown_left > 0:
+                cooldown_left -= 1
+            else:
+                p_toggle = 1.0 / max(1, int(metric_toggle_interval_years))
+                regime_trigger_met = bool(np.random.random() < p_toggle)
+                regime_trigger_run = regime_trigger_run + 1 if regime_trigger_met else 0
+
+                if regime_trigger_met:
+                    toggled_metric = "Crop Yield"
+                    if toggled_metric in active_metrics:
+                        active_now = bool(active_metrics.get(toggled_metric, True))
+                        active_metrics[toggled_metric] = (not active_now)
+                        toggle_action = "OFF" if active_now else "ON"
+                        regime_switches.append((y, toggled_metric, toggle_action))
+                        current_regime = "CropConstraintON" if active_metrics.get("Crop Yield", True) else "CropConstraintOFF"
+                        regime_trigger_run = 0
+                        cooldown_left = int(cooldown_years)
+                        decision_start_year = int(y) + 1
+                        npv_switch_cost += float(regime_switch_cost) / ((1 + float(discount_rate_local)) ** (y - y0))
+                    else:
+                        toggled_metric = None
+
+        elif regime_shift_logic == "endogenous_target_strain":
+            if cooldown_left > 0:
+                cooldown_left -= 1
+            else:
+                ts_val = float(ts_comps["TargetStrain"])
+                crop_fail_yrs = int(ts_comps["CropFailureYears"])
+
+                # Trigger regime shift OFF when strain is too high
+                if (current_regime == "CropConstraintON"
+                        and ts_val >= float(target_strain_threshold)
+                        and crop_fail_yrs >= int(min_crop_failure_years_for_regime_shift)):
+                    regime_trigger_met = True
+                    toggled_metric = "Crop Yield"
+                    active_metrics[toggled_metric] = False
+                    toggle_action = "OFF"
+                    regime_shift_reason = f"TargetStrain={ts_val:.3f}≥{target_strain_threshold:.2f}, CropFailYrs={crop_fail_yrs}"
                     regime_switches.append((y, toggled_metric, toggle_action))
-                    current_regime = "CropConstraintON" if active_metrics.get("Crop Yield", True) else "CropConstraintOFF"
+                    current_regime = "CropConstraintOFF"
                     regime_trigger_run = 0
                     cooldown_left = int(cooldown_years)
                     decision_start_year = int(y) + 1
-
                     npv_switch_cost += float(regime_switch_cost) / ((1 + float(discount_rate_local)) ** (y - y0))
-                else:
-                    toggled_metric = None
+
+                # Optional reactivation when strain falls well below threshold
+                elif (allow_regime_reactivation
+                        and current_regime == "CropConstraintOFF"
+                        and ts_val < float(target_strain_threshold) * 0.5):
+                    regime_trigger_met = True
+                    toggled_metric = "Crop Yield"
+                    active_metrics[toggled_metric] = True
+                    toggle_action = "ON"
+                    regime_shift_reason = f"Reactivation: TargetStrain={ts_val:.3f}<{target_strain_threshold * 0.5:.2f}"
+                    regime_switches.append((y, toggled_metric, toggle_action))
+                    current_regime = "CropConstraintON"
+                    regime_trigger_run = 0
+                    cooldown_left = int(cooldown_years)
+                    decision_start_year = int(y) + 1
+                    npv_switch_cost += float(regime_switch_cost) / ((1 + float(discount_rate_local)) ** (y - y0))
 
         # --- Record ---
-        outputs["Year"] = y
-        outputs["Policy"] = str(current_policy_name)
         outputs["Regime"] = str(current_regime)
-        outputs["NormativePressure"] = float(regime_trigger_run)
+        outputs["NormativePressure"] = float(ts_comps["TargetStrain"]) if regime_shift_logic == "endogenous_target_strain" else float(regime_trigger_run)
         outputs["RegimeLookaheadViolationAbs"] = float(lookahead_fail_abs) if np.isfinite(lookahead_fail_abs) else np.nan
         outputs["RegimeLookaheadMunicipalCostAbs"] = float(lookahead_cost_abs) if np.isfinite(lookahead_cost_abs) else np.nan
         outputs["RegimeTriggerMet"] = bool(regime_trigger_met)
         outputs["RegimeToggleMetric"] = str(toggled_metric) if toggled_metric is not None else ""
         outputs["RegimeToggleAction"] = str(toggle_action) if toggle_action is not None else ""
         outputs["ActiveThresholdCount"] = int(sum(1 for m in metric_names if active_metrics.get(m, False)))
+        # TargetStrain columns
+        outputs["TargetStrain"] = ts_comps["TargetStrain"]
+        outputs["CropViolationSeverity"] = ts_comps["CropViolationSeverity"]
+        outputs["CropFailureShare"] = ts_comps["CropFailureShare"]
+        outputs["CropFailureYears"] = ts_comps["CropFailureYears"]
+        outputs["AgriLockInShare"] = ts_comps["AgriLockInShare"]
+        outputs["EcosystemViolationSeverity"] = ts_comps["EcosystemViolationSeverity"]
+        outputs["FloodViolationSeverity"] = ts_comps["FloodViolationSeverity"]
+        outputs["RegimeShiftReason"] = regime_shift_reason
         out_rows.append(outputs)
 
         # --- Policy layer ---
@@ -1113,6 +1368,18 @@ def run_mc_two_layer(
     lookahead_weights: Dict[str, float],
     lookahead_switch_penalty: float,
     rng: np.random.Generator,
+    # endogenous regime params
+    regime_shift_logic: str = "stochastic",
+    target_strain_window_years: int = 10,
+    target_strain_threshold: float = 0.6,
+    min_crop_failure_years_for_regime_shift: int = 5,
+    allow_regime_reactivation: bool = False,
+    w_crop: float = 0.30,
+    w_persistence: float = 0.30,
+    w_lockin: float = 0.20,
+    w_ecosystem: float = 0.10,
+    w_flood: float = 0.10,
+    agri_lock_policies: Optional[List[str]] = None,
 ) -> Tuple[List[pd.DataFrame], List[List[Tuple[int, str, str]]], List[List[Tuple[int, str, str]]], List[float], List[int]]:
     series: List[pd.DataFrame] = []
     policy_switches_all: List[List[Tuple[int, str, str]]] = []
@@ -1126,22 +1393,19 @@ def run_mc_two_layer(
         np.random.seed(seed_i)
 
         df_i, psw_i, rsw_i, npv_cost_i = build_pathway_two_layer(
-            years,
-            init,
-            primitives,
-            params,
-            thresholds_by_regime,
-            trigger_map_by_regime,
-            ladder_by_regime,
-            k_atp,
-            metric_toggle_interval_years,
-            cooldown_years,
-            regime_switch_cost,
-            discount_rate_local,
-            decision_mode,
-            lookahead_window_years,
-            lookahead_weights,
-            lookahead_switch_penalty,
+            years, init, primitives, params,
+            thresholds_by_regime, trigger_map_by_regime, ladder_by_regime, k_atp,
+            metric_toggle_interval_years, cooldown_years, regime_switch_cost,
+            discount_rate_local, decision_mode, lookahead_window_years,
+            lookahead_weights, lookahead_switch_penalty,
+            regime_shift_logic=regime_shift_logic,
+            target_strain_window_years=target_strain_window_years,
+            target_strain_threshold=target_strain_threshold,
+            min_crop_failure_years_for_regime_shift=min_crop_failure_years_for_regime_shift,
+            allow_regime_reactivation=allow_regime_reactivation,
+            w_crop=w_crop, w_persistence=w_persistence, w_lockin=w_lockin,
+            w_ecosystem=w_ecosystem, w_flood=w_flood,
+            agri_lock_policies=agri_lock_policies,
         )
         series.append(df_i)
         policy_switches_all.append(psw_i)
@@ -1170,6 +1434,18 @@ def run_mc_two_layer_with_seeds(
     lookahead_window_years: int,
     lookahead_weights: Dict[str, float],
     lookahead_switch_penalty: float,
+    # endogenous regime params
+    regime_shift_logic: str = "stochastic",
+    target_strain_window_years: int = 10,
+    target_strain_threshold: float = 0.6,
+    min_crop_failure_years_for_regime_shift: int = 5,
+    allow_regime_reactivation: bool = False,
+    w_crop: float = 0.30,
+    w_persistence: float = 0.30,
+    w_lockin: float = 0.20,
+    w_ecosystem: float = 0.10,
+    w_flood: float = 0.10,
+    agri_lock_policies: Optional[List[str]] = None,
 ) -> Tuple[List[pd.DataFrame], List[List[Tuple[int, str, str]]], List[List[Tuple[int, str, str]]], List[float]]:
     series: List[pd.DataFrame] = []
     policy_switches_all: List[List[Tuple[int, str, str]]] = []
@@ -1181,22 +1457,20 @@ def run_mc_two_layer_with_seeds(
         np.random.seed(seed_i)
 
         df_i, psw_i, rsw_i, npv_cost_i = build_pathway_two_layer(
-            years,
-            init,
-            primitives,
-            params,
-            thresholds_by_regime,
-            trigger_map_by_regime,
-            ladder_by_regime,
-            k_atp,
-            int(metric_toggle_interval_years),
-            int(cooldown_years),
-            float(regime_switch_cost),
-            float(discount_rate_local),
-            decision_mode,
-            int(lookahead_window_years),
-            lookahead_weights,
-            float(lookahead_switch_penalty),
+            years, init, primitives, params,
+            thresholds_by_regime, trigger_map_by_regime, ladder_by_regime, k_atp,
+            int(metric_toggle_interval_years), int(cooldown_years),
+            float(regime_switch_cost), float(discount_rate_local),
+            decision_mode, int(lookahead_window_years),
+            lookahead_weights, float(lookahead_switch_penalty),
+            regime_shift_logic=regime_shift_logic,
+            target_strain_window_years=target_strain_window_years,
+            target_strain_threshold=target_strain_threshold,
+            min_crop_failure_years_for_regime_shift=min_crop_failure_years_for_regime_shift,
+            allow_regime_reactivation=allow_regime_reactivation,
+            w_crop=w_crop, w_persistence=w_persistence, w_lockin=w_lockin,
+            w_ecosystem=w_ecosystem, w_flood=w_flood,
+            agri_lock_policies=agri_lock_policies,
         )
         series.append(df_i)
         policy_switches_all.append(psw_i)
@@ -1251,6 +1525,43 @@ def summarize_df(df: pd.DataFrame, thresholds_df_use: pd.DataFrame, discount_rat
     yield_2050 = value_at_year("Crop Yield", 2050)
     yield_2100 = value_at_year("Crop Yield", 2100)
 
+    # ===== Research metrics =====
+    policy_col = df.get("Policy", pd.Series([""] * len(df))).astype(str)
+    municipal_cost_col = pd.to_numeric(df.get("Municipal Cost", pd.Series(np.zeros(len(df)))), errors="coerce").fillna(0.0)
+
+    # Lock-in Years: years under AgriR&D-Boost or All-Boost
+    lock_in_years_count = int(policy_col.isin(_AGRI_LOCK_POLICIES_DEFAULT).sum())
+
+    # Early decision window: first 20 years from simulation start
+    if "Year" in df.columns:
+        y_start = int(df["Year"].min())
+        early_cutoff = y_start + 20
+        early_mask = df["Year"].astype(int) < early_cutoff
+        early_df_sub = df[early_mask].copy()
+    else:
+        early_df_sub = df.iloc[:20].copy()
+
+    early_policy = early_df_sub.get("Policy", pd.Series([""] * len(early_df_sub))).astype(str)
+    early_irrev_mask = early_policy.isin(_IRREVERSIBLE_POLICIES_DEF).values
+    early_irrev_years_count = int(early_irrev_mask.sum())
+
+    early_mc = pd.to_numeric(
+        early_df_sub.get("Municipal Cost", pd.Series([0.0] * len(early_df_sub))), errors="coerce"
+    ).fillna(0.0)
+    early_irrev_cost = float(early_mc.values[early_irrev_mask].sum()) if early_irrev_mask.any() else 0.0
+
+    n_early = max(1, len(early_policy))
+    early_option_share = float(early_policy.isin(_FLEXIBLE_POLICIES_DEF).sum()) / n_early
+
+    # TargetStrain metrics
+    if "TargetStrain" in df.columns:
+        ts_vals = pd.to_numeric(df["TargetStrain"], errors="coerce").dropna()
+        mean_ts = float(ts_vals.mean()) if len(ts_vals) > 0 else np.nan
+        max_ts = float(ts_vals.max()) if len(ts_vals) > 0 else np.nan
+    else:
+        mean_ts = np.nan
+        max_ts = np.nan
+
     return {
         "Robustness": robustness_year_share,
         "NPV Municipal Cost": npv_cost,
@@ -1260,7 +1571,7 @@ def summarize_df(df: pd.DataFrame, thresholds_df_use: pd.DataFrame, discount_rat
         "Avg Crop Yield": avg_yield,
         "Final Levee Level": final_levee,
 
-        # 追加
+        # 追加（時点指標）
         "Flood Damage 2050": flood_2050,
         "Flood Damage 2100": flood_2100,
         "Resident Burden 2050": burden_2050,
@@ -1269,6 +1580,14 @@ def summarize_df(df: pd.DataFrame, thresholds_df_use: pd.DataFrame, discount_rat
         "Ecosystem Level 2100": eco_2100,
         "Crop Yield 2050": yield_2050,
         "Crop Yield 2100": yield_2100,
+
+        # 研究用指標
+        "Lock-in Years": lock_in_years_count,
+        "Early Irreversible Commitment Years": early_irrev_years_count,
+        "Early Irreversible Commitment Cost": early_irrev_cost,
+        "Option-preserving Share Early": early_option_share,
+        "Mean TargetStrain": mean_ts,
+        "Max TargetStrain": max_ts,
     }
 
 # --------------------------
@@ -1335,6 +1654,31 @@ if run_clicked:
             regime_switches = [[] for _ in range(len(series))]
             npv_regime_costs = [0.0 for _ in range(len(series))]
 
+        elif regime_mode.startswith("4)"):
+            _endo_kwargs = dict(
+                regime_shift_logic="endogenous_target_strain",
+                target_strain_window_years=int(target_strain_window_years),
+                target_strain_threshold=float(target_strain_threshold),
+                min_crop_failure_years_for_regime_shift=int(min_crop_failure_years_for_regime_shift),
+                allow_regime_reactivation=bool(allow_regime_reactivation),
+                w_crop=float(w_crop), w_persistence=float(w_persistence), w_lockin=float(w_lockin),
+                w_ecosystem=float(w_ecosystem), w_flood=float(w_flood),
+                agri_lock_policies=list(_AGRI_LOCK_POLICIES_DEFAULT),
+            )
+            series, policy_switches, regime_switches, npv_regime_costs, scenario_seeds = run_mc_two_layer(
+                YEARS, DEFAULT_INITIAL, PRIMITIVE_POLICIES, params,
+                thresholds_by_regime, trigger_map_by_regime, ladder_by_regime, k_consec, n_scenarios,
+                metric_toggle_interval_years=int(metric_toggle_interval_years),
+                cooldown_years=int(cooldown_years),
+                regime_switch_cost=float(regime_switch_cost),
+                discount_rate_local=float(discount_rate),
+                decision_mode=decision_mode,
+                lookahead_window_years=int(lookahead_window_years),
+                lookahead_weights={"fail_ratio": float(lookahead_w_fail), "municipal_cost_npv": float(lookahead_w_cost)},
+                lookahead_switch_penalty=float(lookahead_switch_penalty),
+                rng=rng,
+                **_endo_kwargs,
+            )
         else:
             series, policy_switches, regime_switches, npv_regime_costs, scenario_seeds = run_mc_two_layer(
                 YEARS,
@@ -1407,7 +1751,7 @@ if run_clicked:
             "Min Ecosystem Level",
             "Avg Crop Yield",
             "Final Levee Level",
-            # 追加
+            # 追加（時点指標）
             "Flood Damage 2050",
             "Flood Damage 2100",
             "Resident Burden 2050",
@@ -1423,6 +1767,13 @@ if run_clicked:
             "Cumulative Switching Cost",
             "Cumulative Total Cost",
             "NPV RegimeSwitchCost",
+            # 研究用指標
+            "Lock-in Years",
+            "Early Irreversible Commitment Years",
+            "Early Irreversible Commitment Cost",
+            "Option-preserving Share Early",
+            "Mean TargetStrain",
+            "Max TargetStrain",
         ] + policy_cost_metrics
 
         cand_mean = scorecard.groupby("Candidate")[metrics_to_agg].mean(numeric_only=True)
@@ -1476,6 +1827,16 @@ if run_clicked:
                 "CropConstraintOFF": list(ladder_by_regime["CropConstraintOFF"]),
             },
             "scenario_seeds": list(scenario_seeds),
+            # endogenous params (stored for comparison section)
+            "target_strain_window_years": int(target_strain_window_years),
+            "target_strain_threshold": float(target_strain_threshold),
+            "min_crop_failure_years_for_regime_shift": int(min_crop_failure_years_for_regime_shift),
+            "allow_regime_reactivation": bool(allow_regime_reactivation),
+            "w_crop": float(w_crop),
+            "w_persistence": float(w_persistence),
+            "w_lockin": float(w_lockin),
+            "w_ecosystem": float(w_ecosystem),
+            "w_flood": float(w_flood),
         }
 
         st.success("Run complete. Results are persisted below.")
@@ -1636,10 +1997,32 @@ else:
                 )
             )
             final_share = float(y_share[-1]) if y_share and np.isfinite(y_share[-1]) else np.nan
+            final_vals = []
+            final_year = int(years_sorted[-1])
+            for df in series:
+                if metric not in df.columns:
+                    continue
+                row_y = df[df["Year"] == final_year]
+                if row_y.empty:
+                    continue
+                v = pd.to_numeric(row_y[metric], errors="coerce").iloc[0]
+                if not np.isfinite(v):
+                    continue
+                final_vals.append(1.0 if (v <= thr if direc == "max" else v >= thr) else 0.0)
+
+            final_sigma = float(np.std(final_vals, ddof=1)) if len(final_vals) > 1 else np.nan
+            final_score_pm = (
+                f"{final_share:.3f} ± {final_sigma:.3f}"
+                if np.isfinite(final_share) and np.isfinite(final_sigma)
+                else ""
+            )
             c3_final_rows.append(
                 {
                     "Indicator": ind_name,
                     f"Final score ({years_sorted[-1]})": final_share,
+                    f"σ ({years_sorted[-1]})": final_sigma,
+                    f"Final score ± σ ({years_sorted[-1]})": final_score_pm,
+                    "N": len(final_vals),
                 }
             )
 
@@ -1650,7 +2033,7 @@ else:
             yaxis=dict(range=[0, 1], tickformat=".0%"),
         )
         st.plotly_chart(fig_thr, use_container_width=True, key=f"threshold_share_{render_uid}")
-        st.caption(f"C3 final-year scores at {years_sorted[-1]}")
+        st.caption(f"C3 final-year scores at {years_sorted[-1]} (mean ± sample σ across scenarios)")
         st.dataframe(pd.DataFrame(c3_final_rows), use_container_width=True)
 
 st.subheader("C4) Cost time series (mean across scenarios)")
@@ -1940,6 +2323,120 @@ else:
         )
         st.plotly_chart(figmr, use_container_width=True, key=f"metro_regime_{render_uid}_{bin_size_r}")
 
+# ---------------- E) Endogenous TargetStrain visualizations ----------------
+_has_ts = any("TargetStrain" in df.columns and df["TargetStrain"].notna().any() for df in series)
+
+if _has_ts:
+    st.subheader("E1) TargetStrain annual trend (mean ± std across scenarios)")
+    ts_mean_by_year = []
+    ts_std_by_year = []
+    ts_q10_by_year = []
+    ts_q90_by_year = []
+    for y in years_sorted:
+        vals = []
+        for df in series:
+            if "TargetStrain" not in df.columns:
+                continue
+            row = df[df["Year"] == y]
+            if row.empty:
+                continue
+            v = pd.to_numeric(row["TargetStrain"], errors="coerce").iloc[0]
+            if np.isfinite(v):
+                vals.append(float(v))
+        ts_mean_by_year.append(float(np.mean(vals)) if vals else np.nan)
+        ts_std_by_year.append(float(np.std(vals, ddof=1)) if len(vals) > 1 else 0.0)
+        ts_q10_by_year.append(float(np.percentile(vals, 10)) if vals else np.nan)
+        ts_q90_by_year.append(float(np.percentile(vals, 90)) if vals else np.nan)
+
+    fig_ts = go.Figure()
+    fig_ts.add_trace(go.Scatter(
+        x=years_sorted + years_sorted[::-1],
+        y=[m + s for m, s in zip(ts_mean_by_year, ts_std_by_year)] + [m - s for m, s in zip(ts_mean_by_year[::-1], ts_std_by_year[::-1])],
+        fill="toself", fillcolor="rgba(31,119,180,0.15)", line=dict(color="rgba(0,0,0,0)"),
+        name="mean ± std", showlegend=True,
+    ))
+    fig_ts.add_trace(go.Scatter(
+        x=years_sorted, y=ts_mean_by_year, mode="lines", name="Mean TargetStrain",
+        line=dict(color="royalblue", width=2),
+    ))
+    fig_ts.add_trace(go.Scatter(
+        x=years_sorted, y=ts_q10_by_year, mode="lines", name="P10",
+        line=dict(color="royalblue", width=1, dash="dot"),
+    ))
+    fig_ts.add_trace(go.Scatter(
+        x=years_sorted, y=ts_q90_by_year, mode="lines", name="P90",
+        line=dict(color="royalblue", width=1, dash="dot"),
+    ))
+    # Threshold line
+    _ts_thr_val = float(res.get("target_strain_threshold", 0.6))
+    fig_ts.add_hline(y=_ts_thr_val, line=dict(color="red", dash="dash"), annotation_text=f"threshold={_ts_thr_val:.2f}")
+    fig_ts.update_layout(
+        title="TargetStrain over time (endogenous mode)",
+        xaxis_title="Year", yaxis_title="TargetStrain (0–1)",
+        yaxis=dict(range=[0, 1]),
+    )
+    st.plotly_chart(fig_ts, use_container_width=True, key=f"ts_trend_{render_uid}")
+
+    st.subheader("E2) Regime shift timing distribution")
+    regime_shifts_res = res.get("regime_switches", [])
+    off_years = [int(e[0]) for sw in regime_shifts_res for e in sw if str(e[2]) == "OFF"]
+    on_years  = [int(e[0]) for sw in regime_shifts_res for e in sw if str(e[2]) == "ON"]
+    if off_years:
+        fig_hist = go.Figure()
+        fig_hist.add_trace(go.Histogram(
+            x=off_years, nbinsx=max(1, len(years_sorted) // 5),
+            name="Regime shift OFF (target review triggered)",
+            marker_color="firebrick", opacity=0.75,
+        ))
+        if on_years:
+            fig_hist.add_trace(go.Histogram(
+                x=on_years, nbinsx=max(1, len(years_sorted) // 5),
+                name="Regime reactivation ON",
+                marker_color="steelblue", opacity=0.75,
+            ))
+        fig_hist.update_layout(
+            title="Distribution of regime shift years across scenarios",
+            xaxis_title="Year of regime shift",
+            yaxis_title="Number of scenarios",
+            barmode="overlay",
+        )
+        st.plotly_chart(fig_hist, use_container_width=True, key=f"rs_dist_{render_uid}")
+        n_shifted = sum(1 for sw in regime_shifts_res if any(str(e[2]) == "OFF" for e in sw))
+        st.caption(
+            f"Scenarios with regime shift: {n_shifted}/{len(regime_shifts_res)} "
+            f"({100*n_shifted/max(1,len(regime_shifts_res)):.1f}%)  |  "
+            f"Mean shift year: {np.mean(off_years):.1f} ± {np.std(off_years, ddof=1) if len(off_years)>1 else 0:.1f}"
+        )
+    else:
+        st.info("No regime shifts occurred in the last run (TargetStrain may not have reached the threshold).")
+
+    st.subheader("E3) Early decision metrics (per-scenario summary)")
+    _e3_cols = [c for c in [
+        "Lock-in Years", "Early Irreversible Commitment Years", "Early Irreversible Commitment Cost",
+        "Option-preserving Share Early", "Mean TargetStrain", "Max TargetStrain",
+        "#RegimeSwitches", "RegimeShiftYear",
+    ] if c in scorecard.columns]
+    if _e3_cols:
+        st.dataframe(scorecard[["Candidate"] + _e3_cols].describe(), use_container_width=True)
+        fig_e3 = go.Figure()
+        if "Option-preserving Share Early" in scorecard.columns:
+            fig_e3.add_trace(go.Histogram(
+                x=scorecard["Option-preserving Share Early"].dropna(),
+                nbinsx=20, name="Option-preserving Share Early",
+                marker_color="seagreen", opacity=0.75,
+            ))
+        if "Lock-in Years" in scorecard.columns:
+            fig_e3.add_trace(go.Histogram(
+                x=scorecard["Lock-in Years"].dropna(),
+                nbinsx=20, name="Lock-in Years",
+                marker_color="orangered", opacity=0.75,
+            ))
+        fig_e3.update_layout(
+            title="Early decision metrics distribution across scenarios",
+            barmode="overlay", xaxis_title="Value", yaxis_title="Count",
+        )
+        st.plotly_chart(fig_e3, use_container_width=True, key=f"e3_hist_{render_uid}")
+
 # ---------------- Exports ----------------
 st.subheader("F) Export CSVs")
 st.download_button(
@@ -2158,4 +2655,306 @@ if enable_sweep:
             f"dapp_regime_exercise_boundary_sweep_{res['candidate_name']}.csv",
             "text/csv",
             key="dl_sweep",
+        )
+
+# ==========================================================
+# H) Fixed vs Endogenous comparison
+# ==========================================================
+st.divider()
+st.header("H) Fixed DAPP vs Endogenous Two-Layer DAPP comparison")
+
+st.caption(
+    "Runs Fixed DAPP (mode 1: Crop Yield always ON) and Endogenous DAPP (mode 4: TargetStrain trigger) "
+    "using the **same scenario seeds** stored from the last main run, then compares key research metrics."
+)
+
+enable_comparison = st.checkbox("Enable Fixed vs Endogenous comparison", value=False, key="enable_comparison")
+
+if enable_comparison:
+    if "dapp_results" not in st.session_state:
+        st.warning("Run DAPP first to generate scenario seeds for comparison.")
+    else:
+        _cres = st.session_state["dapp_results"]
+        _cseeds = _cres.get("scenario_seeds", [])
+        if not _cseeds:
+            st.warning("No scenario seeds in last run. Run DAPP with 'Use fixed random seed' enabled.")
+        else:
+            st.info(f"Using {len(_cseeds)} scenario seeds from last run.")
+
+            # Endogenous params from last run (or sidebar if changed)
+            _endo_cmp_kwargs = dict(
+                regime_shift_logic="endogenous_target_strain",
+                target_strain_window_years=int(_cres.get("target_strain_window_years", target_strain_window_years)),
+                target_strain_threshold=float(_cres.get("target_strain_threshold", target_strain_threshold)),
+                min_crop_failure_years_for_regime_shift=int(_cres.get("min_crop_failure_years_for_regime_shift", min_crop_failure_years_for_regime_shift)),
+                allow_regime_reactivation=bool(_cres.get("allow_regime_reactivation", allow_regime_reactivation)),
+                w_crop=float(_cres.get("w_crop", w_crop)),
+                w_persistence=float(_cres.get("w_persistence", w_persistence)),
+                w_lockin=float(_cres.get("w_lockin", w_lockin)),
+                w_ecosystem=float(_cres.get("w_ecosystem", w_ecosystem)),
+                w_flood=float(_cres.get("w_flood", w_flood)),
+                agri_lock_policies=list(_AGRI_LOCK_POLICIES_DEFAULT),
+            )
+
+            _cmp_lw = dict(_cres.get("lookahead_weights", {"fail_ratio": 0.8, "municipal_cost_npv": 0.2}))
+            _cmp_params = _cres.get("params", params)
+            _cmp_years = _cres.get("years", YEARS)
+            _cmp_k = int(_cres.get("k_consec", k_consec))
+            _cmp_dm = str(_cres.get("decision_mode", decision_mode))
+            _cmp_lw_yrs = int(_cres.get("lookahead_window_years", lookahead_window_years))
+            _cmp_penalty = float(_cres.get("lookahead_switch_penalty", lookahead_switch_penalty))
+            _cmp_dr = float(_cres.get("discount_rate", discount_rate))
+            _cmp_rs_cost = float(_cres.get("regime_switch_cost", regime_switch_cost))
+            _cmp_ps_cost = float(_cres.get("policy_switch_cost", policy_switch_cost))
+            _cmp_cd = int(_cres.get("cooldown_years", cooldown_years))
+            _cmp_x = int(_cres.get("metric_toggle_interval_years", metric_toggle_interval_years))
+            _cmp_thr_on = _cres.get("thresholds_by_regime", thresholds_by_regime).get("CropConstraintON", thresholds_by_regime["CropConstraintON"])
+            _cmp_thr_off = _cres.get("thresholds_by_regime", thresholds_by_regime).get("CropConstraintOFF", thresholds_by_regime["CropConstraintOFF"])
+            _cmp_thr_by_r = {"CropConstraintON": _cmp_thr_on, "CropConstraintOFF": _cmp_thr_off}
+            _cmp_prims = _cres.get("policies", PRIMITIVE_POLICIES)
+            _cmp_lby_r = _cres.get("ladder_by_regime", ladder_by_regime)
+            _cmp_tm_by_r = _cres.get("trigger_map_by_regime", trigger_map_by_regime)
+
+            run_cmp_clicked = st.button("▶️ Run Fixed vs Endogenous Comparison", key="run_cmp_btn")
+
+            if run_cmp_clicked:
+                with st.status("Running comparison (Fixed + Endogenous)...", expanded=True) as cmp_status:
+
+                    # --- Fixed DAPP (mode 1) ---
+                    cmp_status.update(label="Running Fixed DAPP (mode 1)...")
+                    _fixed_series, _fixed_psw, _fixed_rsw, _fixed_npv = run_mc_two_layer_with_seeds(
+                        _cmp_years, DEFAULT_INITIAL, _cmp_prims, _cmp_params,
+                        _cmp_thr_by_r, _cmp_tm_by_r, _cmp_lby_r, _cmp_k,
+                        scenario_seeds=_cseeds,
+                        metric_toggle_interval_years=99999,  # effectively never for fixed
+                        cooldown_years=_cmp_cd,
+                        regime_switch_cost=_cmp_rs_cost,
+                        discount_rate_local=_cmp_dr,
+                        decision_mode=_cmp_dm,
+                        lookahead_window_years=_cmp_lw_yrs,
+                        lookahead_weights=_cmp_lw,
+                        lookahead_switch_penalty=_cmp_penalty,
+                        regime_shift_logic="stochastic",  # p=1/99999 ≈ 0
+                    )
+
+                    # --- Endogenous DAPP (mode 4) ---
+                    cmp_status.update(label="Running Endogenous DAPP (mode 4)...")
+                    _endo_series, _endo_psw, _endo_rsw, _endo_npv = run_mc_two_layer_with_seeds(
+                        _cmp_years, DEFAULT_INITIAL, _cmp_prims, _cmp_params,
+                        _cmp_thr_by_r, _cmp_tm_by_r, _cmp_lby_r, _cmp_k,
+                        scenario_seeds=_cseeds,
+                        metric_toggle_interval_years=_cmp_x,
+                        cooldown_years=_cmp_cd,
+                        regime_switch_cost=_cmp_rs_cost,
+                        discount_rate_local=_cmp_dr,
+                        decision_mode=_cmp_dm,
+                        lookahead_window_years=_cmp_lw_yrs,
+                        lookahead_weights=_cmp_lw,
+                        lookahead_switch_penalty=_cmp_penalty,
+                        **_endo_cmp_kwargs,
+                    )
+
+                    cmp_status.update(label="Computing comparison metrics...")
+
+                    def _cmp_success_rate(series_list, metric, thr, direc):
+                        rates = []
+                        for df in series_list:
+                            if metric not in df.columns:
+                                continue
+                            vals = pd.to_numeric(df[metric], errors="coerce").dropna()
+                            if vals.empty:
+                                continue
+                            if direc == "min":
+                                rates.append(float((vals >= thr).mean()))
+                            else:
+                                rates.append(float((vals <= thr).mean()))
+                        return float(np.mean(rates)) if rates else np.nan
+
+                    def _cmp_sc_mean(series_list, switches_list, npv_list, key):
+                        sc_rows = [summarize_df(df, _cmp_thr_on, _cmp_dr) for df in series_list]
+                        for i, s in enumerate(sc_rows):
+                            psw = switches_list[i] if i < len(switches_list) else []
+                            rsw = npv_list  # placeholder – not used here
+                            mc_col = pd.to_numeric(series_list[i].get("Municipal Cost", pd.Series([0.0])), errors="coerce").fillna(0.0)
+                            n_psw = len(psw)
+                            s["Cumulative Total Cost"] = float(mc_col.sum()) + float(n_psw * _cmp_ps_cost)
+                        vals = [s.get(key, np.nan) for s in sc_rows]
+                        return float(np.nanmean(vals))
+
+                    _crop_thr_cmp = _get_threshold_value(_cmp_thr_on, "Crop Yield", 4700.0)
+                    _eco_thr_cmp = _get_threshold_value(_cmp_thr_on, "Ecosystem Level", 70.0)
+                    _flood_thr_cmp = _get_threshold_value(_cmp_thr_on, "Flood Damage", 1_000_000.0)
+
+                    # Per-scenario scorecards for both
+                    def _make_sc(ser_list, psw_list, rsw_list, npv_list):
+                        rows = []
+                        for i, df in enumerate(ser_list):
+                            s = summarize_df(df, _cmp_thr_on, _cmp_dr)
+                            psw = psw_list[i] if i < len(psw_list) else []
+                            rsw_i = rsw_list[i] if i < len(rsw_list) else []
+                            s["#PolicySwitches"] = len(psw)
+                            s["#RegimeSwitches"] = len(rsw_i)
+                            s["RegimeShiftYear"] = rsw_i[0][0] if rsw_i else np.nan
+                            mc_col = pd.to_numeric(df.get("Municipal Cost", pd.Series([0.0]*len(df))), errors="coerce").fillna(0.0)
+                            s["Cumulative Municipal Cost"] = float(mc_col.sum())
+                            s["Cumulative PolicySwitch Cost"] = float(len(psw) * _cmp_ps_cost)
+                            s["Cumulative RegimeShift Cost"] = float(len(rsw_i) * _cmp_rs_cost)
+                            s["Cumulative Total Cost"] = float(s["Cumulative Municipal Cost"] + s["Cumulative PolicySwitch Cost"] + s["Cumulative RegimeShift Cost"])
+                            rows.append(s)
+                        return pd.DataFrame(rows)
+
+                    _fixed_sc = _make_sc(_fixed_series, _fixed_psw, _fixed_rsw, _fixed_npv)
+                    _endo_sc  = _make_sc(_endo_series,  _endo_psw,  _endo_rsw,  _endo_npv)
+
+                    # Near-term policy divergence (first 20 years)
+                    _near_yrs = [y for y in _cmp_years if y < _cmp_years[0] + 20] if _cmp_years else []
+                    diverge_vals = []
+                    for i in range(min(len(_fixed_series), len(_endo_series))):
+                        df_f = _fixed_series[i]
+                        df_e = _endo_series[i]
+                        n_div, n_tot = 0, 0
+                        for yy in _near_yrs:
+                            rf = df_f[df_f["Year"] == yy]
+                            re = df_e[df_e["Year"] == yy]
+                            if rf.empty or re.empty:
+                                continue
+                            pf = str(rf["Policy"].iloc[0])
+                            pe = str(re["Policy"].iloc[0])
+                            n_tot += 1
+                            if pf != pe:
+                                n_div += 1
+                        if n_tot > 0:
+                            diverge_vals.append(float(n_div / n_tot))
+                    near_term_divergence = float(np.mean(diverge_vals)) if diverge_vals else np.nan
+
+                    # Mean regime shift year (endogenous)
+                    _endo_shift_yrs = [int(e[0]) for sw in _endo_rsw for e in sw if str(e[2]) == "OFF"]
+                    _endo_mean_shift_yr = float(np.mean(_endo_shift_yrs)) if _endo_shift_yrs else np.nan
+
+                    def _safe_mean(sc, col):
+                        if col not in sc.columns:
+                            return np.nan
+                        return float(sc[col].mean())
+
+                    comparison_rows = [
+                        {"Metric": "Agriculture success rate",
+                         "Fixed DAPP": _cmp_success_rate(_fixed_series, "Crop Yield", _crop_thr_cmp, "min"),
+                         "Endogenous DAPP": _cmp_success_rate(_endo_series, "Crop Yield", _crop_thr_cmp, "min")},
+                        {"Metric": "Flood management success rate",
+                         "Fixed DAPP": _cmp_success_rate(_fixed_series, "Flood Damage", _flood_thr_cmp, "max"),
+                         "Endogenous DAPP": _cmp_success_rate(_endo_series, "Flood Damage", _flood_thr_cmp, "max")},
+                        {"Metric": "Ecosystem success rate",
+                         "Fixed DAPP": _cmp_success_rate(_fixed_series, "Ecosystem Level", _eco_thr_cmp, "min"),
+                         "Endogenous DAPP": _cmp_success_rate(_endo_series, "Ecosystem Level", _eco_thr_cmp, "min")},
+                        {"Metric": "Cumulative Total Cost (mean)",
+                         "Fixed DAPP": _safe_mean(_fixed_sc, "Cumulative Total Cost"),
+                         "Endogenous DAPP": _safe_mean(_endo_sc, "Cumulative Total Cost")},
+                        {"Metric": "Lock-in Years (mean)",
+                         "Fixed DAPP": _safe_mean(_fixed_sc, "Lock-in Years"),
+                         "Endogenous DAPP": _safe_mean(_endo_sc, "Lock-in Years")},
+                        {"Metric": "Early Irreversible Commitment Years (mean)",
+                         "Fixed DAPP": _safe_mean(_fixed_sc, "Early Irreversible Commitment Years"),
+                         "Endogenous DAPP": _safe_mean(_endo_sc, "Early Irreversible Commitment Years")},
+                        {"Metric": "Option-preserving Share Early (mean)",
+                         "Fixed DAPP": _safe_mean(_fixed_sc, "Option-preserving Share Early"),
+                         "Endogenous DAPP": _safe_mean(_endo_sc, "Option-preserving Share Early")},
+                        {"Metric": "Mean Regime Shift Year (endogenous only)",
+                         "Fixed DAPP": np.nan,
+                         "Endogenous DAPP": _endo_mean_shift_yr},
+                        {"Metric": "Near-term policy divergence (first 20 yrs)",
+                         "Fixed DAPP": 0.0,
+                         "Endogenous DAPP": near_term_divergence},
+                    ]
+                    cmp_df = pd.DataFrame(comparison_rows)
+
+                    st.session_state["dapp_comparison"] = {
+                        "cmp_df": cmp_df,
+                        "fixed_sc": _fixed_sc,
+                        "endo_sc": _endo_sc,
+                        "fixed_series": _fixed_series,
+                        "endo_series": _endo_series,
+                        "endo_rsw": _endo_rsw,
+                        "near_yrs": _near_yrs,
+                        "cmp_years": _cmp_years,
+                    }
+                    cmp_status.update(label="Comparison complete.", state="complete")
+
+    # Display comparison if computed
+    if "dapp_comparison" in st.session_state:
+        _c = st.session_state["dapp_comparison"]
+        cmp_df = _c["cmp_df"]
+
+        st.subheader("H1) Comparison table")
+        st.dataframe(
+            cmp_df.style.format({"Fixed DAPP": "{:.4g}", "Endogenous DAPP": "{:.4g}"}),
+            use_container_width=True,
+        )
+
+        st.subheader("H2) Key metric bar chart")
+        _plot_metrics = [
+            "Agriculture success rate", "Flood management success rate",
+            "Ecosystem success rate", "Option-preserving Share Early",
+            "Near-term policy divergence (first 20 yrs)",
+        ]
+        _plot_rows = cmp_df[cmp_df["Metric"].isin(_plot_metrics)].copy()
+        if not _plot_rows.empty:
+            fig_cmp = go.Figure()
+            fig_cmp.add_trace(go.Bar(
+                x=_plot_rows["Metric"], y=_plot_rows["Fixed DAPP"],
+                name="Fixed DAPP", marker_color="steelblue",
+            ))
+            fig_cmp.add_trace(go.Bar(
+                x=_plot_rows["Metric"], y=_plot_rows["Endogenous DAPP"],
+                name="Endogenous DAPP", marker_color="firebrick",
+            ))
+            fig_cmp.update_layout(
+                title="Fixed vs Endogenous DAPP – rate/share metrics",
+                barmode="group", yaxis_title="Rate / Share",
+                xaxis_tickangle=-20,
+            )
+            st.plotly_chart(fig_cmp, use_container_width=True, key=f"cmp_bar_{render_uid}")
+
+        st.subheader("H3) Near-term policy distribution (first 20 years)")
+        _near_yrs = _c.get("near_yrs", [])
+        _cmp_years_h = _c.get("cmp_years", [])
+        _fixed_series_h = _c.get("fixed_series", [])
+        _endo_series_h  = _c.get("endo_series", [])
+        if _near_yrs:
+            _all_pols = sorted({
+                p for dflist in [_fixed_series_h, _endo_series_h]
+                for df in dflist
+                for p in df.get("Policy", pd.Series([], dtype=str)).astype(str).unique()
+            })
+            _pol_share_fixed = {p: [] for p in _all_pols}
+            _pol_share_endo  = {p: [] for p in _all_pols}
+            for yy in _near_yrs:
+                for pnm in _all_pols:
+                    f_vals = [str(df[df["Year"]==yy]["Policy"].iloc[0]) for df in _fixed_series_h if not df[df["Year"]==yy].empty and "Policy" in df.columns]
+                    e_vals = [str(df[df["Year"]==yy]["Policy"].iloc[0]) for df in _endo_series_h  if not df[df["Year"]==yy].empty and "Policy" in df.columns]
+                    _pol_share_fixed[pnm].append(sum(1 for p in f_vals if p == pnm) / max(1, len(f_vals)))
+                    _pol_share_endo[pnm].append(sum(1 for p in e_vals if p == pnm) / max(1, len(e_vals)))
+
+            fig_h3_f = go.Figure()
+            fig_h3_e = go.Figure()
+            _h3_colors = list(pq.Plotly)
+            for ii, pnm in enumerate(_all_pols):
+                _clr = _h3_colors[ii % len(_h3_colors)]
+                fig_h3_f.add_trace(go.Scatter(x=_near_yrs, y=_pol_share_fixed[pnm], mode="lines", stackgroup="one", name=pnm, line=dict(color=_clr)))
+                fig_h3_e.add_trace(go.Scatter(x=_near_yrs, y=_pol_share_endo[pnm], mode="lines", stackgroup="one", name=pnm, line=dict(color=_clr), showlegend=False))
+
+            fig_h3_f.update_layout(title="Fixed DAPP – policy share (first 20 yrs)", xaxis_title="Year", yaxis_title="Share")
+            fig_h3_e.update_layout(title="Endogenous DAPP – policy share (first 20 yrs)", xaxis_title="Year", yaxis_title="Share")
+
+            _hcol1, _hcol2 = st.columns(2)
+            with _hcol1:
+                st.plotly_chart(fig_h3_f, use_container_width=True, key=f"h3_fixed_{render_uid}")
+            with _hcol2:
+                st.plotly_chart(fig_h3_e, use_container_width=True, key=f"h3_endo_{render_uid}")
+
+        st.download_button(
+            "Download comparison table CSV",
+            cmp_df.to_csv(index=False).encode("utf-8"),
+            "dapp_fixed_vs_endogenous_comparison.csv",
+            "text/csv",
+            key="dl_cmp",
         )
