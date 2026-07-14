@@ -9,3 +9,21 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+
+  - type: web
+    name: adaptation-sim-frontend
+    runtime: static
+    rootDir: frontend-new
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Must match the backend service's public URL above. Render assigns
+      # https://<name>.onrender.com deterministically unless that name is
+      # already taken by another Render account, in which case update this
+      # to the actual URL shown on the backend service's dashboard page.
+      - key: VITE_API_BASE
+        value: https://adaptation-sim-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
