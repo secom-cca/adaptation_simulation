@@ -9,7 +9,7 @@ import {
 } from '../data/resultScores.js'
 import s from './ResultComparisonPage.module.css'
 
-const API = '/api'
+const API = import.meta.env.VITE_API_BASE || '/api'
 
 const METRICS = [
   { key: 'total', label: '総合スコア' },

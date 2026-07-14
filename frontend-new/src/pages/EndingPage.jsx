@@ -19,7 +19,7 @@ import {
 } from '../data/resultScores.js'
 import s from './EndingPage.module.css'
 
-const API = '/api'
+const API = import.meta.env.VITE_API_BASE || '/api'
 
 const POLICY_ORDER = [
   'planting_trees_amount',

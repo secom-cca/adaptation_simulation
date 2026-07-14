@@ -11,7 +11,7 @@ import {
 } from '../data/budget.js'
 import { formatJpyInline } from '../utils/formatJpy'
 
-const API = '/api'
+const API = import.meta.env.VITE_API_BASE || '/api'
 
 const INITIAL_VALUES = {
   temp: 15.5,
