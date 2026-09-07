@@ -3,7 +3,11 @@
 """
 
 import cv2
-from .coordinate import transform_point_to_pixel
+try:
+    from .coordinate import transform_point_to_pixel
+except ImportError:
+    from coordinate import transform_point_to_pixel
+
 
 
 def draw_game_overlay(image, sim_result, inverse_perspective_matrix):

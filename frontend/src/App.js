@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+﻿import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Box, Button, Dialog, DialogTitle, DialogContent, FormControl, Grid, IconButton, InputLabel, MenuItem, Slider, Stack, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper, TextField } from '@mui/material';
 import { LineChart, ScatterChart, Gauge } from '@mui/x-charts';
 import { Agriculture, Biotech, EmojiTransportation, Flood, Forest, Houseboat, LocalLibrary, PlayCircle } from '@mui/icons-material';
@@ -80,6 +80,102 @@ const INDICATOR_CONVERSION = {
   // 'Crop Yield': 1 / 1000 // kg → ton（例）
 };
 
+const MANA_JPY_PER_YEAR = 20_000_000;
+const BASE_POLICY_BUDGET_MANA = 10;
+const TURN_YEARS = 25;
+const MIN_POLICY_BUDGET_MANA = 0;
+const FLOOD_RECOVERY_COST_COEF = 0.10;
+const INFRA_COST_PER_MIGRATED_HOUSE_PER_YEAR = 10_000;
+const COST_PER_MIGRATION = 975_000;
+const PADDY_FIELD_AREA_HA = 2000;
+const TOTAL_AREA_HA = 10000;
+const INITIAL_FOREST_AREA_HA = 5000;
+const POLICY_POINT_MAX = 10;
+const POLICY_POINT_KEYS = [
+  'planting_trees_amount',
+  'house_migration_amount',
+  'dam_levee_construction_cost',
+  'paddy_dam_construction_cost',
+  'agricultural_RnD_cost',
+  'capacity_building_cost'
+];
+const POLICY_MANA_RULES = {
+  planting_trees_amount: {
+    label: '植林・森林整備',
+    min_mana_per_use: 1,
+    max_mana_per_turn: null,
+    cumulative_mana_cap: null,
+    optional_max_forest_share: 0.70,
+    meaning: '1マナで25年間に約86.6ha植林',
+    sideEffect: '森林の成熟まで時間がかかる。累積マナ上限なし。'
+  },
+  capacity_building_cost: {
+    label: '避難訓練・防災訓練',
+    min_mana_per_use: 1,
+    max_mana_per_turn: 1,
+    cumulative_mana_cap: null,
+    meaning: '1マナで既存モデルの2単位効果',
+    sideEffect: '1ターン最大1マナ。大量投入で線形に増えない。'
+  },
+  house_migration_amount: {
+    label: '住宅移転',
+    min_mana_per_use: 1,
+    max_mana_per_turn: null,
+    cumulative_mana_cap: 20,
+    max_migration_share: 1.00,
+    meaning: '1マナで25年間に約513戸移転',
+    sideEffect: '累積移転戸数1戸あたり年1万円の将来予算ペナルティ。'
+  },
+  agricultural_RnD_cost: {
+    label: '農業R&D・高温適応技術普及',
+    min_mana_per_use: 1,
+    max_mana_per_turn: 2,
+    cumulative_mana_cap: null,
+    meaning: '1マナで25年間に高温耐性約+0.4℃',
+    sideEffect: '1ターン最大2マナ。洪水被害を直接は下げない。'
+  },
+  dam_levee_construction_cost: {
+    label: '堤防・河川改修',
+    min_mana_per_use: 5,
+    max_mana_per_turn: 10,
+    cumulative_mana_cap: null,
+    meaning: '5マナ以上で事業化。20mm単位で防御水準向上',
+    sideEffect: '高コスト・高リターン。生態系負荷あり。'
+  },
+  paddy_dam_construction_cost: {
+    label: '田んぼダム',
+    min_mana_per_use: 1,
+    max_mana_per_turn: null,
+    cumulative_mana_cap: 6,
+    meaning: '1マナで約333ha、6マナで全水田',
+    sideEffect: '最大10mmの洪水軽減。収量に最大1%の小さな影響。'
+  }
+};
+const POPULATION_BUDGET_MULTIPLIER_BY_YEAR = {
+  2026: 1.00,
+  2050: 0.85,
+  2075: 0.68,
+  2100: 0.52
+};
+const EVENT_THRESHOLDS = {
+  available_budget_low_mana: 5,
+  available_budget_critical_mana: 3,
+  major_flood_damage_jpy: 5_000_000_000,
+  major_extreme_rain_mm: 220
+};
+
+const buildBlankDecisionVar = (year = 2026, cpClimate = 4.5) => ({
+  year,
+  planting_trees_amount: 0,
+  house_migration_amount: 0,
+  dam_levee_construction_cost: 0,
+  paddy_dam_construction_cost: 0,
+  capacity_building_cost: 0,
+  transportation_invest: 0,
+  agricultural_RnD_cost: 0,
+  cp_climate_params: cpClimate
+});
+
 
 
 function AppRouter() {
@@ -116,19 +212,7 @@ function App() {
   const [chartPredictMode, setChartPredictMode] = useState(localStorage.getItem('chartPredictMode') || 'monte-carlo'); // 予測データ表示モード: 'best-worst', 'monte-carlo', 'none'
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'en'); // 言語モード: 'ja', 'en'
   const [visibleCycles, setVisibleCycles] = useState(new Set()); // 表示するサイクルのセット
-  const [decisionVar, setDecisionVar] = useState({
-    year: 2026,
-    planting_trees_amount: 0.,   // 植林・森林保全
-    house_migration_amount: 0.,  // 住宅移転・嵩上げ
-    dam_levee_construction_cost: 0., //ダム・堤防工事
-    paddy_dam_construction_cost: 0., //田んぼダム工事
-    capacity_building_cost: 0.,   // 防災訓練・普及啓発
-    // irrigation_water_amount: 100, // 灌漑水量
-    // released_water_amount: 100,   // 放流水量
-    transportation_invest: 0,     // 交通網の拡充
-    agricultural_RnD_cost: 0,      // 農業研究開発
-    cp_climate_params: 4.5 //RCPの不確実性シナリオ
-  })
+  const [decisionVar, setDecisionVar] = useState(buildBlankDecisionVar())
   const [currentValues, setCurrentValues] = useState({
     temp: 15.5,
     precip: 1700,
@@ -151,7 +235,18 @@ function App() {
     non_risky_house_total: 0,
     resident_burden: 0,
     biodiversity_level: 100,
-    paddy_dam_area:0
+    paddy_dam_area: 0,
+    cumulative_migrated_houses: 0,
+    cumulative_house_migration_mana: 0,
+    initial_risky_house_total: 15000,
+    initial_crop_yield: 100,
+    events_state: {},
+    available_budget_mana: BASE_POLICY_BUDGET_MANA,
+    population_budget_multiplier: 1,
+    population_decline_penalty_mana: 0,
+    migration_infra_penalty_mana: 0,
+    flood_recovery_penalty_mana: 0,
+    last_25y_avg_flood_damage_jpy: 0
   })
   const [simulationData, setSimulationData] = useState([]); // 結果格納
 
@@ -230,6 +325,12 @@ function App() {
 
   const [showYearlyDots, setShowYearlyDots] = useState(true);
 
+  const resetPolicySelections = (year = decisionVarRef.current?.year ?? 2026, cpClimate = decisionVarRef.current?.cp_climate_params ?? 4.5) => {
+    const resetDecision = buildBlankDecisionVar(year, cpClimate);
+    decisionVarRef.current = resetDecision;
+    setDecisionVar(resetDecision);
+  };
+
   // 散布図セクションの上あたりに追加（関数なのでどこでもOK）
   const baseRGB = [
     [25,118,210], [220,0,78], [56,142,60], [245,124,0],
@@ -264,6 +365,10 @@ function App() {
     if (!Number.isFinite(n)) return null;
     return `${Math.round(n).toLocaleString()} USD`;
   };
+
+  const formatPoints = (n) => `${Math.round(Number(n) || 0)} mana`;
+  const formatMana = (n, digits = 1) => `${(Number(n) || 0).toFixed(digits)} mana`;
+  const formatJPY = (n) => `${Math.round(Number(n) || 0).toLocaleString()}円/年`;
 
   // 1サイクルの期間平均（2026-2100の全レコード平均）
   const getCycleAverages = (cycle) => {
@@ -479,16 +584,10 @@ function App() {
       console.log("受信:", data);
 
       if (data.simulate_trigger === true) {
-        setDecisionVar(prev => ({
-          ...prev,
-          transportation_invest: 0,
-          agricultural_RnD_cost: 0,
-          planting_trees_amount: 0,
-          house_migration_amount: 0,
-          dam_levee_construction_cost: 0,
-          paddy_dam_construction_cost: 0,
-          capacity_building_cost: 0
-        }));
+        resetPolicySelections(
+          decisionVarRef.current?.year ?? 2026,
+          decisionVarRef.current?.cp_climate_params ?? 4.5
+        );
         handleClickCalc();
       } else {
         setDecisionVar(prev => {
@@ -540,13 +639,24 @@ function App() {
       console.log("現在の入力:", decisionVarRef.current, currentValuesRef.current)
       console.log("RCP value being sent:", decisionVarRef.current.cp_climate_params)
       
+      const budgetRow = getBudgetRowForDecision(decisionVarRef.current);
+      const currentValuesForRequest = {
+        ...currentValuesRef.current,
+        last_25y_avg_flood_damage_jpy: budgetRow?.appliedFloodDamage ?? 0,
+        available_budget_mana: budgetRow?.availableBudgetPoints ?? BASE_POLICY_BUDGET_MANA,
+        population_budget_multiplier: budgetRow?.populationBudgetMultiplier ?? 1,
+        population_decline_penalty_mana: budgetRow?.populationDeclinePenaltyMana ?? 0,
+        migration_infra_penalty_mana: budgetRow?.migrationInfraPenaltyMana ?? 0,
+        flood_recovery_penalty_mana: budgetRow?.floodRecoveryPenaltyMana ?? 0
+      };
+
       const body = {
         scenario_name: scenarioName,
         user_name: userName,
         mode: "Sequential Decision-Making Mode",  // "Monte Carlo Simulation Mode" または "Sequential Decision-Making Mode"
         decision_vars: [decisionVarRef.current],
         num_simulations: Number(numSimulations),
-        current_year_index_seq: currentValuesRef.current
+        current_year_index_seq: currentValuesForRequest
       };
 
       // axios でリクエスト
@@ -575,7 +685,7 @@ function App() {
         updateCurrentValues(resp.data.data[0])
       }
     } catch (err) {
-      console.error('API エラー:', error.response.data);
+      console.error('API エラー:', err?.response?.data || err);
       setError("シミュレーションに失敗しました");
     } finally {
       setLoading(false);
@@ -630,6 +740,11 @@ function App() {
       // 表示更新のために一時停止（見た目をスムーズに）
       await new Promise(res => setTimeout(res, LINE_CHART_DISPLAY_INTERVAL));
     }
+
+    resetPolicySelections(
+      nextYear,
+      decisionVarRef.current?.cp_climate_params ?? decisionVar.cp_climate_params
+    );
 
     isRunningRef.current = false;
     
@@ -809,8 +924,8 @@ function App() {
     setInputCount(0); // 入力カウントをリセット
     setInputHistory([]); // 入力履歴をリセット
     
-    // 年を2026年にリセット
-    updateDecisionVar("year", 2026);
+    // 年と政策選択を初期状態にリセット
+    resetPolicySelections(2026, decisionVarRef.current?.cp_climate_params ?? 4.5);
     
     // シミュレーションデータをクリア（新しいサイクルのため）
     setSimulationData([]);
@@ -1110,7 +1225,12 @@ function App() {
   const updateDecisionVar = (key, value) => {
     setDecisionVar(prev => {
       // スライダーの場合は表示値をバックエンド値に変換して保存
-      const backendValue = convertDisplayToBackendValue(key, value);
+      const nextValue = POLICY_POINT_KEYS.includes(key)
+        ? findAllowedPolicyPoints(prev, key, value)
+        : value;
+      const backendValue = POLICY_POINT_KEYS.includes(key)
+        ? convertPolicyPointsToBackendValue(key, nextValue)
+        : convertDisplayToBackendValue(key, nextValue);
       const updated = { ...prev, [key]: backendValue };
       decisionVarRef.current = updated;
       
@@ -1205,10 +1325,22 @@ function App() {
       biodiversity_level: newDict['biodiversity_level'],
       planting_history: newDict['planting_history'],
       paddy_dam_area: newDict['paddy_dam_area'],
+      cumulative_migrated_houses: newDict['cumulative_migrated_houses'],
+      cumulative_house_migration_mana: newDict['cumulative_house_migration_mana'],
+      initial_risky_house_total: newDict['initial_risky_house_total'],
+      initial_crop_yield: newDict['initial_crop_yield'],
+      events_state: newDict['events_state'],
+      available_budget_mana: newDict['available_budget_mana'],
+      population_budget_multiplier: newDict['population_budget_multiplier'],
+      population_decline_penalty_mana: newDict['population_decline_penalty_mana'],
+      migration_infra_penalty_mana: newDict['migration_infra_penalty_mana'],
+      flood_recovery_penalty_mana: newDict['flood_recovery_penalty_mana'],
+      last_25y_avg_flood_damage_jpy: newDict['last_25y_avg_flood_damage_jpy'],
     };
-    console.log("更新されるcurrentValues:", updated);
-    setCurrentValues(prev => ({ ...prev, ...updated }));
-    currentValuesRef.current = { ...currentValuesRef.current, ...updated };
+    const cleanUpdated = Object.fromEntries(Object.entries(updated).filter(([, value]) => value !== undefined));
+    console.log("更新されるcurrentValues:", cleanUpdated);
+    setCurrentValues(prev => ({ ...prev, ...cleanUpdated }));
+    currentValuesRef.current = { ...currentValuesRef.current, ...cleanUpdated };
   };
 
   // chartPredictData[1] のデータを取得
@@ -1323,6 +1455,267 @@ function App() {
       return index >= 0 ? index : 0;
     }
     return backendValue; // 変換できない場合はそのまま返す
+  };
+
+  const convertPolicyPointsToBackendValue = (key, displayValue) => {
+    const normalizedPoints = Math.max(0, Math.min(POLICY_POINT_MAX, Math.round(Number(displayValue) || 0)));
+    return normalizedPoints;
+  };
+
+  const convertBackendValueToPolicyPoints = (key, backendValue) => {
+    const numericValue = Number(backendValue) || 0;
+    return Math.max(0, Math.min(POLICY_POINT_MAX, Math.round(numericValue)));
+  };
+
+  const getPolicyPointsForDecision = (decisionVariables, key) => convertBackendValueToPolicyPoints(key, decisionVariables?.[key] ?? 0);
+
+  const getUsedPolicyPoints = (decisionVariables) => (
+    POLICY_POINT_KEYS.reduce((sum, key) => sum + getPolicyPointsForDecision(decisionVariables, key), 0)
+  );
+
+  const interpolatePopulationMultiplier = (year) => {
+    const points = Object.entries(POPULATION_BUDGET_MULTIPLIER_BY_YEAR)
+      .map(([y, v]) => [Number(y), Number(v)])
+      .sort((a, b) => a[0] - b[0]);
+    if (year <= points[0][0]) return points[0][1];
+    if (year >= points[points.length - 1][0]) return points[points.length - 1][1];
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const [y0, v0] = points[i];
+      const [y1, v1] = points[i + 1];
+      if (year >= y0 && year <= y1) {
+        return Math.min(1, v0 + (v1 - v0) * ((year - y0) / (y1 - y0)));
+      }
+    }
+    return 1;
+  };
+
+  const getFloodDamageForPeriod = (rows, periodIndex) => {
+    if (periodIndex < 0) return 0;
+
+    const start = periodIndex * SIMULATION_YEARS;
+    const end = start + SIMULATION_YEARS;
+    return rows
+      .slice(start, end)
+      .reduce((sum, row) => {
+        const jpy = toNumber(row?.['Flood Damage JPY']);
+        if (Number.isFinite(jpy)) return sum + Math.max(jpy, 0);
+        const usd = toNumber(row?.['Flood Damage']);
+        return sum + Math.max(usd, 0) * 100;
+      }, 0);
+  };
+
+  const getAverageFloodDamageForPeriod = (rows, periodIndex) => getFloodDamageForPeriod(rows, periodIndex) / SIMULATION_YEARS;
+
+  const getCumulativeManaBeforeEntry = (entries, index, key) => (
+    entries
+      .slice(0, index)
+      .reduce((sum, entry) => sum + getPolicyPointsForDecision(entry?.decisionVariables ?? {}, key), 0)
+  );
+
+  const calculateBudgetForEntry = (entry, index, entries, simulationRows) => {
+    const year = entry?.year ?? 2026;
+    const populationBudgetMultiplier = interpolatePopulationMultiplier(year);
+    const populationDeclinePenaltyMana = BASE_POLICY_BUDGET_MANA * Math.max(0, 1 - populationBudgetMultiplier);
+    const avgFloodDamageJpy = index === 0 ? 0 : getAverageFloodDamageForPeriod(simulationRows, index - 1);
+    const floodRecoveryPenaltyMana = avgFloodDamageJpy * FLOOD_RECOVERY_COST_COEF / MANA_JPY_PER_YEAR;
+    const cumulativeHouseMigrationMana = getCumulativeManaBeforeEntry(entries, index, 'house_migration_amount');
+    const cumulativeMigratedHouses = cumulativeHouseMigrationMana * MANA_JPY_PER_YEAR * TURN_YEARS / COST_PER_MIGRATION;
+    const migrationInfraPenaltyMana = cumulativeMigratedHouses * INFRA_COST_PER_MIGRATED_HOUSE_PER_YEAR / MANA_JPY_PER_YEAR;
+    const totalBudgetReduction = populationDeclinePenaltyMana + floodRecoveryPenaltyMana + migrationInfraPenaltyMana;
+    const availableBudgetPoints = Math.max(MIN_POLICY_BUDGET_MANA, BASE_POLICY_BUDGET_MANA - totalBudgetReduction);
+
+    return {
+      populationBudgetMultiplier,
+      populationDeclinePenaltyMana,
+      avgFloodDamageJpy,
+      floodRecoveryPenaltyMana,
+      cumulativeHouseMigrationMana,
+      cumulativeMigratedHouses,
+      migrationInfraPenaltyMana,
+      totalBudgetReduction,
+      availableBudgetPoints
+    };
+  };
+
+  const buildBudgetRows = (historyEntries, rows, pendingInput = null) => {
+    const completedEntries = Array.isArray(historyEntries) ? historyEntries : [];
+    const allEntries = pendingInput ? [...completedEntries, pendingInput] : completedEntries;
+    const simulationRows = Array.isArray(rows) ? rows : [];
+    return allEntries.map((entry, index) => {
+      const decisionVariables = entry?.decisionVariables ?? {};
+      const houseMigrationPoints = getPolicyPointsForDecision(decisionVariables, 'house_migration_amount');
+      const budget = calculateBudgetForEntry(entry, index, allEntries, simulationRows);
+      const appliedFloodDamage = budget.avgFloodDamageJpy;
+      const usedPolicyPoints = getUsedPolicyPoints(decisionVariables);
+      const periodLabel = `${entry?.year ?? '-'} - ${(entry?.year ?? 0) + SIMULATION_YEARS - 1}`;
+
+      return {
+        inputNumber: entry?.inputNumber ?? index + 1,
+        year: entry?.year,
+        periodLabel,
+        decisionVariables,
+        houseMigrationPoints,
+        appliedFloodDamage,
+        periodFloodDamage: index < completedEntries.length ? getFloodDamageForPeriod(simulationRows, index) : null,
+        cumulativeMigrationPoints: budget.cumulativeHouseMigrationMana + houseMigrationPoints,
+        relocationPointsApplied: budget.cumulativeHouseMigrationMana,
+        populationBudgetMultiplier: budget.populationBudgetMultiplier,
+        populationDeclinePenaltyMana: budget.populationDeclinePenaltyMana,
+        floodReduction: budget.floodRecoveryPenaltyMana,
+        migrationReduction: budget.migrationInfraPenaltyMana,
+        floodRecoveryPenaltyMana: budget.floodRecoveryPenaltyMana,
+        migrationInfraPenaltyMana: budget.migrationInfraPenaltyMana,
+        totalBudgetReduction: budget.totalBudgetReduction,
+        availableBudgetPoints: budget.availableBudgetPoints,
+        usedPolicyPoints,
+        remainingBudgetPoints: Math.max(budget.availableBudgetPoints - usedPolicyPoints, 0),
+        isPending: Boolean(pendingInput) && index === allEntries.length - 1
+      };
+    });
+  };
+
+  const getPendingBudgetInput = (decisionVariables) => ({
+    inputNumber: inputCount + 1,
+    year: decisionVariables.year,
+    decisionVariables
+  });
+
+  const getBudgetRowForDecision = (decisionVariables) => {
+    const rows = buildBudgetRows(inputHistory, simulationData, getPendingBudgetInput(decisionVariables));
+    return rows[rows.length - 1] ?? null;
+  };
+
+  const isDecisionWithinBudget = (decisionVariables) => {
+    const budgetRow = getBudgetRowForDecision(decisionVariables);
+    if (!budgetRow) return true;
+    return budgetRow.usedPolicyPoints <= budgetRow.availableBudgetPoints;
+  };
+
+  const withPolicyPoints = (decisionVariables, key, points) => ({
+    ...decisionVariables,
+    [key]: convertPolicyPointsToBackendValue(key, points)
+  });
+
+  const getCumulativePolicyMana = (key) => (
+    inputHistory.reduce((sum, entry) => sum + getPolicyPointsForDecision(entry?.decisionVariables ?? {}, key), 0)
+  );
+
+  const getRemainingCumulativeMana = (key, decisionVariables = decisionVar) => {
+    const rule = POLICY_MANA_RULES[key] ?? {};
+    if (rule.cumulative_mana_cap == null) return Infinity;
+    const usedBeforeCurrent = getCumulativePolicyMana(key);
+    return Math.max(0, rule.cumulative_mana_cap - usedBeforeCurrent);
+  };
+
+  const isDecisionWithinPolicyRules = (decisionVariables, key, points) => {
+    const rule = POLICY_MANA_RULES[key] ?? {};
+    if (points === 0) return true;
+    if (rule.min_mana_per_use != null && points < rule.min_mana_per_use) return false;
+    if (rule.max_mana_per_turn != null && points > rule.max_mana_per_turn) return false;
+    if (rule.cumulative_mana_cap != null) {
+      const usedBeforeCurrent = getCumulativePolicyMana(key);
+      const adjustedUsed = usedBeforeCurrent + points;
+      if (adjustedUsed > rule.cumulative_mana_cap) return false;
+    }
+    return true;
+  };
+
+  const findAllowedPolicyPoints = (decisionVariables, key, requestedPoints) => {
+    const normalizedTarget = Math.max(0, Math.min(POLICY_POINT_MAX, Math.round(Number(requestedPoints) || 0)));
+
+    for (let candidate = normalizedTarget; candidate >= 0; candidate -= 1) {
+      if (
+        isDecisionWithinPolicyRules(decisionVariables, key, candidate)
+        && isDecisionWithinBudget(withPolicyPoints(decisionVariables, key, candidate))
+      ) {
+        return candidate;
+      }
+    }
+
+    return 0;
+  };
+
+  const getSliderMaxPoints = (sliderName) => {
+    const rule = POLICY_MANA_RULES[sliderName] ?? {};
+    const maxTurn = rule.max_mana_per_turn ?? POLICY_POINT_MAX;
+    const remainingCap = getRemainingCumulativeMana(sliderName);
+    return Math.max(0, Math.min(POLICY_POINT_MAX, maxTurn, Number.isFinite(remainingCap) ? remainingCap : POLICY_POINT_MAX));
+  };
+
+  const getSliderMarks = (sliderName) => {
+    const rule = POLICY_MANA_RULES[sliderName] ?? {};
+    const values = new Set([0, getSliderMaxPoints(sliderName)]);
+    if (rule.min_mana_per_use != null) values.add(rule.min_mana_per_use);
+    if (rule.max_mana_per_turn != null) values.add(rule.max_mana_per_turn);
+    if (rule.cumulative_mana_cap != null) values.add(Math.min(rule.cumulative_mana_cap, POLICY_POINT_MAX));
+    return [...values]
+      .filter((value) => value >= 0 && value <= getSliderMaxPoints(sliderName))
+      .sort((a, b) => a - b)
+      .map((value) => ({ value, label: String(value) }));
+  };
+
+  const currentCycleBudgetRows = useMemo(() => (
+    buildBudgetRows(
+      inputHistory,
+      simulationData,
+      cycleCompleted || inputCount >= 3 ? null : getPendingBudgetInput(decisionVar)
+    )
+  ), [inputHistory, simulationData, decisionVar, inputCount, cycleCompleted]);
+
+  const currentBudgetRow = currentCycleBudgetRows[currentCycleBudgetRows.length - 1] ?? null;
+  const visibleEvents = useMemo(() => (
+    simulationData
+      .flatMap((row) => Array.isArray(row?.events) ? row.events : (Array.isArray(row?.Events) ? row.Events : []))
+      .slice(-8)
+      .reverse()
+  ), [simulationData]);
+
+  const getLeveeEffectSummary = () => {
+    const leveeLevel = Number(currentValues.levee_level) || 100;
+    const initialOverflow = Math.max(180 - 100, 0);
+    const currentOverflow = Math.max(180 - leveeLevel, 0);
+    const reduction = initialOverflow > 0 ? Math.max(0, Math.min(100, (1 - currentOverflow / initialOverflow) * 100)) : 0;
+    return `代表180mm豪雨: 越流水 ${currentOverflow.toFixed(0)}mm、初期比約${reduction.toFixed(0)}%削減`;
+  };
+
+  const getPolicyStateText = (key) => {
+    const rule = POLICY_MANA_RULES[key] ?? {};
+    const parts = [];
+    if (rule.min_mana_per_use != null) parts.push(`最低 ${rule.min_mana_per_use}マナ`);
+    if (rule.max_mana_per_turn != null) parts.push(`1ターン上限 ${rule.max_mana_per_turn}マナ`);
+    if (rule.cumulative_mana_cap != null) {
+      parts.push(`累積上限 ${rule.cumulative_mana_cap}マナ`);
+      parts.push(`残り ${formatMana(getRemainingCumulativeMana(key), 0)}`);
+    } else {
+      parts.push('累積上限なし');
+    }
+    if (key === 'paddy_dam_construction_cost') {
+      const area = Number(currentValues.paddy_dam_area) || 0;
+      parts.push(`導入 ${Math.min(area, PADDY_FIELD_AREA_HA).toFixed(0)} / ${PADDY_FIELD_AREA_HA}ha`);
+    }
+    if (key === 'planting_trees_amount') {
+      const area = Number(currentValues.forest_area) || INITIAL_FOREST_AREA_HA;
+      parts.push(`森林 ${Math.min(area, TOTAL_AREA_HA).toFixed(0)} / ${TOTAL_AREA_HA}ha`);
+    }
+    if (key === 'house_migration_amount') {
+      parts.push(`移転累計 約${Math.round(Number(currentValues.cumulative_migrated_houses) || 0).toLocaleString()}戸`);
+    }
+    if (key === 'dam_levee_construction_cost') parts.push(getLeveeEffectSummary());
+    return parts.join(' / ');
+  };
+
+  const PolicyHelp = ({ policyKey }) => {
+    const rule = POLICY_MANA_RULES[policyKey] ?? {};
+    return (
+      <Box sx={{ mt: 0.5 }}>
+        <Typography variant="caption" color="text.secondary" display="block">
+          {getPolicyStateText(policyKey)}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block">
+          {rule.meaning} / {rule.sideEffect}
+        </Typography>
+      </Box>
+    );
   };
 
   return (
@@ -2044,13 +2437,13 @@ function App() {
                                 <TableCell>{input.inputNumber}回目</TableCell>
                                 <TableCell>{input.year}年</TableCell>
                                 <TableCell>{input.decisionVariables.cp_climate_params}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('planting_trees_amount', input.decisionVariables.planting_trees_amount)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('house_migration_amount', input.decisionVariables.house_migration_amount)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('dam_levee_construction_cost', input.decisionVariables.dam_levee_construction_cost)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('paddy_dam_construction_cost', input.decisionVariables.paddy_dam_construction_cost)}</TableCell>
-                                <TableCell>{convertBackendToDisplayValue('capacity_building_cost', input.decisionVariables.capacity_building_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('planting_trees_amount', input.decisionVariables.planting_trees_amount)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('house_migration_amount', input.decisionVariables.house_migration_amount)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('dam_levee_construction_cost', input.decisionVariables.dam_levee_construction_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('paddy_dam_construction_cost', input.decisionVariables.paddy_dam_construction_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('capacity_building_cost', input.decisionVariables.capacity_building_cost)}</TableCell>
                                 {/* <TableCell>{input.decisionVariables.transportation_invest}</TableCell> */}
-                                <TableCell>{convertBackendToDisplayValue('agricultural_RnD_cost', input.decisionVariables.agricultural_RnD_cost)}</TableCell>
+                                <TableCell>{convertBackendValueToPolicyPoints('agricultural_RnD_cost', input.decisionVariables.agricultural_RnD_cost)}</TableCell>
                               </TableRow>
                             ))
                         )}
@@ -2276,6 +2669,115 @@ function App() {
           </Box>
         </Paper>
       </Box>
+      <Paper
+        elevation={2}
+        sx={{
+          width: '100%',
+          mb: 2,
+          p: 2,
+          borderRadius: 2,
+          backgroundColor: '#fffdf7',
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          {t.budget.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          {t.budget.description}
+        </Typography>
+        {currentBudgetRow && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+              gap: 2,
+            }}
+          >
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                前25年平均洪水被害
+              </Typography>
+              <Typography variant="h6">
+                {formatJPY(currentBudgetRow.appliedFloodDamage)}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                洪水復旧ペナルティ
+              </Typography>
+              <Typography variant="h6">
+                {formatMana(currentBudgetRow.floodRecoveryPenaltyMana)}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                住宅移転インフラペナルティ
+              </Typography>
+              <Typography variant="h6">
+                {formatMana(currentBudgetRow.migrationInfraPenaltyMana)}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                人口減少ペナルティ
+              </Typography>
+              <Typography variant="h6">
+                {formatMana(currentBudgetRow.populationDeclinePenaltyMana)}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                使用可能マナ
+              </Typography>
+              <Typography variant="h6" color={currentBudgetRow.availableBudgetPoints <= EVENT_THRESHOLDS.available_budget_critical_mana ? 'error.main' : 'primary.main'}>
+                {formatMana(currentBudgetRow.availableBudgetPoints)} / 基準 {formatMana(BASE_POLICY_BUDGET_MANA, 0)}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                現在の配分
+              </Typography>
+              <Typography variant="h6">
+                {formatMana(currentBudgetRow.usedPolicyPoints)}（残り {formatMana(currentBudgetRow.remainingBudgetPoints)}）
+              </Typography>
+            </Paper>
+            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+              <Typography variant="body2" color="text.secondary">
+                {`${t.budget.period}: ${currentBudgetRow.isPending ? `${currentBudgetRow.periodLabel} (${t.budget.currentSelection})` : currentBudgetRow.periodLabel}`}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {`1マナ = 2,000万円/年を25年間継続（合計5億円）。人口倍率: ${(currentBudgetRow.populationBudgetMultiplier * 100).toFixed(0)}%、総ペナルティ: ${formatMana(currentBudgetRow.totalBudgetReduction)}`}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+      </Paper>
+      <Paper
+        elevation={2}
+        sx={{ width: '100%', mb: 2, p: 2, borderRadius: 2, backgroundColor: '#ffffff' }}
+      >
+        <Typography variant="h6" gutterBottom>
+          重要イベント
+        </Typography>
+        {visibleEvents.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            まだ重要イベントは発生していません。
+          </Typography>
+        ) : (
+          <Stack spacing={1}>
+            {visibleEvents.map((event, index) => (
+              <Paper key={`${event.id}-${event.year}-${index}`} variant="outlined" sx={{ p: 1.5 }}>
+                <Typography variant="subtitle2" color={event.severity === 'critical' ? 'error.main' : event.severity === 'success' ? 'success.main' : 'warning.main'}>
+                  {event.year}年: {event.title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {event.message}
+                </Typography>
+              </Paper>
+            ))}
+          </Stack>
+        )}
+      </Paper>
       <Box style={{ width: '100%' }}>
         <Grid container spacing={2}> {/* spacingでBox間の余白を調整できます */}
           <Grid size={4}>
@@ -2291,25 +2793,23 @@ function App() {
               <Forest color="success" />
               {t.sliders.plantingTrees}
               <Slider
-                value={convertBackendToDisplayValue('planting_trees_amount', decisionVar.planting_trees_amount)}
+                value={convertBackendValueToPolicyPoints('planting_trees_amount', decisionVar.planting_trees_amount)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('planting_trees_amount')}
+                marks={getSliderMarks('planting_trees_amount')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => {
                   updateDecisionVar('planting_trees_amount', newValue);
-                  updatePlantingHistory(decisionVar.year, convertDisplayToBackendValue('planting_trees_amount', newValue));
+                  updatePlantingHistory(decisionVar.year, convertPolicyPointsToBackendValue('planting_trees_amount', newValue));
                 }}
                 disabled={!isSliderEnabled('planting_trees_amount')}
               />
+              <PolicyHelp policyKey="planting_trees_amount" />
             </Box>
           </Grid>
           {/* <Grid size={3}>
@@ -2352,22 +2852,20 @@ function App() {
               <Flood color="info"  />
               {t.sliders.damLevee}
               <Slider
-                value={convertBackendToDisplayValue('dam_levee_construction_cost', decisionVar.dam_levee_construction_cost)}
+                value={convertBackendValueToPolicyPoints('dam_levee_construction_cost', decisionVar.dam_levee_construction_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('dam_levee_construction_cost')}
+                marks={getSliderMarks('dam_levee_construction_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('dam_levee_construction_cost', newValue)}
                 disabled={!isSliderEnabled('dam_levee_construction_cost')}
               />
+              <PolicyHelp policyKey="dam_levee_construction_cost" />
             </Box>
           </Grid><Grid size={4}>
             <Box
@@ -2382,22 +2880,20 @@ function App() {
               <Biotech color="success"  />
               {t.sliders.agriculturalRnD}
               <Slider
-                value={convertBackendToDisplayValue('agricultural_RnD_cost', decisionVar.agricultural_RnD_cost)}
+                value={convertBackendValueToPolicyPoints('agricultural_RnD_cost', decisionVar.agricultural_RnD_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('agricultural_RnD_cost')}
+                marks={getSliderMarks('agricultural_RnD_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('agricultural_RnD_cost', newValue)}
                 disabled={!isSliderEnabled('agricultural_RnD_cost')}
               />
+              <PolicyHelp policyKey="agricultural_RnD_cost" />
             </Box>
           </Grid><Grid size={4}>
             <Box
@@ -2412,22 +2908,20 @@ function App() {
               <Houseboat color={"info"} />
               {t.sliders.houseMigration}
               <Slider
-                value={convertBackendToDisplayValue('house_migration_amount', decisionVar.house_migration_amount)}
+                value={convertBackendValueToPolicyPoints('house_migration_amount', decisionVar.house_migration_amount)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('house_migration_amount')}
+                marks={getSliderMarks('house_migration_amount')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('house_migration_amount', newValue)}
                 disabled={!isSliderEnabled('house_migration_amount')}
               />
+              <PolicyHelp policyKey="house_migration_amount" />
             </Box>
           </Grid><Grid size={4}>
             <Box
@@ -2442,22 +2936,20 @@ function App() {
               <Agriculture color={"success"} />
               {t.sliders.paddyDam}
               <Slider
-                value={convertBackendToDisplayValue('paddy_dam_construction_cost', decisionVar.paddy_dam_construction_cost)}
+                value={convertBackendValueToPolicyPoints('paddy_dam_construction_cost', decisionVar.paddy_dam_construction_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('paddy_dam_construction_cost')}
+                marks={getSliderMarks('paddy_dam_construction_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('paddy_dam_construction_cost', newValue)}
                 disabled={!isSliderEnabled('paddy_dam_construction_cost')}
               />
+              <PolicyHelp policyKey="paddy_dam_construction_cost" />
             </Box>
           </Grid><Grid size={4}>
             <Box
@@ -2472,22 +2964,20 @@ function App() {
               <LocalLibrary color="action" />
               {t.sliders.capacityBuilding}
               <Slider
-                value={convertBackendToDisplayValue('capacity_building_cost', decisionVar.capacity_building_cost)}
+                value={convertBackendValueToPolicyPoints('capacity_building_cost', decisionVar.capacity_building_cost)}
                 min={0}
-                max={2}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 1, label: '1' },
-                  { value: 2, label: '2' }
-                ]}
-                step={null}
+                max={getSliderMaxPoints('capacity_building_cost')}
+                marks={getSliderMarks('capacity_building_cost')}
+                step={1}
                 aria-label="画像スライダー"
                 size="small"
                 valueLabelDisplay="auto"
+                valueLabelFormat={formatPoints}
                 color="secondary"
                 onChange={(event, newValue) => updateDecisionVar('capacity_building_cost', newValue)}
                 disabled={!isSliderEnabled('capacity_building_cost')}
               />
+              <PolicyHelp policyKey="capacity_building_cost" />
             </Box>
           </Grid>
         </Grid>

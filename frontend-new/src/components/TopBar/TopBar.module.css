@@ -1,0 +1,133 @@
+.bar {
+  height: 48px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.year {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text-primary);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.25);
+}
+
+.cycle {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.separator {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border);
+}
+
+.mode {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+
+.center {
+  flex: 1;
+  text-align: center;
+}
+
+.goal {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.langBtn {
+  padding: 6px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  transition: border-color 0.15s, color 0.15s;
+}
+.langBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.tab {
+  position: relative;
+  padding: 5px 13px;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--color-text-primary); }
+.tabActive {
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.newDot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e05252;
+  border: 1.5px solid white;
+  animation: pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 82, 82, 0.5); }
+  50%       { box-shadow: 0 0 0 4px rgba(224, 82, 82, 0); }
+}

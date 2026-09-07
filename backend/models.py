@@ -35,6 +35,17 @@ class CurrentValues(BaseModel):
     resident_burden: Optional[float] = 0.0
     biodiversity_level: Optional[float] = 0.0
     paddy_dam_area: float = 0.0
+    cumulative_migrated_houses: Optional[float] = 0.0
+    cumulative_house_migration_mana: Optional[float] = 0.0
+    initial_risky_house_total: Optional[float] = None
+    initial_crop_yield: Optional[float] = None
+    events_state: Optional[Dict[str, Any]] = {}
+    available_budget_mana: Optional[float] = 10.0
+    population_budget_multiplier: Optional[float] = 1.0
+    population_decline_penalty_mana: Optional[float] = 0.0
+    migration_infra_penalty_mana: Optional[float] = 0.0
+    flood_recovery_penalty_mana: Optional[float] = 0.0
+    last_25y_avg_flood_damage_jpy: Optional[float] = 0.0
 
 class BlockRaw(BaseModel):
     period: str
@@ -62,3 +73,69 @@ class CompareRequest(BaseModel):
 class CompareResponse(BaseModel):
     message: str
     comparison: Dict[str, Any]
+
+
+class IntermediateEvaluationRequest(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    language: str = "ja"
+    decision_var: DecisionVar
+    simulation_rows: List[Dict[str, Any]]
+
+
+class IntermediateEvaluationResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    feedback: str
+    policy_summary: List[str]
+    event_highlights: List[str]
+    headline: str = ""
+    subheadline: str = ""
+    lead: str = ""
+    expert_comment: str = ""
+    policy_assessment: str = ""
+    article_body: str = ""
+
+
+class ResidentVoice(BaseModel):
+    persona_key: str
+    display_name: str
+    handle: str
+    avatar: str
+    role: str
+    focus: str
+    score: int
+    short_voice: str
+
+
+class ResidentCouncilResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    scores: Dict[str, int]
+    residents: List[ResidentVoice]
+
+
+class ResidentInterviewRequest(IntermediateEvaluationRequest):
+    persona_key: str
+    score: Optional[int] = None
+    interview_index: Optional[int] = 1
+    interview_focus: Optional[str] = None
+
+
+class ResidentInterviewResponse(BaseModel):
+    stage_index: int
+    checkpoint_year: int
+    period_start_year: int
+    period_end_year: int
+    model: str
+    persona_key: str
+    display_name: str
+    detailed_voice: str

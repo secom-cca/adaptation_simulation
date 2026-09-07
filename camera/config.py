@@ -3,7 +3,7 @@
 """
 
 # === 物体検出閾値 ===
-HEIGHT_THRESHOLD_M = 0.03       # テーブルからの最小高さ (m) - これより低いものは無視
+HEIGHT_THRESHOLD_M = 0.01       # テーブルからの最小高さ (m) - これより低いものは無視
 HEIGHT_MAX_THRESHOLD_M = 0.30   # テーブルからの最大高さ (m) - これより高いものは無視
 MIN_CONTOUR_AREA = 30           # 検出する物体の最小面積 (ピクセル^2)
 
@@ -18,7 +18,7 @@ CAMERA_HEIGHT = 480
 
 # === ArUco マーカー設定 ===
 ARUCO_DICT_TYPE = "DICT_4X4_50"
-MARKER_ORDER = [0, 1, 3, 2]     # マーカーIDと配置順序（時計回り: 左上→右上→右下→左下）
+MARKER_ORDER = [1, 0, 3, 2]     # マーカーIDと配置順序（時計回り: 左上→右上→右下→左下）
 
 # === マーカーチェック設定 ===
 MARKER_CHECK_INTERVAL = 1.0     # マーカー確認間隔（秒）

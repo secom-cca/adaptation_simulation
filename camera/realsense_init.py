@@ -3,8 +3,10 @@ RealSense カメラ初期化モジュール
 """
 
 import pyrealsense2 as rs
-from .config import CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS
-
+try:
+    from .config import CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS
+except ImportError:
+    from config import CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS
 
 def create_pipeline():
     """

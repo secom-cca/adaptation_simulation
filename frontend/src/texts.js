@@ -53,6 +53,20 @@ export const texts = {
       paddyDam: '田んぼダム',
       capacityBuilding: '防災訓練・啓発'
     },
+    budget: {
+      title: '政策予算ポイント',
+      description: '住宅移転の影響は次のターンから、洪水被害額の影響は直前の25年被害から反映して、使える政策ポイントを計算します。',
+      period: '対象期間',
+      appliedFloodDamage: '予算反映洪水被害額',
+      cumulativeRelocation: '累計住宅移転ポイント',
+      floodReduction: '洪水減少',
+      relocationReduction: '移転減少',
+      totalReduction: '合計減少',
+      availablePoints: '使用可能ポイント',
+      usedPoints: '配分済みポイント',
+      remainingPoints: '残りポイント',
+      currentSelection: '現在の配分'
+    },
     chart: {
       measuredValue: '実測値',
       upperLimit: '上限値予測',
@@ -170,6 +184,20 @@ export const texts = {
       houseMigration: 'House Migration',
       paddyDam: 'Paddy Dam',
       capacityBuilding: 'Disaster Training'
+    },
+    budget: {
+      title: 'Policy Budget Points',
+      description: 'Available policy points are calculated using flood damage from the previous 25-year period and relocation impacts from the previous turn.',
+      period: 'Period',
+      appliedFloodDamage: 'Flood Damage Used',
+      cumulativeRelocation: 'Cumulative Relocation Points',
+      floodReduction: 'Flood Reduction',
+      relocationReduction: 'Relocation Reduction',
+      totalReduction: 'Total Reduction',
+      availablePoints: 'Available Points',
+      usedPoints: 'Allocated Points',
+      remainingPoints: 'Remaining Points',
+      currentSelection: 'Current Allocation'
     },
     chart: {
       measuredValue: 'Measured Value',

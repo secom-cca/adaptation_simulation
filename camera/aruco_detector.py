@@ -4,7 +4,10 @@ ArUco マーカー検出モジュール
 
 import cv2
 import numpy as np
-from .config import MARKER_ORDER
+try:
+    from .config import MARKER_ORDER  # 既存のドットあり
+except ImportError:
+    from config import MARKER_ORDER   # ドットなし（Macで直接動かす用）
 
 
 def create_aruco_detector():

@@ -1,0 +1,49 @@
+{
+  "baseline": {
+    "labelJa": "ベースライン（対策なし）",
+    "labelEn": "Baseline",
+    "years": {
+      "2050": {
+        "floodDamageJpy": 225133701,
+        "cropYield": 4860.2,
+        "ecosystemLevel": 73.89
+      },
+      "2075": {
+        "floodDamageJpy": 761025577,
+        "cropYield": 4493.4,
+        "ecosystemLevel": 71.43
+      },
+      "2100": {
+        "floodDamageJpy": 2269047448,
+        "cropYield": 3692.7,
+        "ecosystemLevel": 69.41
+      }
+    }
+  },
+  "aiOptimal": {
+    "labelJa": "AIエージェント最適解",
+    "labelEn": "AI optimal",
+    "policiesJa": [
+      "T1: 植林5 / 田んぼダム2 / 防災訓練1 / 農業R&D2",
+      "T2: 植林1 / 堤防1 / 田んぼダム3 / 防災訓練1 / 農業R&D2",
+      "T3: 田んぼダム1 / 防災訓練1 / 農業R&D2"
+    ],
+    "years": {
+      "2050": {
+        "floodDamageJpy": 199292489,
+        "cropYield": 4889.9,
+        "ecosystemLevel": 73.89
+      },
+      "2075": {
+        "floodDamageJpy": 489762150,
+        "cropYield": 4737.0,
+        "ecosystemLevel": 72.21
+      },
+      "2100": {
+        "floodDamageJpy": 1586217744,
+        "cropYield": 4267.1,
+        "ecosystemLevel": 71.52
+      }
+    }
+  }
+}

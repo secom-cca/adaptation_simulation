@@ -1,0 +1,49 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-bg: #f5f0e8;
+  --color-surface: rgba(255, 255, 255, 0.82);
+  --color-surface-dark: rgba(40, 38, 34, 0.88);
+  --color-border: rgba(0, 0, 0, 0.10);
+
+  --color-good: #4a8c5c;
+  --color-caution: #c07a2a;
+  --color-critical: #b03030;
+  --color-neutral: #666;
+
+  --color-text-primary: #1a1814;
+  --color-text-secondary: #5a5650;
+  --color-text-on-dark: #f0ece4;
+
+  --color-accent: #3d6b8f;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.10);
+  --shadow-panel: 0 4px 24px rgba(0,0,0,0.14);
+
+  --font-sans: 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', sans-serif;
+  --font-mono: 'SF Mono', 'Menlo', monospace;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}

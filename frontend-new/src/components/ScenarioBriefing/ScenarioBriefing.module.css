@@ -1,0 +1,55 @@
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-caution);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+}
+
+.body {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+}
+
+.domainRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.domainLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tag {
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}

@@ -1,0 +1,646 @@
+[
+  {
+    "candidateId": "forest_heavy",
+    "source": "extreme_pattern",
+    "pattern": "forest_heavy",
+    "actions": [
+      {
+        "turn": 1,
+        "policyPoints": {
+          "planting_trees_amount": 8,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 0,
+          "paddy_dam_construction_cost": 2,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 10
+      },
+      {
+        "turn": 2,
+        "policyPoints": {
+          "planting_trees_amount": 6,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 0,
+          "paddy_dam_construction_cost": 0,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 1
+        },
+        "availableBudget": 7
+      },
+      {
+        "turn": 3,
+        "policyPoints": {
+          "planting_trees_amount": 5,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 0,
+          "paddy_dam_construction_cost": 0,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 5
+      }
+    ],
+    "metrics": {
+      "2050": {
+        "floodDamageJpy": 222135171,
+        "cropYield": 4852.8,
+        "ecosystemLevel": 73.89
+      },
+      "2075": {
+        "floodDamageJpy": 669478779,
+        "cropYield": 4533.2,
+        "ecosystemLevel": 72.69
+      },
+      "2100": {
+        "floodDamageJpy": 1777157999,
+        "cropYield": 3945.5,
+        "ecosystemLevel": 73.47
+      }
+    },
+    "scores": {
+      "2050": {
+        "floodScore": 91.49,
+        "cropScore": 88.74,
+        "ecosystemScore": 54.23,
+        "totalScore": 78.15
+      },
+      "2075": {
+        "floodScore": 74.34,
+        "cropScore": 64.29,
+        "ecosystemScore": 52.12,
+        "totalScore": 63.59
+      },
+      "2100": {
+        "floodScore": 31.89,
+        "cropScore": 19.34,
+        "ecosystemScore": 53.5,
+        "totalScore": 34.91
+      }
+    },
+    "averageScores": {
+      "floodScore": 65.91,
+      "cropScore": 57.46,
+      "ecosystemScore": 53.28,
+      "totalScore": 58.88
+    },
+    "objectiveScoreNoPenalty": 58.8829,
+    "objectiveScoreWithBalancePenalty": 60.234,
+    "selectedObjectiveType": "with_balance_penalty",
+    "objectiveScore": 60.234,
+    "isParetoOptimal": true,
+    "selectedAsBest": false
+  },
+  {
+    "candidateId": "levee_heavy",
+    "source": "extreme_pattern",
+    "pattern": "levee_heavy",
+    "actions": [
+      {
+        "turn": 1,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 8,
+          "paddy_dam_construction_cost": 1,
+          "capacity_building_cost": 1,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 10
+      },
+      {
+        "turn": 2,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 6,
+          "paddy_dam_construction_cost": 1,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 1
+        },
+        "availableBudget": 8
+      },
+      {
+        "turn": 3,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 4,
+          "paddy_dam_construction_cost": 1,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 1
+        },
+        "availableBudget": 6
+      }
+    ],
+    "metrics": {
+      "2050": {
+        "floodDamageJpy": 181673579,
+        "cropYield": 4873.3,
+        "ecosystemLevel": 69.82
+      },
+      "2075": {
+        "floodDamageJpy": 350810552,
+        "cropYield": 4664.5,
+        "ecosystemLevel": 54.28
+      },
+      "2100": {
+        "floodDamageJpy": 1238327572,
+        "cropYield": 4176.1,
+        "ecosystemLevel": 47.61
+      }
+    },
+    "scores": {
+      "2050": {
+        "floodScore": 93.04,
+        "cropScore": 90.31,
+        "ecosystemScore": 47.1,
+        "totalScore": 76.81
+      },
+      "2075": {
+        "floodScore": 86.56,
+        "cropScore": 74.34,
+        "ecosystemScore": 19.84,
+        "totalScore": 60.25
+      },
+      "2100": {
+        "floodScore": 52.54,
+        "cropScore": 36.98,
+        "ecosystemScore": 8.15,
+        "totalScore": 32.56
+      }
+    },
+    "averageScores": {
+      "floodScore": 77.38,
+      "cropScore": 67.21,
+      "ecosystemScore": 25.03,
+      "totalScore": 56.54
+    },
+    "objectiveScoreNoPenalty": 56.5393,
+    "objectiveScoreWithBalancePenalty": 52.1249,
+    "selectedObjectiveType": "with_balance_penalty",
+    "objectiveScore": 52.1249,
+    "isParetoOptimal": true,
+    "selectedAsBest": false
+  },
+  {
+    "candidateId": "flood_control_mix",
+    "source": "extreme_pattern",
+    "pattern": "flood_control_mix",
+    "actions": [
+      {
+        "turn": 1,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 5,
+          "paddy_dam_construction_cost": 4,
+          "capacity_building_cost": 1,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 10
+      },
+      {
+        "turn": 2,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 5,
+          "paddy_dam_construction_cost": 2,
+          "capacity_building_cost": 1,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 8
+      },
+      {
+        "turn": 3,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 5,
+          "paddy_dam_construction_cost": 0,
+          "capacity_building_cost": 1,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 6
+      }
+    ],
+    "metrics": {
+      "2050": {
+        "floodDamageJpy": 196718332,
+        "cropYield": 4854.5,
+        "ecosystemLevel": 72.44
+      },
+      "2075": {
+        "floodDamageJpy": 324845702,
+        "cropYield": 4627.7,
+        "ecosystemLevel": 61.25
+      },
+      "2100": {
+        "floodDamageJpy": 1084308112,
+        "cropYield": 4112.3,
+        "ecosystemLevel": 50.22
+      }
+    },
+    "scores": {
+      "2050": {
+        "floodScore": 92.46,
+        "cropScore": 88.87,
+        "ecosystemScore": 51.68,
+        "totalScore": 77.67
+      },
+      "2075": {
+        "floodScore": 87.55,
+        "cropScore": 71.52,
+        "ecosystemScore": 32.07,
+        "totalScore": 63.71
+      },
+      "2100": {
+        "floodScore": 58.45,
+        "cropScore": 32.09,
+        "ecosystemScore": 12.74,
+        "totalScore": 34.43
+      }
+    },
+    "averageScores": {
+      "floodScore": 79.49,
+      "cropScore": 64.16,
+      "ecosystemScore": 32.16,
+      "totalScore": 58.6
+    },
+    "objectiveScoreNoPenalty": 58.6037,
+    "objectiveScoreWithBalancePenalty": 55.2833,
+    "selectedObjectiveType": "with_balance_penalty",
+    "objectiveScore": 55.2833,
+    "isParetoOptimal": true,
+    "selectedAsBest": false
+  },
+  {
+    "candidateId": "agri_ecosystem_mix",
+    "source": "extreme_pattern",
+    "pattern": "agri_ecosystem_mix",
+    "actions": [
+      {
+        "turn": 1,
+        "policyPoints": {
+          "planting_trees_amount": 7,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 0,
+          "paddy_dam_construction_cost": 0,
+          "capacity_building_cost": 1,
+          "agricultural_RnD_cost": 2
+        },
+        "availableBudget": 10
+      },
+      {
+        "turn": 2,
+        "policyPoints": {
+          "planting_trees_amount": 6,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 0,
+          "paddy_dam_construction_cost": 0,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 2
+        },
+        "availableBudget": 8
+      },
+      {
+        "turn": 3,
+        "policyPoints": {
+          "planting_trees_amount": 5,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 0,
+          "paddy_dam_construction_cost": 0,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 5
+      }
+    ],
+    "metrics": {
+      "2050": {
+        "floodDamageJpy": 201879971,
+        "cropYield": 4897.5,
+        "ecosystemLevel": 73.89
+      },
+      "2075": {
+        "floodDamageJpy": 623161548,
+        "cropYield": 4713.1,
+        "ecosystemLevel": 72.53
+      },
+      "2100": {
+        "floodDamageJpy": 1826331782,
+        "cropYield": 4171.0,
+        "ecosystemLevel": 73.08
+      }
+    },
+    "scores": {
+      "2050": {
+        "floodScore": 92.26,
+        "cropScore": 92.16,
+        "ecosystemScore": 54.23,
+        "totalScore": 79.55
+      },
+      "2075": {
+        "floodScore": 76.12,
+        "cropScore": 78.05,
+        "ecosystemScore": 51.84,
+        "totalScore": 68.67
+      },
+      "2100": {
+        "floodScore": 30.01,
+        "cropScore": 36.58,
+        "ecosystemScore": 52.81,
+        "totalScore": 39.8
+      }
+    },
+    "averageScores": {
+      "floodScore": 66.13,
+      "cropScore": 68.93,
+      "ecosystemScore": 52.96,
+      "totalScore": 62.67
+    },
+    "objectiveScoreNoPenalty": 62.6747,
+    "objectiveScoreWithBalancePenalty": 63.5823,
+    "selectedObjectiveType": "with_balance_penalty",
+    "objectiveScore": 63.5823,
+    "isParetoOptimal": true,
+    "selectedAsBest": false
+  },
+  {
+    "candidateId": "early_forest_late_rnd",
+    "source": "extreme_pattern",
+    "pattern": "early_forest_late_rnd",
+    "actions": [
+      {
+        "turn": 1,
+        "policyPoints": {
+          "planting_trees_amount": 8,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 0,
+          "paddy_dam_construction_cost": 2,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 10
+      },
+      {
+        "turn": 2,
+        "policyPoints": {
+          "planting_trees_amount": 2,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 0,
+          "paddy_dam_construction_cost": 3,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 2
+        },
+        "availableBudget": 7
+      },
+      {
+        "turn": 3,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 2,
+          "paddy_dam_construction_cost": 1,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 2
+        },
+        "availableBudget": 5
+      }
+    ],
+    "metrics": {
+      "2050": {
+        "floodDamageJpy": 222135171,
+        "cropYield": 4852.8,
+        "ecosystemLevel": 73.89
+      },
+      "2075": {
+        "floodDamageJpy": 647582408,
+        "cropYield": 4563.9,
+        "ecosystemLevel": 72.69
+      },
+      "2100": {
+        "floodDamageJpy": 1756913227,
+        "cropYield": 4064.1,
+        "ecosystemLevel": 72.85
+      }
+    },
+    "scores": {
+      "2050": {
+        "floodScore": 91.49,
+        "cropScore": 88.74,
+        "ecosystemScore": 54.23,
+        "totalScore": 78.15
+      },
+      "2075": {
+        "floodScore": 75.18,
+        "cropScore": 66.64,
+        "ecosystemScore": 52.12,
+        "totalScore": 64.65
+      },
+      "2100": {
+        "floodScore": 32.67,
+        "cropScore": 28.41,
+        "ecosystemScore": 52.4,
+        "totalScore": 37.83
+      }
+    },
+    "averageScores": {
+      "floodScore": 66.45,
+      "cropScore": 61.26,
+      "ecosystemScore": 52.92,
+      "totalScore": 60.21
+    },
+    "objectiveScoreNoPenalty": 60.2089,
+    "objectiveScoreWithBalancePenalty": 61.4613,
+    "selectedObjectiveType": "with_balance_penalty",
+    "objectiveScore": 61.4613,
+    "isParetoOptimal": true,
+    "selectedAsBest": false
+  },
+  {
+    "candidateId": "hard_infra_only",
+    "source": "extreme_pattern",
+    "pattern": "hard_infra_only",
+    "actions": [
+      {
+        "turn": 1,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 3,
+          "dam_levee_construction_cost": 7,
+          "paddy_dam_construction_cost": 0,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 10
+      },
+      {
+        "turn": 2,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 7,
+          "paddy_dam_construction_cost": 0,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 7
+      },
+      {
+        "turn": 3,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 5,
+          "paddy_dam_construction_cost": 0,
+          "capacity_building_cost": 0,
+          "agricultural_RnD_cost": 0
+        },
+        "availableBudget": 5
+      }
+    ],
+    "metrics": {
+      "2050": {
+        "floodDamageJpy": 195706779,
+        "cropYield": 4872.0,
+        "ecosystemLevel": 70.69
+      },
+      "2075": {
+        "floodDamageJpy": 377025059,
+        "cropYield": 4647.0,
+        "ecosystemLevel": 55.44
+      },
+      "2100": {
+        "floodDamageJpy": 1101437876,
+        "cropYield": 4151.3,
+        "ecosystemLevel": 42.96
+      }
+    },
+    "scores": {
+      "2050": {
+        "floodScore": 92.5,
+        "cropScore": 90.21,
+        "ecosystemScore": 48.62,
+        "totalScore": 77.11
+      },
+      "2075": {
+        "floodScore": 85.55,
+        "cropScore": 73.0,
+        "ecosystemScore": 21.88,
+        "totalScore": 60.14
+      },
+      "2100": {
+        "floodScore": 57.79,
+        "cropScore": 35.08,
+        "ecosystemScore": 0.0,
+        "totalScore": 30.96
+      }
+    },
+    "averageScores": {
+      "floodScore": 78.61,
+      "cropScore": 66.1,
+      "ecosystemScore": 23.5,
+      "totalScore": 56.07
+    },
+    "objectiveScoreNoPenalty": 56.0705,
+    "objectiveScoreWithBalancePenalty": 51.3482,
+    "selectedObjectiveType": "with_balance_penalty",
+    "objectiveScore": 51.3482,
+    "isParetoOptimal": true,
+    "selectedAsBest": false
+  },
+  {
+    "candidateId": "beam_0032",
+    "source": "beam_search",
+    "pattern": "",
+    "actions": [
+      {
+        "turn": 1,
+        "policyPoints": {
+          "planting_trees_amount": 5,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 0,
+          "paddy_dam_construction_cost": 2,
+          "capacity_building_cost": 1,
+          "agricultural_RnD_cost": 2
+        },
+        "availableBudget": 10
+      },
+      {
+        "turn": 2,
+        "policyPoints": {
+          "planting_trees_amount": 1,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 1,
+          "paddy_dam_construction_cost": 3,
+          "capacity_building_cost": 1,
+          "agricultural_RnD_cost": 2
+        },
+        "availableBudget": 8
+      },
+      {
+        "turn": 3,
+        "policyPoints": {
+          "planting_trees_amount": 0,
+          "house_migration_amount": 0,
+          "dam_levee_construction_cost": 0,
+          "paddy_dam_construction_cost": 1,
+          "capacity_building_cost": 1,
+          "agricultural_RnD_cost": 2
+        },
+        "availableBudget": 5
+      }
+    ],
+    "metrics": {
+      "2050": {
+        "floodDamageJpy": 199292489,
+        "cropYield": 4889.9,
+        "ecosystemLevel": 73.89
+      },
+      "2075": {
+        "floodDamageJpy": 489762150,
+        "cropYield": 4737.0,
+        "ecosystemLevel": 72.21
+      },
+      "2100": {
+        "floodDamageJpy": 1586217744,
+        "cropYield": 4267.1,
+        "ecosystemLevel": 71.52
+      }
+    },
+    "scores": {
+      "2050": {
+        "floodScore": 92.36,
+        "cropScore": 91.58,
+        "ecosystemScore": 54.23,
+        "totalScore": 79.39
+      },
+      "2075": {
+        "floodScore": 81.23,
+        "cropScore": 79.88,
+        "ecosystemScore": 51.29,
+        "totalScore": 70.8
+      },
+      "2100": {
+        "floodScore": 39.21,
+        "cropScore": 43.94,
+        "ecosystemScore": 50.07,
+        "totalScore": 44.41
+      }
+    },
+    "averageScores": {
+      "floodScore": 70.93,
+      "cropScore": 71.8,
+      "ecosystemScore": 51.86,
+      "totalScore": 64.87
+    },
+    "objectiveScoreNoPenalty": 64.866,
+    "objectiveScoreWithBalancePenalty": 65.1588,
+    "selectedObjectiveType": "with_balance_penalty",
+    "objectiveScore": 65.1588,
+    "isParetoOptimal": true,
+    "selectedAsBest": true
+  }
+]
