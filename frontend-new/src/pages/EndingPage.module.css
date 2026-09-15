@@ -451,11 +451,36 @@
   border: 1px solid var(--color-accent);
 }
 
+.surveyBtn {
+  padding: 14px 16px;
+  border-radius: 18px;
+  font-size: 15px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.92);
+  color: #2f5d4a;
+  border: 1px solid #2f5d4a;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.surveyBtn:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
 .restartBtn {
   border: none;
   background: var(--color-accent);
   color: white;
   box-shadow: 0 10px 26px rgba(42, 56, 70, 0.14);
+}
+
+.restartBtn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  transform: none;
 }
 
 .compareBtn:hover,
@@ -467,6 +492,36 @@
 .compareBtn:active,
 .restartBtn:active {
   transform: translateY(0);
+}
+
+.exportRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.exportNote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.saveLogBtn {
+  align-self: flex-start;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.saveLogBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 /* Responsive */

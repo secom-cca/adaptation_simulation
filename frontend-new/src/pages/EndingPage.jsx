@@ -258,9 +258,19 @@ function buildComparisonPayload({ userName, mode, history, policyHistory }) {
   return payload
 }
 
-export default function EndingPage({ sim, onRestart, onCompare }) {
+export default function EndingPage({ sim, onRestart, onCompare, onOpenSurvey, onRetryExport }) {
   const { t } = useTranslation()
-  const { history, userName, mode, policyHistory = [] } = sim.gameState
+  const {
+    history,
+    userName,
+    mode,
+    policyHistory = [],
+    exportDone = false,
+    exportError = null,
+    exportFilename = null,
+    surveySubmitted = false,
+    exportSaving = false,
+  } = sim.gameState
   const savedComparisonRef = useRef(false)
 
   const snapshots = useMemo(() => buildYearSnapshots(history), [history])
@@ -402,7 +412,34 @@ export default function EndingPage({ sim, onRestart, onCompare }) {
         </div>
 
         <button className={s.compareBtn} onClick={onCompare}>{t('ending.compare')}</button>
-        <button className={s.restartBtn} onClick={onRestart}>{t('ending.restart')}</button>
+        <button className={s.surveyBtn} onClick={onOpenSurvey} type="button">
+          {surveySubmitted ? t('ending.survey.done') : t('ending.survey')}
+        </button>
+        <button
+          className={s.restartBtn}
+          onClick={onRestart}
+          disabled={exportSaving}
+          type="button"
+        >
+          {exportSaving ? t('ending.export.saving') : t('ending.restart')}
+        </button>
+        <div className={s.exportRow}>
+          <p className={s.exportNote}>{t('ending.export.hint')}</p>
+          {exportError && (
+            <>
+              <p className={s.exportNote}>{t('ending.export.failed')}</p>
+              <button type="button" className={s.saveLogBtn} onClick={() => onRetryExport?.()}>
+                {t('ending.export.retry')}
+              </button>
+            </>
+          )}
+          {exportDone && !exportError && exportFilename && (
+            <p className={s.exportNote}>
+              {t('ending.export.done')}
+              {` (${exportFilename})`}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

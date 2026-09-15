@@ -1,17 +1,32 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useTranslation } from '../contexts/LanguageContext.jsx'
+import { getResearchEthics } from '../data/researchEthics.js'
+import {
+  beginEntryLogging,
+  emit,
+  setLogContext,
+} from '../logging/operationLog.js'
 import s from './EntryPage.module.css'
 
 const RCP_OPTIONS = [1.9, 2.6, 4.5, 6.0, 8.5]
 
-export default function EntryPage({ onStart }) {
+export default function EntryPage({ onStart, onEthicsEvent }) {
   const { t, lang, toggle } = useTranslation()
+  const ethics = getResearchEthics(lang)
   const [userName, setUserName] = useState('')
   const [teamName, setTeamName] = useState('')
   const [mode, setMode] = useState('team')
   const [rcp, setRcp] = useState(4.5)
+  const [ethicsConsent, setEthicsConsent] = useState(false)
+  const [ethicsConsentAt, setEthicsConsentAt] = useState(null)
+  const [detailOpen, setDetailOpen] = useState(false)
 
-  const canStart = userName.trim().length > 0
+  useEffect(() => {
+    beginEntryLogging()
+    setLogContext({ phase: 'entry', cycle: null, year: null, gameView: null })
+  }, [])
+
+  const canStart = userName.trim().length > 0 && ethicsConsent
 
   const modes = [
     { value: 'upstream',   nameKey: 'entry.upstream.name', descKey: 'entry.upstream.desc' },
@@ -19,12 +34,55 @@ export default function EntryPage({ onStart }) {
     { value: 'team',       nameKey: 'entry.team.name', descKey: 'entry.team.desc' },
   ]
 
+  function handleConsentChange(checked) {
+    setEthicsConsent(checked)
+    if (checked) {
+      const at = new Date().toISOString()
+      setEthicsConsentAt(at)
+      emit('ethics_consent_checked', { label_key: 'entry.ethics.consent' })
+      onEthicsEvent?.('ethics_consent_checked')
+    } else {
+      setEthicsConsentAt(null)
+      emit('ethics_consent_unchecked', { label_key: 'entry.ethics.consent' })
+      onEthicsEvent?.('ethics_consent_unchecked')
+    }
+  }
+
+  function openDetail() {
+    setDetailOpen(true)
+    emit('ethics_detail_opened', {})
+  }
+
+  function closeDetail(via) {
+    setDetailOpen(false)
+    emit('ethics_detail_closed', { via })
+  }
+
+  function handleStart() {
+    if (!canStart) return
+    onStart({
+      userName: userName.trim(),
+      teamName: teamName.trim(),
+      mode,
+      rcpValue: rcp,
+      ethicsConsent: true,
+      ethicsConsentAt: ethicsConsentAt || new Date().toISOString(),
+    })
+  }
+
   return (
     <div className={s.page}>
       <div className={s.card}>
         <div className={s.titleRow}>
           <h1 className={s.title}>River Basin<br />Adaptation Game</h1>
-          <button className={s.langBtn} onClick={toggle}>
+          <button
+            className={s.langBtn}
+            onClick={() => {
+              const from = lang
+              toggle()
+              emit('language_toggle', { from, to: from === 'ja' ? 'en' : 'ja' })
+            }}
+          >
             {lang === 'ja' ? 'EN' : '日本語'}
           </button>
         </div>
@@ -88,14 +146,64 @@ export default function EntryPage({ onStart }) {
           </fieldset>
         </div>
 
+        <div className={s.ethicsRow}>
+          <label className={s.ethicsLabel}>
+            <input
+              type="checkbox"
+              className={s.ethicsCheckbox}
+              checked={ethicsConsent}
+              onChange={e => handleConsentChange(e.target.checked)}
+            />
+            <span>{ethics.consentLabel}</span>
+          </label>
+          <button type="button" className={s.ethicsDetailBtn} onClick={openDetail}>
+            {ethics.detailLink}
+          </button>
+        </div>
+
         <button
           className={s.startBtn}
-          onClick={() => onStart({ userName: userName.trim(), teamName: teamName.trim(), mode, rcpValue: rcp })}
+          onClick={handleStart}
           disabled={!canStart}
         >
           {t('entry.start')}
         </button>
       </div>
+
+      {detailOpen && (
+        <div
+          className={s.modalOverlay}
+          onClick={() => closeDetail('overlay')}
+          role="presentation"
+        >
+          <div
+            className={s.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ethics-modal-title"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 id="ethics-modal-title" className={s.modalTitle}>
+              {ethics.modalTitle}
+            </h2>
+            <div className={s.modalBody}>
+              {ethics.sections.map(section => (
+                <section key={section.heading} className={s.modalSection}>
+                  <h3>{section.heading}</h3>
+                  <p>{section.body}</p>
+                </section>
+              ))}
+            </div>
+            <button
+              type="button"
+              className={s.modalClose}
+              onClick={() => closeDetail('close_button')}
+            >
+              {ethics.close}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

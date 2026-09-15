@@ -7,6 +7,7 @@ import DetailPanel from '../components/DetailPanel/DetailPanel.jsx'
 import AnalysisPage from './AnalysisPage.jsx'
 import DecisionPanel from '../components/DecisionPanel/DecisionPanel.jsx'
 import { buildBudgetRows, findAllowedPolicyPoints } from '../data/budget.js'
+import { emit, setLogContext } from '../logging/operationLog.js'
 import s from './GamePage.module.css'
 
 const POLICY_PREVIEW_IMAGES = {
@@ -124,20 +125,52 @@ export default function GamePage({ sim }) {
   const currentBudgetRow = budgetRows[budgetRows.length - 1] ?? null
   const backgroundVideo = backgroundVideoForState(policyHistory, sliders)
 
-  const handleSliderChange = useCallback((key, value) => {
+  useEffect(() => {
+    setLogContext({
+      phase: 'game',
+      cycle,
+      year,
+      gameView: view,
+    })
+  }, [cycle, year, view])
+
+  const handleSliderChange = useCallback((key, value, source = 'ui') => {
     setSliders(prev => {
-      const allowedValue = findAllowedPolicyPoints(policyHistory, history, year, prev, key, value)
+      const requested = Number(value) || 0
+      const allowedValue = findAllowedPolicyPoints(policyHistory, history, year, prev, key, requested)
+      const from = Number(prev[key]) || 0
+      if (from !== allowedValue) {
+        const next = { ...prev, [key]: allowedValue }
+        const nextBudgetRows = buildBudgetRows(policyHistory, history, { year, sliders: next })
+        const nextBudget = nextBudgetRows[nextBudgetRows.length - 1]
+        emit('policy_slider_change', {
+          policy_key: key,
+          from,
+          to: allowedValue,
+          requested,
+          clamped: requested !== allowedValue,
+          available_budget_points: nextBudget?.availableBudgetPoints ?? null,
+          used_policy_points_after: nextBudget?.usedPolicyPoints ?? null,
+        }, {
+          source,
+          context: { phase: 'game', cycle, year, gameView: view },
+        })
+      }
       return { ...prev, [key]: allowedValue }
     })
-  }, [history, policyHistory, year])
+  }, [cycle, history, policyHistory, view, year])
 
   const handlePreviewPolicy = useCallback((key, rect) => {
     if (!key) {
+      if (policyPreview?.key) {
+        emit('policy_preview_close', { policy_key: policyPreview.key })
+      }
       setPolicyPreview(null)
       return
     }
 
     if (POLICY_PREVIEW_IMAGES[key] && rect) {
+      emit('policy_preview_open', { policy_key: key })
       setPolicyPreview({
         key,
         left: rect.left + rect.width / 2,
@@ -145,7 +178,7 @@ export default function GamePage({ sim }) {
         width: Math.min(460, Math.max(320, rect.width * 1.95)),
       })
     }
-  }, [])
+  }, [policyPreview?.key])
 
   const handleAdvance = useCallback(() => {
     const budgetRowsForSelection = buildBudgetRows(policyHistory, history, { year, sliders })
@@ -197,7 +230,14 @@ export default function GamePage({ sim }) {
             // カメラから送られた値（ポイント形式）をそのまま設定
             const numValue = Number(value)
             if (Number.isFinite(numValue)) {
-              handleSliderChange(key, numValue)
+              handleSliderChange(key, numValue, 'camera_ws')
+              emit('camera_slider_update', {
+                policy_key: key,
+                value: numValue,
+              }, {
+                source: 'camera_ws',
+                context: { phase: 'game', cycle, year, gameView: view },
+              })
             }
           }
         }
@@ -215,7 +255,7 @@ export default function GamePage({ sim }) {
     }
 
     return () => ws.close()
-  }, [handleSliderChange])
+  }, [cycle, handleSliderChange, view, year])
 
   return (
     <div className={`${s.page} ${isTeam ? 'teamMode' : ''}`}>
@@ -266,10 +306,19 @@ export default function GamePage({ sim }) {
             residentInterviews={residentInterviews}
             residentInterviewLoading={residentInterviewLoading}
             onRequestResidentInterview={requestResidentInterview}
+            onSelectIndicator={(key) => {
+              emit('detail_indicator_select', { indicator_key: key }, {
+                context: { phase: 'game', cycle, year, gameView: 'detail' },
+              })
+            }}
           />
         )}
         {view === 'analysis' && (
-          <AnalysisPage history={history} />
+          <AnalysisPage history={history} onAxisChange={(axis, key) => {
+            emit('analysis_axis_change', { axis, key }, {
+              context: { phase: 'game', cycle, year, gameView: 'analysis' },
+            })
+          }} />
         )}
 
         {policyPreview && POLICY_PREVIEW_IMAGES[policyPreview.key] && (
