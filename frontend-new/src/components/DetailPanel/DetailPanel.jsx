@@ -17,6 +17,7 @@ export default function DetailPanel({
   residentInterviews = {},
   residentInterviewLoading = {},
   onRequestResidentInterview,
+  onSelectIndicator,
 }) {
   const { t, lang } = useTranslation()
   const [activeKey, setActiveKey] = useState('Flood Damage JPY')
@@ -40,7 +41,10 @@ export default function DetailPanel({
           {CHART_KEYS.map(i => (
             <button key={i.key} className={`${s.chip} ${activeKey === i.key ? s.chipActive : ''}`}
               style={activeKey === i.key ? { borderColor: i.color, color: i.color, background: `${i.color}12` } : {}}
-              onClick={() => setActiveKey(i.key)}>
+              onClick={() => {
+                setActiveKey(i.key)
+                onSelectIndicator?.(i.key)
+              }}>
               {lang === 'ja' ? i.labelJa : i.labelEn}
             </button>
           ))}

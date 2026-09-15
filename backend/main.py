@@ -58,6 +58,7 @@ def _json_safe(value):
     return value
 
 COMPARISON_RESULTS_FILE = Path(__file__).parent / "data" / "comparison_results.tsv"
+OPERATION_LOGS_DIR = Path(__file__).parent / "data" / "operation_logs"
 
 @app.get("/ping")
 def ping():
@@ -360,6 +361,61 @@ def save_comparison_result(result: Dict[str, Any] = Body(...)):
         new_df = pd.concat([old_df, new_df], ignore_index=True)
     new_df.to_csv(COMPARISON_RESULTS_FILE, sep="\t", index=False)
     return {"status": "ok"}
+
+
+@app.post("/operation-logs")
+def save_operation_log(payload: Dict[str, Any] = Body(...)):
+    """Persist a frontend-new session operation log as JSON under data/operation_logs/."""
+    import json
+    import re
+
+    session = payload.get("session") or {}
+    session_id = str(session.get("session_id") or payload.get("session_id") or "").strip()
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session.session_id is required")
+
+    safe_id = re.sub(r"[^\w\-]+", "_", session_id)[:80] or "unknown"
+    user_part = re.sub(r"[^\w\-]+", "_", str(session.get("user_name") or "anon"))[:40] or "anon"
+    export_meta = payload.get("export") or {}
+    filename = str(export_meta.get("filename") or "").strip()
+    if not filename or ".." in filename or "/" in filename or "\\" in filename:
+        filename = f"dapp-operation-log_{user_part}_{safe_id[:8]}.json"
+    if not filename.endswith(".json"):
+        filename = f"{filename}.json"
+
+    OPERATION_LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = OPERATION_LOGS_DIR / filename
+
+    # Avoid overwrite collisions: if exists, suffix with short session id + counter
+    if out_path.exists():
+        stem = out_path.stem
+        suffix = out_path.suffix
+        n = 1
+        while True:
+            candidate = OPERATION_LOGS_DIR / f"{stem}_{safe_id[:8]}_{n}{suffix}"
+            if not candidate.exists():
+                out_path = candidate
+                filename = out_path.name
+                break
+            n += 1
+
+    try:
+        body = _json_safe(payload)
+        if isinstance(body.get("export"), dict):
+            body["export"]["filename"] = filename
+            body["export"]["storage"] = "backend"
+            body["export"]["path"] = str(out_path.relative_to(Path(__file__).parent))
+        with out_path.open("w", encoding="utf-8") as f:
+            json.dump(body, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to write operation log: {e}") from e
+
+    return {
+        "status": "ok",
+        "filename": filename,
+        "path": str(out_path.relative_to(Path(__file__).parent)),
+        "session_id": session_id,
+    }
 
 
 @app.get("/baseline-simulation")

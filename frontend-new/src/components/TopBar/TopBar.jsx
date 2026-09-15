@@ -1,5 +1,6 @@
 import React from 'react'
 import { useTranslation } from '../../contexts/LanguageContext.jsx'
+import { emit } from '../../logging/operationLog.js'
 import s from './TopBar.module.css'
 
 export default function TopBar({ year, cycle, mode, goal, view, onSetView, hasNewResults }) {
@@ -33,7 +34,14 @@ export default function TopBar({ year, cycle, mode, goal, view, onSetView, hasNe
           ))}
         </div>
 
-        <button className={s.langBtn} onClick={toggle}>
+        <button
+          className={s.langBtn}
+          onClick={() => {
+            const from = lang
+            toggle()
+            emit('language_toggle', { from, to: from === 'ja' ? 'en' : 'ja' })
+          }}
+        >
           {lang === 'ja' ? 'EN' : '日本語'}
         </button>
       </div>

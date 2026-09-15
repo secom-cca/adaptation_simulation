@@ -10,6 +10,18 @@ import {
   MIGRATION_INFRA_PENALTY_START_MANA,
 } from '../data/budget.js'
 import { formatJpyInline } from '../utils/formatJpy'
+import {
+  confirmSessionStart,
+  emit,
+  exportSessionJson,
+  isExportDone,
+  getExportError,
+  resetOperationLog,
+  setLogContext,
+  beginEntryLogging,
+  recordSurveySubmission,
+} from '../logging/operationLog.js'
+import { buildSurveyPayload } from '../data/surveyQuestions.js'
 
 const API = import.meta.env.VITE_API_BASE || '/api'
 
@@ -218,10 +230,24 @@ export function useSimulation() {
     gameView: 'simple',
     loading: false,
     error: null,
+    exportDone: false,
+    exportError: null,
+    exportFilename: null,
+    exportPath: null,
+    surveyAnswers: null,
+    surveySubmitted: false,
+    exportSaving: false,
   })
 
-  const startGame = useCallback(({ userName, teamName, mode, rcpValue }) => {
+  const startGame = useCallback(({ userName, teamName, mode, rcpValue, ethicsConsentAt }) => {
     const order = []
+    confirmSessionStart({
+      userName,
+      teamName,
+      mode,
+      rcpValue: rcpValue ?? 4.5,
+      ethicsConsentAt,
+    })
     setGameState(s => ({
       ...s,
       phase: 'game',
@@ -247,6 +273,15 @@ export function useSimulation() {
       year: 2026,
       cycle: 1,
       exogenousOrder: order,
+      gameView: 'simple',
+      exportDone: false,
+      exportError: null,
+      exportFilename: null,
+      exportPath: null,
+      surveyAnswers: null,
+      surveySubmitted: false,
+      exportSaving: false,
+      error: null,
     }))
   }, [])
 
@@ -255,6 +290,25 @@ export function useSimulation() {
 
     try {
       const s = gameState
+      const budgetRows = buildBudgetRows(s.policyHistory ?? [], s.history ?? [], {
+        year: s.year,
+        sliders,
+      })
+      const budgetRow = budgetRows[budgetRows.length - 1]
+      emit('advance_cycle_click', {
+        sliders: { ...sliders },
+        available_budget_points: budgetRow?.availableBudgetPoints ?? null,
+        used_policy_points: budgetRow?.usedPolicyPoints ?? null,
+        period: { start_year: s.year, end_year: s.year + 24 },
+      }, {
+        context: {
+          phase: 'game',
+          cycle: s.cycle,
+          year: s.year,
+          gameView: s.gameView,
+        },
+      })
+
       const [scenarioRun, baselineRun] = await Promise.all([
         advance25Years({
         currentValues: s.currentValues,
@@ -342,6 +396,27 @@ export function useSimulation() {
         language: 'ja',
       }
 
+      emit('advance_cycle_succeeded', {
+        cycle: s.cycle,
+        year_range: { start_year: s.year, end_year: s.year + 24 },
+        next_phase: nextPhase,
+      }, {
+        context: {
+          phase: 'game',
+          cycle: s.cycle,
+          year: s.year,
+          gameView: s.gameView,
+        },
+      })
+      emit('phase_leave', { phase: 'game', next_phase: nextPhase }, { source: 'system' })
+      setLogContext({
+        phase: nextPhase,
+        cycle: nextCycle,
+        year: nextYear,
+        gameView: s.gameView,
+      })
+      emit('phase_enter', { phase: nextPhase }, { source: 'system' })
+
       setGameState(prev => ({
         ...prev,
         loading: false,
@@ -396,6 +471,9 @@ export function useSimulation() {
         })))
 
     } catch (err) {
+      emit('advance_cycle_failed', {
+        error: err?.message || String(err),
+      }, { source: 'system' })
       setGameState(prev => ({ ...prev, loading: false, error: err.message }))
     }
   }, [gameState])
@@ -403,6 +481,17 @@ export function useSimulation() {
   const requestResidentInterview = useCallback(async (personaKey, score) => {
     const request = gameState.lastEvaluationRequest
     if (!request || !personaKey) return
+    emit('resident_interview_request', {
+      persona_key: personaKey,
+      score,
+    }, {
+      context: {
+        phase: gameState.phase,
+        cycle: gameState.cycle,
+        year: gameState.year,
+        gameView: gameState.gameView,
+      },
+    })
     const interviewIndex = (gameState.residentInterviewCounts?.[personaKey] ?? 0) + 1
     const focusOptions = ['lived_event', 'policy_effect', 'future_outlook']
     const interviewFocus = focusOptions[(interviewIndex - 1) % focusOptions.length]
@@ -446,37 +535,157 @@ export function useSimulation() {
     }
   }, [gameState])
 
-  const dismissReport = useCallback(() => {
+  const runExport = useCallback(async (trigger = 'on_restart', force = false) => {
+    setGameState(s => ({ ...s, exportSaving: true }))
+    const result = await exportSessionJson({
+      policyHistory: gameState.policyHistory ?? [],
+      history: gameState.history ?? [],
+      cycleCount: Math.max(1, (gameState.cycle ?? 1) - 1),
+      endedAtYear: 2100,
+      trigger,
+      force,
+    })
     setGameState(s => ({
       ...s,
-      phase: s.year > 2100 ? 'ending' : 'game',
-      gameView: 'detail',
+      exportSaving: false,
+      exportDone: isExportDone() || Boolean(result.ok && !result.skipped),
+      exportError: result.ok ? null : (result.error || getExportError()),
+      exportFilename: result.filename || s.exportFilename,
+      exportPath: result.path || s.exportPath || null,
+    }))
+    return result
+  }, [gameState.policyHistory, gameState.history, gameState.cycle])
+
+  const retryExportLog = useCallback(() => runExport('manual_retry', true), [runExport])
+
+  const openSurvey = useCallback(() => {
+    emit('survey_opened', {})
+    emit('phase_leave', { phase: 'ending', next_phase: 'survey' }, { source: 'system' })
+    setLogContext({ phase: 'survey' })
+    emit('phase_enter', { phase: 'survey' }, { source: 'system' })
+    setGameState(s => ({ ...s, phase: 'survey' }))
+  }, [])
+
+  const submitSurvey = useCallback((answers) => {
+    const payload = buildSurveyPayload(answers)
+    recordSurveySubmission(payload)
+    emit('phase_leave', { phase: 'survey', next_phase: 'ending' }, { source: 'system' })
+    setLogContext({ phase: 'ending' })
+    emit('phase_enter', { phase: 'ending' }, { source: 'system' })
+    setGameState(s => ({
+      ...s,
+      phase: 'ending',
+      surveyAnswers: answers,
+      surveySubmitted: true,
     }))
   }, [])
 
+  const cancelSurvey = useCallback(() => {
+    emit('survey_cancelled', {})
+    emit('phase_leave', { phase: 'survey', next_phase: 'ending' }, { source: 'system' })
+    setLogContext({ phase: 'ending' })
+    emit('phase_enter', { phase: 'ending' }, { source: 'system' })
+    setGameState(s => ({ ...s, phase: 'ending' }))
+  }, [])
+
+  const dismissReport = useCallback(() => {
+    emit('report_dismiss', { cycle: gameState.cycle }, {
+      context: {
+        phase: 'report',
+        cycle: gameState.cycle,
+        year: gameState.year,
+      },
+    })
+    const nextPhase = gameState.year > 2100 ? 'ending' : 'game'
+    emit('phase_leave', { phase: 'report', next_phase: nextPhase }, { source: 'system' })
+    setLogContext({
+      phase: nextPhase,
+      cycle: gameState.cycle,
+      year: gameState.year,
+      gameView: nextPhase === 'game' ? 'detail' : null,
+    })
+    emit('phase_enter', { phase: nextPhase }, { source: 'system' })
+    setGameState(s => ({
+      ...s,
+      phase: nextPhase,
+      gameView: nextPhase === 'game' ? 'detail' : s.gameView,
+    }))
+  }, [gameState.cycle, gameState.year])
+
   const showComparison = useCallback(() => {
+    emit('comparison_open', {})
+    emit('phase_leave', { phase: 'ending', next_phase: 'comparison' }, { source: 'system' })
+    setLogContext({ phase: 'comparison' })
+    emit('phase_enter', { phase: 'comparison' }, { source: 'system' })
     setGameState(s => ({ ...s, phase: 'comparison' }))
   }, [])
 
   const backToEnding = useCallback(() => {
+    emit('comparison_back', {})
+    emit('phase_leave', { phase: 'comparison', next_phase: 'ending' }, { source: 'system' })
+    setLogContext({ phase: 'ending' })
+    emit('phase_enter', { phase: 'ending' }, { source: 'system' })
     setGameState(s => ({ ...s, phase: 'ending' }))
   }, [])
 
   const setGameView = useCallback((v) => {
-    setGameState(s => ({ ...s, gameView: v }))
+    setGameState(s => {
+      if (s.gameView !== v) {
+        emit('game_view_change', { from: s.gameView, to: v }, {
+          context: {
+            phase: s.phase,
+            cycle: s.cycle,
+            year: s.year,
+            gameView: v,
+          },
+        })
+        setLogContext({ gameView: v })
+      }
+      return { ...s, gameView: v }
+    })
   }, [])
 
   const dismissConsequence = useCallback(() => {
     setGameState(s => {
+      const current = s.pendingEvents[0]
+      emit('consequence_dismiss', {
+        event_id: current?.id || current?.key || null,
+        queue_index: current?.queueIndex ?? 1,
+        queue_total: current?.queueTotal ?? s.pendingEvents.length,
+      }, {
+        context: {
+          phase: 'consequence',
+          cycle: s.cycle,
+          year: s.year,
+        },
+      })
       const remaining = s.pendingEvents.slice(1)
-      const nextPhase = remaining.length > 0
-        ? 'consequence'
-        : 'report'
+      const nextPhase = remaining.length > 0 ? 'consequence' : 'report'
+      if (nextPhase !== 'consequence') {
+        emit('phase_leave', { phase: 'consequence', next_phase: nextPhase }, { source: 'system' })
+        setLogContext({ phase: nextPhase, cycle: s.cycle, year: s.year })
+        emit('phase_enter', { phase: nextPhase }, { source: 'system' })
+      }
       return { ...s, pendingEvents: remaining, phase: nextPhase }
     })
   }, [])
 
-  const restart = useCallback(() => {
+  const restart = useCallback(async () => {
+    emit('restart', {})
+    // Save operation log (including bundled survey if any) before resetting.
+    const result = await runExport('on_restart', false)
+    if (!result.ok && !result.skipped) {
+      // Keep ending screen so user can retry save.
+      setGameState(s => ({
+        ...s,
+        phase: 'ending',
+        exportError: result.error || getExportError(),
+        exportSaving: false,
+      }))
+      return result
+    }
+    resetOperationLog()
+    beginEntryLogging()
     setGameState(s => ({
       ...s,
       phase: 'entry',
@@ -498,8 +707,16 @@ export function useSimulation() {
       residentInterviewCounts: {},
       residentInterviewLoading: {},
       lastEvaluationRequest: null,
+      exportDone: false,
+      exportError: null,
+      exportFilename: null,
+      exportPath: null,
+      surveyAnswers: null,
+      surveySubmitted: false,
+      exportSaving: false,
     }))
-  }, [])
+    return result
+  }, [runExport])
 
   return {
     gameState,
@@ -512,6 +729,11 @@ export function useSimulation() {
     requestResidentInterview,
     showComparison,
     backToEnding,
+    openSurvey,
+    submitSurvey,
+    cancelSurvey,
+    retryExportLog,
+    logEmit: emit,
   }
 }
 

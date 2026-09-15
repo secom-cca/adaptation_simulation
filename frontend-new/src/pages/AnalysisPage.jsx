@@ -21,7 +21,7 @@ const CustomDot = (props) => {
   return <circle cx={cx} cy={cy} r={4} fill={color} fillOpacity={0.75} stroke="none" />
 }
 
-export default function AnalysisPage({ history }) {
+export default function AnalysisPage({ history, onAxisChange }) {
   const { t, lang } = useTranslation()
   const [xKey, setXKey] = useState('Flood Damage JPY')
   const [yKey, setYKey] = useState('Crop Yield')
@@ -54,7 +54,14 @@ export default function AnalysisPage({ history }) {
         <div className={s.selectors}>
           <div className={s.selectorGroup}>
             <span className={s.selectorLabel}>{t('analysis.scatter.y')}</span>
-            <select className={s.select} value={yKey} onChange={e => setYKey(e.target.value)}>
+            <select
+              className={s.select}
+              value={yKey}
+              onChange={e => {
+                setYKey(e.target.value)
+                onAxisChange?.('y', e.target.value)
+              }}
+            >
               {CHART_KEYS.map(i => (
                 <option key={i.key} value={i.key}>
                   {lang === 'ja' ? i.labelJa : i.labelEn}
@@ -64,7 +71,14 @@ export default function AnalysisPage({ history }) {
           </div>
           <div className={s.selectorGroup}>
             <span className={s.selectorLabel}>{t('analysis.scatter.x')}</span>
-            <select className={s.select} value={xKey} onChange={e => setXKey(e.target.value)}>
+            <select
+              className={s.select}
+              value={xKey}
+              onChange={e => {
+                setXKey(e.target.value)
+                onAxisChange?.('x', e.target.value)
+              }}
+            >
               {CHART_KEYS.map(i => (
                 <option key={i.key} value={i.key}>
                   {lang === 'ja' ? i.labelJa : i.labelEn}
