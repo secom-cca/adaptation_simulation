@@ -3,7 +3,7 @@ import { useTranslation } from '../../contexts/LanguageContext.jsx'
 import { emit } from '../../logging/operationLog.js'
 import s from './TopBar.module.css'
 
-export default function TopBar({ year, cycle, mode, goal, view, onSetView, hasNewResults }) {
+export default function TopBar({ year, cycle, mode, view, onSetView, hasNewResults }) {
   const { t, lang, toggle } = useTranslation()
 
   return (
@@ -16,13 +16,11 @@ export default function TopBar({ year, cycle, mode, goal, view, onSetView, hasNe
         <span className={s.mode}>{t(`topbar.${mode}`)}</span>
       </div>
 
-      <div className={s.center}>
-        <span className={s.goal}>{goal}</span>
-      </div>
+      <div className={s.center} />
 
       <div className={s.right}>
         <div className={s.tabs}>
-          {['simple', 'detail', 'analysis'].map(v => (
+          {['simple', 'detail'].map(v => (
             <button
               key={v}
               className={`${s.tab} ${view === v ? s.tabActive : ''}`}

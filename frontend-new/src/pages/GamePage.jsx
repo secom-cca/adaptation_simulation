@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from '../contexts/LanguageContext.jsx'
 import TopBar from '../components/TopBar/TopBar.jsx'
-import BasinStatus from '../components/BasinStatus/BasinStatus.jsx'
-import ScenarioBriefing from '../components/ScenarioBriefing/ScenarioBriefing.jsx'
 import DetailPanel from '../components/DetailPanel/DetailPanel.jsx'
-import AnalysisPage from './AnalysisPage.jsx'
 import DecisionPanel from '../components/DecisionPanel/DecisionPanel.jsx'
 import { buildBudgetRows, findAllowedPolicyPoints } from '../data/budget.js'
 import { emit, setLogContext } from '../logging/operationLog.js'
@@ -77,6 +74,7 @@ export default function GamePage({ sim }) {
     cycle,
     mode,
     history,
+    sensitivityHistories = {},
     currentValues,
     loading,
     error,
@@ -120,7 +118,6 @@ export default function GamePage({ sim }) {
 
   const { t, lang } = useTranslation()
   const isTeam = mode === 'team'
-  const goalText = t(`goal.${mode}.${Math.min(cycle, 3)}`)
   const budgetRows = buildBudgetRows(policyHistory, history, { year, sliders })
   const currentBudgetRow = budgetRows[budgetRows.length - 1] ?? null
   const backgroundVideo = backgroundVideoForState(policyHistory, sliders)
@@ -263,7 +260,6 @@ export default function GamePage({ sim }) {
         year={year}
         cycle={cycle}
         mode={mode}
-        goal={goalText}
         view={view}
         onSetView={handleSetView}
         hasNewResults={hasNewResults}
@@ -272,29 +268,36 @@ export default function GamePage({ sim }) {
       {/* ── Main area ── */}
       <div className={`${s.mainArea} ${view !== 'simple' ? s.detailMode : ''}`}>
         {view === 'simple' && (
-          <>
-            <video
-              key={backgroundVideo}
-              className={s.bgCanvas}
-              src={backgroundVideo}
-              autoPlay
-              loop
-              muted
-              playsInline
-              onError={event => {
-                event.currentTarget.onerror = null
-                event.currentTarget.src = '/bg.mp4'
-              }}
-            />
-            <BasinStatus currentValues={currentValues} history={history} budgetRow={currentBudgetRow} />
-            <div className={s.rightArea}>
-              <ScenarioBriefing year={year} cycle={cycle} />
+          <div className={s.overviewGrid}>
+            <div className={s.sceneCard}>
+              <video
+                key={backgroundVideo}
+                className={s.bgCanvas}
+                src={backgroundVideo}
+                autoPlay
+                loop
+                muted
+                playsInline
+                onError={event => {
+                  event.currentTarget.onerror = null
+                  event.currentTarget.src = '/bg.mp4'
+                }}
+              />
             </div>
-          </>
+            <div className={s.rightStack}>
+              <section className={s.systemCard}>
+                <img src="/system_dynamics_ja2.png" alt="システムダイナミクス図" />
+              </section>
+              <section className={s.policyTableCard}>
+                <img src="/policy-effects-table.png" alt="政策効果の比較表" />
+              </section>
+            </div>
+          </div>
         )}
         {view === 'detail' && (
           <DetailPanel
             history={history}
+            sensitivityHistories={sensitivityHistories}
             currentValues={currentValues}
             cycle={cycle}
             year={year}
@@ -313,14 +316,6 @@ export default function GamePage({ sim }) {
             }}
           />
         )}
-        {view === 'analysis' && (
-          <AnalysisPage history={history} onAxisChange={(axis, key) => {
-            emit('analysis_axis_change', { axis, key }, {
-              context: { phase: 'game', cycle, year, gameView: 'analysis' },
-            })
-          }} />
-        )}
-
         {policyPreview && POLICY_PREVIEW_IMAGES[policyPreview.key] && (
           <div
             className={s.policyPreview}

@@ -6,6 +6,7 @@ import s from './DetailPanel.module.css'
 
 export default function DetailPanel({
   history,
+  sensitivityHistories = {},
   currentValues,
   cycle,
   year,
@@ -22,13 +23,18 @@ export default function DetailPanel({
   const { t, lang } = useTranslation()
   const [activeKey, setActiveKey] = useState('Flood Damage JPY')
 
-  const chartData = history.map(row => ({ year: row.year, value: row[activeKey] ?? 0 }))
+  const lowByYear = new Map((sensitivityHistories[1.9] ?? []).map(row => [row.year, row]))
+  const highByYear = new Map((sensitivityHistories[8.5] ?? []).map(row => [row.year, row]))
+  const chartData = history.map(row => ({
+    year: row.year,
+    value: row[activeKey] ?? 0,
+    low: lowByYear.get(row.year)?.[activeKey] ?? null,
+    high: highByYear.get(row.year)?.[activeKey] ?? null,
+  }))
   const activeInd = CHART_KEYS.find(i => i.key === activeKey)
   const activeLabel = lang === 'ja' ? activeInd?.labelJa : activeInd?.labelEn
 
   const residents = residentCouncil?.residents ?? []
-  const article = parseAiEvaluation(llmCommentary)
-
   return (
     <div className={s.grid}>
       <div className={s.cell}>
@@ -61,29 +67,13 @@ export default function DetailPanel({
                   formatter={v => [typeof v === 'number' ? fmtY(v) : v, activeLabel]}
                 />
                 <Line type="monotone" dataKey="value" stroke={activeInd?.color ?? '#888'}
-                  strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                  name="RCP4.5" strokeWidth={3.2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="low" name="RCP1.9" stroke="#6f9fc8" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
+                <Line type="monotone" dataKey="high" name="RCP8.5" stroke="#c77a68" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
             <div className={s.empty}>{t('detail.chart.empty')}</div>
-          )}
-        </div>
-      </div>
-
-      <div className={s.cell}>
-        <div className={s.cellHeader}>
-          <span className={s.cellTitle}>{t('detail.llm.title')}</span>
-          <span className={s.cellSubtitle}>{t('detail.llm.sub')}</span>
-          <span className={s.badge}>{t('detail.llm.badge')}</span>
-        </div>
-        <div className={s.llmBody}>
-          {history.length === 0 && <div className={s.empty}>{t('detail.llm.empty')}</div>}
-          {history.length > 0 && llmLoading && <div className={s.empty}>{t('detail.llm.loading')}</div>}
-          {history.length > 0 && !llmLoading && llmCommentary && (
-            <AiEvaluationArticle article={article} t={t} />
-          )}
-          {history.length > 0 && !llmLoading && !llmCommentary && (
-            <div className={s.empty}>{t('detail.llm.error')}</div>
           )}
         </div>
       </div>

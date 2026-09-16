@@ -214,6 +214,10 @@ export function useSimulation() {
     baselineValues: INITIAL_VALUES,
     history: [],          // [{year, ...indicators}] accumulated across all cycles
     baselineHistory: [],
+    currentClimateHistory: [],
+    currentClimateValues: INITIAL_VALUES,
+    sensitivityHistories: { 1.9: [], 8.5: [] },
+    sensitivityValues: { 1.9: INITIAL_VALUES, 8.5: INITIAL_VALUES },
     policyHistory: [],    // [{year, sliders}] completed policy allocations
     blockScores: [],
     pendingEvents: [],
@@ -245,7 +249,7 @@ export function useSimulation() {
       userName,
       teamName,
       mode,
-      rcpValue: rcpValue ?? 4.5,
+      rcpValue: 4.5,
       ethicsConsentAt,
     })
     setGameState(s => ({
@@ -254,11 +258,15 @@ export function useSimulation() {
       userName,
       teamName,
       mode,
-      rcpValue: rcpValue ?? 4.5,
+      rcpValue: 4.5,
       currentValues: INITIAL_VALUES,
       baselineValues: INITIAL_VALUES,
       history: [],
       baselineHistory: [],
+      currentClimateHistory: [],
+      currentClimateValues: INITIAL_VALUES,
+      sensitivityHistories: { 1.9: [], 8.5: [] },
+      sensitivityValues: { 1.9: INITIAL_VALUES, 8.5: INITIAL_VALUES },
       policyHistory: [],
       emittedEventKeys: [],
       llmCommentary: '',
@@ -309,14 +317,14 @@ export function useSimulation() {
         },
       })
 
-      const [scenarioRun, baselineRun] = await Promise.all([
+      const [scenarioRun, baselineRun, currentClimateRun, lowRcpRun, highRcpRun] = await Promise.all([
         advance25Years({
         currentValues: s.currentValues,
         sliders,
         year: s.year,
         scenarioName: `${s.userName}_${s.mode}_cycle${s.cycle}`,
         userName: s.userName,
-        rcpValue: s.rcpValue,
+        rcpValue: 4.5,
         policyHistory: s.policyHistory ?? [],
         history: s.history ?? [],
         }),
@@ -326,10 +334,30 @@ export function useSimulation() {
           year: s.year,
           scenarioName: `${s.userName}_baseline_cycle${s.cycle}`,
           userName: s.userName,
-          rcpValue: s.rcpValue,
+          rcpValue: 4.5,
           policyHistory: [],
           history: s.baselineHistory ?? [],
         }),
+        advance25Years({
+          currentValues: s.currentClimateValues ?? INITIAL_VALUES,
+          sliders: ZERO_SLIDERS,
+          year: s.year,
+          scenarioName: `${s.userName}_current_climate_cycle${s.cycle}`,
+          userName: s.userName,
+          rcpValue: 0,
+          policyHistory: [],
+          history: s.currentClimateHistory ?? [],
+        }),
+        ...[1.9, 8.5].map(rcp => advance25Years({
+          currentValues: s.sensitivityValues?.[rcp] ?? INITIAL_VALUES,
+          sliders,
+          year: s.year,
+          scenarioName: `${s.userName}_sensitivity_${rcp}_cycle${s.cycle}`,
+          userName: s.userName,
+          rcpValue: rcp,
+          policyHistory: s.policyHistory ?? [],
+          history: s.sensitivityHistories?.[rcp] ?? [],
+        })),
       ])
 
       const newState = scenarioRun.newState
@@ -340,6 +368,11 @@ export function useSimulation() {
       const nextCycle = s.cycle + 1
       const newHistory = [...s.history, ...yearlyResults]
       const newBaselineHistory = [...(s.baselineHistory ?? []), ...baselineRun.yearlyResults]
+      const newCurrentClimateHistory = [...(s.currentClimateHistory ?? []), ...currentClimateRun.yearlyResults]
+      const newSensitivityHistories = {
+        1.9: [...(s.sensitivityHistories?.[1.9] ?? []), ...lowRcpRun.yearlyResults],
+        8.5: [...(s.sensitivityHistories?.[8.5] ?? []), ...highRcpRun.yearlyResults],
+      }
       const newPolicyHistory = [...(s.policyHistory ?? []), { year: s.year, sliders: { ...sliders } }]
 
       const modelEvents = dedupeEvents([
@@ -433,6 +466,10 @@ export function useSimulation() {
         baselineValues: newBaselineState,
         history: newHistory,
         baselineHistory: newBaselineHistory,
+        currentClimateHistory: newCurrentClimateHistory,
+        currentClimateValues: currentClimateRun.newState,
+        sensitivityHistories: newSensitivityHistories,
+        sensitivityValues: { 1.9: lowRcpRun.newState, 8.5: highRcpRun.newState },
         policyHistory: newPolicyHistory,
         year: nextYear,
         cycle: nextCycle,
@@ -540,6 +577,7 @@ export function useSimulation() {
     const result = await exportSessionJson({
       policyHistory: gameState.policyHistory ?? [],
       history: gameState.history ?? [],
+      currentClimateHistory: gameState.currentClimateHistory ?? [],
       cycleCount: Math.max(1, (gameState.cycle ?? 1) - 1),
       endedAtYear: 2100,
       trigger,
@@ -554,7 +592,7 @@ export function useSimulation() {
       exportPath: result.path || s.exportPath || null,
     }))
     return result
-  }, [gameState.policyHistory, gameState.history, gameState.cycle])
+  }, [gameState.policyHistory, gameState.history, gameState.currentClimateHistory, gameState.cycle])
 
   const retryExportLog = useCallback(() => runExport('manual_retry', true), [runExport])
 
@@ -693,9 +731,13 @@ export function useSimulation() {
       cycle: 1,
       history: [],
       baselineHistory: [],
+      currentClimateHistory: [],
       policyHistory: [],
       currentValues: INITIAL_VALUES,
       baselineValues: INITIAL_VALUES,
+      currentClimateValues: INITIAL_VALUES,
+      sensitivityHistories: { 1.9: [], 8.5: [] },
+      sensitivityValues: { 1.9: INITIAL_VALUES, 8.5: INITIAL_VALUES },
       pendingEvents: [],
       emittedEventKeys: [],
       llmCommentary: '',

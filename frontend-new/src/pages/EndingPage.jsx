@@ -1,446 +1,77 @@
 import React, { useEffect, useMemo, useRef } from 'react'
-import {
-  Legend,
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-} from 'recharts'
+import { Bar, BarChart, CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useTranslation } from '../contexts/LanguageContext.jsx'
 import { POLICY_MANA_RULES } from '../data/budget.js'
-import {
-  BENCHMARK_SERIES,
-  benchmarkSnapshots,
-  benchmarkSummary,
-  buildYearSnapshots,
-  finalScores,
-  round1,
-} from '../data/resultScores.js'
+import { buildYearSnapshots, finalScores, round1 } from '../data/resultScores.js'
 import s from './EndingPage.module.css'
 
 const API = import.meta.env.VITE_API_BASE || '/api'
-
-const POLICY_ORDER = [
-  'planting_trees_amount',
-  'house_migration_amount',
-  'dam_levee_construction_cost',
-  'paddy_dam_construction_cost',
-  'capacity_building_cost',
-  'agricultural_RnD_cost',
+const POLICY_ORDER = ['planting_trees_amount', 'house_migration_amount', 'dam_levee_construction_cost', 'paddy_dam_construction_cost', 'capacity_building_cost', 'agricultural_RnD_cost']
+const METRICS = [
+  { key: 'flood', title: '洪水被害', score: 'floodScore', value: 'floodDamageJpy', unit: '円（期間累計）' },
+  { key: 'crop', title: '農作物生産高', score: 'cropScore', value: 'cropYield', unit: '期間平均' },
+  { key: 'eco', title: '生態系', score: 'ecosystemScore', value: 'ecosystemLevel', unit: '期間平均' },
 ]
 
-function formatFloodDamage(value) {
-  const amount = Number(value) || 0
-  if (amount >= 100_000_000) return `${(amount / 100_000_000).toFixed(1)}億円`
-  if (amount >= 10_000) return `${Math.round(amount / 10_000).toLocaleString()}万円`
-  return `${Math.round(amount).toLocaleString()}円`
+function fmtValue(metric, value) {
+  const n = Number(value) || 0
+  return metric.key === 'flood' ? `${Math.round(n).toLocaleString()} 円` : round1(n).toLocaleString()
 }
-
-function formatScore(value) {
-  return round1(value).toFixed(1)
-}
-
-function radarData({ userScores, baselineScores = null, aiScores = null }) {
-  return [
-    {
-      metric: '洪水被害',
-      userScore: round1(userScores.floodScore),
-      baselineScore: baselineScores ? round1(baselineScores.floodScore) : null,
-      aiScore: aiScores ? round1(aiScores.floodScore) : null,
-    },
-    {
-      metric: '農作物',
-      userScore: round1(userScores.cropScore),
-      baselineScore: baselineScores ? round1(baselineScores.cropScore) : null,
-      aiScore: aiScores ? round1(aiScores.cropScore) : null,
-    },
-    {
-      metric: '生態系',
-      userScore: round1(userScores.ecosystemScore),
-      baselineScore: baselineScores ? round1(baselineScores.ecosystemScore) : null,
-      aiScore: aiScores ? round1(aiScores.ecosystemScore) : null,
-    },
-  ]
-}
-
-function ResultRadar({
-  title,
-  userSnapshot,
-  baselineSnapshot = null,
-  aiSnapshot = null,
-  large = false,
-}) {
-  const data = radarData({
-    userScores: userSnapshot.scores,
-    baselineScores: baselineSnapshot?.scores ?? null,
-    aiScores: aiSnapshot?.scores ?? null,
-  })
-
-  return (
-    <div className={`${s.radarCard} ${large ? s.radarLarge : ''}`}>
-      <div className={s.radarTitle}>{title}</div>
-      <ResponsiveContainer width="100%" height={large ? 340 : 210}>
-        <RadarChart
-          data={data}
-          outerRadius={large ? 112 : 72}
-        >
-          <PolarGrid />
-          <PolarAngleAxis
-            dataKey="metric"
-            tick={{ fontSize: large ? 13 : 11, fill: '#38444c' }}
-          />
-
-          <Radar
-            name="あなたの結果"
-            dataKey="userScore"
-            stroke="#3d6b8f"
-            fill="#3d6b8f"
-            fillOpacity={0.28}
-          />
-
-          {baselineSnapshot && (
-            <Radar
-              name="ベースライン"
-              dataKey="baselineScore"
-              stroke="#9b6b3f"
-              fill="#9b6b3f"
-              fillOpacity={0.12}
-            />
-          )}
-
-          {aiSnapshot && (
-            <Radar
-              name="AIエージェント最適解"
-              dataKey="aiScore"
-              stroke="#4a8c5c"
-              fill="#4a8c5c"
-              fillOpacity={0.16}
-            />
-          )}
-
-          {large && <Legend wrapperStyle={{ fontSize: 12 }} />}
-        </RadarChart>
-      </ResponsiveContainer>
-
-      <div className={s.scoreLine}>
-        あなたの総合スコア {formatScore(userSnapshot.scores.totalScore)}点
-      </div>
-
-      {large && baselineSnapshot && aiSnapshot && (
-        <div className={s.scoreLine}>
-          ベースライン {formatScore(baselineSnapshot.scores.totalScore)}点 / AI最適解 {formatScore(aiSnapshot.scores.totalScore)}点
-        </div>
-      )}
-    </div>
-  )
-}
-
-function ScoreComparisonCard({ title, subtitle, summary, snapshots, policies = null }) {
-  const snapshot2050 = snapshots.find(snap => snap.year === 2050) ?? snapshots[0]
-  const snapshot2075 = snapshots.find(snap => snap.year === 2075) ?? snapshots[1]
-  const snapshot2100 = snapshots.find(snap => snap.year === 2100) ?? snapshots[snapshots.length - 1]
-
-  return (
-    <div className={s.comparisonCard}>
-      <div className={s.comparisonHeader}>
-        <div>
-          <div className={s.comparisonTitle}>{title}</div>
-          {subtitle && <div className={s.comparisonSub}>{subtitle}</div>}
-        </div>
-        <div className={s.comparisonScore}>{formatScore(summary.totalScore)}点</div>
-      </div>
-
-      <div className={s.comparisonGrid}>
-        <div>
-          <strong>洪水</strong>
-          <span>{formatScore(summary.floodScore)}点</span>
-        </div>
-        <div>
-          <strong>農作物</strong>
-          <span>{formatScore(summary.cropScore)}点</span>
-        </div>
-        <div>
-          <strong>生態系</strong>
-          <span>{formatScore(summary.ecosystemScore)}点</span>
-        </div>
-      </div>
-
-      <div className={s.comparisonYears}>
-        <div>
-          <strong>2050</strong>
-          <span>{formatScore(snapshot2050.scores.totalScore)}点</span>
-        </div>
-        <div>
-          <strong>2075</strong>
-          <span>{formatScore(snapshot2075.scores.totalScore)}点</span>
-        </div>
-        <div>
-          <strong>2100</strong>
-          <span>{formatScore(snapshot2100.scores.totalScore)}点</span>
-        </div>
-      </div>
-
-      <div className={s.comparisonMetrics}>
-        <div>
-          <strong>2100年 洪水被害</strong>
-          <span>{formatFloodDamage(snapshot2100.metrics.floodDamageJpy)}</span>
-        </div>
-        <div>
-          <strong>2100年 農作物</strong>
-          <span>{Math.round(snapshot2100.metrics.cropYield).toLocaleString()}</span>
-        </div>
-        <div>
-          <strong>2100年 生態系</strong>
-          <span>{round1(snapshot2100.metrics.ecosystemLevel).toFixed(1)}</span>
-        </div>
-      </div>
-
-      {policies && policies.length > 0 && (
-        <div className={s.comparisonPolicies}>
-          {policies.map(item => {
-            const [label, ...rest] = item.split(':')
-            return (
-              <div key={item} className={s.policyRow}>
-                <strong>{label}</strong>
-                <span>{rest.join(':').trim()}</span>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function summarizePolicies(policyHistory = []) {
-  return policyHistory.slice(0, 3).map((entry, index) => ({
-    label: `第${index + 1}ターン`,
-    values: POLICY_ORDER.map(key => ({
-      key,
-      label: POLICY_MANA_RULES[key]?.labelJa || key,
-      points: Math.round(Number(entry?.sliders?.[key]) || 0),
-    })).filter(item => item.points > 0),
+function policiesForDisplay(history = []) {
+  return history.slice(0, 3).map((entry, index) => ({
+    turn: `第${index + 1}ターン`,
+    text: POLICY_ORDER.map(key => ({ label: POLICY_MANA_RULES[key]?.labelJa || key, points: Math.round(Number(entry?.sliders?.[key]) || 0) }))
+      .filter(item => item.points > 0).map(item => `${item.label} ${item.points}点`).join(' / ') || '投資なし',
   }))
 }
-
-function buildComparisonPayload({ userName, mode, history, policyHistory }) {
-  const snapshots = buildYearSnapshots(history)
-  const final = finalScores(history)
-
-  const payload = {
-    user_name: userName || 'Guest',
-    mode,
-    total_score: round1(final.totalScore),
-    flood_damage_score: round1(final.floodScore),
-    crop_production_score: round1(final.cropScore),
-    ecosystem_score: round1(final.ecosystemScore),
-    timestamp: new Date().toISOString(),
-  }
-
-  snapshots.forEach(snapshot => {
-    payload[`metrics_${snapshot.year}`] = snapshot.metrics
-    payload[`scores_${snapshot.year}`] = {
-      flood_damage_score: round1(snapshot.scores.floodScore),
-      crop_production_score: round1(snapshot.scores.cropScore),
-      ecosystem_score: round1(snapshot.scores.ecosystemScore),
-      total_score: round1(snapshot.scores.totalScore),
-    }
-  })
-
-  policyHistory.slice(0, 3).forEach((entry, index) => {
-    payload[`turn_${index + 1}_policy_points`] = POLICY_ORDER.reduce((acc, key) => {
-      acc[key] = Math.round(Number(entry?.sliders?.[key]) || 0)
-      return acc
-    }, {})
-  })
-
+function comparisonPayload({ userName, mode, history, currentClimateHistory, policyHistory }) {
+  const snapshots = buildYearSnapshots(history, currentClimateHistory)
+  const summary = finalScores(history, currentClimateHistory)
+  const payload = { user_name: userName || 'Guest', mode, total_score: round1(summary.totalScore), flood_damage_score: round1(summary.floodScore), crop_production_score: round1(summary.cropScore), ecosystem_score: round1(summary.ecosystemScore) }
+  snapshots.forEach(x => { payload[`metrics_${x.year}`] = x.metrics; payload[`scores_${x.year}`] = { flood_damage_score: round1(x.scores.floodScore), crop_production_score: round1(x.scores.cropScore), ecosystem_score: round1(x.scores.ecosystemScore), total_score: round1(x.scores.totalScore) } })
+  policyHistory.slice(0, 3).forEach((entry, i) => { payload[`turn_${i + 1}_policy_points`] = entry.sliders || {} })
   return payload
+}
+
+function MetricSection({ metric, player, rcp, current }) {
+  const data = player.map((x, i) => ({ year: String(x.year), rcp: round1(rcp[i]?.scores?.[metric.score]), player: round1(x.scores[metric.score]) }))
+  return <section className={`${s.metricSection} ${metric.key === 'flood' ? s.metricWide : ''}`}>
+    <h2>{metric.title}</h2>
+    <div className={s.chartPanel}><ResponsiveContainer width="100%" height={300}>
+      <BarChart data={data} margin={{ top: 14, right: 12, bottom: 4, left: 4 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="year" /><YAxis domain={[0, dataMax => Math.max(110, Math.ceil(Number(dataMax || 0) / 10) * 10)]} />
+        <Tooltip formatter={v => `${v}点`} /><Legend /><ReferenceLine y={100} stroke="#7b8792" strokeDasharray="5 4" label="現在気候・無対策 = 100" />
+        <Bar name="RCP4.5・無対策" dataKey="rcp" fill="#a98a64" radius={[5, 5, 0, 0]} /><Bar name="あなたの政策" dataKey="player" fill="#3d6b8f" radius={[5, 5, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer></div>
+    <div className={s.improvement}>対策による改善：{data.map(x => `${x.year} ${round1(x.player - x.rcp) >= 0 ? '+' : ''}${round1(x.player - x.rcp)}点`).join(' / ')}</div>
+    <div className={s.actualTable}>
+      <div className={s.actualHeader}><strong>ケース（{metric.unit}）</strong>{player.map(x => <strong key={x.year}>{x.year}</strong>)}</div>
+      {[['現在気候・無対策', current], ['RCP4.5・無対策', rcp], ['あなたの政策', player]].map(([label, rows]) => <div className={s.actualRow} key={label}><span>{label}</span>{rows.map(x => <span key={x.year}>{fmtValue(metric, x.metrics[metric.value])}</span>)}</div>)}
+    </div>
+  </section>
 }
 
 export default function EndingPage({ sim, onRestart, onCompare, onOpenSurvey, onRetryExport }) {
   const { t } = useTranslation()
-  const {
-    history,
-    userName,
-    mode,
-    policyHistory = [],
-    exportDone = false,
-    exportError = null,
-    exportFilename = null,
-    surveySubmitted = false,
-    exportSaving = false,
-  } = sim.gameState
-  const savedComparisonRef = useRef(false)
-
-  const snapshots = useMemo(() => buildYearSnapshots(history), [history])
-  const userSummary = useMemo(() => finalScores(history), [history])
-
-  const snapshot2050 = snapshots.find(snap => snap.year === 2050) ?? snapshots[0]
-  const snapshot2075 = snapshots.find(snap => snap.year === 2075) ?? snapshots[1]
-  const snapshot2100 = snapshots.find(snap => snap.year === 2100) ?? snapshots[snapshots.length - 1]
-
-  const baselineSnapshots = useMemo(() => benchmarkSnapshots('baseline'), [])
-  const aiSnapshots = useMemo(() => benchmarkSnapshots('aiOptimal'), [])
-  const baselineSummary = useMemo(() => benchmarkSummary('baseline'), [])
-  const aiSummary = useMemo(() => benchmarkSummary('aiOptimal'), [])
-
-  const baselineSnapshot2050 = baselineSnapshots.find(snap => snap.year === 2050) ?? baselineSnapshots[0]
-  const baselineSnapshot2075 = baselineSnapshots.find(snap => snap.year === 2075) ?? baselineSnapshots[1]
-  const baselineSnapshot2100 = baselineSnapshots.find(snap => snap.year === 2100) ?? baselineSnapshots[baselineSnapshots.length - 1]
-
-  const aiSnapshot2050 = aiSnapshots.find(snap => snap.year === 2050) ?? aiSnapshots[0]
-  const aiSnapshot2075 = aiSnapshots.find(snap => snap.year === 2075) ?? aiSnapshots[1]
-  const aiSnapshot2100 = aiSnapshots.find(snap => snap.year === 2100) ?? aiSnapshots[aiSnapshots.length - 1]
-
-  const policies = useMemo(() => summarizePolicies(policyHistory), [policyHistory])
-  const headline = t('ending.headline').replace('{name}', userName || 'Guest')
-
+  const { history = [], baselineHistory = [], currentClimateHistory = [], userName, mode, policyHistory = [], exportDone, exportError, exportFilename, surveySubmitted, exportSaving } = sim.gameState
+  const saved = useRef(false)
+  const player = useMemo(() => buildYearSnapshots(history, currentClimateHistory), [history, currentClimateHistory])
+  const rcp = useMemo(() => buildYearSnapshots(baselineHistory, currentClimateHistory), [baselineHistory, currentClimateHistory])
+  const current = useMemo(() => buildYearSnapshots(currentClimateHistory, currentClimateHistory), [currentClimateHistory])
+  const policies = useMemo(() => policiesForDisplay(policyHistory), [policyHistory])
   useEffect(() => {
-    if (!history.length || savedComparisonRef.current) return
-
-    savedComparisonRef.current = true
-
-    fetch(`${API}/comparison-results`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildComparisonPayload({ userName, mode, history, policyHistory })),
-    }).catch(() => {})
-  }, [history, mode, policyHistory, userName])
-
-  if (!snapshot2100) {
-    return (
-      <div className={s.page}>
-        <div className={s.content}>
-          <h1 className={s.headline}>結果を集計しています</h1>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className={s.page}>
-      <div className={s.content}>
-        <div className={s.yearTag}>2100年 最終結果</div>
-        <h1 className={s.headline}>{headline}</h1>
-
-        <ResultRadar
-          title="2100年：あなたの結果・ベースライン・AI最適解"
-          userSnapshot={snapshot2100}
-          baselineSnapshot={baselineSnapshot2100}
-          aiSnapshot={aiSnapshot2100}
-          large
-        />
-
-        <div className={s.aiPlan}>
-          <div className={s.policyTitle}>AIエージェントの最適回答</div>
-          {(BENCHMARK_SERIES.aiOptimal.policiesJa ?? []).map(item => {
-            const [label, ...rest] = item.split(':')
-            return (
-              <div key={item} className={s.policyRow}>
-                <strong>{label}</strong>
-                <span>{rest.join(':').trim()}</span>
-              </div>
-            )
-          })}
-        </div>
-
-        <div className={s.smallRadars}>
-          <ResultRadar
-            title="2050年"
-            userSnapshot={snapshot2050}
-            baselineSnapshot={baselineSnapshot2050}
-            aiSnapshot={aiSnapshot2050}
-          />
-          <ResultRadar
-            title="2075年"
-            userSnapshot={snapshot2075}
-            baselineSnapshot={baselineSnapshot2075}
-            aiSnapshot={aiSnapshot2075}
-          />
-        </div>
-
-        <div className={s.stats}>
-          <div className={s.stat}>
-            <div className={s.statVal}>
-              {formatFloodDamage(snapshot2100.metrics.floodDamageJpy)}
-              <small>（{formatScore(snapshot2100.scores.floodScore)}点）</small>
-            </div>
-            <div className={s.statLabel}>{t('ending.stats.flood')}</div>
-          </div>
-
-          <div className={s.stat}>
-            <div className={s.statVal}>
-              {Math.round(snapshot2100.metrics.cropYield).toLocaleString()}
-              <small>（{formatScore(snapshot2100.scores.cropScore)}点）</small>
-            </div>
-            <div className={s.statLabel}>{t('ending.stats.yield')}</div>
-          </div>
-
-          <div className={s.stat}>
-            <div className={s.statVal}>
-              {round1(snapshot2100.metrics.ecosystemLevel).toFixed(1)}
-              <small>（{formatScore(snapshot2100.scores.ecosystemScore)}点）</small>
-            </div>
-            <div className={s.statLabel}>{t('ending.stats.eco')}</div>
-          </div>
-        </div>
-
-        <div className={s.resultComparison}>
-          <div className={s.policyTitle}>結果比較</div>
-
-          <ScoreComparisonCard
-            title="あなたの結果"
-            subtitle="実際に選んだ政策配分による結果"
-            summary={userSummary}
-            snapshots={snapshots}
-          />
-        </div>
-
-        <div className={s.policySummary}>
-          <div className={s.policyTitle}>政策配分の概要</div>
-          {policies.map(turn => (
-            <div key={turn.label} className={s.policyRow}>
-              <strong>{turn.label}</strong>
-              <span>
-                {turn.values.length
-                  ? turn.values.map(item => `${item.label} ${item.points}ポイント`).join(' / ')
-                  : '投資なし'}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <button className={s.compareBtn} onClick={onCompare}>{t('ending.compare')}</button>
-        <button className={s.surveyBtn} onClick={onOpenSurvey} type="button">
-          {surveySubmitted ? t('ending.survey.done') : t('ending.survey')}
-        </button>
-        <button
-          className={s.restartBtn}
-          onClick={onRestart}
-          disabled={exportSaving}
-          type="button"
-        >
-          {exportSaving ? t('ending.export.saving') : t('ending.restart')}
-        </button>
-        <div className={s.exportRow}>
-          <p className={s.exportNote}>{t('ending.export.hint')}</p>
-          {exportError && (
-            <>
-              <p className={s.exportNote}>{t('ending.export.failed')}</p>
-              <button type="button" className={s.saveLogBtn} onClick={() => onRetryExport?.()}>
-                {t('ending.export.retry')}
-              </button>
-            </>
-          )}
-          {exportDone && !exportError && exportFilename && (
-            <p className={s.exportNote}>
-              {t('ending.export.done')}
-              {` (${exportFilename})`}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  )
+    if (!history.length || saved.current) return
+    saved.current = true
+    fetch(`${API}/comparison-results`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(comparisonPayload({ userName, mode, history, currentClimateHistory, policyHistory })) }).catch(() => {})
+  }, [history, currentClimateHistory, mode, policyHistory, userName])
+  return <div className={s.page}><div className={s.content}>
+    <div className={s.yearTag}>2026–2100 最終結果</div><h1 className={s.headline}>{userName || 'Guest'}さんの適応結果</h1>
+    <p className={s.methodNote}>各指標は「現在気候・無対策」を100点とした相対評価です。洪水被害は期間累計、農作物生産高と生態系は期間平均で評価します。100点を上限にはしていません。</p>
+    <div className={s.metricsLayout}>{METRICS.map(metric => <MetricSection key={metric.key} metric={metric} player={player} rcp={rcp} current={current} />)}</div>
+    <section className={s.policySummary}><div className={s.policyTitle}>政策履歴</div>{policies.map(x => <div className={s.policyRow} key={x.turn}><strong>{x.turn}</strong><span>{x.text}</span></div>)}</section>
+    <button className={s.compareBtn} onClick={onCompare}>参加者結果を見る</button><button className={s.surveyBtn} onClick={onOpenSurvey} type="button">{surveySubmitted ? t('ending.survey.done') : t('ending.survey')}</button>
+    <button className={s.restartBtn} onClick={onRestart} disabled={exportSaving} type="button">{exportSaving ? t('ending.export.saving') : t('ending.restart')}</button>
+    {exportError && <button type="button" className={s.saveLogBtn} onClick={() => onRetryExport?.()}>{t('ending.export.retry')}</button>}{exportDone && !exportError && exportFilename && <p className={s.exportNote}>{t('ending.export.done')} ({exportFilename})</p>}
+  </div></div>
 }

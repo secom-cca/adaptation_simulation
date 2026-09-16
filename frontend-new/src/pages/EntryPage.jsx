@@ -8,15 +8,12 @@ import {
 } from '../logging/operationLog.js'
 import s from './EntryPage.module.css'
 
-const RCP_OPTIONS = [1.9, 2.6, 4.5, 6.0, 8.5]
-
 export default function EntryPage({ onStart, onEthicsEvent }) {
   const { t, lang, toggle } = useTranslation()
   const ethics = getResearchEthics(lang)
   const [userName, setUserName] = useState('')
   const [teamName, setTeamName] = useState('')
   const [mode, setMode] = useState('team')
-  const [rcp, setRcp] = useState(4.5)
   const [ethicsConsent, setEthicsConsent] = useState(false)
   const [ethicsConsentAt, setEthicsConsentAt] = useState(null)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -64,7 +61,7 @@ export default function EntryPage({ onStart, onEthicsEvent }) {
       userName: userName.trim(),
       teamName: teamName.trim(),
       mode,
-      rcpValue: rcp,
+      rcpValue: 4.5,
       ethicsConsent: true,
       ethicsConsentAt: ethicsConsentAt || new Date().toISOString(),
     })
@@ -128,22 +125,6 @@ export default function EntryPage({ onStart, onEthicsEvent }) {
             </div>
           </fieldset>
 
-          <fieldset className={s.fieldset}>
-            <legend className={s.legend}>{t('entry.rcp.label')}</legend>
-            <div className={s.rcpRow}>
-              {RCP_OPTIONS.map(r => (
-                <button
-                  key={r}
-                  className={`${s.rcpBtn} ${rcp === r ? s.selected : ''}`}
-                  onClick={() => setRcp(r)}
-                  type="button"
-                >
-                  <span className={s.rcpLabel}>RCP {r}</span>
-                  <span className={s.rcpDesc}>{t(`rcp.${r}.desc`)}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
         </div>
 
         <div className={s.ethicsRow}>

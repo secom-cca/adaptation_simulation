@@ -1,7 +1,7 @@
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: 1fr;
   gap: 10px;
   padding: 10px 14px;
   width: 100%;
@@ -10,9 +10,7 @@
 }
 
 /* MayFest 2026: event log is removed; make indicator trend chart taller. */
-.cell:first-child {
-  grid-row: span 2;
-}
+.cell:first-child { min-width: 0; }
 
 /* ── Cell shared styles ── */
 .cell {

@@ -13,6 +13,7 @@ export default function App() {
   const {
     phase,
     history,
+    currentClimateHistory,
     year,
     cycle,
     llmCommentary,
@@ -22,7 +23,7 @@ export default function App() {
 
   if (phase === 'entry')       return <EntryPage onStart={sim.startGame} />
   if (phase === 'game')        return <GamePage sim={sim} />
-  if (phase === 'report')      return <CycleReport history={history} year={year} cycle={cycle} llmCommentary={llmCommentary} llmLoading={llmLoading} onViewDetails={sim.dismissReport} />
+  if (phase === 'report')      return <CycleReport history={history} currentClimateHistory={currentClimateHistory} year={year} cycle={cycle} llmCommentary={llmCommentary} llmLoading={llmLoading} onViewDetails={sim.dismissReport} />
   if (phase === 'consequence') return <ConsequencePage sim={sim} onDismiss={sim.dismissConsequence} />
   if (phase === 'survey') {
     return (

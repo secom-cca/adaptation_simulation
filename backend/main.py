@@ -180,12 +180,28 @@ def run_simulation(req: SimulationRequest):
         df_log['user_name'] = req.user_name
         df_log['scenario_name'] = scenario_name
         df_log['timestamp'] = pd.Timestamp.utcnow()
-        if ACTION_LOG_FILE.exists():
-            df_old = pd.read_csv(ACTION_LOG_FILE)
-            df_combined = pd.concat([df_old, df_log], ignore_index=True)
-        else:
-            df_combined = df_log
-        df_combined.to_csv(ACTION_LOG_FILE, index=False)
+        # Logging is best-effort: a locked or malformed CSV must not fail the simulation.
+        df_combined = df_log
+        try:
+            if ACTION_LOG_FILE.exists():
+                try:
+                    df_old = pd.read_csv(ACTION_LOG_FILE)
+                    df_combined = pd.concat([df_old, df_log], ignore_index=True)
+                except Exception as exc:
+                    print(f"[WARN] Could not read decision log: {exc}")
+            try:
+                df_combined.to_csv(ACTION_LOG_FILE, index=False)
+            except Exception as exc:
+                fallback = ACTION_LOG_FILE.with_name(
+                    f"{ACTION_LOG_FILE.stem}_{pd.Timestamp.utcnow().strftime('%Y%m%dT%H%M%S%fZ')}{ACTION_LOG_FILE.suffix}"
+                )
+                try:
+                    df_log.to_csv(fallback, index=False)
+                    print(f"[WARN] Decision log unavailable; wrote fallback {fallback}: {exc}")
+                except Exception as fallback_exc:
+                    print(f"[WARN] Skipped decision log write: {exc}; fallback failed: {fallback_exc}")
+        except Exception as exc:
+            print(f"[WARN] Skipped decision log persistence: {exc}")
 
         df_csv = pd.DataFrame(block_scores)
         df_csv['user_name'] = req.user_name

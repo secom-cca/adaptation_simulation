@@ -102,6 +102,46 @@
   margin: 0;
 }
 
+.floodStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.floodStats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(61, 107, 143, 0.08);
+  border: 1px solid rgba(61, 107, 143, 0.16);
+}
+
+.floodStats span {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+}
+
+.floodStats strong {
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--color-text-primary);
+}
+
+.floodStats .reduction {
+  background: rgba(74, 140, 92, 0.12);
+  border-color: rgba(74, 140, 92, 0.28);
+}
+
+.floodStats .reduction strong { color: var(--color-good); }
+.floodStats .increase strong { color: var(--color-critical); }
+
+@media (max-width: 680px) {
+  .floodStats { grid-template-columns: 1fr; }
+}
+
 .continueBtn {
   align-self: flex-end;
   margin-top: 4px;
