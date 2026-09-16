@@ -353,6 +353,7 @@ def save_comparison_result(result: Dict[str, Any] = Body(...)):
     row = {
         "user_name": str(result.get("user_name") or "Guest"),
         "mode": str(result.get("mode") or ""),
+        "rcp_scenario": str(result.get("rcp_scenario") or "4.5"),
         # MayFest 2026: ranking uses the three radar scores and their simple average.
         "total_score": float(result.get("total_score") or 0),
         "flood_damage_score": float(result.get("flood_damage_score") or 0),
@@ -373,6 +374,8 @@ def save_comparison_result(result: Dict[str, Any] = Body(...)):
     new_df = pd.DataFrame([row])
     if COMPARISON_RESULTS_FILE.exists():
         old_df = pd.read_csv(COMPARISON_RESULTS_FILE, sep="\t")
+        if "rcp_scenario" not in old_df.columns:
+            old_df["rcp_scenario"] = "4.5"
         old_df = old_df[old_df["user_name"] != row["user_name"]]
         new_df = pd.concat([old_df, new_df], ignore_index=True)
     new_df.to_csv(COMPARISON_RESULTS_FILE, sep="\t", index=False)

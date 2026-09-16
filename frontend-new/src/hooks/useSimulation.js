@@ -249,7 +249,7 @@ export function useSimulation() {
       userName,
       teamName,
       mode,
-      rcpValue: 4.5,
+      rcpValue,
       ethicsConsentAt,
     })
     setGameState(s => ({
@@ -258,7 +258,7 @@ export function useSimulation() {
       userName,
       teamName,
       mode,
-      rcpValue: 4.5,
+      rcpValue,
       currentValues: INITIAL_VALUES,
       baselineValues: INITIAL_VALUES,
       history: [],
@@ -317,14 +317,16 @@ export function useSimulation() {
         },
       })
 
-      const [scenarioRun, baselineRun, currentClimateRun, lowRcpRun, highRcpRun] = await Promise.all([
+      const selectedRcp = s.rcpValue === 'composite' ? 4.5 : Number(s.rcpValue)
+      const sensitivityRcps = s.rcpValue === 'composite' ? [1.9, 8.5] : []
+      const runs = await Promise.all([
         advance25Years({
         currentValues: s.currentValues,
         sliders,
         year: s.year,
         scenarioName: `${s.userName}_${s.mode}_cycle${s.cycle}`,
         userName: s.userName,
-        rcpValue: 4.5,
+        rcpValue: selectedRcp,
         policyHistory: s.policyHistory ?? [],
         history: s.history ?? [],
         }),
@@ -334,7 +336,7 @@ export function useSimulation() {
           year: s.year,
           scenarioName: `${s.userName}_baseline_cycle${s.cycle}`,
           userName: s.userName,
-          rcpValue: 4.5,
+          rcpValue: selectedRcp,
           policyHistory: [],
           history: s.baselineHistory ?? [],
         }),
@@ -348,7 +350,7 @@ export function useSimulation() {
           policyHistory: [],
           history: s.currentClimateHistory ?? [],
         }),
-        ...[1.9, 8.5].map(rcp => advance25Years({
+        ...sensitivityRcps.map(rcp => advance25Years({
           currentValues: s.sensitivityValues?.[rcp] ?? INITIAL_VALUES,
           sliders,
           year: s.year,
@@ -359,6 +361,9 @@ export function useSimulation() {
           history: s.sensitivityHistories?.[rcp] ?? [],
         })),
       ])
+      const [scenarioRun, baselineRun, currentClimateRun, ...sensitivityRuns] = runs
+      const lowRcpRun = sensitivityRuns[0]
+      const highRcpRun = sensitivityRuns[1]
 
       const newState = scenarioRun.newState
       const yearlyResults = attachExplicitBaselineRows(scenarioRun.yearlyResults, baselineRun.yearlyResults)
@@ -370,8 +375,8 @@ export function useSimulation() {
       const newBaselineHistory = [...(s.baselineHistory ?? []), ...baselineRun.yearlyResults]
       const newCurrentClimateHistory = [...(s.currentClimateHistory ?? []), ...currentClimateRun.yearlyResults]
       const newSensitivityHistories = {
-        1.9: [...(s.sensitivityHistories?.[1.9] ?? []), ...lowRcpRun.yearlyResults],
-        8.5: [...(s.sensitivityHistories?.[8.5] ?? []), ...highRcpRun.yearlyResults],
+        1.9: lowRcpRun ? [...(s.sensitivityHistories?.[1.9] ?? []), ...lowRcpRun.yearlyResults] : [],
+        8.5: highRcpRun ? [...(s.sensitivityHistories?.[8.5] ?? []), ...highRcpRun.yearlyResults] : [],
       }
       const newPolicyHistory = [...(s.policyHistory ?? []), { year: s.year, sliders: { ...sliders } }]
 
@@ -417,7 +422,7 @@ export function useSimulation() {
 
       // 最終ターンでも、イベント表示または25年間レポートを見せてから ending に進む。
       // 2076-2100 の結果を見せずに即終了しないようにする。
-      const nextPhase = queuedEvents.length > 0 ? 'consequence' : 'report'
+      const nextPhase = queuedEvents.length > 0 ? 'consequence' : (nextYear > 2100 ? 'ending' : 'game')
       const evalDecisionVar = buildDecisionVar({ year: s.year, sliders, rcpValue: s.rcpValue })
       const evaluationRequest = {
         stage_index: s.cycle,
@@ -469,11 +474,12 @@ export function useSimulation() {
         currentClimateHistory: newCurrentClimateHistory,
         currentClimateValues: currentClimateRun.newState,
         sensitivityHistories: newSensitivityHistories,
-        sensitivityValues: { 1.9: lowRcpRun.newState, 8.5: highRcpRun.newState },
+        sensitivityValues: { 1.9: lowRcpRun?.newState ?? INITIAL_VALUES, 8.5: highRcpRun?.newState ?? INITIAL_VALUES },
         policyHistory: newPolicyHistory,
         year: nextYear,
         cycle: nextCycle,
         phase: nextPhase,
+        gameView: nextPhase === 'game' ? 'detail' : prev.gameView,
         pendingEvents: queuedEvents,
         emittedEventKeys: nextEmittedEventKeys,
       }))
@@ -698,13 +704,13 @@ export function useSimulation() {
         },
       })
       const remaining = s.pendingEvents.slice(1)
-      const nextPhase = remaining.length > 0 ? 'consequence' : 'report'
+      const nextPhase = remaining.length > 0 ? 'consequence' : (s.year > 2100 ? 'ending' : 'game')
       if (nextPhase !== 'consequence') {
         emit('phase_leave', { phase: 'consequence', next_phase: nextPhase }, { source: 'system' })
         setLogContext({ phase: nextPhase, cycle: s.cycle, year: s.year })
         emit('phase_enter', { phase: nextPhase }, { source: 'system' })
       }
-      return { ...s, pendingEvents: remaining, phase: nextPhase }
+      return { ...s, pendingEvents: remaining, phase: nextPhase, gameView: nextPhase === 'game' ? 'detail' : s.gameView }
     })
   }, [])
 

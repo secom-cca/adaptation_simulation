@@ -200,12 +200,15 @@ function floodBody(event = {}) {
   const currentDamage = toNumber(event.value)
   const baseline = toNumber(event.baselineValue)
   const diff = toNumber(event.diffFromBaseline)
-  const reduction = diff > 0 ? diff : Math.max(0, baseline - currentDamage)
+  const reduction = Number.isFinite(Number(event.diffFromBaseline)) ? diff : baseline - currentDamage
+  const comparison = reduction >= 0
+    ? `${formatJpy(reduction)}の被害を抑えています。`
+    : `${formatJpy(Math.abs(reduction))}被害が増えています。`
 
   return (
     `この年の洪水被害額は${formatJpy(currentDamage)}でした。` +
     `同じ雨が何も対策しなかった流域に降った場合の被害額${formatJpy(baseline)}と比べると、` +
-    `${formatJpy(reduction)}の被害を抑えています。`
+    comparison
   )
 }
 

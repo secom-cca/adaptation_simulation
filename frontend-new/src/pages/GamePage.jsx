@@ -87,6 +87,7 @@ export default function GamePage({ sim }) {
     residentCouncilError,
     residentInterviews = {},
     residentInterviewLoading = {},
+    rcpValue,
   } = gameState
 
   const view = gameView ?? 'simple'
@@ -309,6 +310,7 @@ export default function GamePage({ sim }) {
             residentInterviews={residentInterviews}
             residentInterviewLoading={residentInterviewLoading}
             onRequestResidentInterview={requestResidentInterview}
+            rcpValue={rcpValue}
             onSelectIndicator={(key) => {
               emit('detail_indicator_select', { indicator_key: key }, {
                 context: { phase: 'game', cycle, year, gameView: 'detail' },

@@ -170,9 +170,9 @@
 
 .participantHeader,
 .participantRow {
-  min-width: 680px;
+  min-width: 900px;
   display: grid;
-  grid-template-columns: minmax(180px, 1.4fr) repeat(3, minmax(140px, 1fr));
+  grid-template-columns: minmax(190px, 1.3fr) 72px repeat(3, minmax(170px, 1fr));
   gap: 12px;
   align-items: center;
   padding: 13px 16px;
@@ -185,6 +185,26 @@
   color: var(--color-text-secondary);
 }
 
+.sortButton,
+.sortActive {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 7px 28px 7px 9px;
+  border: 1px solid rgba(61,107,143,.18);
+  border-radius: 6px;
+  background: rgba(255,255,255,.7);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+.sortButton small, .sortActive small { font-size: 9px; color: var(--color-text-secondary); }
+.sortButton b, .sortActive b { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+.sortActive { border-color: var(--color-accent); background: rgba(61,107,143,.1); color: var(--color-accent); }
+
 .participantRow {
   border-top: 1px solid rgba(31,44,60,0.08);
   background: #fff;
@@ -193,6 +213,7 @@
 
 .participantRow.player { background: rgba(61,107,143,0.08); }
 .participantRow strong { color: var(--color-text-primary); }
+.participantRow small { color: var(--color-accent); font-size: 12px; }
 .participantRow span { font-variant-numeric: tabular-nums; color: var(--color-text-primary); }
 
 .sectionTitle {

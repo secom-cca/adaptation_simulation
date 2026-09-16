@@ -309,6 +309,20 @@
   min-height: 0;
 }
 
+.periodSummary {
+  flex-shrink: 0;
+  margin: 0 14px 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(61, 107, 143, 0.08);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.periodSummary > strong { grid-column: 1 / -1; font-size: 12px; color: var(--color-accent); }
+.periodSummary span { display: flex; flex-direction: column; gap: 3px; font-size: 9px; color: var(--color-text-secondary); }
+.periodSummary b { font-size: 12px; color: var(--color-text-primary); }
+
 .snsPost {
   display: flex;
   gap: 10px;
