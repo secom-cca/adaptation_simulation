@@ -8,6 +8,7 @@ import AnalysisPage from './AnalysisPage.jsx'
 import DecisionPanel from '../components/DecisionPanel/DecisionPanel.jsx'
 import { buildBudgetRows, findAllowedPolicyPoints } from '../data/budget.js'
 import { emit, setLogContext } from '../logging/operationLog.js'
+import IntentSurveyModal from '../components/IntentSurvey/IntentSurveyModal.jsx'
 import s from './GamePage.module.css'
 
 const POLICY_PREVIEW_IMAGES = {
@@ -71,7 +72,7 @@ function backgroundVideoForState(policyHistory = [], sliders = {}) {
 }
 
 export default function GamePage({ sim }) {
-  const { gameState, advanceCycle, setGameView, requestResidentInterview } = sim
+  const { gameState, advanceCycle, submitIntentSurvey, setGameView, requestResidentInterview } = sim
   const {
     year,
     cycle,
@@ -89,6 +90,11 @@ export default function GamePage({ sim }) {
     residentCouncilError,
     residentInterviews = {},
     residentInterviewLoading = {},
+    intentSurveyOpen = false,
+    intentSurveySubmitted = false,
+    intentSurveyCycle,
+    intentSurveyYear,
+    advanceResultReady = false,
   } = gameState
 
   const view = gameView ?? 'simple'
@@ -354,6 +360,17 @@ export default function GamePage({ sim }) {
       />
 
       {error && <div className={s.errorBanner}>{error}</div>}
+
+      {intentSurveyOpen && (
+        <IntentSurveyModal
+          key={`${intentSurveyCycle ?? cycle}-${intentSurveyYear ?? year}`}
+          cycle={intentSurveyCycle ?? cycle}
+          year={intentSurveyYear ?? year}
+          submitted={intentSurveySubmitted}
+          simulationReady={advanceResultReady}
+          onSubmit={submitIntentSurvey}
+        />
+      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { sliderToBackend } from '../data/policyEffects.js'
 import {
   buildBudgetRows,
@@ -20,8 +20,11 @@ import {
   setLogContext,
   beginEntryLogging,
   recordSurveySubmission,
+  recordIntentSurveySubmission,
+  recordPolicyAllocation,
 } from '../logging/operationLog.js'
 import { buildSurveyPayload } from '../data/surveyQuestions.js'
+import { buildIntentSurveyPayload } from '../data/intentSurveyQuestions.js'
 
 const API = import.meta.env.VITE_API_BASE || '/api'
 
@@ -201,6 +204,159 @@ function attachExplicitBaselineRows(scenarioRows = [], baselineRows = []) {
   })
 }
 
+/** Build the post-advance package used once both intent survey + simulation are ready. */
+function buildAdvancePackage({ s, sliders, scenarioRun, baselineRun }) {
+  const newState = scenarioRun.newState
+  const yearlyResults = attachExplicitBaselineRows(scenarioRun.yearlyResults, baselineRun.yearlyResults)
+  const newBaselineState = baselineRun.newState
+
+  const nextYear = s.year + 25
+  const nextCycle = s.cycle + 1
+  const newHistory = [...s.history, ...yearlyResults]
+  const newBaselineHistory = [...(s.baselineHistory ?? []), ...baselineRun.yearlyResults]
+  const newPolicyHistory = [...(s.policyHistory ?? []), { year: s.year, sliders: { ...sliders } }]
+
+  const modelEvents = dedupeEvents([
+    ...collectTurnEvents(yearlyResults),
+  ])
+  const consequenceKey = modelEvents.length > 0 ? null : detectConsequenceEvent(yearlyResults)
+  const order = s.exogenousOrder ?? []
+  const exogenousKey = order.length > 0 ? order[(s.cycle - 1) % order.length] : null
+  const finalState = exogenousKey ? applyExogenousEffect(newState, exogenousKey) : newState
+
+  const emitted = new Set(s.emittedEventKeys ?? [])
+
+  const rawPendingEvents = [...modelEvents]
+  if (consequenceKey?.key && !emitted.has(consequenceKey.key)) {
+    rawPendingEvents.push({ ...consequenceKey, type: 'consequence' })
+  }
+  if (exogenousKey) {
+    rawPendingEvents.push({ key: exogenousKey, type: 'exogenous' })
+  }
+
+  const filteredPendingEvents = filterConsequenceEvents(rawPendingEvents, {
+    cycle: s.cycle,
+    turnStartYear: s.year,
+    emittedEventKeys: emitted,
+  }).sort(compareConsequenceEvents)
+
+  const queuedEvents = filteredPendingEvents.map((event, index) => ({
+    ...event,
+    queueIndex: index + 1,
+    queueTotal: filteredPendingEvents.length,
+  }))
+
+  const nextEmittedEventKeys = [
+    ...new Set([
+      ...emitted,
+      ...filteredPendingEvents
+        .filter(shouldRememberEventKey)
+        .map(buildPersistentEventKey),
+    ]),
+  ]
+
+  const nextPhase = queuedEvents.length > 0 ? 'consequence' : 'report'
+  const evalDecisionVar = buildDecisionVar({ year: s.year, sliders, rcpValue: s.rcpValue })
+  const evaluationRequest = {
+    stage_index: s.cycle,
+    checkpoint_year: nextYear,
+    period_start_year: s.year,
+    period_end_year: nextYear - 1,
+    decision_var: evalDecisionVar,
+    simulation_rows: yearlyResults,
+    language: 'ja',
+  }
+
+  return {
+    decisionCycle: s.cycle,
+    decisionYear: s.year,
+    gameView: s.gameView,
+    finalState,
+    newBaselineState,
+    newHistory,
+    newBaselineHistory,
+    newPolicyHistory,
+    nextYear,
+    nextCycle,
+    nextPhase,
+    queuedEvents,
+    nextEmittedEventKeys,
+    evaluationRequest,
+    yearRange: { start_year: s.year, end_year: s.year + 24 },
+  }
+}
+
+function firePostAdvanceEvaluations(setGameState, evaluationRequest) {
+  fetch(`${API}/intermediate-evaluation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(evaluationRequest),
+  })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(data => setGameState(prev => ({ ...prev, llmCommentary: data.feedback ?? '', llmLoading: false })))
+    .catch(() => setGameState(prev => ({ ...prev, llmLoading: false })))
+
+  fetch(`${API}/resident-council`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(evaluationRequest),
+  })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(data => setGameState(prev => ({
+      ...prev,
+      residentCouncil: data,
+      residentCouncilLoading: false,
+      residentCouncilError: false,
+    })))
+    .catch(() => setGameState(prev => ({
+      ...prev,
+      residentCouncilLoading: false,
+      residentCouncilError: true,
+    })))
+}
+
+function commitAdvancePackage(setGameState, pkg) {
+  emit('phase_leave', { phase: 'intent_survey', next_phase: pkg.nextPhase }, { source: 'system' })
+  setLogContext({
+    phase: pkg.nextPhase,
+    cycle: pkg.nextCycle,
+    year: pkg.nextYear,
+    gameView: pkg.gameView,
+  })
+  emit('phase_enter', { phase: pkg.nextPhase }, { source: 'system' })
+
+  setGameState(prev => ({
+    ...prev,
+    loading: false,
+    intentSurveyOpen: false,
+    intentSurveySubmitted: false,
+    intentSurveyCycle: null,
+    intentSurveyYear: null,
+    advanceResultReady: false,
+    llmCommentary: '',
+    llmLoading: true,
+    residentCouncil: null,
+    residentCouncilLoading: true,
+    residentCouncilError: false,
+    residentInterviews: {},
+    residentInterviewCounts: {},
+    residentInterviewLoading: {},
+    lastEvaluationRequest: pkg.evaluationRequest,
+    currentValues: pkg.finalState,
+    baselineValues: pkg.newBaselineState,
+    history: pkg.newHistory,
+    baselineHistory: pkg.newBaselineHistory,
+    policyHistory: pkg.newPolicyHistory,
+    year: pkg.nextYear,
+    cycle: pkg.nextCycle,
+    phase: pkg.nextPhase,
+    pendingEvents: pkg.queuedEvents,
+    emittedEventKeys: pkg.nextEmittedEventKeys,
+  }))
+
+  firePostAdvanceEvaluations(setGameState, pkg.evaluationRequest)
+}
+
 export function useSimulation() {
   const [gameState, setGameState] = useState({
     phase: 'entry',       // 'entry' | 'game' | 'consequence' | 'ending'
@@ -237,7 +393,16 @@ export function useSimulation() {
     surveyAnswers: null,
     surveySubmitted: false,
     exportSaving: false,
+    intentSurveyOpen: false,
+    intentSurveySubmitted: false,
+    intentSurveyCycle: null,
+    intentSurveyYear: null,
+    advanceResultReady: false,
   })
+
+  const intentSurveySubmittedRef = useRef(false)
+  const pendingAdvanceRef = useRef(null)
+  const advancingSlidersRef = useRef(null)
 
   const startGame = useCallback(({ userName, teamName, mode, rcpValue, ethicsConsentAt }) => {
     const order = []
@@ -282,27 +447,93 @@ export function useSimulation() {
       surveySubmitted: false,
       exportSaving: false,
       error: null,
+      intentSurveyOpen: false,
+      intentSurveySubmitted: false,
+      intentSurveyCycle: null,
+      intentSurveyYear: null,
+      advanceResultReady: false,
     }))
   }, [])
 
+  const tryCommitAdvance = useCallback(() => {
+    if (!intentSurveySubmittedRef.current || !pendingAdvanceRef.current) return
+    const pkg = pendingAdvanceRef.current
+    pendingAdvanceRef.current = null
+    intentSurveySubmittedRef.current = false
+    advancingSlidersRef.current = null
+    commitAdvancePackage(setGameState, pkg)
+  }, [])
+
+  const submitIntentSurvey = useCallback((answers) => {
+    const cycle = gameState.intentSurveyCycle ?? gameState.cycle
+    const year = gameState.intentSurveyYear ?? gameState.year
+    const payload = buildIntentSurveyPayload({
+      answers,
+      cycle,
+      year,
+      sliders: advancingSlidersRef.current,
+    })
+    recordIntentSurveySubmission(payload)
+    intentSurveySubmittedRef.current = true
+    setGameState(s => ({ ...s, intentSurveySubmitted: true }))
+    tryCommitAdvance()
+  }, [gameState.cycle, gameState.intentSurveyCycle, gameState.intentSurveyYear, gameState.year, tryCommitAdvance])
+
   const advanceCycle = useCallback(async (sliders) => {
-    setGameState(s => ({ ...s, loading: true, error: null }))
+    const s = gameState
+    intentSurveySubmittedRef.current = false
+    pendingAdvanceRef.current = null
+    advancingSlidersRef.current = { ...sliders }
+
+    setGameState(prev => ({
+      ...prev,
+      loading: true,
+      error: null,
+      intentSurveyOpen: true,
+      intentSurveySubmitted: false,
+      intentSurveyCycle: s.cycle,
+      intentSurveyYear: s.year,
+      advanceResultReady: false,
+    }))
+    setLogContext({
+      phase: 'intent_survey',
+      cycle: s.cycle,
+      year: s.year,
+      gameView: s.gameView,
+    })
+    emit('intent_survey_open', {
+      cycle: s.cycle,
+      year_range: { start_year: s.year, end_year: s.year + 24 },
+    })
 
     try {
-      const s = gameState
       const budgetRows = buildBudgetRows(s.policyHistory ?? [], s.history ?? [], {
         year: s.year,
         sliders,
       })
       const budgetRow = budgetRows[budgetRows.length - 1]
+      const period = { start_year: s.year, end_year: s.year + 24 }
+      const policyPoints = { ...sliders }
+
+      recordPolicyAllocation({
+        cycle: s.cycle,
+        year: s.year,
+        policyPoints,
+        availableBudgetPoints: budgetRow?.availableBudgetPoints ?? null,
+        usedPolicyPoints: budgetRow?.usedPolicyPoints ?? null,
+        period,
+      })
+
       emit('advance_cycle_click', {
-        sliders: { ...sliders },
+        cycle: s.cycle,
+        sliders: policyPoints,
+        policy_points: policyPoints,
         available_budget_points: budgetRow?.availableBudgetPoints ?? null,
         used_policy_points: budgetRow?.usedPolicyPoints ?? null,
-        period: { start_year: s.year, end_year: s.year + 24 },
+        period,
       }, {
         context: {
-          phase: 'game',
+          phase: 'intent_survey',
           cycle: s.cycle,
           year: s.year,
           gameView: s.gameView,
@@ -311,14 +542,14 @@ export function useSimulation() {
 
       const [scenarioRun, baselineRun] = await Promise.all([
         advance25Years({
-        currentValues: s.currentValues,
-        sliders,
-        year: s.year,
-        scenarioName: `${s.userName}_${s.mode}_cycle${s.cycle}`,
-        userName: s.userName,
-        rcpValue: s.rcpValue,
-        policyHistory: s.policyHistory ?? [],
-        history: s.history ?? [],
+          currentValues: s.currentValues,
+          sliders,
+          year: s.year,
+          scenarioName: `${s.userName}_${s.mode}_cycle${s.cycle}`,
+          userName: s.userName,
+          rcpValue: s.rcpValue,
+          policyHistory: s.policyHistory ?? [],
+          history: s.history ?? [],
         }),
         advance25Years({
           currentValues: s.baselineValues ?? INITIAL_VALUES,
@@ -332,151 +563,51 @@ export function useSimulation() {
         }),
       ])
 
-      const newState = scenarioRun.newState
-      const yearlyResults = attachExplicitBaselineRows(scenarioRun.yearlyResults, baselineRun.yearlyResults)
-      const newBaselineState = baselineRun.newState
-
-      const nextYear = s.year + 25
-      const nextCycle = s.cycle + 1
-      const newHistory = [...s.history, ...yearlyResults]
-      const newBaselineHistory = [...(s.baselineHistory ?? []), ...baselineRun.yearlyResults]
-      const newPolicyHistory = [...(s.policyHistory ?? []), { year: s.year, sliders: { ...sliders } }]
-
-      const modelEvents = dedupeEvents([
-        // MayFest 2026: policy-effect copy now comes from backend so IDs/data stay consistent.
-        ...collectTurnEvents(yearlyResults),
-      ])
-      const consequenceKey = modelEvents.length > 0 ? null : detectConsequenceEvent(yearlyResults)
-      const order = s.exogenousOrder ?? []
-      const exogenousKey = order.length > 0 ? order[(s.cycle - 1) % order.length] : null
-      const finalState     = exogenousKey ? applyExogenousEffect(newState, exogenousKey) : newState
-
-      const emitted = new Set(s.emittedEventKeys ?? [])
-
-      const rawPendingEvents = [...modelEvents]
-      if (consequenceKey?.key && !emitted.has(consequenceKey.key)) {
-        rawPendingEvents.push({ ...consequenceKey, type: 'consequence' })
-      }
-      if (exogenousKey) {
-        rawPendingEvents.push({ key: exogenousKey, type: 'exogenous' })
-      }
-
-      const filteredPendingEvents = filterConsequenceEvents(rawPendingEvents, {
-        cycle: s.cycle,
-        turnStartYear: s.year,
-        emittedEventKeys: emitted,
-      }).sort(compareConsequenceEvents)
-
-      const queuedEvents = filteredPendingEvents.map((event, index) => ({
-        ...event,
-        queueIndex: index + 1,
-        queueTotal: filteredPendingEvents.length,
-      }))
-
-      const nextEmittedEventKeys = [
-        ...new Set([
-          ...emitted,
-          ...filteredPendingEvents
-            .filter(shouldRememberEventKey)
-            .map(buildPersistentEventKey),
-        ]),
-      ]
-
-      // 最終ターンでも、イベント表示または25年間レポートを見せてから ending に進む。
-      // 2076-2100 の結果を見せずに即終了しないようにする。
-      const nextPhase = queuedEvents.length > 0 ? 'consequence' : 'report'
-      const evalDecisionVar = buildDecisionVar({ year: s.year, sliders, rcpValue: s.rcpValue })
-      const evaluationRequest = {
-        stage_index: s.cycle,
-        checkpoint_year: nextYear,
-        period_start_year: s.year,
-        period_end_year: nextYear - 1,
-        decision_var: evalDecisionVar,
-        simulation_rows: yearlyResults,
-        language: 'ja',
-      }
+      const pkg = buildAdvancePackage({ s, sliders, scenarioRun, baselineRun })
 
       emit('advance_cycle_succeeded', {
         cycle: s.cycle,
-        year_range: { start_year: s.year, end_year: s.year + 24 },
-        next_phase: nextPhase,
+        year_range: pkg.yearRange,
+        next_phase: pkg.nextPhase,
       }, {
         context: {
-          phase: 'game',
+          phase: 'intent_survey',
           cycle: s.cycle,
           year: s.year,
           gameView: s.gameView,
         },
       })
-      emit('phase_leave', { phase: 'game', next_phase: nextPhase }, { source: 'system' })
-      setLogContext({
-        phase: nextPhase,
-        cycle: nextCycle,
-        year: nextYear,
-        gameView: s.gameView,
-      })
-      emit('phase_enter', { phase: nextPhase }, { source: 'system' })
 
+      pendingAdvanceRef.current = pkg
       setGameState(prev => ({
         ...prev,
-        loading: false,
-        llmCommentary: '',
-        llmLoading: true,
-        residentCouncil: null,
-        residentCouncilLoading: true,
-        residentCouncilError: false,
-        residentInterviews: {},
-        residentInterviewCounts: {},
-        residentInterviewLoading: {},
-        lastEvaluationRequest: evaluationRequest,
-        currentValues: finalState,
-        baselineValues: newBaselineState,
-        history: newHistory,
-        baselineHistory: newBaselineHistory,
-        policyHistory: newPolicyHistory,
-        year: nextYear,
-        cycle: nextCycle,
-        phase: nextPhase,
-        pendingEvents: queuedEvents,
-        emittedEventKeys: nextEmittedEventKeys,
+        advanceResultReady: true,
+        loading: true,
       }))
-
-      // Fire LLM evaluation in parallel 窶・does not block phase transition
-      // Fire detail-page evaluations in parallel. They are stored for DetailPanel only.
-      fetch(`${API}/intermediate-evaluation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(evaluationRequest),
-      })
-        .then(r => r.ok ? r.json() : Promise.reject(r.status))
-        .then(data => setGameState(prev => ({ ...prev, llmCommentary: data.feedback ?? '', llmLoading: false })))
-        .catch(() => setGameState(prev => ({ ...prev, llmLoading: false })))
-
-      fetch(`${API}/resident-council`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(evaluationRequest),
-      })
-        .then(r => r.ok ? r.json() : Promise.reject(r.status))
-        .then(data => setGameState(prev => ({
-          ...prev,
-          residentCouncil: data,
-          residentCouncilLoading: false,
-          residentCouncilError: false,
-        })))
-        .catch(() => setGameState(prev => ({
-          ...prev,
-          residentCouncilLoading: false,
-          residentCouncilError: true,
-        })))
-
+      tryCommitAdvance()
     } catch (err) {
+      pendingAdvanceRef.current = null
+      intentSurveySubmittedRef.current = false
+      advancingSlidersRef.current = null
       emit('advance_cycle_failed', {
         error: err?.message || String(err),
       }, { source: 'system' })
-      setGameState(prev => ({ ...prev, loading: false, error: err.message }))
+      setLogContext({
+        phase: 'game',
+        cycle: s.cycle,
+        year: s.year,
+        gameView: s.gameView,
+      })
+      setGameState(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message,
+        intentSurveyOpen: false,
+        intentSurveySubmitted: false,
+        advanceResultReady: false,
+      }))
     }
-  }, [gameState])
+  }, [gameState, tryCommitAdvance])
 
   const requestResidentInterview = useCallback(async (personaKey, score) => {
     const request = gameState.lastEvaluationRequest
@@ -714,6 +845,11 @@ export function useSimulation() {
       surveyAnswers: null,
       surveySubmitted: false,
       exportSaving: false,
+      intentSurveyOpen: false,
+      intentSurveySubmitted: false,
+      intentSurveyCycle: null,
+      intentSurveyYear: null,
+      advanceResultReady: false,
     }))
     return result
   }, [runExport])
@@ -722,6 +858,7 @@ export function useSimulation() {
     gameState,
     startGame,
     advanceCycle,
+    submitIntentSurvey,
     dismissReport,
     dismissConsequence,
     restart,
