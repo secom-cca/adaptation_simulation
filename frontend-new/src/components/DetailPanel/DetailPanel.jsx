@@ -20,6 +20,7 @@ export default function DetailPanel({
   onRequestResidentInterview,
   onSelectIndicator,
   rcpValue,
+  rightInset = false,
 }) {
   const { t, lang } = useTranslation()
   const [activeKey, setActiveKey] = useState('Flood Damage JPY')
@@ -44,7 +45,7 @@ export default function DetailPanel({
   }
   const scenarioLabel = rcpValue === 'composite' ? 'RCP4.5' : `RCP${rcpValue}`
   return (
-    <div className={s.grid}>
+    <div className={`${s.grid} ${rightInset ? s.withRightInset : ''}`}>
       <div className={s.cell}>
         <div className={s.cellHeader}>
           <span className={s.cellTitle}>{t('detail.chart.title')}</span>

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useTranslation } from '../contexts/LanguageContext.jsx'
 import TopBar from '../components/TopBar/TopBar.jsx'
 import DetailPanel from '../components/DetailPanel/DetailPanel.jsx'
 import DecisionPanel from '../components/DecisionPanel/DecisionPanel.jsx'
@@ -7,31 +6,24 @@ import { buildBudgetRows, findAllowedPolicyPoints } from '../data/budget.js'
 import { emit, setLogContext } from '../logging/operationLog.js'
 import s from './GamePage.module.css'
 
-const POLICY_PREVIEW_IMAGES = {
-  planting_trees_amount: {
-    file: 'forest.png',
-    label: { en: 'Forest Planting', ja: '植林・森林保全' },
-  },
-  dam_levee_construction_cost: {
-    file: 'levee.png',
-    label: { en: 'Levee Investment', ja: '堤防・洪水対策' },
-  },
-  paddy_dam_construction_cost: {
-    file: 'paddy-dam.png',
-    label: { en: 'Paddy Field Dam', ja: '田んぼダム' },
-  },
-  house_migration_amount: {
-    file: 'relocation.png',
-    label: { en: 'Relocation Support', ja: '移住・適応支援' },
-  },
-  capacity_building_cost: {
-    file: 'preparedness.png',
-    label: { en: 'Disaster Preparedness', ja: '防災能力構築' },
-  },
-  agricultural_RnD_cost: {
-    file: 'agri-rnd.png',
-    label: { en: 'Agricultural R&D', ja: '農業技術研究' },
-  },
+const POLICY_HIGHLIGHTS = {
+  planting_trees_amount:       { x: 23, y: 18, rx: 18, ry: 17 },
+  dam_levee_construction_cost: { x: 70, y: 34, rx: 13, ry: 15 },
+  paddy_dam_construction_cost: { x: 61, y: 12, rx: 12, ry: 11 },
+  house_migration_amount:      { x: 39, y: 80, rx: 17, ry: 16 },
+  capacity_building_cost:      { x: 89, y: 53, rx: 10, ry: 13 },
+  agricultural_RnD_cost:       { x: 88, y: 21, rx: 11, ry: 13 },
+}
+
+// Positions refer to the visible areas of the 4:3 basin movie when it is
+// center-cropped into the left column.
+const SCENE_HIGHLIGHTS = {
+  planting_trees_amount:       { x: 84, y: 12, rx: 17, ry: 18 },
+  dam_levee_construction_cost: { x: 51, y: 43, rx: 29, ry: 16 },
+  paddy_dam_construction_cost: { x: 76, y: 83, rx: 20, ry: 15 },
+  house_migration_amount:      { x: 84, y: 30, rx: 18, ry: 20 },
+  capacity_building_cost:      { x: 36, y: 21, rx: 25, ry: 18 },
+  agricultural_RnD_cost:       { x: 76, y: 83, rx: 22, ry: 17 },
 }
 
 const BACKGROUND_VIDEO_BY_TIER = {
@@ -92,7 +84,8 @@ export default function GamePage({ sim }) {
 
   const view = gameView ?? 'simple'
   const [hasNewResults, setHasNewResults] = useState(false)
-  const [policyPreview, setPolicyPreview] = useState(null)
+  const [activePolicyKey, setActivePolicyKey] = useState(null)
+  const [showPolicyComparison, setShowPolicyComparison] = useState(false)
   const prevLoadingRef = useRef(false)
 
   useEffect(() => {
@@ -117,7 +110,6 @@ export default function GamePage({ sim }) {
     transportation_invest:       0,
   })
 
-  const { t, lang } = useTranslation()
   const isTeam = mode === 'team'
   const budgetRows = buildBudgetRows(policyHistory, history, { year, sliders })
   const currentBudgetRow = budgetRows[budgetRows.length - 1] ?? null
@@ -158,25 +150,17 @@ export default function GamePage({ sim }) {
     })
   }, [cycle, history, policyHistory, view, year])
 
-  const handlePreviewPolicy = useCallback((key, rect) => {
-    if (!key) {
-      if (policyPreview?.key) {
-        emit('policy_preview_close', { policy_key: policyPreview.key })
-      }
-      setPolicyPreview(null)
-      return
-    }
+  const handlePolicySelect = useCallback((key) => {
+    setActivePolicyKey(key)
+    emit('policy_tab_select', { policy_key: key })
+  }, [])
 
-    if (POLICY_PREVIEW_IMAGES[key] && rect) {
-      emit('policy_preview_open', { policy_key: key })
-      setPolicyPreview({
-        key,
-        left: rect.left + rect.width / 2,
-        top: rect.top - 12,
-        width: Math.min(460, Math.max(320, rect.width * 1.95)),
-      })
-    }
-  }, [policyPreview?.key])
+  const handlePolicyComparisonToggle = useCallback(() => {
+    setShowPolicyComparison(current => {
+      emit('policy_comparison_toggle', { open: !current })
+      return !current
+    })
+  }, [])
 
   const handleAdvance = useCallback(() => {
     const budgetRowsForSelection = buildBudgetRows(policyHistory, history, { year, sliders })
@@ -284,14 +268,46 @@ export default function GamePage({ sim }) {
                   event.currentTarget.src = '/bg.mp4'
                 }}
               />
+              {activePolicyKey && SCENE_HIGHLIGHTS[activePolicyKey] && (
+                <div
+                  className={s.sceneHighlightLayer}
+                  style={highlightStyle(SCENE_HIGHLIGHTS[activePolicyKey])}
+                  aria-hidden="true"
+                >
+                  <span className={s.sceneShade} />
+                  <span className={s.sceneHighlightRing} />
+                </div>
+              )}
             </div>
             <div className={s.rightStack}>
               <section className={s.systemCard}>
-                <img src="/system_dynamics_ja2.png" alt="システムダイナミクス図" />
+                <button
+                  type="button"
+                  className={`${s.policyComparisonButton} ${showPolicyComparison ? s.policyComparisonButtonActive : ''}`}
+                  aria-expanded={showPolicyComparison}
+                  aria-controls="policy-comparison-table"
+                  onClick={handlePolicyComparisonToggle}
+                >
+                  政策比較
+                </button>
+                <div
+                  className={`${s.systemFigure} ${activePolicyKey ? s.hasHighlight : ''}`}
+                  style={highlightStyle(POLICY_HIGHLIGHTS[activePolicyKey])}
+                >
+                  <img className={s.systemDiagram} src="/system_dynamics_ja2.png" alt="システムダイナミクス図" />
+                  {activePolicyKey && (
+                    <>
+                      <img className={s.highlightDiagram} src="/system_dynamics_ja2.png" alt="" aria-hidden="true" />
+                      <span className={s.highlightRing} aria-hidden="true" />
+                    </>
+                  )}
+                </div>
               </section>
-              <section className={s.policyTableCard}>
-                <img src="/policy-effects-table.png" alt="政策効果の比較表" />
-              </section>
+              {showPolicyComparison && (
+                <section id="policy-comparison-table" className={s.policyTableCard} aria-label="政策比較">
+                  <img src="/policy-effects-table.png" alt="政策効果の比較表" />
+                </section>
+              )}
             </div>
           </div>
         )}
@@ -311,29 +327,13 @@ export default function GamePage({ sim }) {
             residentInterviewLoading={residentInterviewLoading}
             onRequestResidentInterview={requestResidentInterview}
             rcpValue={rcpValue}
+            rightInset
             onSelectIndicator={(key) => {
               emit('detail_indicator_select', { indicator_key: key }, {
                 context: { phase: 'game', cycle, year, gameView: 'detail' },
               })
             }}
           />
-        )}
-        {policyPreview && POLICY_PREVIEW_IMAGES[policyPreview.key] && (
-          <div
-            className={s.policyPreview}
-            style={{
-              left: `${policyPreview.left}px`,
-              top: `${policyPreview.top}px`,
-              width: `${policyPreview.width}px`,
-            }}
-            aria-live="polite"
-          >
-            <img
-              className={s.policyPreviewImage}
-              src={`/causal-explorer-assets/policy-mini-maps/${lang === 'ja' ? 'ja' : 'en'}/${POLICY_PREVIEW_IMAGES[policyPreview.key].file}`}
-              alt={POLICY_PREVIEW_IMAGES[policyPreview.key].label[lang === 'ja' ? 'ja' : 'en']}
-            />
-          </div>
         )}
       </div>
 
@@ -342,7 +342,7 @@ export default function GamePage({ sim }) {
         mode={mode}
         sliders={sliders}
         onSliderChange={handleSliderChange}
-        onPreviewPolicy={handlePreviewPolicy}
+        onPolicySelect={handlePolicySelect}
         onAdvance={handleAdvance}
         loading={loading}
         year={year}
@@ -353,4 +353,14 @@ export default function GamePage({ sim }) {
       {error && <div className={s.errorBanner}>{error}</div>}
     </div>
   )
+}
+
+function highlightStyle(highlight) {
+  if (!highlight) return undefined
+  return {
+    '--spot-x': `${highlight.x}%`,
+    '--spot-y': `${highlight.y}%`,
+    '--spot-rx': `${highlight.rx}%`,
+    '--spot-ry': `${highlight.ry}%`,
+  }
 }
