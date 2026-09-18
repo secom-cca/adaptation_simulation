@@ -437,6 +437,7 @@ export function useSimulation() {
     residentInterviewLoading: {},
     lastEvaluationRequest: null,
     gameView: 'simple',
+    introDismissed: false,
     loading: false,
     error: null,
     exportDone: false,
@@ -498,6 +499,7 @@ export function useSimulation() {
       cycle: 1,
       exogenousOrder: order,
       gameView: 'simple',
+      introDismissed: false,
       exportDone: false,
       exportError: null,
       exportFilename: null,
@@ -944,6 +946,11 @@ export function useSimulation() {
     })
   }, [])
 
+  const dismissIntroduction = useCallback(() => {
+    emit('introduction_dismiss', {})
+    setGameState(s => ({ ...s, introDismissed: true }))
+  }, [])
+
   const dismissConsequence = useCallback(() => {
     setGameState(s => {
       const current = s.pendingEvents[0]
@@ -1009,6 +1016,7 @@ export function useSimulation() {
       residentInterviewCounts: {},
       residentInterviewLoading: {},
       lastEvaluationRequest: null,
+      introDismissed: false,
       exportDone: false,
       exportError: null,
       exportFilename: null,
@@ -1041,6 +1049,7 @@ export function useSimulation() {
     restart,
     skipSurveyAndRestart,
     setGameView,
+    dismissIntroduction,
     requestResidentInterview,
     showComparison,
     backToEnding,

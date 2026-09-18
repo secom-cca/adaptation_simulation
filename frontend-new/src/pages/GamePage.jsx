@@ -61,7 +61,15 @@ function backgroundVideoForState(policyHistory = [], sliders = {}) {
 }
 
 export default function GamePage({ sim }) {
-  const { gameState, advanceCycle, submitIntentSurvey, cancelIntentSurvey, setGameView, requestResidentInterview } = sim
+  const {
+    gameState,
+    advanceCycle,
+    submitIntentSurvey,
+    cancelIntentSurvey,
+    setGameView,
+    dismissIntroduction,
+    requestResidentInterview,
+  } = sim
   const {
     year,
     cycle,
@@ -86,6 +94,7 @@ export default function GamePage({ sim }) {
     intentSurveyYear,
     advanceResultReady = false,
     rcpValue,
+    introDismissed = false,
   } = gameState
 
   const view = gameView ?? 'simple'
@@ -341,20 +350,25 @@ export default function GamePage({ sim }) {
             }}
           />
         )}
+        {!introDismissed && view === 'simple' && (
+          <IntroductionOverlay onDismiss={dismissIntroduction} />
+        )}
       </div>
 
       {/* ── Fixed decision panel ── */}
-      <DecisionPanel
-        mode={mode}
-        sliders={sliders}
-        onSliderChange={handleSliderChange}
-        onPolicySelect={handlePolicySelect}
-        onAdvance={handleAdvance}
-        loading={loading}
-        year={year}
-        policyHistory={policyHistory}
-        budgetRow={currentBudgetRow}
-      />
+      {introDismissed && (
+        <DecisionPanel
+          mode={mode}
+          sliders={sliders}
+          onSliderChange={handleSliderChange}
+          onPolicySelect={handlePolicySelect}
+          onAdvance={handleAdvance}
+          loading={loading}
+          year={year}
+          policyHistory={policyHistory}
+          budgetRow={currentBudgetRow}
+        />
+      )}
 
       {error && <div className={s.errorBanner}>{error}</div>}
 
@@ -369,6 +383,58 @@ export default function GamePage({ sim }) {
           onBack={cancelIntentSurvey}
         />
       )}
+    </div>
+  )
+}
+
+function IntroductionOverlay({ onDismiss }) {
+  return (
+    <div className={s.introOverlay} role="dialog" aria-modal="true" aria-labelledby="introduction-title">
+      <div className={s.introPanel}>
+        <button type="button" className={s.introSkip} onClick={onDismiss}>スキップ</button>
+        <div className={`${s.introEyebrow} ${s.introReveal}`} style={{ '--intro-delay': '0ms' }}>
+          INTRODUCTION
+        </div>
+        <h1 id="introduction-title" className={s.introReveal} style={{ '--intro-delay': '450ms' }}>
+          あなたは、大きな河川を抱える地方自治体の<strong>政策決定者</strong>です。
+        </h1>
+        <p className={`${s.introLead} ${s.introReveal}`} style={{ '--intro-delay': '1050ms' }}>
+          2100年までを見据え、変わりゆく気候に地域を適応させる政策を決めてください。
+        </p>
+        <p className={`${s.introTurn} ${s.introReveal}`} style={{ '--intro-delay': '1650ms' }}>
+          政策方針を見直せるのは25年ごと。全3ターンです。
+        </p>
+
+        <div className={s.introPriorities}>
+          <div className={s.introReveal} style={{ '--intro-delay': '2250ms' }}>
+            <span>01</span>
+            <p><strong>洪水から守る</strong>降水パターンが変化し、極端な大雨が増えていきます。洪水被害を抑えてください。</p>
+          </div>
+          <div className={s.introReveal} style={{ '--intro-delay': '2950ms' }}>
+            <span>02</span>
+            <p><strong>暮らしと農業を支える</strong>農業生産を守り、地域住民が暮らし続けられる環境を維持してください。</p>
+          </div>
+          <div className={s.introReveal} style={{ '--intro-delay': '3650ms' }}>
+            <span>03</span>
+            <p><strong>環境と負担を考える</strong>生態系へのダメージと、公的出費による住民負担をできるだけ抑えてください。</p>
+          </div>
+        </div>
+
+        <p className={`${s.introFuture} ${s.introReveal}`} style={{ '--intro-delay': '4350ms' }}>
+          目の前の25年だけでなく、その先を生きる将来世代まで考えることがポイントです。
+        </p>
+        <p className={`${s.introClosing} ${s.introReveal}`} style={{ '--intro-delay': '5000ms' }}>
+          施策の組み合わせを探ってみましょう。
+        </p>
+        <button
+          type="button"
+          className={`${s.introStart} ${s.introReveal}`}
+          style={{ '--intro-delay': '5500ms' }}
+          onClick={onDismiss}
+        >
+          ゲームを始める
+        </button>
+      </div>
     </div>
   )
 }
