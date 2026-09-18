@@ -18,9 +18,11 @@ from models import (
     DecisionVar, CurrentValues, BlockRaw,
     IntermediateEvaluationRequest, IntermediateEvaluationResponse,
     ResidentCouncilResponse, ResidentInterviewRequest, ResidentInterviewResponse,
+    ScenarioExplorationRequest,
 )
 from intermediate_evaluation import generate_intermediate_evaluation
 from resident_council import generate_resident_council, generate_resident_interview
+from scenario_exploration import explore_scenarios
 from simulation import generate_ai_commentary, simulate_simulation, simulate_year
 from utils import calculate_scenario_indicators, aggregate_blocks
 
@@ -304,6 +306,11 @@ def compare_scenario_data(req: CompareRequest):
 @app.get("/scenarios")
 def list_scenarios():
     return {"scenarios": list(scenarios_data.keys())}
+
+
+@app.post("/scenario-exploration")
+def run_scenario_exploration(req: ScenarioExplorationRequest):
+    return _json_safe(explore_scenarios(req.mode, req.rcp_value))
 
 @app.get("/export/{scenario_name}")
 def export_scenario_data(scenario_name: str):

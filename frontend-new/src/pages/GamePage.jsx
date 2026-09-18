@@ -3,6 +3,7 @@ import TopBar from '../components/TopBar/TopBar.jsx'
 import DetailPanel from '../components/DetailPanel/DetailPanel.jsx'
 import DecisionPanel from '../components/DecisionPanel/DecisionPanel.jsx'
 import ImageLightbox from '../components/ImageLightbox/ImageLightbox.jsx'
+import ModelDetails from '../components/ModelDetails/ModelDetails.jsx'
 import { buildBudgetRows, findAllowedPolicyPoints } from '../data/budget.js'
 import { emit, setLogContext } from '../logging/operationLog.js'
 import IntentSurveyModal from '../components/IntentSurvey/IntentSurveyModal.jsx'
@@ -102,6 +103,7 @@ export default function GamePage({ sim }) {
   const [hasNewResults, setHasNewResults] = useState(false)
   const [activePolicyKey, setActivePolicyKey] = useState(null)
   const [showPolicyComparison, setShowPolicyComparison] = useState(false)
+  const [showModelDetails, setShowModelDetails] = useState(false)
   const [lightbox, setLightbox] = useState(null)
   const prevLoadingRef = useRef(false)
 
@@ -199,6 +201,17 @@ export default function GamePage({ sim }) {
       emit('policy_comparison_toggle', { open: !current })
       return !current
     })
+  }, [])
+
+  const handleModelDetailsOpen = useCallback(() => {
+    setShowPolicyComparison(false)
+    setShowModelDetails(true)
+    emit('model_details_open', {})
+  }, [])
+
+  const handleModelDetailsClose = useCallback(() => {
+    setShowModelDetails(false)
+    emit('model_details_close', {})
   }, [])
 
   const handleAdvance = useCallback(() => {
@@ -320,15 +333,25 @@ export default function GamePage({ sim }) {
             </div>
             <div className={s.rightStack}>
               <section className={s.systemCard}>
-                <button
-                  type="button"
-                  className={`${s.policyComparisonButton} ${showPolicyComparison ? s.policyComparisonButtonActive : ''}`}
-                  aria-expanded={showPolicyComparison}
-                  aria-controls="policy-comparison-table"
-                  onClick={handlePolicyComparisonToggle}
-                >
-                  政策比較
-                </button>
+                <div className={s.systemActions}>
+                  <button
+                    type="button"
+                    className={`${s.policyComparisonButton} ${showPolicyComparison ? s.policyComparisonButtonActive : ''}`}
+                    aria-expanded={showPolicyComparison}
+                    aria-controls="policy-comparison-table"
+                    onClick={handlePolicyComparisonToggle}
+                  >
+                    政策比較
+                  </button>
+                  <button
+                    type="button"
+                    className={s.modelDetailsButton}
+                    aria-haspopup="dialog"
+                    onClick={handleModelDetailsOpen}
+                  >
+                    モデル詳細
+                  </button>
+                </div>
                 <button
                   type="button"
                   className={`${s.systemFigure} ${s.expandableImage} ${activePolicyKey ? s.hasHighlight : ''}`}
@@ -431,6 +454,10 @@ export default function GamePage({ sim }) {
         alt={lightbox?.alt}
         onClose={closeLightbox}
       />
+
+      {showModelDetails && (
+        <ModelDetails rcpValue={rcpValue} onClose={handleModelDetailsClose} />
+      )}
     </div>
   )
 }

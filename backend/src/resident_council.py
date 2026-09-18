@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import re
 from typing import Any, Dict, List
 
@@ -30,7 +31,7 @@ RESIDENT_COUNCIL_MODEL = INTERMEDIATE_EVALUATION_MODEL
 RESIDENT_COUNCIL_MODEL_ATTEMPTS = (
     (
         RESIDENT_COUNCIL_MODEL,
-        {"temperature": 0.3, "num_predict": 320},
+        {"temperature": 0.8, "top_p": 0.95, "repeat_penalty": 1.12, "num_predict": 320},
         20.0,
     ),
 )
@@ -66,6 +67,29 @@ PERSONAS: Dict[str, Dict[str, str]] = {
 }
 
 PERSONA_KEYS = tuple(PERSONAS.keys())
+_RANDOM = random.SystemRandom()
+
+POST_STYLE_HINTS_JA = (
+    "最初に感情を短く吐き出し、その理由を一つだけ続ける",
+    "暮らしの中で目に浮かぶ一場面から始め、説明しすぎずに終える",
+    "身近な誰かへ話しかけるように書き、最後に小さな問いを残す",
+    "良かった点と割り切れない点を一つずつ、少し迷いのある口調で書く",
+    "短い独り言のように、言い切りと余韻を組み合わせる",
+    "驚き、悔しさ、安堵のどれかを先に出し、数字ではなく生活の変化で語る",
+    "具体的な音、天気、作業、生きものの様子のどれか一つを入口にする",
+    "少し率直な愚痴や注文を交えつつ、その人なりの希望もにじませる",
+)
+
+POST_STYLE_HINTS_EN = (
+    "Open with a brief emotional reaction, then give just one reason",
+    "Begin with one vivid everyday scene and end without over-explaining",
+    "Write as if speaking to a neighbor and leave a small question at the end",
+    "Mention one encouraging sign and one unresolved concern in a hesitant voice",
+    "Use the rhythm of a short inner monologue, mixing certainty with a trailing thought",
+    "Lead with surprise, frustration, or relief and describe a lived change rather than a statistic",
+    "Open with one sound, weather detail, task, or sign of wildlife",
+    "Include one candid complaint or request while allowing a little hope to show",
+)
 
 SYSTEM_PROMPT_JA = """
 あなたは地域のAI住民評議会です。
@@ -77,14 +101,17 @@ SYSTEM_PROMPT_JA = """
 - residents の各要素は persona_key, score, short_voice だけを持ってください。
 - persona_key は riverside_resident, farmer, environmentalist の3つを必ず1回ずつ使ってください。
 - score は必ず 1 から 10 の整数にしてください。5は中立、6以上は満足寄り、4以下は不満寄りです。
-- short_voice は各ペルソナの一人称の短い一言にしてください。
-- short_voice は25年データの実感に結びつけ、一般論だけにしないでください。
-- short_voice は、重大イベントを振り返る一言、またはこの先の暮らしへの見通しがにじむ一言にしてください。
-- short_voice は「満足しています」「心配です」だけの定型文にせず、ペルソナの口から出る熱のある一文にしてください。
-- 3人の short_voice は同じ文型にせず、怒り、不安、希望、納得、悔しさなどをスコアに合わせて出し分けてください。
-- 可能なら具体的なイベント年、政策の手応え、被害、収穫、負担、猛暑、防災能力などを1つ入れてください。
+- short_voice は「行政への回答」ではなく、その住民がスマートフォンから今投稿した自然なSNS文にしてください。
+- 目安は日本語45〜100文字です。1〜2文で、会話に近い言葉、ためらい、言い切り、余韻を自然に使ってください。
+- 「私は〜として」「〜と評価します」「政策の手応え」「指標を見ると」など、報告書・会議・AIらしい言い回しは禁止です。
+- 判断材料の文章をコピーせず、雨音、家、避難、田畑、収穫、川、森、生きものなど、本人が暮らしで見聞きする言葉に置き換えてください。
+- 25年データの実感に結びつけつつ、数字を詰め込んだ説明文にはしないでください。具体的な年や出来事は、投稿として自然な場合に1つだけ使ってください。
+- スコアや「満足度7点」のような採点結果を本文で言い直さないでください。
+- 河川付近の住民は家族・住まい・雨や避難の実感、農家は作物・水・暑さ・次の作付け、環境活動家は川・森・生きものと将来への責任を軸にしてください。
+- 3人の文頭・文末・長さを揃えず、怒り、不安、安堵、希望、悔しさなどをスコアに合わせて出し分けてください。
+- 絵文字やハッシュタグは必須ではありません。使う場合も投稿全体でごく控えめにしてください。
 - 対象期間外の具体年、実在しない出来事、固定されていない年齢設定は作らないでください。
-- 市民の声は、満足、怒り、不安、悲痛な叫び、具体的な経験の吐露など、データとペルソナに合う自然な反応にしてください。
+- 読んだ人が「実際にこの地域で暮らす人の投稿」と感じる、少し不完全でも体温のある言葉にしてください。
 """.strip()
 
 SYSTEM_PROMPT_EN = """
@@ -97,12 +124,14 @@ Required rules:
 - Each resident object must include only persona_key, score, and short_voice.
 - Use each persona_key exactly once: riverside_resident, farmer, environmentalist.
 - score must be an integer from 1 to 10. 5 means neutral, 6-10 satisfied, 1-4 dissatisfied.
-- short_voice must sound like that persona's immediate first-person reaction.
-- Ground short_voice in the 25-year data, not generic commentary.
-- Make short_voice either look back at a major event or reveal that persona's outlook for life ahead.
-- Do not use bland stock phrases. Make each short_voice one vivid sentence with persona-specific emotion.
-- Do not give all three residents the same sentence structure.
-- Include one concrete event year, policy effect, damage, harvest, burden, heat, or preparedness detail where possible.
+- short_voice must read like a real social-media post typed by that resident, not an answer to a government survey.
+- Keep it to roughly 15-35 words and one or two conversational sentences. Natural hesitation, fragments, and emotional punctuation are welcome.
+- Avoid report-like language such as "as a resident," "I evaluate," "policy effectiveness," or "the indicator shows."
+- Translate the evidence into lived details: rain at home and evacuation, crops and the next planting, or changes in the river, forest, and wildlife.
+- Ground the post in the 25-year evidence without cramming it with numbers. Mention at most one year or concrete event when it sounds natural.
+- Never restate the numerical score in short_voice.
+- Give the three personas distinct openings, endings, rhythms, and emotions rather than a shared template.
+- Emoji and hashtags are optional and should be very rare.
 - Do not invent specific years outside the target period, fictional events, or exact ages not provided.
 """.strip()
 
@@ -487,15 +516,39 @@ def _build_fallback_short_voice(persona_key: str, score: int, req: IntermediateE
 
     if persona_key == "riverside_resident":
         if score >= 7:
-            return f"{flood_year}の怖さは残るが、{policy_clause}なら、川のそばで暮らし続ける安心につながる。"
-        return f"{flood_year}の被害を見れば、次の雨で家から安全に逃げられるのか不安が消えない。"
+            return _RANDOM.choice((
+                f"{flood_year}の雨は本当に怖かった。でも、{policy_clause}なら、ここで暮らし続けられるかもしれない。",
+                f"雨のたびに身構えていたけど、{policy_clause}のは少し心強い。次もちゃんと家族で逃げられますように。",
+                f"川のそばを離れるべきか迷っていた。{policy_clause}なら、もう少しここで暮らしてみたい。",
+            ))
+        return _RANDOM.choice((
+            f"{flood_year}の水害、今でも強い雨音を聞くと思い出す。次は家族みんなで逃げ切れるのかな…。",
+            f"またあの雨が来たらと思うと眠れない。家も避難路も、本当に間に合う備えになっているんだろうか。",
+            f"川は好きだけど、今は雨雲を見るだけで怖い。ここで暮らし続けて大丈夫、とまだ言い切れない。",
+        ))
     if persona_key == "farmer" and score >= 7:
-        return f"{crop_year}の落ち込みを越えて{policy_clause}と感じられるなら、田畑を次に渡す言葉がまだ残る。"
+        return _RANDOM.choice((
+            f"{crop_year}は収穫が落ちて参ったけど、{policy_clause}。これなら田畑を次に渡せそうだ。",
+            f"暑い年も水の少ない年も楽じゃない。それでも{policy_clause}なら、次の作付けを考える気になれる。",
+            f"今年の畑を見て、まだやれると思えた。{policy_clause}のが、ようやく収穫にもつながってきた気がする。",
+        ))
     if persona_key == "farmer":
-        return f"{crop_year}の収穫の落ち込みは忘れられない。このままでは農業を続ける判断が揺らぐ。"
+        return _RANDOM.choice((
+            f"{crop_year}の不作がまだ響いてる。このままじゃ、来年も作るぞって胸を張れない。",
+            "朝から畑に出ても、暑さと水の心配ばかりだ。次の作付けまで同じやり方で持つんだろうか。",
+            "収穫箱の軽さを見るのがつらい。対策していると言われても、畑で実感できなきゃ続けられないよ。",
+        ))
     if score >= 7:
-        return f"{ecosystem_year}を底に、{policy_clause}と読めるなら、流域の自然を戻す道は残っている。"
-    return f"{ecosystem_year}の生態系を見過ごして治水だけ進めても、川と森を守ったことにはならない。"
+        return _RANDOM.choice((
+            f"{ecosystem_year}を底に、{policy_clause}。川も森も、まだ取り戻せると思いたい。",
+            f"川辺に生きものの気配が戻ると、やっぱりうれしい。{policy_clause}なら、この流れを止めたくない。",
+            f"森と川はすぐには戻らない。それでも{policy_clause}のなら、今やめる理由はないと思う。",
+        ))
+    return _RANDOM.choice((
+        f"{ecosystem_year}の川の弱り方を見て、治水だけ進めていいとは思えない。森も生きものも置いていかないで。",
+        "水害を防ぐことは大事。でも、静かになった川辺を見ると、失っているものにも目を向けてほしい。",
+        "川を固めて安全になった、それだけで終わり？ 森も魚も含めて次の世代へ渡せる流域にしたい。",
+    ))
 
 
 def _normalize_interview_focus(req: ResidentInterviewRequest) -> str:
@@ -651,10 +704,17 @@ def _persona_evidence_lines(req: IntermediateEvaluationRequest) -> List[str]:
     return lines
 
 
+def _post_style_lines(is_english: bool) -> List[str]:
+    hints = POST_STYLE_HINTS_EN if is_english else POST_STYLE_HINTS_JA
+    selected = _RANDOM.sample(hints, k=len(PERSONA_KEYS))
+    return [f"- {key}: {hint}" for key, hint in zip(PERSONA_KEYS, selected)]
+
+
 def _build_resident_council_prompt(req: IntermediateEvaluationRequest) -> str:
     decision_var = req.decision_var.model_dump()
     policy_summary = _build_policy_summary(decision_var)
     persona_evidence = _persona_evidence_lines(req)
+    post_styles = _post_style_lines(req.language.lower().startswith("en"))
 
     if req.language.lower().startswith("en"):
         return f"""
@@ -665,8 +725,10 @@ Policies:
 {chr(10).join(policy_summary)}
 Evidence:
 {chr(10).join(persona_evidence)}
+Writing variation for this response (do not quote these instructions):
+{chr(10).join(post_styles)}
 
-Score each persona from their own priorities. Write one brief first-person sentence using the evidence.
+Score each persona from their own priorities. Turn the evidence into a brief, natural social-media post in that resident's everyday voice; do not summarize it like an analyst.
 Return all three residents as JSON only.
 """.strip()
 
@@ -678,8 +740,10 @@ Return all three residents as JSON only.
 {chr(10).join(policy_summary)}
 判断材料:
 {chr(10).join(persona_evidence)}
+今回の投稿スタイル（この指示自体は本文に書かないこと）:
+{chr(10).join(post_styles)}
 
-各自の重視点から1〜10で採点し、根拠を反映した一人称の短い一文を書いてください。
+各自の重視点から1〜10で採点してください。判断材料を分析文として要約せず、その住民が暮らしの中で思わず投稿したような、自然で口語的な短いSNS文に言い換えてください。
 3名全員をJSONだけで返してください。
 """.strip()
 

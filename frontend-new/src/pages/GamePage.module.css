@@ -377,11 +377,18 @@
   object-fit: contain;
 }
 
-.policyComparisonButton {
+.systemActions {
   position: absolute;
   z-index: 5;
   top: 12px;
   right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.policyComparisonButton,
+.modelDetailsButton {
   min-height: 34px;
   padding: 7px 14px;
   border: 1px solid rgba(44, 79, 65, 0.3);
@@ -398,13 +405,15 @@
 }
 
 .policyComparisonButton:hover,
+.modelDetailsButton:hover,
 .policyComparisonButtonActive {
   background: #315846;
   color: white;
   box-shadow: 0 5px 16px rgba(31, 42, 36, 0.2);
 }
 
-.policyComparisonButton:focus-visible {
+.policyComparisonButton:focus-visible,
+.modelDetailsButton:focus-visible {
   outline: 3px solid rgba(255, 173, 35, 0.65);
   outline-offset: 2px;
 }

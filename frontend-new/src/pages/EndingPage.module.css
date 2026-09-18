@@ -446,11 +446,12 @@
 /* Buttons */
 .endingActions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 .detailBtn,
+.exploreBtn,
 .compareBtn,
 .restartBtn {
   padding: 14px 16px;
@@ -475,6 +476,13 @@
   background: rgba(255, 255, 255, 0.88);
   color: var(--color-accent);
   border: 1px solid var(--color-accent);
+}
+
+.exploreBtn {
+  border: 0;
+  background: #4a7a5c;
+  color: white;
+  box-shadow: 0 10px 24px rgba(42, 80, 60, 0.16);
 }
 
 .surveyBtn {
@@ -510,6 +518,7 @@
 }
 
 .detailBtn:hover,
+.exploreBtn:hover,
 .compareBtn:hover,
 .restartBtn:hover {
   opacity: 0.88;
@@ -517,6 +526,7 @@
 }
 
 .detailBtn:active,
+.exploreBtn:active,
 .compareBtn:active,
 .restartBtn:active {
   transform: translateY(0);

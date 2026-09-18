@@ -75,6 +75,11 @@ class CompareResponse(BaseModel):
     comparison: Dict[str, Any]
 
 
+class ScenarioExplorationRequest(BaseModel):
+    mode: str = "team"
+    rcp_value: float = 4.5
+
+
 class IntermediateEvaluationRequest(BaseModel):
     stage_index: int
     checkpoint_year: int

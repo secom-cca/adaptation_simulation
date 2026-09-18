@@ -937,6 +937,22 @@ export function useSimulation() {
     setGameState(s => ({ ...s, phase: 'final_detail' }))
   }, [gameState.cycle, gameState.year])
 
+  const openScenarioExploration = useCallback(() => {
+    emit('scenario_exploration_open', {})
+    emit('phase_leave', { phase: 'ending', next_phase: 'scenario_exploration' }, { source: 'system' })
+    setLogContext({ phase: 'scenario_exploration', cycle: gameState.cycle, year: gameState.year })
+    emit('phase_enter', { phase: 'scenario_exploration' }, { source: 'system' })
+    setGameState(s => ({ ...s, phase: 'scenario_exploration' }))
+  }, [gameState.cycle, gameState.year])
+
+  const backFromScenarioExploration = useCallback(() => {
+    emit('scenario_exploration_back', {})
+    emit('phase_leave', { phase: 'scenario_exploration', next_phase: 'ending' }, { source: 'system' })
+    setLogContext({ phase: 'ending', cycle: gameState.cycle, year: gameState.year })
+    emit('phase_enter', { phase: 'ending' }, { source: 'system' })
+    setGameState(s => ({ ...s, phase: 'ending' }))
+  }, [gameState.cycle, gameState.year])
+
   const backFromFinalDetails = useCallback(() => {
     emit('final_details_back', {})
     emit('phase_leave', { phase: 'final_detail', next_phase: 'ending' }, { source: 'system' })
@@ -1089,6 +1105,8 @@ export function useSimulation() {
     dismissIntroduction,
     requestResidentInterview,
     showComparison,
+    openScenarioExploration,
+    backFromScenarioExploration,
     openFinalDetails,
     backFromFinalDetails,
     backToEnding,

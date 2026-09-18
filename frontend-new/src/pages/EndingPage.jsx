@@ -51,7 +51,7 @@ function MetricSection({ metric, player, rcp, scenarioLabel }) {
   </section>
 }
 
-export default function EndingPage({ sim, onCompare, onOpenDetails, onOpenSurvey, onRetryExport }) {
+export default function EndingPage({ sim, onCompare, onExplore, onOpenDetails, onOpenSurvey, onRetryExport }) {
   const { t } = useTranslation()
   const { history = [], baselineHistory = [], currentClimateHistory = [], userName, mode, rcpValue, policyHistory = [], exportDone, exportError, exportFilename, surveySubmitted } = sim.gameState
   const scenarioLabel = rcpValue === 'composite' ? 'RCP4.5（複合）' : `RCP${rcpValue}`
@@ -71,6 +71,7 @@ export default function EndingPage({ sim, onCompare, onOpenDetails, onOpenSurvey
     <section className={s.policySummary}><div className={s.policyTitle}>政策履歴</div>{policies.map(x => <div className={s.policyRow} key={x.turn}><strong>{x.turn}</strong><span>{x.text}</span></div>)}</section>
     <div className={s.endingActions}>
       <button className={s.detailBtn} onClick={onOpenDetails} type="button">詳細グラフを見る</button>
+      <button className={s.exploreBtn} onClick={onExplore} type="button">シナリオ探索</button>
       <button className={s.compareBtn} onClick={onCompare}>参加者結果を見る</button>
       <button className={s.surveyBtn} onClick={onOpenSurvey} type="button">{surveySubmitted ? t('ending.survey.done') : t('ending.survey')}</button>
     </div>

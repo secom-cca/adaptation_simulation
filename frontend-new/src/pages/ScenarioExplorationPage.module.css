@@ -1,0 +1,102 @@
+.page {
+  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 38px 24px 60px;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(61,107,143,.12), transparent 32%),
+    radial-gradient(circle at 90% 12%, rgba(74,140,92,.11), transparent 32%),
+    var(--color-bg);
+}
+
+.content { width: min(1180px, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.headerRow { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.headerRow h1 { margin: 7px 0 6px; font-size: clamp(28px, 4vw, 42px); color: var(--color-text-primary); }
+.headerRow p { margin: 0; color: var(--color-text-secondary); line-height: 1.7; }
+.kicker { font-size: 11px; font-weight: 900; letter-spacing: .16em; color: var(--color-accent); }
+.backButton { flex-shrink: 0; padding: 11px 17px; border: 1px solid var(--color-accent); border-radius: 14px; background: rgba(255,255,255,.85); color: var(--color-accent); font-weight: 800; cursor: pointer; }
+
+.stateCard, .methodCard, .chartCard, .paretoSection, .representativeSection {
+  border: 1px solid rgba(84,103,120,.14);
+  border-radius: 22px;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 12px 30px rgba(42,56,70,.09);
+}
+.stateCard { min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--color-text-secondary); }
+.spinner { width: 32px; height: 32px; border: 3px solid rgba(61,107,143,.18); border-top-color: var(--color-accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.methodCard { padding: 17px 20px; display: grid; grid-template-columns: 1fr auto; gap: 5px 18px; }
+.methodCard strong { font-size: 16px; color: var(--color-text-primary); }
+.methodCard p { grid-column: 1 / -1; margin: 0; color: var(--color-text-secondary); font-size: 12px; line-height: 1.65; }
+.methodCard span { grid-column: 2; grid-row: 1; font-size: 12px; font-weight: 800; color: var(--color-accent); }
+
+.rangeGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.rangeCard { padding: 15px 16px; border-radius: 18px; background: rgba(255,255,255,.92); border: 1px solid rgba(84,103,120,.13); box-shadow: 0 8px 22px rgba(42,56,70,.08); display: flex; flex-direction: column; gap: 7px; }
+.rangeCard > span { font-size: 11px; font-weight: 800; color: var(--color-text-secondary); }
+.rangeCard strong { font-size: 17px; line-height: 1.3; color: var(--color-text-primary); }
+.rangeCard small { color: var(--color-accent); font-weight: 800; }
+
+.chartCard, .paretoSection, .representativeSection { padding: 20px; }
+.sectionHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 12px; }
+.sectionHeading span { font-size: 10px; font-weight: 900; letter-spacing: .12em; color: var(--color-accent); }
+.sectionHeading h2 { margin: 3px 0 0; font-size: 20px; color: var(--color-text-primary); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; }
+.legend span { display: inline-flex; gap: 5px; align-items: center; color: var(--color-text-secondary); letter-spacing: 0; }
+.legend i { width: 9px; height: 9px; border-radius: 50%; }
+.normalDot { background: rgba(61,107,143,.45); }
+.paretoDot { background: #4a8c5c; }
+.playerDot { background: #bf4545; }
+.axisControls { display: flex; align-items: flex-end; justify-content: center; gap: 10px; padding: 7px 10px 2px; }
+.axisControls label { display: flex; flex-direction: column; gap: 4px; color: var(--color-text-secondary); font-size: 10px; font-weight: 800; }
+.axisControls select { min-width: 240px; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: 9px; background: white; color: var(--color-text-primary); font-size: 12px; font-weight: 700; }
+.axisControls button { width: 34px; height: 34px; border: 1px solid var(--color-border); border-radius: 9px; background: rgba(61,107,143,.07); color: var(--color-accent); font-size: 18px; cursor: pointer; }
+.chartWrap { height: 455px; }
+.chartNote { margin: 5px 0 0; font-size: 11px; color: var(--color-text-secondary); text-align: center; }
+.chartTooltip { padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.97); box-shadow: 0 5px 20px rgba(30,45,55,.18); display: flex; flex-direction: column; gap: 3px; font-size: 11px; }
+.chartTooltip strong { color: var(--color-text-primary); }
+.chartTooltip b { color: #3f7a50; }
+
+.threeDControls { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin: -4px 0 6px; }
+.threeDControls span { color: var(--color-text-secondary); font-size: 10px; font-weight: 700; }
+.threeDControls button { padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 8px; background: white; color: var(--color-accent); font-size: 10px; font-weight: 800; cursor: pointer; }
+.threeDWrap { width: 100%; overflow-x: auto; border-radius: 14px; background: linear-gradient(180deg, rgba(61,107,143,.035), rgba(74,140,92,.025)); }
+.threeDWrap svg { display: block; width: 100%; min-width: 680px; height: auto; cursor: grab; touch-action: none; user-select: none; }
+.threeDWrap svg:active { cursor: grabbing; }
+.cubeLines line { stroke: rgba(73,91,104,.3); stroke-width: 1.2; stroke-dasharray: 5 5; }
+.cubeLabels text { fill: var(--color-text-secondary); font-size: 13px; font-weight: 800; }
+.threeDPoint { fill: rgba(61,107,143,.34); }
+.threeDParetoPoint { fill: #4a8c5c; stroke: rgba(255,255,255,.9); stroke-width: 1; }
+.threeDPlayerPoint { fill: #bf4545; stroke: white; stroke-width: 1.5; }
+
+.representativeGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.representativeCard { border: 1px solid rgba(84,103,120,.13); border-radius: 16px; padding: 15px; min-width: 0; }
+.representativeCard h3 { margin: 0 0 12px; font-size: 16px; color: var(--color-accent); }
+.pathDetail { display: flex; flex-direction: column; gap: 13px; }
+.pathMetrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.pathMetrics span { padding: 8px; border-radius: 9px; background: rgba(61,107,143,.06); color: var(--color-text-secondary); font-size: 9px; }
+.pathMetrics strong { display: block; margin-top: 3px; color: var(--color-text-primary); font-size: 12px; }
+.turnList { display: flex; flex-direction: column; gap: 7px; }
+.turnRow { display: grid; grid-template-columns: 78px 1fr; gap: 9px; padding-top: 7px; border-top: 1px solid rgba(84,103,120,.12); }
+.turnRow > strong { font-size: 11px; color: var(--color-text-primary); }
+.turnRow span { color: var(--color-accent); font-size: 10px; font-weight: 800; }
+.turnRow p { margin: 2px 0 0; color: var(--color-text-secondary); font-size: 10px; line-height: 1.5; }
+.paretoSection select { max-width: 260px; padding: 9px 11px; border: 1px solid var(--color-border); border-radius: 10px; background: white; color: var(--color-text-primary); font-weight: 700; }
+
+@media (max-width: 900px) {
+  .rangeGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .representativeGrid { grid-template-columns: 1fr; }
+  .pathMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .page { padding: 24px 12px 40px; }
+  .headerRow, .sectionHeading { flex-direction: column; align-items: stretch; }
+  .rangeGrid { grid-template-columns: 1fr; }
+  .methodCard { grid-template-columns: 1fr; }
+  .methodCard span { grid-column: 1; grid-row: auto; }
+  .chartWrap { height: 340px; }
+  .axisControls { align-items: stretch; flex-direction: column; }
+  .axisControls select { width: 100%; min-width: 0; }
+  .axisControls button { align-self: center; transform: rotate(90deg); }
+}

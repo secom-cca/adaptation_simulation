@@ -4,6 +4,12 @@ import { useTranslation } from '../../contexts/LanguageContext.jsx'
 import { CHART_KEYS, fmtY } from '../../data/indicators.js'
 import s from './DetailPanel.module.css'
 
+const CLIMATE_INDICATOR_KEYS = new Set([
+  'Temperature (°C)',
+  'Precipitation (mm)',
+  'Extreme Precip Frequency',
+])
+
 export default function DetailPanel({
   history,
   sensitivityHistories = {},
@@ -23,18 +29,55 @@ export default function DetailPanel({
   rightInset = false,
 }) {
   const { t, lang } = useTranslation()
-  const [activeKey, setActiveKey] = useState('Flood Damage JPY')
+  const [activeOutcomeKey, setActiveOutcomeKey] = useState('Flood Damage JPY')
+  const [activeClimateKey, setActiveClimateKey] = useState('Temperature (°C)')
 
   const lowByYear = new Map((sensitivityHistories[1.9] ?? []).map(row => [row.year, row]))
   const highByYear = new Map((sensitivityHistories[8.5] ?? []).map(row => [row.year, row]))
-  const chartData = history.map(row => ({
-    year: row.year,
-    value: row[activeKey] ?? 0,
-    low: lowByYear.get(row.year)?.[activeKey] ?? null,
-    high: highByYear.get(row.year)?.[activeKey] ?? null,
-  }))
-  const activeInd = CHART_KEYS.find(i => i.key === activeKey)
-  const activeLabel = lang === 'ja' ? activeInd?.labelJa : activeInd?.labelEn
+  const outcomeIndicators = CHART_KEYS.filter(indicator => !CLIMATE_INDICATOR_KEYS.has(indicator.key))
+  const climateIndicators = CHART_KEYS.filter(indicator => CLIMATE_INDICATOR_KEYS.has(indicator.key))
+
+  const renderIndicatorChip = (indicator, activeKey, setActiveKey) => (
+    <button key={indicator.key} className={`${s.chip} ${activeKey === indicator.key ? s.chipActive : ''}`}
+      style={activeKey === indicator.key ? { borderColor: indicator.color, color: indicator.color, background: `${indicator.color}12` } : {}}
+      onClick={() => {
+        setActiveKey(indicator.key)
+        onSelectIndicator?.(indicator.key)
+      }}>
+      {lang === 'ja' ? indicator.labelJa : indicator.labelEn}
+    </button>
+  )
+
+  const renderTimeSeriesChart = (activeKey) => {
+    const activeIndicator = CHART_KEYS.find(indicator => indicator.key === activeKey)
+    const activeLabel = lang === 'ja' ? activeIndicator?.labelJa : activeIndicator?.labelEn
+    const chartData = history.map(row => ({
+      year: row.year,
+      value: row[activeKey] ?? 0,
+      low: lowByYear.get(row.year)?.[activeKey] ?? null,
+      high: highByYear.get(row.year)?.[activeKey] ?? null,
+    }))
+
+    if (chartData.length === 0) return <div className={s.empty}>{t('detail.chart.empty')}</div>
+
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: -10 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+          <XAxis dataKey="year" tick={{ fontSize: 10 }} />
+          <YAxis tick={{ fontSize: 10 }} width={70} tickFormatter={fmtY} />
+          <Tooltip
+            contentStyle={{ fontSize: 12, borderRadius: 8 }}
+            formatter={value => [typeof value === 'number' ? fmtY(value) : value, activeLabel]}
+          />
+          <Line type="monotone" dataKey="value" stroke={activeIndicator?.color ?? '#888'}
+            name={scenarioLabel} strokeWidth={3} dot={false} activeDot={{ r: 4 }} />
+          {rcpValue === 'composite' && <Line type="monotone" dataKey="low" name="RCP1.9" stroke="#6f9fc8" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />}
+          {rcpValue === 'composite' && <Line type="monotone" dataKey="high" name="RCP8.5" stroke="#c77a68" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />}
+        </LineChart>
+      </ResponsiveContainer>
+    )
+  }
 
   const residents = residentCouncil?.residents ?? []
   const latestRows = history.slice(-25)
@@ -51,39 +94,25 @@ export default function DetailPanel({
           <span className={s.cellTitle}>{t('detail.chart.title')}</span>
           <span className={s.cellSubtitle}>{t('detail.chart.sub')}</span>
         </div>
-        <div className={s.chipRow}>
-          <span className={s.chipGroupLabel}>{lang === 'ja' ? '結果' : 'OUTCOME'}</span>
-          {CHART_KEYS.map(i => (
-            <button key={i.key} className={`${s.chip} ${activeKey === i.key ? s.chipActive : ''}`}
-              style={activeKey === i.key ? { borderColor: i.color, color: i.color, background: `${i.color}12` } : {}}
-              onClick={() => {
-                setActiveKey(i.key)
-                onSelectIndicator?.(i.key)
-              }}>
-              {lang === 'ja' ? i.labelJa : i.labelEn}
-            </button>
-          ))}
-        </div>
-        <div className={s.chartWrap}>
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
-                <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} width={70} tickFormatter={fmtY} />
-                <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  formatter={v => [typeof v === 'number' ? fmtY(v) : v, activeLabel]}
-                />
-                <Line type="monotone" dataKey="value" stroke={activeInd?.color ?? '#888'}
-                  name={scenarioLabel} strokeWidth={3.2} dot={false} activeDot={{ r: 4 }} />
-                {rcpValue === 'composite' && <Line type="monotone" dataKey="low" name="RCP1.9" stroke="#6f9fc8" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />}
-                {rcpValue === 'composite' && <Line type="monotone" dataKey="high" name="RCP8.5" stroke="#c77a68" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />}
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className={s.empty}>{t('detail.chart.empty')}</div>
-          )}
+        <div className={s.chartStack}>
+          <section className={s.chartSection}>
+            <div className={s.chipRow}>
+              <span className={s.chipGroupLabel}>{lang === 'ja' ? '結果・状態' : 'OUTCOME & STATE'}</span>
+              {outcomeIndicators.map(indicator => renderIndicatorChip(indicator, activeOutcomeKey, setActiveOutcomeKey))}
+            </div>
+            <div className={s.chartWrap}>
+              {renderTimeSeriesChart(activeOutcomeKey)}
+            </div>
+          </section>
+          <section className={s.chartSection}>
+            <div className={s.chipRow}>
+              <span className={s.chipGroupLabel}>{lang === 'ja' ? '気候' : 'CLIMATE'}</span>
+              {climateIndicators.map(indicator => renderIndicatorChip(indicator, activeClimateKey, setActiveClimateKey))}
+            </div>
+            <div className={s.chartWrap}>
+              {renderTimeSeriesChart(activeClimateKey)}
+            </div>
+          </section>
         </div>
       </div>
 
@@ -110,7 +139,7 @@ export default function DetailPanel({
                 <div className={s.snsBody}>
                   <div className={s.snsUserRow}>
                     <div className={s.snsUser}>{resident.display_name} <span>{resident.handle}</span></div>
-                    <div className={`${s.scoreBadge} ${getScoreBadgeClass(resident.score)}`}>{resident.score}/10</div>
+                    <StarRating score={resident.score} lang={lang} />
                   </div>
                   <div className={s.snsText}>{resident.short_voice}</div>
                   <div className={s.snsMeta}>{resident.focus}</div>
@@ -130,9 +159,9 @@ export default function DetailPanel({
         </div>
         {latestRows.length > 0 && <div className={s.periodSummary}>
           <strong>{year - 25}–{year - 1} 実績</strong>
-          <span>洪水被害額（25年累計）<b>{Math.round(periodSummary.flood).toLocaleString()} 円</b></span>
-          <span>農作物生産高（25年平均）<b>{periodSummary.crop.toLocaleString(undefined, { maximumFractionDigits: 1 })}</b></span>
-          <span>生態系（25年平均）<b>{periodSummary.ecosystem.toLocaleString(undefined, { maximumFractionDigits: 1 })}</b></span>
+          <span>洪水被害額（25年累計）<b>{(periodSummary.flood / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })} 億円</b></span>
+          <span>農作物生産高（25年平均）<b>{periodSummary.crop.toLocaleString(undefined, { maximumFractionDigits: 1 })} kg/ha</b></span>
+          <span>生態系（25年平均）<b>{periodSummary.ecosystem.toLocaleString(undefined, { maximumFractionDigits: 1 })} %</b></span>
         </div>}
       </div>
     </div>
@@ -145,6 +174,27 @@ function getScoreBadgeClass(score) {
   if (value <= 3) return s.scoreLow
   if (value <= 6) return s.scoreMedium
   return s.scoreHigh
+}
+
+function StarRating({ score, lang }) {
+  const numericScore = Number(score)
+  const rating = Number.isFinite(numericScore)
+    ? Math.max(0, Math.min(5, numericScore / 2))
+    : 0
+  const ratingLabel = Number.isInteger(rating) ? String(rating) : rating.toFixed(1)
+  const ariaLabel = lang === 'ja'
+    ? `5つ星中${ratingLabel}`
+    : `${ratingLabel} out of 5 stars`
+
+  return (
+    <div className={`${s.scoreBadge} ${getScoreBadgeClass(score)}`} aria-label={ariaLabel} title={ariaLabel}>
+      <span className={s.starRating} aria-hidden="true">
+        <span className={s.starEmpty}>★★★★★</span>
+        <span className={s.starFill} style={{ width: `${rating * 20}%` }}>★★★★★</span>
+      </span>
+      <span className={s.ratingValue}>{ratingLabel}/5</span>
+    </div>
+  )
 }
 
 function AiEvaluationArticle({ article, t }) {

@@ -71,12 +71,34 @@
 }
 
 /* ── Chart cell ── */
+.chartStack {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartSection {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartSection + .chartSection {
+  border-top: 1px solid var(--color-border);
+}
+
+.chartSection .chipRow {
+  padding: 6px 14px 2px;
+  flex-shrink: 0;
+}
+
 .chipRow {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  padding: 8px 14px 4px;
-  flex-shrink: 0;
+  align-items: center;
 }
 
 .chip {
@@ -113,7 +135,7 @@
 .chartWrap {
   flex: 1;
   min-height: 0;
-  padding: 4px 10px 10px;
+  padding: 2px 10px 6px;
 }
 
 /* ── LLM cell ── */
@@ -316,16 +338,16 @@
 .periodSummary {
   flex-shrink: 0;
   margin: 0 14px 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 13px 14px;
+  border-radius: 10px;
   background: rgba(61, 107, 143, 0.08);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 11px;
 }
-.periodSummary > strong { grid-column: 1 / -1; font-size: 12px; color: var(--color-accent); }
-.periodSummary span { display: flex; flex-direction: column; gap: 3px; font-size: 9px; color: var(--color-text-secondary); }
-.periodSummary b { font-size: 12px; color: var(--color-text-primary); }
+.periodSummary > strong { grid-column: 1 / -1; font-size: 15px; color: var(--color-accent); }
+.periodSummary span { display: flex; flex-direction: column; gap: 5px; font-size: 11px; line-height: 1.35; color: var(--color-text-secondary); }
+.periodSummary b { font-size: 17px; line-height: 1.2; color: var(--color-text-primary); }
 
 .snsPost {
   display: flex;
@@ -364,10 +386,39 @@
 
 .scoreBadge {
   flex-shrink: 0;
-  padding: 2px 6px;
+  padding: 3px 6px;
   border-radius: 6px;
-  font-size: 10px;
   font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.starRating {
+  position: relative;
+  display: inline-block;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.starEmpty {
+  color: rgba(90, 86, 72, 0.25);
+}
+
+.starFill {
+  position: absolute;
+  inset: 0 auto auto 0;
+  overflow: hidden;
+  color: #d99512;
+  white-space: nowrap;
+}
+
+.ratingValue {
+  font-size: 10px;
+  line-height: 1;
+  color: currentColor;
 }
 
 .scoreLow {

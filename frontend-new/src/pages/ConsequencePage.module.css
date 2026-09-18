@@ -8,6 +8,7 @@
 
 .card {
   width: min(820px, 92vw);
+  height: min(760px, calc(100vh - 40px));
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -50,6 +51,8 @@
 
 /* ── Text content ── */
 .content {
+  flex: 1;
+  min-height: 0;
   padding: 28px 40px 32px;
   display: flex;
   flex-direction: column;
@@ -96,6 +99,8 @@
 }
 
 .body {
+  min-height: 0;
+  overflow-y: auto;
   font-size: 14px;
   color: var(--color-text-secondary);
   line-height: 1.75;
@@ -144,7 +149,8 @@
 
 .continueBtn {
   align-self: flex-end;
-  margin-top: 4px;
+  flex-shrink: 0;
+  margin-top: auto;
   padding: 11px 28px;
   background: var(--event-color, #3d6b8f);
   color: white;
@@ -156,3 +162,90 @@
   cursor: pointer;
 }
 .continueBtn:hover { opacity: 0.85; }
+
+/* ── Reviewed-event stack and turn summary ── */
+.summaryCard {
+  width: min(980px, 94vw);
+  height: min(760px, calc(100vh - 40px));
+  box-sizing: border-box;
+  padding: 32px 40px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 8px 48px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.summaryHeader {
+  flex-shrink: 0;
+}
+
+.summaryHeader h1 {
+  margin-top: 6px;
+}
+
+.summaryHeader p {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.summaryGrid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  align-content: start;
+  gap: 14px;
+  padding: 2px;
+}
+
+.summaryItem {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--item-color, #3d6b8f) 28%, var(--color-border));
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+}
+
+.summaryItem img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+  border-bottom: 3px solid var(--item-color, #3d6b8f);
+}
+
+.summaryItem > div {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summaryItem span {
+  color: var(--item-color, #3d6b8f);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.summaryItem strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+@media (max-height: 680px) {
+  .eventImage {
+    height: 240px;
+  }
+
+  .content {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+}

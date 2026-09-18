@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useTranslation } from '../contexts/LanguageContext.jsx'
 import s from './ConsequencePage.module.css'
 
@@ -124,12 +124,49 @@ const CANONICAL_EVENT_ID_BY_PATTERN = [
 
 export default function ConsequencePage({ sim, onDismiss }) {
   const { t } = useTranslation()
+  const [reviewedEvents, setReviewedEvents] = useState([])
+  const [showSummary, setShowSummary] = useState(false)
   const currentEvent = sim.gameState.pendingEvents?.[0] ?? {}
   const eventId = resolveEventId(currentEvent)
   const view = viewForEvent(currentEvent)
   const image = EVENT_IMAGE_BY_ID[eventId] ?? EVENT_IMAGE_BY_ID.report
   const body = eventBody(currentEvent)
   const floodStats = floodEventStats(currentEvent)
+  const remainingCount = sim.gameState.pendingEvents?.length ?? 0
+
+  const handleNext = () => {
+    const nextReviewedEvents = [...reviewedEvents, currentEvent]
+    setReviewedEvents(nextReviewedEvents)
+
+    if (remainingCount <= 1) {
+      setShowSummary(true)
+      return
+    }
+
+    onDismiss()
+  }
+
+  if (showSummary) {
+    return (
+      <div className={s.page} style={{ '--event-color': view.color }}>
+        <section className={s.summaryCard}>
+          <div className={s.summaryHeader}>
+            <span className={s.subtitle}>{t('consequence.summary.kicker')}</span>
+            <h1 className={s.title}>{t('consequence.summary.title')}</h1>
+            <p>{t('consequence.summary.description')}</p>
+          </div>
+          <div className={s.summaryGrid}>
+            {reviewedEvents.map((event, index) => (
+              <EventSummaryCard key={`${event.id ?? event.key ?? 'event'}-${index}`} event={event} />
+            ))}
+          </div>
+          <button className={s.continueBtn} onClick={onDismiss}>
+            {t('consequence.continue')}
+          </button>
+        </section>
+      </div>
+    )
+  }
 
   return (
     <div className={s.page} style={{ '--event-color': view.color }}>
@@ -160,12 +197,31 @@ export default function ConsequencePage({ sim, onDismiss }) {
           )}
           <p className={s.body}>{body}</p>
 
-          <button className={s.continueBtn} onClick={onDismiss}>
+          <button className={s.continueBtn} onClick={handleNext}>
             {t('consequence.continue')}
           </button>
         </div>
       </div>
     </div>
+  )
+}
+
+function EventSummaryCard({ event }) {
+  const eventId = resolveEventId(event)
+  const view = viewForEvent(event)
+  const image = EVENT_IMAGE_BY_ID[eventId] ?? EVENT_IMAGE_BY_ID.report
+
+  return (
+    <article
+      className={s.summaryItem}
+      style={{ '--item-color': view.color }}
+    >
+      <img src={image} alt="" />
+      <div>
+        <span>YEAR {event.year ?? '-'}</span>
+        <strong>{event.title || view.title}</strong>
+      </div>
+    </article>
   )
 }
 

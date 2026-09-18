@@ -7,6 +7,7 @@ import EndingPage from './pages/EndingPage.jsx'
 import ResultComparisonPage from './pages/ResultComparisonPage.jsx'
 import SurveyPage from './pages/SurveyPage.jsx'
 import FinalDetailPage from './pages/FinalDetailPage.jsx'
+import ScenarioExplorationPage from './pages/ScenarioExplorationPage.jsx'
 
 export default function App() {
   const sim = useSimulation()
@@ -42,6 +43,7 @@ export default function App() {
       <EndingPage
         sim={sim}
         onCompare={sim.showComparison}
+        onExplore={sim.openScenarioExploration}
         onOpenDetails={sim.openFinalDetails}
         onOpenSurvey={sim.openSurvey}
         onRetryExport={sim.retryExportLog}
@@ -49,6 +51,7 @@ export default function App() {
     )
   }
   if (phase === 'final_detail') return <FinalDetailPage sim={sim} onBack={sim.backFromFinalDetails} />
+  if (phase === 'scenario_exploration') return <ScenarioExplorationPage sim={sim} onBack={sim.backFromScenarioExploration} />
   if (phase === 'comparison')  return <ResultComparisonPage sim={sim} onBack={sim.backToEnding} />
   return null
 }
