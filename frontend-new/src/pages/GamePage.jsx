@@ -104,7 +104,28 @@ export default function GamePage({ sim }) {
   const [showPolicyComparison, setShowPolicyComparison] = useState(false)
   const [lightbox, setLightbox] = useState(null)
   const prevLoadingRef = useRef(false)
-  const closeLightbox = useCallback(() => setLightbox(null), [])
+
+  const openLightbox = useCallback((next) => {
+    setLightbox(next)
+    emit('diagram_expand_open', {
+      diagram: next.diagram,
+      ...(next.policy_key ? { policy_key: next.policy_key } : {}),
+      src: next.src,
+    })
+  }, [])
+
+  const closeLightbox = useCallback(() => {
+    setLightbox(current => {
+      if (current) {
+        emit('diagram_expand_close', {
+          diagram: current.diagram,
+          ...(current.policy_key ? { policy_key: current.policy_key } : {}),
+          src: current.src,
+        })
+      }
+      return null
+    })
+  }, [])
 
   useEffect(() => {
     if (prevLoadingRef.current && !loading) {
@@ -313,7 +334,8 @@ export default function GamePage({ sim }) {
                   className={`${s.systemFigure} ${s.expandableImage} ${activePolicyKey ? s.hasHighlight : ''}`}
                   style={highlightStyle(POLICY_HIGHLIGHTS[activePolicyKey])}
                   aria-label="システムダイナミクス図を拡大表示"
-                  onClick={() => setLightbox({
+                  onClick={() => openLightbox({
+                    diagram: 'system_dynamics',
                     src: '/system_dynamics_ja2.png',
                     alt: 'システムダイナミクス図',
                   })}
@@ -333,7 +355,8 @@ export default function GamePage({ sim }) {
                     type="button"
                     className={s.expandableImage}
                     aria-label="政策効果の比較表を拡大表示"
-                    onClick={() => setLightbox({
+                    onClick={() => openLightbox({
+                      diagram: 'policy_effects_table',
                       src: '/policy-effects-table.png',
                       alt: '政策効果の比較表',
                     })}

@@ -4,6 +4,7 @@ import ImageLightbox from '../ImageLightbox/ImageLightbox.jsx'
 import { POLICIES } from '../../data/policyEffects.js'
 import { getCumulativePolicyStats } from '../../data/budget.js'
 import { useTranslation } from '../../contexts/LanguageContext.jsx'
+import { emit } from '../../logging/operationLog.js'
 import s from './DecisionPanel.module.css'
 
 export default function DecisionPanel({
@@ -33,7 +34,29 @@ export default function DecisionPanel({
     [activePolicyKey, policies],
   )
   const [lightbox, setLightbox] = useState(null)
-  const closeLightbox = useCallback(() => setLightbox(null), [])
+
+  const openLightbox = useCallback((next) => {
+    setLightbox(next)
+    emit('diagram_expand_open', {
+      diagram: next.diagram,
+      ...(next.policy_key ? { policy_key: next.policy_key } : {}),
+      src: next.src,
+    })
+  }, [])
+
+  const closeLightbox = useCallback(() => {
+    setLightbox(current => {
+      if (current) {
+        emit('diagram_expand_close', {
+          diagram: current.diagram,
+          ...(current.policy_key ? { policy_key: current.policy_key } : {}),
+          src: current.src,
+        })
+      }
+      return null
+    })
+  }, [])
+
   const policyMapSrc = activePolicy
     ? `/causal-explorer-assets/policy-mini-maps/${lang === 'ja' ? 'ja' : 'en'}/${policyMapFile(activePolicy.key)}`
     : null
@@ -130,7 +153,12 @@ export default function DecisionPanel({
               type="button"
               className={`${s.policyMap} ${s.expandableImage}`}
               aria-label={lang === 'ja' ? '政策影響図を拡大表示' : 'Expand policy impact map'}
-              onClick={() => setLightbox({ src: policyMapSrc, alt: policyMapAlt })}
+              onClick={() => openLightbox({
+                diagram: 'policy_impact_map',
+                policy_key: activePolicy.key,
+                src: policyMapSrc,
+                alt: policyMapAlt,
+              })}
             >
               <img src={policyMapSrc} alt={policyMapAlt} />
             </button>
