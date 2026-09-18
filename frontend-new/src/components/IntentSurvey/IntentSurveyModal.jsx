@@ -17,6 +17,7 @@ export default function IntentSurveyModal({
   submitted = false,
   simulationReady = false,
   onSubmit,
+  onBack,
 }) {
   const { lang } = useTranslation()
   const [answers, setAnswers] = useState(() => emptyIntentSurveyAnswers())
@@ -120,6 +121,9 @@ export default function IntentSurveyModal({
         {error && <p className={s.error}>{error}</p>}
 
         <div className={s.actions}>
+          <button type="button" className={s.secondary} onClick={() => onBack?.()}>
+            {lang === 'ja' ? '戻る' : 'Back'}
+          </button>
           <button type="submit" className={s.primary} disabled={!complete}>
             {lang === 'ja' ? '回答して進む' : 'Submit and continue'}
           </button>

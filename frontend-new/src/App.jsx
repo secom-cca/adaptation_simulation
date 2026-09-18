@@ -27,8 +27,12 @@ export default function App() {
     return (
       <SurveyPage
         initialAnswers={surveyAnswers}
+        surveySubmitted={sim.gameState.surveySubmitted}
+        exportSaving={sim.gameState.exportSaving}
         onSubmit={sim.submitSurvey}
         onCancel={sim.cancelSurvey}
+        onRestart={sim.restart}
+        onSkipAndRestart={sim.skipSurveyAndRestart}
       />
     )
   }
@@ -36,7 +40,6 @@ export default function App() {
     return (
       <EndingPage
         sim={sim}
-        onRestart={sim.restart}
         onCompare={sim.showComparison}
         onOpenSurvey={sim.openSurvey}
         onRetryExport={sim.retryExportLog}

@@ -15,12 +15,23 @@ function questionLabel(q, lang) {
   return lang === 'ja' ? q.label.ja : q.label.en
 }
 
-export default function SurveyPage({ onSubmit, onCancel, initialAnswers = null }) {
+export default function SurveyPage({
+  onSubmit,
+  onCancel,
+  onRestart,
+  onSkipAndRestart,
+  initialAnswers = null,
+  surveySubmitted = false,
+  exportSaving = false,
+}) {
   const { lang } = useTranslation()
   const [answers, setAnswers] = useState(() => initialAnswers || emptySurveyAnswers())
   const [error, setError] = useState('')
+  const [skipConfirmOpen, setSkipConfirmOpen] = useState(false)
+  const [submittedLocal, setSubmittedLocal] = useState(Boolean(surveySubmitted))
 
   const complete = useMemo(() => isSurveyComplete(answers), [answers])
+  const answered = submittedLocal || surveySubmitted
 
   function setSingle(id, value) {
     setAnswers(prev => ({ ...prev, [id]: value }))
@@ -43,10 +54,27 @@ export default function SurveyPage({ onSubmit, onCancel, initialAnswers = null }
       return
     }
     onSubmit?.(answers)
+    setSubmittedLocal(true)
+  }
+
+  async function confirmSkip() {
+    setSkipConfirmOpen(false)
+    await onSkipAndRestart?.()
   }
 
   return (
     <div className={s.page}>
+      <div className={s.topBar}>
+        <button
+          type="button"
+          className={s.skipBtn}
+          onClick={() => setSkipConfirmOpen(true)}
+          disabled={exportSaving}
+        >
+          {lang === 'ja' ? 'アンケートをスキップする' : 'Skip survey'}
+        </button>
+      </div>
+
       <form className={s.card} onSubmit={handleSubmit}>
         <header className={s.header}>
           <p className={s.eyebrow}>{lang === 'ja' ? '約3分' : 'About 3 minutes'}</p>
@@ -58,6 +86,13 @@ export default function SurveyPage({ onSubmit, onCancel, initialAnswers = null }
               ? '研究のための短いアンケートです。回答は操作ログと一緒に保存されます。'
               : 'A short research survey. Answers are saved with your operation log.'}
           </p>
+          {answered && (
+            <p className={s.submittedNote}>
+              {lang === 'ja'
+                ? '回答を受け付けました。下の「もう一度プレイ」で初期画面に戻れます。'
+                : 'Answers received. Use Play Again below to return to the start screen.'}
+            </p>
+          )}
         </header>
 
         <div className={s.questions}>
@@ -147,10 +182,53 @@ export default function SurveyPage({ onSubmit, onCancel, initialAnswers = null }
             {lang === 'ja' ? '結果画面に戻る' : 'Back to results'}
           </button>
           <button type="submit" className={s.primary} disabled={!complete}>
-            {lang === 'ja' ? '回答を送信' : 'Submit answers'}
+            {answered
+              ? (lang === 'ja' ? '回答を更新' : 'Update answers')
+              : (lang === 'ja' ? '回答を送信' : 'Submit answers')}
           </button>
         </div>
+
+        <div className={s.restartBlock}>
+          <button
+            type="button"
+            className={s.restartBtn}
+            onClick={() => onRestart?.()}
+            disabled={exportSaving}
+          >
+            {exportSaving
+              ? (lang === 'ja' ? 'ログ保存中…' : 'Saving log…')
+              : (lang === 'ja' ? 'もう一度プレイ' : 'Play Again')}
+          </button>
+          <p className={s.restartHint}>
+            {lang === 'ja'
+              ? '押すと操作ログを保存して初期画面に戻ります。'
+              : 'This saves the operation log and returns to the start screen.'}
+          </p>
+        </div>
       </form>
+
+      {skipConfirmOpen && (
+        <div className={s.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="skip-survey-title">
+          <div className={s.modalCard}>
+            <h2 id="skip-survey-title" className={s.modalTitle}>
+              {lang === 'ja' ? '本当にスキップしますか？' : 'Are you sure you want to skip?'}
+            </h2>
+            <p className={s.modalText}>
+              {lang === 'ja'
+                ? 'アンケートをスキップして初期画面に戻ります。操作ログは保存されます。'
+                : 'You will return to the start screen. The operation log will still be saved.'}
+            </p>
+            <div className={s.modalActions}>
+              <button type="button" className={s.secondary} onClick={() => setSkipConfirmOpen(false)}>
+                {lang === 'ja' ? 'いいえ' : 'No'}
+              </button>
+              <button type="button" className={s.primary} onClick={confirmSkip} disabled={exportSaving}>
+                {lang === 'ja' ? 'はい' : 'Yes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

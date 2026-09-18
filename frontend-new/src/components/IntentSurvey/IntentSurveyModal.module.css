@@ -154,6 +154,22 @@
   cursor: not-allowed;
 }
 
+.secondary {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 18px;
+  background: white;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary:hover {
+  background: rgba(61, 107, 143, 0.06);
+}
+
 .waiting {
   display: flex;
   flex-direction: column;

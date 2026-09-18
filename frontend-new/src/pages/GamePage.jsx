@@ -61,7 +61,7 @@ function backgroundVideoForState(policyHistory = [], sliders = {}) {
 }
 
 export default function GamePage({ sim }) {
-  const { gameState, advanceCycle, submitIntentSurvey, setGameView, requestResidentInterview } = sim
+  const { gameState, advanceCycle, submitIntentSurvey, cancelIntentSurvey, setGameView, requestResidentInterview } = sim
   const {
     year,
     cycle,
@@ -366,6 +366,7 @@ export default function GamePage({ sim }) {
           submitted={intentSurveySubmitted}
           simulationReady={advanceResultReady}
           onSubmit={submitIntentSurvey}
+          onBack={cancelIntentSurvey}
         />
       )}
     </div>

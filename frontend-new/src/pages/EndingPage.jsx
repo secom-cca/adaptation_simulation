@@ -51,9 +51,9 @@ function MetricSection({ metric, player, rcp, scenarioLabel }) {
   </section>
 }
 
-export default function EndingPage({ sim, onRestart, onCompare, onOpenSurvey, onRetryExport }) {
+export default function EndingPage({ sim, onCompare, onOpenSurvey, onRetryExport }) {
   const { t } = useTranslation()
-  const { history = [], baselineHistory = [], currentClimateHistory = [], userName, mode, rcpValue, policyHistory = [], exportDone, exportError, exportFilename, surveySubmitted, exportSaving } = sim.gameState
+  const { history = [], baselineHistory = [], currentClimateHistory = [], userName, mode, rcpValue, policyHistory = [], exportDone, exportError, exportFilename, surveySubmitted } = sim.gameState
   const scenarioLabel = rcpValue === 'composite' ? 'RCP4.5（複合）' : `RCP${rcpValue}`
   const saved = useRef(false)
   const player = useMemo(() => buildYearSnapshots(history, currentClimateHistory), [history, currentClimateHistory])
@@ -70,7 +70,7 @@ export default function EndingPage({ sim, onRestart, onCompare, onOpenSurvey, on
     <div className={s.metricsLayout}>{METRICS.map(metric => <MetricSection key={metric.key} metric={metric} player={player} rcp={rcp} scenarioLabel={scenarioLabel} />)}</div>
     <section className={s.policySummary}><div className={s.policyTitle}>政策履歴</div>{policies.map(x => <div className={s.policyRow} key={x.turn}><strong>{x.turn}</strong><span>{x.text}</span></div>)}</section>
     <button className={s.compareBtn} onClick={onCompare}>参加者結果を見る</button><button className={s.surveyBtn} onClick={onOpenSurvey} type="button">{surveySubmitted ? t('ending.survey.done') : t('ending.survey')}</button>
-    <button className={s.restartBtn} onClick={onRestart} disabled={exportSaving} type="button">{exportSaving ? t('ending.export.saving') : t('ending.restart')}</button>
     {exportError && <button type="button" className={s.saveLogBtn} onClick={() => onRetryExport?.()}>{t('ending.export.retry')}</button>}{exportDone && !exportError && exportFilename && <p className={s.exportNote}>{t('ending.export.done')} ({exportFilename})</p>}
+    <p className={s.exportNote}>{t('ending.export.hint')}</p>
   </div></div>
 }

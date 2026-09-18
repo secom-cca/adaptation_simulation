@@ -318,15 +318,21 @@ function buildAdvancePackage({
   }
 }
 
-function firePostAdvanceEvaluations(setGameState, evaluationRequest) {
+function firePostAdvanceEvaluations(setGameState, evaluationRequest, isCurrent = () => true) {
   fetch(`${API}/intermediate-evaluation`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(evaluationRequest),
   })
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
-    .then(data => setGameState(prev => ({ ...prev, llmCommentary: data.feedback ?? '', llmLoading: false })))
-    .catch(() => setGameState(prev => ({ ...prev, llmLoading: false })))
+    .then(data => {
+      if (!isCurrent()) return
+      setGameState(prev => ({ ...prev, llmCommentary: data.feedback ?? '', llmLoading: false }))
+    })
+    .catch(() => {
+      if (!isCurrent()) return
+      setGameState(prev => ({ ...prev, llmLoading: false }))
+    })
 
   fetch(`${API}/resident-council`, {
     method: 'POST',
@@ -334,17 +340,23 @@ function firePostAdvanceEvaluations(setGameState, evaluationRequest) {
     body: JSON.stringify(evaluationRequest),
   })
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
-    .then(data => setGameState(prev => ({
-      ...prev,
-      residentCouncil: data,
-      residentCouncilLoading: false,
-      residentCouncilError: false,
-    })))
-    .catch(() => setGameState(prev => ({
-      ...prev,
-      residentCouncilLoading: false,
-      residentCouncilError: true,
-    })))
+    .then(data => {
+      if (!isCurrent()) return
+      setGameState(prev => ({
+        ...prev,
+        residentCouncil: data,
+        residentCouncilLoading: false,
+        residentCouncilError: false,
+      }))
+    })
+    .catch(() => {
+      if (!isCurrent()) return
+      setGameState(prev => ({
+        ...prev,
+        residentCouncilLoading: false,
+        residentCouncilError: true,
+      }))
+    })
 }
 
 function commitAdvancePackage(setGameState, pkg) {
@@ -444,6 +456,8 @@ export function useSimulation() {
   const intentSurveySubmittedRef = useRef(false)
   const pendingAdvanceRef = useRef(null)
   const advancingSlidersRef = useRef(null)
+  const advancingMetaRef = useRef(null)
+  const advanceRequestIdRef = useRef(0)
 
   const startGame = useCallback(({ userName, teamName, mode, rcpValue, ethicsConsentAt }) => {
     const order = []
@@ -503,11 +517,68 @@ export function useSimulation() {
   const tryCommitAdvance = useCallback(() => {
     if (!intentSurveySubmittedRef.current || !pendingAdvanceRef.current) return
     const pkg = pendingAdvanceRef.current
+    const meta = advancingMetaRef.current
+    pendingAdvanceRef.current = null
+    intentSurveySubmittedRef.current = false
+
+    if (meta?.policyPoints) {
+      recordPolicyAllocation({
+        cycle: meta.cycle ?? pkg.decisionCycle,
+        year: meta.year ?? pkg.decisionYear,
+        policyPoints: meta.policyPoints,
+        availableBudgetPoints: meta.availableBudgetPoints ?? null,
+        usedPolicyPoints: meta.usedPolicyPoints ?? null,
+        period: meta.period ?? pkg.yearRange,
+      })
+    }
+    advancingSlidersRef.current = null
+    advancingMetaRef.current = null
+    commitAdvancePackage(setGameState, pkg)
+  }, [])
+
+  const cancelIntentSurvey = useCallback(() => {
+    if (intentSurveySubmittedRef.current) return
+
+    advanceRequestIdRef.current += 1
     pendingAdvanceRef.current = null
     intentSurveySubmittedRef.current = false
     advancingSlidersRef.current = null
-    commitAdvancePackage(setGameState, pkg)
-  }, [])
+    advancingMetaRef.current = null
+
+    const cycle = gameState.intentSurveyCycle ?? gameState.cycle
+    const year = gameState.intentSurveyYear ?? gameState.year
+    emit('intent_survey_cancelled', {
+      cycle,
+      year_range: { start_year: year, end_year: year + 24 },
+    })
+    setLogContext({
+      phase: 'game',
+      cycle: gameState.cycle,
+      year: gameState.year,
+      gameView: gameState.gameView,
+    })
+    setGameState(prev => ({
+      ...prev,
+      loading: false,
+      error: null,
+      intentSurveyOpen: false,
+      intentSurveySubmitted: false,
+      intentSurveyCycle: null,
+      intentSurveyYear: null,
+      advanceResultReady: false,
+      llmLoading: false,
+      residentCouncilLoading: false,
+      llmCommentary: '',
+      residentCouncil: null,
+      residentCouncilError: false,
+    }))
+  }, [
+    gameState.cycle,
+    gameState.gameView,
+    gameState.intentSurveyCycle,
+    gameState.intentSurveyYear,
+    gameState.year,
+  ])
 
   const submitIntentSurvey = useCallback((answers) => {
     const cycle = gameState.intentSurveyCycle ?? gameState.cycle
@@ -526,9 +597,26 @@ export function useSimulation() {
 
   const advanceCycle = useCallback(async (sliders) => {
     const s = gameState
+    const requestId = ++advanceRequestIdRef.current
     intentSurveySubmittedRef.current = false
     pendingAdvanceRef.current = null
     advancingSlidersRef.current = { ...sliders }
+
+    const budgetRows = buildBudgetRows(s.policyHistory ?? [], s.history ?? [], {
+      year: s.year,
+      sliders,
+    })
+    const budgetRow = budgetRows[budgetRows.length - 1]
+    const period = { start_year: s.year, end_year: s.year + 24 }
+    const policyPoints = { ...sliders }
+    advancingMetaRef.current = {
+      cycle: s.cycle,
+      year: s.year,
+      policyPoints,
+      availableBudgetPoints: budgetRow?.availableBudgetPoints ?? null,
+      usedPolicyPoints: budgetRow?.usedPolicyPoints ?? null,
+      period,
+    }
 
     setGameState(prev => ({
       ...prev,
@@ -548,27 +636,10 @@ export function useSimulation() {
     })
     emit('intent_survey_open', {
       cycle: s.cycle,
-      year_range: { start_year: s.year, end_year: s.year + 24 },
+      year_range: period,
     })
 
     try {
-      const budgetRows = buildBudgetRows(s.policyHistory ?? [], s.history ?? [], {
-        year: s.year,
-        sliders,
-      })
-      const budgetRow = budgetRows[budgetRows.length - 1]
-      const period = { start_year: s.year, end_year: s.year + 24 }
-      const policyPoints = { ...sliders }
-
-      recordPolicyAllocation({
-        cycle: s.cycle,
-        year: s.year,
-        policyPoints,
-        availableBudgetPoints: budgetRow?.availableBudgetPoints ?? null,
-        usedPolicyPoints: budgetRow?.usedPolicyPoints ?? null,
-        period,
-      })
-
       emit('advance_cycle_click', {
         cycle: s.cycle,
         sliders: policyPoints,
@@ -629,6 +700,10 @@ export function useSimulation() {
           history: s.sensitivityHistories?.[rcp] ?? [],
         })),
       ])
+
+      // 「戻る」でキャンセルされた場合は結果を捨てる
+      if (requestId !== advanceRequestIdRef.current) return
+
       const [scenarioRun, baselineRun, currentClimateRun, ...sensitivityRuns] = runs
       const lowRcpRun = sensitivityRuns[0]
       const highRcpRun = sensitivityRuns[1]
@@ -657,8 +732,6 @@ export function useSimulation() {
       })
 
       pendingAdvanceRef.current = pkg
-      // シミュレーション完了後すぐ住民反応・中間評価を開始する。
-      // 意図アンケート回答中でも裏で生成が進む。
       setGameState(prev => ({
         ...prev,
         advanceResultReady: true,
@@ -673,12 +746,18 @@ export function useSimulation() {
         residentInterviewCounts: {},
         residentInterviewLoading: {},
       }))
-      firePostAdvanceEvaluations(setGameState, pkg.evaluationRequest)
+      firePostAdvanceEvaluations(
+        setGameState,
+        pkg.evaluationRequest,
+        () => requestId === advanceRequestIdRef.current,
+      )
       tryCommitAdvance()
     } catch (err) {
+      if (requestId !== advanceRequestIdRef.current) return
       pendingAdvanceRef.current = null
       intentSurveySubmittedRef.current = false
       advancingSlidersRef.current = null
+      advancingMetaRef.current = null
       emit('advance_cycle_failed', {
         error: err?.message || String(err),
       }, { source: 'system' })
@@ -793,12 +872,8 @@ export function useSimulation() {
   const submitSurvey = useCallback((answers) => {
     const payload = buildSurveyPayload(answers)
     recordSurveySubmission(payload)
-    emit('phase_leave', { phase: 'survey', next_phase: 'ending' }, { source: 'system' })
-    setLogContext({ phase: 'ending' })
-    emit('phase_enter', { phase: 'ending' }, { source: 'system' })
     setGameState(s => ({
       ...s,
-      phase: 'ending',
       surveyAnswers: answers,
       surveySubmitted: true,
     }))
@@ -894,15 +969,14 @@ export function useSimulation() {
     })
   }, [])
 
-  const restart = useCallback(async () => {
-    emit('restart', {})
+  const restart = useCallback(async (trigger = 'on_restart') => {
+    emit('restart', { trigger })
     // Save operation log (including bundled survey if any) before resetting.
-    const result = await runExport('on_restart', false)
+    const result = await runExport(trigger, false)
     if (!result.ok && !result.skipped) {
-      // Keep ending screen so user can retry save.
+      // Stay on current phase (survey/ending) so user can retry save.
       setGameState(s => ({
         ...s,
-        phase: 'ending',
         exportError: result.error || getExportError(),
         exportSaving: false,
       }))
@@ -951,14 +1025,21 @@ export function useSimulation() {
     return result
   }, [runExport])
 
+  const skipSurveyAndRestart = useCallback(async () => {
+    emit('survey_skipped', {})
+    return restart('survey_skipped')
+  }, [restart])
+
   return {
     gameState,
     startGame,
     advanceCycle,
     submitIntentSurvey,
+    cancelIntentSurvey,
     dismissReport,
     dismissConsequence,
     restart,
+    skipSurveyAndRestart,
     setGameView,
     requestResidentInterview,
     showComparison,
