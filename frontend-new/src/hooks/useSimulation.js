@@ -451,6 +451,7 @@ export function useSimulation() {
     intentSurveyCycle: null,
     intentSurveyYear: null,
     advanceResultReady: false,
+    entryMountId: 0,
   })
 
   const intentSurveySubmittedRef = useRef(false)
@@ -1021,6 +1022,7 @@ export function useSimulation() {
       intentSurveyCycle: null,
       intentSurveyYear: null,
       advanceResultReady: false,
+      entryMountId: (s.entryMountId ?? 0) + 1,
     }))
     return result
   }, [runExport])
@@ -1028,6 +1030,17 @@ export function useSimulation() {
   const skipSurveyAndRestart = useCallback(async () => {
     emit('survey_skipped', {})
     return restart('survey_skipped')
+  }, [restart])
+
+  const submitSurveyAndRestart = useCallback(async (answers) => {
+    const payload = buildSurveyPayload(answers)
+    recordSurveySubmission(payload)
+    setGameState(s => ({
+      ...s,
+      surveyAnswers: answers,
+      surveySubmitted: true,
+    }))
+    return restart('survey_submitted')
   }, [restart])
 
   return {
@@ -1040,6 +1053,7 @@ export function useSimulation() {
     dismissConsequence,
     restart,
     skipSurveyAndRestart,
+    submitSurveyAndRestart,
     setGameView,
     requestResidentInterview,
     showComparison,

@@ -8,18 +8,25 @@ import {
 } from '../logging/operationLog.js'
 import s from './EntryPage.module.css'
 
+const RCP_OPTIONS = [1.9, 4.5, 8.5, 'composite']
+
+function pickRandomRcp() {
+  return RCP_OPTIONS[Math.floor(Math.random() * RCP_OPTIONS.length)]
+}
+
 export default function EntryPage({ onStart, onEthicsEvent }) {
   const { t, lang, toggle } = useTranslation()
   const ethics = getResearchEthics(lang)
   const [userName, setUserName] = useState('')
   const [teamName, setTeamName] = useState('')
   const [mode, setMode] = useState('team')
-  const [rcpValue, setRcpValue] = useState('composite')
+  const [rcpValue, setRcpValue] = useState(pickRandomRcp)
   const [ethicsConsent, setEthicsConsent] = useState(false)
   const [ethicsConsentAt, setEthicsConsentAt] = useState(null)
   const [detailOpen, setDetailOpen] = useState(false)
 
   useEffect(() => {
+    setRcpValue(pickRandomRcp())
     beginEntryLogging()
     setLogContext({ phase: 'entry', cycle: null, year: null, gameView: null })
   }, [])
