@@ -16,22 +16,18 @@ function questionLabel(q, lang) {
 }
 
 export default function SurveyPage({
-  onSubmit,
   onCancel,
-  onRestart,
+  onSubmitAndRestart,
   onSkipAndRestart,
   initialAnswers = null,
-  surveySubmitted = false,
   exportSaving = false,
 }) {
   const { lang } = useTranslation()
   const [answers, setAnswers] = useState(() => initialAnswers || emptySurveyAnswers())
   const [error, setError] = useState('')
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false)
-  const [submittedLocal, setSubmittedLocal] = useState(Boolean(surveySubmitted))
 
   const complete = useMemo(() => isSurveyComplete(answers), [answers])
-  const answered = submittedLocal || surveySubmitted
 
   function setSingle(id, value) {
     setAnswers(prev => ({ ...prev, [id]: value }))
@@ -47,14 +43,13 @@ export default function SurveyPage({
     setError('')
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!complete) {
       setError(lang === 'ja' ? '必須項目にすべて回答してください。' : 'Please answer all required questions.')
       return
     }
-    onSubmit?.(answers)
-    setSubmittedLocal(true)
+    await onSubmitAndRestart?.(answers)
   }
 
   async function confirmSkip() {
@@ -83,16 +78,9 @@ export default function SurveyPage({
           </h1>
           <p className={s.lede}>
             {lang === 'ja'
-              ? '研究のための短いアンケートです。回答は操作ログと一緒に保存されます。'
-              : 'A short research survey. Answers are saved with your operation log.'}
+              ? '研究のための短いアンケートです。回答送信時に操作ログと一緒に保存され、初期画面に戻ります。'
+              : 'A short research survey. Submitting saves the operation log and returns to the start screen.'}
           </p>
-          {answered && (
-            <p className={s.submittedNote}>
-              {lang === 'ja'
-                ? '回答を受け付けました。下の「もう一度プレイ」で初期画面に戻れます。'
-                : 'Answers received. Use Play Again below to return to the start screen.'}
-            </p>
-          )}
         </header>
 
         <div className={s.questions}>
@@ -178,31 +166,25 @@ export default function SurveyPage({
         {error && <p className={s.error}>{error}</p>}
 
         <div className={s.actions}>
-          <button type="button" className={s.secondary} onClick={onCancel}>
+          <button type="button" className={s.secondary} onClick={onCancel} disabled={exportSaving}>
             {lang === 'ja' ? '結果画面に戻る' : 'Back to results'}
-          </button>
-          <button type="submit" className={s.primary} disabled={!complete}>
-            {answered
-              ? (lang === 'ja' ? '回答を更新' : 'Update answers')
-              : (lang === 'ja' ? '回答を送信' : 'Submit answers')}
           </button>
         </div>
 
         <div className={s.restartBlock}>
           <button
-            type="button"
+            type="submit"
             className={s.restartBtn}
-            onClick={() => onRestart?.()}
-            disabled={exportSaving}
+            disabled={!complete || exportSaving}
           >
             {exportSaving
               ? (lang === 'ja' ? 'ログ保存中…' : 'Saving log…')
-              : (lang === 'ja' ? 'もう一度プレイ' : 'Play Again')}
+              : (lang === 'ja' ? '回答を送信する' : 'Submit answers')}
           </button>
           <p className={s.restartHint}>
             {lang === 'ja'
-              ? '押すと操作ログを保存して初期画面に戻ります。'
-              : 'This saves the operation log and returns to the start screen.'}
+              ? '必須項目をすべて回答すると送信できます。送信後、操作ログを保存して初期画面に戻ります。'
+              : 'Enabled once all required items are answered. Submitting saves the log and returns to the start screen.'}
           </p>
         </div>
       </form>

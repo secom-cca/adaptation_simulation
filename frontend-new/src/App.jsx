@@ -20,18 +20,18 @@ export default function App() {
     surveyAnswers,
   } = sim.gameState
 
-  if (phase === 'entry')       return <EntryPage onStart={sim.startGame} />
+  if (phase === 'entry') {
+    return <EntryPage key={sim.gameState.entryMountId ?? 0} onStart={sim.startGame} />
+  }
   if (phase === 'game')        return <GamePage sim={sim} />
   if (phase === 'consequence') return <ConsequencePage sim={sim} onDismiss={sim.dismissConsequence} />
   if (phase === 'survey') {
     return (
       <SurveyPage
         initialAnswers={surveyAnswers}
-        surveySubmitted={sim.gameState.surveySubmitted}
         exportSaving={sim.gameState.exportSaving}
-        onSubmit={sim.submitSurvey}
         onCancel={sim.cancelSurvey}
-        onRestart={sim.restart}
+        onSubmitAndRestart={sim.submitSurveyAndRestart}
         onSkipAndRestart={sim.skipSurveyAndRestart}
       />
     )
