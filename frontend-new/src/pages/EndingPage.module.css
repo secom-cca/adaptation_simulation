@@ -18,6 +18,18 @@
   gap: 18px;
 }
 
+.methodNote { margin: 0; color: var(--color-text-secondary); line-height: 1.7; font-size: 13px; }
+.metricsLayout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.metricSection { min-width: 0; padding: 18px; border-radius: 22px; background: rgba(255,255,255,.92); border: 1px solid rgba(84,103,120,.14); box-shadow: 0 12px 30px rgba(42,56,70,.10); }
+.metricWide { grid-column: 1 / -1; }
+.metricSection h2 { margin: 0 0 8px; font-size: 19px; }
+.chartPanel { width: 100%; min-height: 300px; }
+.improvement { margin: 6px 0 12px; color: var(--color-accent); font-size: 12px; font-weight: 800; }
+.actualTable { display: grid; gap: 1px; background: rgba(84,103,120,.12); border-radius: 10px; overflow: hidden; }
+.actualHeader, .actualRow { display: grid; grid-template-columns: 1.5fr repeat(3, 1fr); gap: 1px; }
+.actualHeader > *, .actualRow > * { padding: 9px 8px; background: white; font-size: 11px; overflow-wrap: anywhere; }
+.actualRow span:not(:first-child), .actualHeader strong:not(:first-child) { text-align: right; }
+
 .yearTag {
   width: fit-content;
   padding: 6px 10px;
@@ -526,6 +538,8 @@
 
 /* Responsive */
 @media (max-width: 860px) {
+  .metricsLayout { grid-template-columns: 1fr; }
+  .metricWide { grid-column: auto; }
   .page {
     padding: 32px 16px 44px;
   }

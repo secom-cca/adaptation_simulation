@@ -80,19 +80,27 @@ function summarizeCycleRows(rows = [], year) {
   }
 }
 
-export default function CycleReport({ history, year, cycle, llmCommentary, llmLoading, onViewDetails }) {
+export default function CycleReport({ history, currentClimateHistory = [], year, cycle, llmCommentary, llmLoading, onViewDetails }) {
   const { t } = useTranslation()
   const cycleStart = year - 25
   const cycleEnd = year - 1
 
   const thisRows = history.slice(-25)
   const prevRows = history.length > 25 ? history.slice(-50, -25) : []
+  const referenceRows = currentClimateHistory.slice(-25)
+  const previousReferenceRows = currentClimateHistory.length > 25 ? currentClimateHistory.slice(-50, -25) : []
 
   const cycleSummary = summarizeCycleRows(thisRows, cycleEnd)
   const prevSummary = prevRows.length ? summarizeCycleRows(prevRows, cycleStart - 1) : null
+  const referenceSummary = summarizeCycleRows(referenceRows, cycleEnd)
+  const previousReferenceSummary = previousReferenceRows.length
+    ? summarizeCycleRows(previousReferenceRows, cycleStart - 1)
+    : null
 
-  const currentScores = scoresForRow(cycleSummary.scoreRow, cycleEnd)
-  const prevScores = prevSummary ? scoresForRow(prevSummary.scoreRow, cycleStart - 1) : null
+  const currentScores = scoresForRow(cycleSummary.scoreRow, cycleEnd, referenceSummary.scoreRow)
+  const prevScores = prevSummary && previousReferenceSummary
+    ? scoresForRow(prevSummary.scoreRow, cycleStart - 1, previousReferenceSummary.scoreRow)
+    : null
 
   return (
     <div className={s.page} style={{ '--event-color': REPORT_COLOR }}>

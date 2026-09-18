@@ -161,11 +161,18 @@ function averagedRowForTargetYear(rows = [], targetYear) {
     periodRows,
     floodJpy(nearest),
   )
+  // Source: raw annual backend /simulate rows for the selected period.
+  // Flood is summed; crop and ecosystem are arithmetic means.
+  const cropYieldAverage = averageMetric(periodRows, 'Crop Yield', Number(nearest?.['Crop Yield']) || 0)
+  const ecosystemAverage = averageMetric(periodRows, 'Ecosystem Level', Number(nearest?.['Ecosystem Level']) || 0)
 
   return {
     ...nearest,
     year: targetYear,
     Year: targetYear,
+    'Flood Damage JPY': floodDamageCumulative,
+    'Crop Yield': cropYieldAverage,
+    'Ecosystem Level': ecosystemAverage,
 
     // 洪水被害は当該25年間の累計
     'Flood Damage JPY': floodDamageCumulative,
@@ -187,42 +194,30 @@ function averagedRowForTargetYear(rows = [], targetYear) {
   }
 }
 
-function highGoodScore(value, badValue, goodValue) {
-  return clamp(
-    ((Number(value) - Number(badValue)) / Math.max(Number(goodValue) - Number(badValue), 1e-9)) * 100,
-  )
+function highGoodScore(value, baselineValue) {
+  const actual = Number(value)
+  const baseline = Number(baselineValue)
+  if (!Number.isFinite(actual) || !Number.isFinite(baseline)) return 0
+  if (baseline === 0) return actual === 0 ? 100 : 0
+  return 100 * actual / baseline
 }
 
-function lowGoodScore(value, goodValue, badValue) {
-  return clamp(
-    ((Number(badValue) - Number(value)) / Math.max(Number(badValue) - Number(goodValue), 1e-9)) * 100,
-  )
+function lowGoodScore(value, baselineValue) {
+  const actual = Number(value)
+  const baseline = Number(baselineValue)
+  if (!Number.isFinite(actual) || !Number.isFinite(baseline)) return 0
+  if (actual === 0) return baseline === 0 ? 100 : (100 * baseline / Number.EPSILON)
+  return 100 * baseline / actual
 }
 
-export function scoresForRow(row = {}, targetYear = 2100) {
+export function scoresForRow(row = {}, targetYear = 2100, baselineRow = row) {
   const floodValue = floodJpy(row)
   const cropValue = Number(row['Crop Yield']) || 0
   const ecosystemValue = Number(row['Ecosystem Level']) || 0
 
-  const floodBounds = SCORE_BOUNDS.flood[targetYear] ?? SCORE_BOUNDS.flood[2100]
-
-  const floodScore = lowGoodScore(
-    floodValue,
-    floodBounds.good,
-    floodBounds.bad,
-  )
-
-  const cropScore = highGoodScore(
-    cropValue,
-    SCORE_BOUNDS.crop.bad,
-    SCORE_BOUNDS.crop.good,
-  )
-
-  const ecosystemScore = highGoodScore(
-    ecosystemValue,
-    SCORE_BOUNDS.ecosystem.bad,
-    SCORE_BOUNDS.ecosystem.good,
-  )
+  const floodScore = lowGoodScore(floodValue, floodJpy(baselineRow))
+  const cropScore = highGoodScore(cropValue, baselineRow['Crop Yield'])
+  const ecosystemScore = highGoodScore(ecosystemValue, baselineRow['Ecosystem Level'])
 
   const totalScore = (floodScore + cropScore + ecosystemScore) / 3
 
@@ -234,35 +229,44 @@ export function scoresForRow(row = {}, targetYear = 2100) {
   }
 }
 
-export function buildYearSnapshots(rows = []) {
-  return TARGET_YEARS.map(year => {
-    const row = averagedRowForTargetYear(rows, year)
+export function buildYearSnapshots(rows = [], baselineRows = rows) {
+  return TARGET_YEARS.flatMap(year => {
+    // Never manufacture a future checkpoint from the nearest available row.
+    // During play, only periods whose full/partial raw rows actually exist are shown.
+    const periodRows = rowsInPeriod(rows, year)
+    const baselinePeriodRows = rowsInPeriod(baselineRows, year)
+    if (!periodRows.length || !baselinePeriodRows.length) return []
 
-    return {
+    const row = averagedRowForTargetYear(rows, year)
+    const baselineRow = averagedRowForTargetYear(baselineRows, year)
+
+    return [{
       year,
       row,
-      scores: scoresForRow(row, year),
+      scores: scoresForRow(row, year, baselineRow),
       metrics: {
         floodDamageJpy: floodJpy(row),
         cropYield: Number(row['Crop Yield']) || 0,
         ecosystemLevel: Number(row['Ecosystem Level']) || 0,
       },
-    }
+    }]
   })
 }
 
-export function finalScores(rows = []) {
-  const snapshots = buildYearSnapshots(rows)
-  if (!snapshots.length) return scoresForRow({}, 2100)
+export function finalScores(rows = [], baselineRows = rows) {
+  const snapshots = buildYearSnapshots(rows, baselineRows)
+  if (!snapshots.length) return { floodScore: 0, cropScore: 0, ecosystemScore: 0, totalScore: 0 }
   return averageScores(snapshots.map(snapshot => snapshot.scores))
 }
 
 export function benchmarkSnapshots(key) {
   const benchmark = BENCHMARK_SERIES[key]
   if (!benchmark) return []
+  const reference = BENCHMARK_SERIES.baseline
 
   return TARGET_YEARS.map(year => {
     const metrics = benchmark.years[year] ?? benchmark.years[String(year)] ?? {}
+    const referenceMetrics = reference?.years?.[year] ?? reference?.years?.[String(year)] ?? metrics
 
     const row = {
       year,
@@ -270,12 +274,18 @@ export function benchmarkSnapshots(key) {
       'Crop Yield': metrics.cropYield ?? 0,
       'Ecosystem Level': metrics.ecosystemLevel ?? 0,
     }
+    const referenceRow = {
+      year,
+      'Flood Damage JPY': referenceMetrics.floodDamageJpy ?? 0,
+      'Crop Yield': referenceMetrics.cropYield ?? 0,
+      'Ecosystem Level': referenceMetrics.ecosystemLevel ?? 0,
+    }
 
     return {
       year,
       row,
       metrics,
-      scores: scoresForRow(row, year),
+      scores: scoresForRow(row, year, referenceRow),
     }
   })
 }

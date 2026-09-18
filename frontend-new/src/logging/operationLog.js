@@ -280,8 +280,8 @@ export function buildExportFilename(meta = sessionMeta, date = new Date()) {
   return `dapp-operation-log_${userPart}_${shortId}_${formatStamp(date)}.json`
 }
 
-export function buildHistorySummary(history = []) {
-  const scores = finalScores(history)
+export function buildHistorySummary(history = [], currentClimateHistory = []) {
+  const scores = finalScores(history, currentClimateHistory)
   return {
     flood_score: round1(scores.floodScore),
     crop_score: round1(scores.cropScore),
@@ -293,6 +293,7 @@ export function buildHistorySummary(history = []) {
 export function buildExportObject({
   policyHistory = [],
   history = [],
+  currentClimateHistory = [],
   cycleCount = 3,
   endedAtYear = 2100,
   filename,
@@ -316,7 +317,7 @@ export function buildExportObject({
     policy_allocations: getPolicyAllocationRecords(),
     results: {
       policy_history: policyHistory,
-      history_summary: buildHistorySummary(history),
+      history_summary: buildHistorySummary(history, currentClimateHistory),
       cycle_count: cycleCount,
       ended_at_year: endedAtYear,
     },
@@ -330,6 +331,7 @@ export function buildExportObject({
 export async function exportSessionJson({
   policyHistory,
   history,
+  currentClimateHistory,
   cycleCount,
   endedAtYear,
   trigger = 'on_restart',
@@ -354,6 +356,7 @@ export async function exportSessionJson({
   const payload = buildExportObject({
     policyHistory,
     history,
+    currentClimateHistory,
     cycleCount,
     endedAtYear,
     filename,

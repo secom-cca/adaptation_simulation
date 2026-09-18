@@ -251,6 +251,8 @@ DEFAULT_PARAMS = {
 }
 
 rcp_climate_params = {
+    # Current-climate counterfactual used only for result comparison.
+    0.0: {"temp_trend": 0, "precip_trend": 0, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0, "extreme_precip_intensity_trend": 0, "extreme_precip_uncertainty_trend": 0},
     1.9: {"temp_trend": 0.02, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.01, "extreme_precip_intensity_trend": 0.02, "extreme_precip_uncertainty_trend": 0.05},
     2.6: {"temp_trend": 0.025, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.015, "extreme_precip_intensity_trend": 0.025, "extreme_precip_uncertainty_trend": 0.07},
     4.5: {"temp_trend": 0.035, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.02, "extreme_precip_intensity_trend": 0.035, "extreme_precip_uncertainty_trend": 0.1},

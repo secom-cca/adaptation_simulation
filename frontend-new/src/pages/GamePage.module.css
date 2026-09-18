@@ -13,8 +13,8 @@
   overflow: hidden;
   display: flex;
   align-items: stretch;
-  /* leave room for decision panel (normal: 33vh) */
-  padding-bottom: 33vh;
+  /* The policy panel overlays this area; collapsing it reveals the full overview. */
+  padding-bottom: 28px;
 }
 
 /* In detail mode, 2×2 grid fills all space except the 28px handle */
@@ -22,33 +22,71 @@
   padding-bottom: 28px;
 }
 
-/* team mode normal view needs more room */
-:global(.teamMode) .mainArea:not(.detailMode) {
-  padding-bottom: min(50vh, 500px);
+/* ── Simple view ── */
+.overviewGrid {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 63fr) minmax(360px, 37fr);
+  gap: 0;
+  padding: 0;
 }
 
-/* ── Simple view overlays ── */
-.bgCanvas {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120%;
-  height: 100%;
-  object-fit: contain;
-  background: #f0ece4;
-  z-index: 0;
+.sceneCard,
+.systemCard,
+.policyTableCard {
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+  background: var(--color-surface);
 }
 
-.rightArea {
+.sceneCard {
   position: relative;
-  z-index: 1;
-  margin-left: auto;
-  width: 280px;
-  margin-right: 16px;
-  margin-top: 12px;
-  overflow-y: auto;
-  max-height: 100%;
+}
+
+.rightStack {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+}
+
+.bgCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #f0ece4;
+}
+
+.systemCard {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.systemCard img {
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  object-fit: contain;
+  background: white;
+}
+
+.policyTableCard {
+  background: white;
+}
+
+.policyTableCard img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 23vh;
+  object-fit: contain;
 }
 
 /* ── Error banner ── */

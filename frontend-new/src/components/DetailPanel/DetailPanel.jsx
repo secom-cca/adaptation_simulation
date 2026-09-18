@@ -6,6 +6,7 @@ import s from './DetailPanel.module.css'
 
 export default function DetailPanel({
   history,
+  sensitivityHistories = {},
   currentValues,
   cycle,
   year,
@@ -18,17 +19,30 @@ export default function DetailPanel({
   residentInterviewLoading = {},
   onRequestResidentInterview,
   onSelectIndicator,
+  rcpValue,
 }) {
   const { t, lang } = useTranslation()
   const [activeKey, setActiveKey] = useState('Flood Damage JPY')
 
-  const chartData = history.map(row => ({ year: row.year, value: row[activeKey] ?? 0 }))
+  const lowByYear = new Map((sensitivityHistories[1.9] ?? []).map(row => [row.year, row]))
+  const highByYear = new Map((sensitivityHistories[8.5] ?? []).map(row => [row.year, row]))
+  const chartData = history.map(row => ({
+    year: row.year,
+    value: row[activeKey] ?? 0,
+    low: lowByYear.get(row.year)?.[activeKey] ?? null,
+    high: highByYear.get(row.year)?.[activeKey] ?? null,
+  }))
   const activeInd = CHART_KEYS.find(i => i.key === activeKey)
   const activeLabel = lang === 'ja' ? activeInd?.labelJa : activeInd?.labelEn
 
   const residents = residentCouncil?.residents ?? []
-  const article = parseAiEvaluation(llmCommentary)
-
+  const latestRows = history.slice(-25)
+  const periodSummary = {
+    flood: latestRows.reduce((sum, row) => sum + (Number(row['Flood Damage JPY']) || 0), 0),
+    crop: latestRows.length ? latestRows.reduce((sum, row) => sum + (Number(row['Crop Yield']) || 0), 0) / latestRows.length : 0,
+    ecosystem: latestRows.length ? latestRows.reduce((sum, row) => sum + (Number(row['Ecosystem Level']) || 0), 0) / latestRows.length : 0,
+  }
+  const scenarioLabel = rcpValue === 'composite' ? 'RCP4.5' : `RCP${rcpValue}`
   return (
     <div className={s.grid}>
       <div className={s.cell}>
@@ -61,29 +75,13 @@ export default function DetailPanel({
                   formatter={v => [typeof v === 'number' ? fmtY(v) : v, activeLabel]}
                 />
                 <Line type="monotone" dataKey="value" stroke={activeInd?.color ?? '#888'}
-                  strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                  name={scenarioLabel} strokeWidth={3.2} dot={false} activeDot={{ r: 4 }} />
+                {rcpValue === 'composite' && <Line type="monotone" dataKey="low" name="RCP1.9" stroke="#6f9fc8" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />}
+                {rcpValue === 'composite' && <Line type="monotone" dataKey="high" name="RCP8.5" stroke="#c77a68" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />}
               </LineChart>
             </ResponsiveContainer>
           ) : (
             <div className={s.empty}>{t('detail.chart.empty')}</div>
-          )}
-        </div>
-      </div>
-
-      <div className={s.cell}>
-        <div className={s.cellHeader}>
-          <span className={s.cellTitle}>{t('detail.llm.title')}</span>
-          <span className={s.cellSubtitle}>{t('detail.llm.sub')}</span>
-          <span className={s.badge}>{t('detail.llm.badge')}</span>
-        </div>
-        <div className={s.llmBody}>
-          {history.length === 0 && <div className={s.empty}>{t('detail.llm.empty')}</div>}
-          {history.length > 0 && llmLoading && <div className={s.empty}>{t('detail.llm.loading')}</div>}
-          {history.length > 0 && !llmLoading && llmCommentary && (
-            <AiEvaluationArticle article={article} t={t} />
-          )}
-          {history.length > 0 && !llmLoading && !llmCommentary && (
-            <div className={s.empty}>{t('detail.llm.error')}</div>
           )}
         </div>
       </div>
@@ -129,6 +127,12 @@ export default function DetailPanel({
             )
           })}
         </div>
+        {latestRows.length > 0 && <div className={s.periodSummary}>
+          <strong>{year - 25}–{year - 1} 実績</strong>
+          <span>洪水被害額（25年累計）<b>{Math.round(periodSummary.flood).toLocaleString()} 円</b></span>
+          <span>農作物生産高（25年平均）<b>{periodSummary.crop.toLocaleString(undefined, { maximumFractionDigits: 1 })}</b></span>
+          <span>生態系（25年平均）<b>{periodSummary.ecosystem.toLocaleString(undefined, { maximumFractionDigits: 1 })}</b></span>
+        </div>}
       </div>
     </div>
   )

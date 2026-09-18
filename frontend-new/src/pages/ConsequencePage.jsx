@@ -11,6 +11,9 @@ const EVENT_IMAGE_BY_ID = {
   large_flood_damage_N: '/events/major_flood_damage.png',
   severe_flood_damage: '/events/severe_flood_damage.png',
   severe_flood_damage_N: '/events/severe_flood_damage.png',
+  flood: '/events/major_flood_damage.png',
+  drought: '/events/crop_production_critical.png',
+  water_quality: '/events/ecosystem_critical.png',
 
   crop_production_low: '/events/crop_production_low.png',
   crop_production_critical: '/events/crop_production_critical.png',
@@ -24,6 +27,8 @@ const EVENT_IMAGE_BY_ID = {
   forest_effect_300ha: '/events/forest_effect_300ha.png',
   forest_effect_600ha: '/events/forest_effect_300ha.png',
   forest_effect_1000ha: '/events/forest_effect_300ha.png',
+  forest_investment_started: '/events/forest_effect_started.png',
+  forest_policy_needed: '/events/forest_policy_needed.png',
 
   high_risk_low: '/events/high_risk_low.png',
   house_migration_started: '/events/relocation_effect_started.png',
@@ -45,10 +50,16 @@ const EVENT_IMAGE_BY_ID = {
   resident_capacity_improved: '/events/resident_capacity_improved.png',
   resident_capacity_high: '/events/resident_capacity_high.png',
   resident_capacity_turn_effect: '/events/resident_capacity_improved.png',
+  resident_capacity_near_cap: '/events/resident_capacity_high.png',
+  high_risk_houses_unmanaged: '/events/high_risk_low.png',
 
   rnd_started: '/events/rnd_started.png',
   rnd_tolerance_improved: '/events/rnd_tolerance_improved.png',
   rnd_tolerance_improved_N: '/events/rnd_tolerance_improved_N.png',
+  rnd_tolerance_near_cap: '/events/rnd_tolerance_improved_N.png',
+
+  crop_production_avoided: '/events/crop_production_low.png',
+  ecosystem_decline_avoided: '/events/ecosystem_low.png',
 
   budget_low: '/events/migration_budget_pressure.png',
   budget_critical: '/events/migration_budget_pressure.png',
@@ -118,6 +129,7 @@ export default function ConsequencePage({ sim, onDismiss }) {
   const view = viewForEvent(currentEvent)
   const image = EVENT_IMAGE_BY_ID[eventId] ?? EVENT_IMAGE_BY_ID.report
   const body = eventBody(currentEvent)
+  const floodStats = floodEventStats(currentEvent)
 
   return (
     <div className={s.page} style={{ '--event-color': view.color }}>
@@ -136,6 +148,16 @@ export default function ConsequencePage({ sim, onDismiss }) {
           </div>
 
           <h1 className={s.title}>{currentEvent.title || view.title}</h1>
+          {floodStats && (
+            <div className={s.floodStats}>
+              <div><span>実際の被害額</span><strong>{formatJpy(floodStats.current)}</strong></div>
+              <div className={floodStats.reduction >= 0 ? s.reduction : s.increase}>
+                <span>{floodStats.reduction >= 0 ? '無対策からの被害減少額' : '無対策からの被害増加額'}</span>
+                <strong>{formatJpy(Math.abs(floodStats.reduction))}</strong>
+              </div>
+              <div><span>無対策の場合</span><strong>{formatJpy(floodStats.baseline)}</strong></div>
+            </div>
+          )}
           <p className={s.body}>{body}</p>
 
           <button className={s.continueBtn} onClick={onDismiss}>
@@ -150,6 +172,9 @@ export default function ConsequencePage({ sim, onDismiss }) {
 function resolveEventId(event = {}) {
   const rawId = String(event.id ?? event.key ?? 'report')
   if (EVENT_IMAGE_BY_ID[rawId]) return rawId
+  const forestMatch = rawId.match(/^forest_effect_(\d+)ha$/)
+  if (forestMatch) return Number(forestMatch[1]) <= 200 ? 'forest_effect_100ha' : 'forest_effect_300ha'
+  if (/^rnd_tolerance_step_\d+$/.test(rawId)) return 'rnd_tolerance_improved_N'
   return CANONICAL_EVENT_ID_BY_PATTERN.find(({ pattern }) => pattern.test(rawId))?.id ?? 'report'
 }
 
@@ -175,13 +200,28 @@ function floodBody(event = {}) {
   const currentDamage = toNumber(event.value)
   const baseline = toNumber(event.baselineValue)
   const diff = toNumber(event.diffFromBaseline)
-  const reduction = diff > 0 ? diff : Math.max(0, baseline - currentDamage)
+  const reduction = Number.isFinite(Number(event.diffFromBaseline)) ? diff : baseline - currentDamage
+  const comparison = reduction >= 0
+    ? `${formatJpy(reduction)}の被害を抑えています。`
+    : `${formatJpy(Math.abs(reduction))}被害が増えています。`
 
   return (
     `この年の洪水被害額は${formatJpy(currentDamage)}でした。` +
     `同じ雨が何も対策しなかった流域に降った場合の被害額${formatJpy(baseline)}と比べると、` +
-    `${formatJpy(reduction)}の被害を抑えています。`
+    comparison
   )
+}
+
+function floodEventStats(event = {}) {
+  if (event.category !== 'flood' && event.metric !== 'annual_flood_damage_jpy') return null
+  const current = toNumber(event.value)
+  const baseline = toNumber(event.baselineValue)
+  const explicitDiff = Number(event.diffFromBaseline)
+  return {
+    current,
+    baseline,
+    reduction: Number.isFinite(explicitDiff) ? explicitDiff : baseline - current,
+  }
 }
 
 function formatJpy(value) {

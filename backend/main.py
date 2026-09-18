@@ -180,12 +180,28 @@ def run_simulation(req: SimulationRequest):
         df_log['user_name'] = req.user_name
         df_log['scenario_name'] = scenario_name
         df_log['timestamp'] = pd.Timestamp.utcnow()
-        if ACTION_LOG_FILE.exists():
-            df_old = pd.read_csv(ACTION_LOG_FILE)
-            df_combined = pd.concat([df_old, df_log], ignore_index=True)
-        else:
-            df_combined = df_log
-        df_combined.to_csv(ACTION_LOG_FILE, index=False)
+        # Logging is best-effort: a locked or malformed CSV must not fail the simulation.
+        df_combined = df_log
+        try:
+            if ACTION_LOG_FILE.exists():
+                try:
+                    df_old = pd.read_csv(ACTION_LOG_FILE)
+                    df_combined = pd.concat([df_old, df_log], ignore_index=True)
+                except Exception as exc:
+                    print(f"[WARN] Could not read decision log: {exc}")
+            try:
+                df_combined.to_csv(ACTION_LOG_FILE, index=False)
+            except Exception as exc:
+                fallback = ACTION_LOG_FILE.with_name(
+                    f"{ACTION_LOG_FILE.stem}_{pd.Timestamp.utcnow().strftime('%Y%m%dT%H%M%S%fZ')}{ACTION_LOG_FILE.suffix}"
+                )
+                try:
+                    df_log.to_csv(fallback, index=False)
+                    print(f"[WARN] Decision log unavailable; wrote fallback {fallback}: {exc}")
+                except Exception as fallback_exc:
+                    print(f"[WARN] Skipped decision log write: {exc}; fallback failed: {fallback_exc}")
+        except Exception as exc:
+            print(f"[WARN] Skipped decision log persistence: {exc}")
 
         df_csv = pd.DataFrame(block_scores)
         df_csv['user_name'] = req.user_name
@@ -337,6 +353,7 @@ def save_comparison_result(result: Dict[str, Any] = Body(...)):
     row = {
         "user_name": str(result.get("user_name") or "Guest"),
         "mode": str(result.get("mode") or ""),
+        "rcp_scenario": str(result.get("rcp_scenario") or "4.5"),
         # MayFest 2026: ranking uses the three radar scores and their simple average.
         "total_score": float(result.get("total_score") or 0),
         "flood_damage_score": float(result.get("flood_damage_score") or 0),
@@ -357,6 +374,8 @@ def save_comparison_result(result: Dict[str, Any] = Body(...)):
     new_df = pd.DataFrame([row])
     if COMPARISON_RESULTS_FILE.exists():
         old_df = pd.read_csv(COMPARISON_RESULTS_FILE, sep="\t")
+        if "rcp_scenario" not in old_df.columns:
+            old_df["rcp_scenario"] = "4.5"
         old_df = old_df[old_df["user_name"] != row["user_name"]]
         new_df = pd.concat([old_df, new_df], ignore_index=True)
     new_df.to_csv(COMPARISON_RESULTS_FILE, sep="\t", index=False)

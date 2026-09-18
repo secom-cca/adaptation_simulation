@@ -1,22 +1,33 @@
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws'
 
-// ポート3001でサーバーを作成
-const wss = new WebSocketServer({ port: 3001 });
+const wss = new WebSocketServer({ port: 3001 })
 
 wss.on('listening', () => {
-    console.log('✅ WebSocket server is running on ws://localhost:3001');
-});
+  console.log('WebSocket server is running on ws://localhost:3001')
+})
 
 wss.on('connection', (ws) => {
-    console.log('📡 Client connected');
+  console.log('Client connected')
 
-    ws.on('message', (message) => {
-        console.log('📩 Received:', message.toString());
-        // おうむ返し
-        ws.send(`Server received: ${message}`);
-    });
+  ws.on('message', (message) => {
+    const text = message.toString()
+    console.log('Received:', text)
 
-    ws.on('close', () => {
-        console.log('❌ Client disconnected');
-    });
-});
+    try {
+      JSON.parse(text)
+    } catch {
+      console.warn('Ignored non-JSON WebSocket message:', text)
+      return
+    }
+
+    for (const client of wss.clients) {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(text)
+      }
+    }
+  })
+
+  ws.on('close', () => {
+    console.log('Client disconnected')
+  })
+})

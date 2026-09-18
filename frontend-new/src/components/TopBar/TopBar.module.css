@@ -56,12 +56,6 @@
   text-align: center;
 }
 
-.goal {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  font-style: italic;
-}
-
 .right {
   flex-shrink: 0;
   display: flex;

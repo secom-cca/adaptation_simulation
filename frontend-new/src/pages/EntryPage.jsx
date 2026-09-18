@@ -8,15 +8,13 @@ import {
 } from '../logging/operationLog.js'
 import s from './EntryPage.module.css'
 
-const RCP_OPTIONS = [1.9, 2.6, 4.5, 6.0, 8.5]
-
 export default function EntryPage({ onStart, onEthicsEvent }) {
   const { t, lang, toggle } = useTranslation()
   const ethics = getResearchEthics(lang)
   const [userName, setUserName] = useState('')
   const [teamName, setTeamName] = useState('')
   const [mode, setMode] = useState('team')
-  const [rcp, setRcp] = useState(4.5)
+  const [rcpValue, setRcpValue] = useState('composite')
   const [ethicsConsent, setEthicsConsent] = useState(false)
   const [ethicsConsentAt, setEthicsConsentAt] = useState(null)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -32,6 +30,12 @@ export default function EntryPage({ onStart, onEthicsEvent }) {
     { value: 'upstream',   nameKey: 'entry.upstream.name', descKey: 'entry.upstream.desc' },
     { value: 'downstream', nameKey: 'entry.downstream.name', descKey: 'entry.downstream.desc' },
     { value: 'team',       nameKey: 'entry.team.name', descKey: 'entry.team.desc' },
+  ]
+  const scenarios = [
+    { value: 1.9, label: 'RCP1.9', desc: lang === 'ja' ? '強い緩和' : 'Strong mitigation' },
+    { value: 4.5, label: 'RCP4.5', desc: lang === 'ja' ? '中間' : 'Intermediate' },
+    { value: 8.5, label: 'RCP8.5', desc: lang === 'ja' ? '非常に高い排出' : 'Very high emissions' },
+    { value: 'composite', label: lang === 'ja' ? '複合シナリオ' : 'Composite', desc: lang === 'ja' ? '3つのRCPを比較表示' : 'Compare three RCPs' },
   ]
 
   function handleConsentChange(checked) {
@@ -64,7 +68,7 @@ export default function EntryPage({ onStart, onEthicsEvent }) {
       userName: userName.trim(),
       teamName: teamName.trim(),
       mode,
-      rcpValue: rcp,
+      rcpValue,
       ethicsConsent: true,
       ethicsConsentAt: ethicsConsentAt || new Date().toISOString(),
     })
@@ -131,19 +135,15 @@ export default function EntryPage({ onStart, onEthicsEvent }) {
           <fieldset className={s.fieldset}>
             <legend className={s.legend}>{t('entry.rcp.label')}</legend>
             <div className={s.rcpRow}>
-              {RCP_OPTIONS.map(r => (
-                <button
-                  key={r}
-                  className={`${s.rcpBtn} ${rcp === r ? s.selected : ''}`}
-                  onClick={() => setRcp(r)}
-                  type="button"
-                >
-                  <span className={s.rcpLabel}>RCP {r}</span>
-                  <span className={s.rcpDesc}>{t(`rcp.${r}.desc`)}</span>
+              {scenarios.map(item => (
+                <button key={item.value} type="button" className={`${s.rcpBtn} ${rcpValue === item.value ? s.selected : ''}`} onClick={() => setRcpValue(item.value)}>
+                  <span className={s.rcpLabel}>{item.label}</span>
+                  <span className={s.rcpDesc}>{item.desc}</span>
                 </button>
               ))}
             </div>
           </fieldset>
+
         </div>
 
         <div className={s.ethicsRow}>
