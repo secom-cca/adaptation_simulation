@@ -1,0 +1,45 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px;
+  background: rgba(12, 18, 16, 0.78);
+  box-sizing: border-box;
+  cursor: zoom-out;
+}
+
+.image {
+  display: block;
+  max-width: min(96vw, 1400px);
+  max-height: 92vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+  cursor: default;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #1f2a24;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.closeBtn:hover {
+  background: #fff;
+}

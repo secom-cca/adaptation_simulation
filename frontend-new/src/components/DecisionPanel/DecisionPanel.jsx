@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import PolicySlider from './PolicySlider.jsx'
+import ImageLightbox from '../ImageLightbox/ImageLightbox.jsx'
 import { POLICIES } from '../../data/policyEffects.js'
 import { getCumulativePolicyStats } from '../../data/budget.js'
 import { useTranslation } from '../../contexts/LanguageContext.jsx'
@@ -31,6 +32,16 @@ export default function DecisionPanel({
     () => policies.find(policy => policy.key === activePolicyKey) ?? policies[0],
     [activePolicyKey, policies],
   )
+  const [lightbox, setLightbox] = useState(null)
+  const closeLightbox = useCallback(() => setLightbox(null), [])
+  const policyMapSrc = activePolicy
+    ? `/causal-explorer-assets/policy-mini-maps/${lang === 'ja' ? 'ja' : 'en'}/${policyMapFile(activePolicy.key)}`
+    : null
+  const policyMapAlt = activePolicy
+    ? (lang === 'ja'
+      ? `${activePolicy.label.ja}が流域に与える影響`
+      : `${activePolicy.label.en} impact map`)
+    : ''
 
   useEffect(() => {
     if (!policies.some(policy => policy.key === activePolicyKey)) {
@@ -115,14 +126,14 @@ export default function DecisionPanel({
                 cumulativeStats={cumulativeStats}
               />
             </div>
-            <figure className={s.policyMap}>
-              <img
-                src={`/causal-explorer-assets/policy-mini-maps/${lang === 'ja' ? 'ja' : 'en'}/${policyMapFile(activePolicy.key)}`}
-                alt={lang === 'ja'
-                  ? `${activePolicy.label.ja}が流域に与える影響`
-                  : `${activePolicy.label.en} impact map`}
-              />
-            </figure>
+            <button
+              type="button"
+              className={`${s.policyMap} ${s.expandableImage}`}
+              aria-label={lang === 'ja' ? '政策影響図を拡大表示' : 'Expand policy impact map'}
+              onClick={() => setLightbox({ src: policyMapSrc, alt: policyMapAlt })}
+            >
+              <img src={policyMapSrc} alt={policyMapAlt} />
+            </button>
           </div>
         )}
 
@@ -142,6 +153,12 @@ export default function DecisionPanel({
           )}
         </div>
       </div>
+
+      <ImageLightbox
+        src={lightbox?.src}
+        alt={lightbox?.alt}
+        onClose={closeLightbox}
+      />
     </div>
   )
 }

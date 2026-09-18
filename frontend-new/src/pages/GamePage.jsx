@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import TopBar from '../components/TopBar/TopBar.jsx'
 import DetailPanel from '../components/DetailPanel/DetailPanel.jsx'
 import DecisionPanel from '../components/DecisionPanel/DecisionPanel.jsx'
+import ImageLightbox from '../components/ImageLightbox/ImageLightbox.jsx'
 import { buildBudgetRows, findAllowedPolicyPoints } from '../data/budget.js'
 import { emit, setLogContext } from '../logging/operationLog.js'
 import IntentSurveyModal from '../components/IntentSurvey/IntentSurveyModal.jsx'
@@ -101,7 +102,9 @@ export default function GamePage({ sim }) {
   const [hasNewResults, setHasNewResults] = useState(false)
   const [activePolicyKey, setActivePolicyKey] = useState(null)
   const [showPolicyComparison, setShowPolicyComparison] = useState(false)
+  const [lightbox, setLightbox] = useState(null)
   const prevLoadingRef = useRef(false)
+  const closeLightbox = useCallback(() => setLightbox(null), [])
 
   useEffect(() => {
     if (prevLoadingRef.current && !loading) {
@@ -305,9 +308,15 @@ export default function GamePage({ sim }) {
                 >
                   政策比較
                 </button>
-                <div
-                  className={`${s.systemFigure} ${activePolicyKey ? s.hasHighlight : ''}`}
+                <button
+                  type="button"
+                  className={`${s.systemFigure} ${s.expandableImage} ${activePolicyKey ? s.hasHighlight : ''}`}
                   style={highlightStyle(POLICY_HIGHLIGHTS[activePolicyKey])}
+                  aria-label="システムダイナミクス図を拡大表示"
+                  onClick={() => setLightbox({
+                    src: '/system_dynamics_ja2.png',
+                    alt: 'システムダイナミクス図',
+                  })}
                 >
                   <img className={s.systemDiagram} src="/system_dynamics_ja2.png" alt="システムダイナミクス図" />
                   {activePolicyKey && (
@@ -316,11 +325,21 @@ export default function GamePage({ sim }) {
                       <span className={s.highlightRing} aria-hidden="true" />
                     </>
                   )}
-                </div>
+                </button>
               </section>
               {showPolicyComparison && (
                 <section id="policy-comparison-table" className={s.policyTableCard} aria-label="政策比較">
-                  <img src="/policy-effects-table.png" alt="政策効果の比較表" />
+                  <button
+                    type="button"
+                    className={s.expandableImage}
+                    aria-label="政策効果の比較表を拡大表示"
+                    onClick={() => setLightbox({
+                      src: '/policy-effects-table.png',
+                      alt: '政策効果の比較表',
+                    })}
+                  >
+                    <img src="/policy-effects-table.png" alt="政策効果の比較表" />
+                  </button>
                 </section>
               )}
             </div>
@@ -383,6 +402,12 @@ export default function GamePage({ sim }) {
           onBack={cancelIntentSurvey}
         />
       )}
+
+      <ImageLightbox
+        src={lightbox?.src}
+        alt={lightbox?.alt}
+        onClose={closeLightbox}
+      />
     </div>
   )
 }

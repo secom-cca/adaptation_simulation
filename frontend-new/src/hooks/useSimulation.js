@@ -524,16 +524,54 @@ export function useSimulation() {
     pendingAdvanceRef.current = null
     intentSurveySubmittedRef.current = false
 
-    if (meta?.policyPoints) {
+    const policyPoints = meta?.policyPoints ? { ...meta.policyPoints } : null
+    const period = meta?.period ?? pkg.yearRange
+    const cycle = meta?.cycle ?? pkg.decisionCycle
+    const year = meta?.year ?? pkg.decisionYear
+
+    // 「回答して進む」確定時に、シミュレーション実行・政策配分を操作ログへ記録する。
+    // （「25年進める」直後や「戻る」では記録しない）
+    if (policyPoints) {
+      emit('advance_cycle_click', {
+        cycle,
+        sliders: policyPoints,
+        policy_points: policyPoints,
+        available_budget_points: meta?.availableBudgetPoints ?? null,
+        used_policy_points: meta?.usedPolicyPoints ?? null,
+        period,
+        confirmed_via: 'intent_survey_submit',
+      }, {
+        context: {
+          phase: 'intent_survey',
+          cycle,
+          year,
+          gameView: pkg.gameView,
+        },
+      })
       recordPolicyAllocation({
-        cycle: meta.cycle ?? pkg.decisionCycle,
-        year: meta.year ?? pkg.decisionYear,
-        policyPoints: meta.policyPoints,
-        availableBudgetPoints: meta.availableBudgetPoints ?? null,
-        usedPolicyPoints: meta.usedPolicyPoints ?? null,
-        period: meta.period ?? pkg.yearRange,
+        cycle,
+        year,
+        policyPoints,
+        availableBudgetPoints: meta?.availableBudgetPoints ?? null,
+        usedPolicyPoints: meta?.usedPolicyPoints ?? null,
+        period,
       })
     }
+
+    emit('advance_cycle_succeeded', {
+      cycle: pkg.decisionCycle,
+      year_range: pkg.yearRange,
+      next_phase: pkg.nextPhase,
+      confirmed_via: 'intent_survey_submit',
+    }, {
+      context: {
+        phase: 'intent_survey',
+        cycle: pkg.decisionCycle,
+        year: pkg.decisionYear,
+        gameView: pkg.gameView,
+      },
+    })
+
     advancingSlidersRef.current = null
     advancingMetaRef.current = null
     commitAdvancePackage(setGameState, pkg)
@@ -643,22 +681,6 @@ export function useSimulation() {
     })
 
     try {
-      emit('advance_cycle_click', {
-        cycle: s.cycle,
-        sliders: policyPoints,
-        policy_points: policyPoints,
-        available_budget_points: budgetRow?.availableBudgetPoints ?? null,
-        used_policy_points: budgetRow?.usedPolicyPoints ?? null,
-        period,
-      }, {
-        context: {
-          phase: 'intent_survey',
-          cycle: s.cycle,
-          year: s.year,
-          gameView: s.gameView,
-        },
-      })
-
       const selectedRcp = s.rcpValue === 'composite' ? 4.5 : Number(s.rcpValue)
       const sensitivityRcps = s.rcpValue === 'composite' ? [1.9, 8.5] : []
       const runs = await Promise.all([
@@ -721,19 +743,6 @@ export function useSimulation() {
         highRcpRun,
       })
 
-      emit('advance_cycle_succeeded', {
-        cycle: s.cycle,
-        year_range: pkg.yearRange,
-        next_phase: pkg.nextPhase,
-      }, {
-        context: {
-          phase: 'intent_survey',
-          cycle: s.cycle,
-          year: s.year,
-          gameView: s.gameView,
-        },
-      })
-
       pendingAdvanceRef.current = pkg
       setGameState(prev => ({
         ...prev,
@@ -761,9 +770,7 @@ export function useSimulation() {
       intentSurveySubmittedRef.current = false
       advancingSlidersRef.current = null
       advancingMetaRef.current = null
-      emit('advance_cycle_failed', {
-        error: err?.message || String(err),
-      }, { source: 'system' })
+      // 確定前の失敗は「実行した」記録にしない（戻る後の再試行と区別するため）
       setLogContext({
         phase: 'game',
         cycle: s.cycle,
