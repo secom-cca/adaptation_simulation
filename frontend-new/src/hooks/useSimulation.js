@@ -78,9 +78,10 @@ const ZERO_SLIDERS = {
 }
 
 function buildDecisionVar({ year, sliders, rcpValue }) {
+  const numericRcp = rcpValue === 'composite' ? 4.5 : Number(rcpValue)
   return {
     year,
-    cp_climate_params: rcpValue,
+    cp_climate_params: Number.isFinite(numericRcp) ? numericRcp : 4.5,
     planting_trees_amount:       sliderToBackend('planting_trees_amount',       sliders.planting_trees_amount ?? 0),
     house_migration_amount:      sliderToBackend('house_migration_amount',       sliders.house_migration_amount ?? 0),
     dam_levee_construction_cost: sliderToBackend('dam_levee_construction_cost',  sliders.dam_levee_construction_cost ?? 0),
@@ -356,6 +357,8 @@ function commitAdvancePackage(setGameState, pkg) {
   })
   emit('phase_enter', { phase: pkg.nextPhase }, { source: 'system' })
 
+  // 住民反応・中間評価はシミュレーション完了時点で既に起動済み。
+  // ここでは結果を消さず、画面遷移だけ行う。
   setGameState(prev => ({
     ...prev,
     loading: false,
@@ -364,15 +367,15 @@ function commitAdvancePackage(setGameState, pkg) {
     intentSurveyCycle: null,
     intentSurveyYear: null,
     advanceResultReady: false,
-    llmCommentary: '',
-    llmLoading: true,
-    residentCouncil: null,
-    residentCouncilLoading: true,
-    residentCouncilError: false,
-    residentInterviews: {},
-    residentInterviewCounts: {},
-    residentInterviewLoading: {},
-    lastEvaluationRequest: pkg.evaluationRequest,
+    llmCommentary: prev.llmCommentary ?? '',
+    llmLoading: prev.llmLoading,
+    residentCouncil: prev.residentCouncil,
+    residentCouncilLoading: prev.residentCouncilLoading,
+    residentCouncilError: prev.residentCouncilError,
+    residentInterviews: prev.residentInterviews ?? {},
+    residentInterviewCounts: prev.residentInterviewCounts ?? {},
+    residentInterviewLoading: prev.residentInterviewLoading ?? {},
+    lastEvaluationRequest: pkg.evaluationRequest ?? prev.lastEvaluationRequest,
     currentValues: pkg.finalState,
     baselineValues: pkg.newBaselineState,
     history: pkg.newHistory,
@@ -389,8 +392,6 @@ function commitAdvancePackage(setGameState, pkg) {
     pendingEvents: pkg.queuedEvents,
     emittedEventKeys: pkg.nextEmittedEventKeys,
   }))
-
-  firePostAdvanceEvaluations(setGameState, pkg.evaluationRequest)
 }
 
 export function useSimulation() {
@@ -656,11 +657,23 @@ export function useSimulation() {
       })
 
       pendingAdvanceRef.current = pkg
+      // シミュレーション完了後すぐ住民反応・中間評価を開始する。
+      // 意図アンケート回答中でも裏で生成が進む。
       setGameState(prev => ({
         ...prev,
         advanceResultReady: true,
         loading: true,
+        lastEvaluationRequest: pkg.evaluationRequest,
+        llmCommentary: '',
+        llmLoading: true,
+        residentCouncil: null,
+        residentCouncilLoading: true,
+        residentCouncilError: false,
+        residentInterviews: {},
+        residentInterviewCounts: {},
+        residentInterviewLoading: {},
       }))
+      firePostAdvanceEvaluations(setGameState, pkg.evaluationRequest)
       tryCommitAdvance()
     } catch (err) {
       pendingAdvanceRef.current = null
@@ -682,6 +695,8 @@ export function useSimulation() {
         intentSurveyOpen: false,
         intentSurveySubmitted: false,
         advanceResultReady: false,
+        llmLoading: false,
+        residentCouncilLoading: false,
       }))
     }
   }, [gameState, tryCommitAdvance])

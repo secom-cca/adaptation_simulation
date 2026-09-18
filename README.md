@@ -81,12 +81,32 @@ entry point
 
 ## 🛠 Prerequisites (AI Agent Setup)
 
-This project uses **gemma4:e2b** via **Ollama** for AI-agent features. Please set up the following before running the simulation:
+This project uses **gemma4:e2b** via **Ollama** for AI-agent features (住民の反応・中間評価など). Please set up the following before running the simulation:
 
 1. **Install Ollama**: Download and install from [ollama.com](https://ollama.com).
-2. **Download Gemma Model**: Run the following command in your terminal to pull the required model:
+2. **Download Gemma Model**:
    ```bash
    ollama pull gemma4:e2b
+   ```
+3. **Install the Python `ollama` client** in the backend environment (Ollama 本体だけでは不十分です):
+   ```bash
+   cd backend
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+4. **Start the API with that environment**:
+   ```bash
+   cd backend
+   source .venv/bin/activate
+   uvicorn main:app --reload --port 8000
+   ```
+
+確認:
+```bash
+ollama list                 # gemma4:e2b があること
+curl http://127.0.0.1:11434/api/tags
+```
 ---
 
 ## 🚀 Usage Options
