@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import PolicySlider from './PolicySlider.jsx'
 import { POLICIES } from '../../data/policyEffects.js'
 import { getCumulativePolicyStats } from '../../data/budget.js'
@@ -9,7 +9,7 @@ export default function DecisionPanel({
   mode,
   sliders,
   onSliderChange,
-  onPreviewPolicy,
+  onPolicySelect,
   onAdvance,
   loading,
   year,
@@ -17,27 +17,37 @@ export default function DecisionPanel({
   budgetRow,
 }) {
   const { t, lang } = useTranslation()
-  const [collapsed, setCollapsed] = useState(false)
   const policies = POLICIES[mode] ?? POLICIES.upstream
+  const [activePolicyKey, setActivePolicyKey] = useState(policies[0]?.key)
   const isTeam = mode === 'team'
   const nextYear = year + 24
   const cumulativeStats = getCumulativePolicyStats(policyHistory).filter(item => item.used > 0 || item.cap != null)
   const availablePoints = Math.round(budgetRow?.availableBudgetPoints ?? 10)
   const usedPoints = Math.round(budgetRow?.usedPolicyPoints ?? 0)
+  const remainingPoints = Math.max(0, availablePoints - usedPoints)
+  const usedGaugeWidth = Math.min(100, Math.max(0, usedPoints * 10))
+  const remainingGaugeWidth = Math.min(100 - usedGaugeWidth, Math.max(0, remainingPoints * 10))
+  const activePolicy = useMemo(
+    () => policies.find(policy => policy.key === activePolicyKey) ?? policies[0],
+    [activePolicyKey, policies],
+  )
+
+  useEffect(() => {
+    if (!policies.some(policy => policy.key === activePolicyKey)) {
+      setActivePolicyKey(policies[0]?.key)
+    }
+  }, [activePolicyKey, policies])
+
+  useEffect(() => {
+    if (activePolicy?.key) onPolicySelect?.(activePolicy.key)
+  }, [activePolicy?.key, onPolicySelect])
+
+  const selectPolicy = (key) => {
+    setActivePolicyKey(key)
+  }
 
   return (
-    <div className={`${s.panel} ${isTeam ? s.teamPanel : ''} ${collapsed ? s.collapsed : ''}`}>
-      <button
-        className={s.handle}
-        onClick={() => setCollapsed(c => !c)}
-        title={collapsed ? t('decision.expand') : t('decision.collapse')}
-      >
-        <span className={s.handleLine} />
-        {collapsed && <span className={s.handleLabel}>{t('decision.title')}</span>}
-        <span className={s.handleArrow}>{collapsed ? '▲' : '▼'}</span>
-        <span className={s.handleLine} />
-      </button>
-
+    <div className={`${s.panel} ${isTeam ? s.teamPanel : ''}`}>
       <div className={s.inner}>
         <div className={s.header}>
           <div className={s.heading}>
@@ -46,10 +56,33 @@ export default function DecisionPanel({
           </div>
           <div className={s.headerActions}>
             <div className={s.budgetStrip}>
-              <span>{lang === 'ja' ? '使用可能' : 'Available'}</span>
-              <strong>{availablePoints} / 10 ポイント</strong>
-              <span>{lang === 'ja' ? '配分' : 'Used'}</span>
-              <strong>{usedPoints} ポイント</strong>
+              <div className={s.budgetTextRow}>
+                <span>{lang === 'ja' ? '配分後の残り' : 'Remaining'}</span>
+                <strong>{remainingPoints} / 10 {lang === 'ja' ? 'ポイント' : 'points'}</strong>
+              </div>
+              <div
+                className={s.budgetGauge}
+                role="meter"
+                aria-label={lang === 'ja' ? '配分後に残っているポイント' : 'Points remaining after allocation'}
+                aria-valuemin="0"
+                aria-valuemax="10"
+                aria-valuenow={remainingPoints}
+              >
+                <span
+                  className={s.gaugeUsed}
+                  style={{ width: `${usedGaugeWidth}%` }}
+                  title={`${lang === 'ja' ? '配分済み' : 'Used'}: ${usedPoints}`}
+                />
+                <span
+                  className={s.gaugeRemaining}
+                  style={{ width: `${remainingGaugeWidth}%` }}
+                  title={`${lang === 'ja' ? '残り' : 'Remaining'}: ${remainingPoints}`}
+                />
+              </div>
+              <div className={s.budgetLegend}>
+                <span className={s.legendUsed}>{lang === 'ja' ? `配分済み ${usedPoints}` : `Used ${usedPoints}`}</span>
+                <span className={s.legendRemaining}>{lang === 'ja' ? `使用可能 ${remainingPoints}` : `Available ${remainingPoints}`}</span>
+              </div>
             </div>
             <button className={s.advanceBtn} onClick={onAdvance} disabled={loading}>
               {loading ? t('decision.loading') : t('decision.advance')}
@@ -57,18 +90,44 @@ export default function DecisionPanel({
           </div>
         </div>
 
-        <div className={`${s.policies} ${isTeam ? s.policiesGrid : ''}`}>
-          {policies.map(policy => (
-            <PolicySlider
-              key={policy.key}
-              policy={policy}
-              value={sliders[policy.key] ?? 0}
-              onChange={val => onSliderChange(policy.key, val)}
-              cumulativeStats={cumulativeStats}
-              onPreview={onPreviewPolicy}
-            />
-          ))}
+        <div className={s.policyTabs} role="tablist" aria-label={lang === 'ja' ? '政策' : 'Policies'}>
+          {policies.map(policy => {
+            const selected = policy.key === activePolicy?.key
+            return (
+              <button
+                key={policy.key}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                className={`${s.policyTab} ${selected ? s.policyTabActive : ''}`}
+                onClick={() => selectPolicy(policy.key)}
+              >
+                {lang === 'ja' ? policy.label.ja : policy.label.en}
+              </button>
+            )
+          })}
         </div>
+
+        {activePolicy && (
+          <div className={s.policyDetail} role="tabpanel">
+            <div className={s.sliderPane}>
+              <PolicySlider
+                policy={activePolicy}
+                value={sliders[activePolicy.key] ?? 0}
+                onChange={val => onSliderChange(activePolicy.key, val)}
+                cumulativeStats={cumulativeStats}
+              />
+            </div>
+            <figure className={s.policyMap}>
+              <img
+                src={`/causal-explorer-assets/policy-mini-maps/${lang === 'ja' ? 'ja' : 'en'}/${policyMapFile(activePolicy.key)}`}
+                alt={lang === 'ja'
+                  ? `${activePolicy.label.ja}が流域に与える影響`
+                  : `${activePolicy.label.en} impact map`}
+              />
+            </figure>
+          </div>
+        )}
 
         <div className={s.footer}>
           {cumulativeStats.length > 0 && (
@@ -88,4 +147,15 @@ export default function DecisionPanel({
       </div>
     </div>
   )
+}
+
+function policyMapFile(key) {
+  return {
+    planting_trees_amount: 'forest.png',
+    dam_levee_construction_cost: 'levee.png',
+    paddy_dam_construction_cost: 'paddy-dam.png',
+    house_migration_amount: 'relocation.png',
+    capacity_building_cost: 'preparedness.png',
+    agricultural_RnD_cost: 'agri-rnd.png',
+  }[key] ?? 'forest.png'
 }
