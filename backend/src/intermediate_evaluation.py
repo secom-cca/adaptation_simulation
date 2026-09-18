@@ -1076,6 +1076,11 @@ def _chat_ollama(
     timeout: float = OLLAMA_TIMEOUT_SECONDS,
     response_format: str | None = None,
 ) -> Any:
+    if ollama is None:
+        raise RuntimeError(
+            "Python package 'ollama' is not installed. "
+            "Run: pip install ollama"
+        )
     client = ollama.Client(timeout=timeout)
     kwargs: Dict[str, Any] = {
         "model": model,
