@@ -922,6 +922,22 @@ export function useSimulation() {
     setGameState(s => ({ ...s, phase: 'comparison' }))
   }, [])
 
+  const openFinalDetails = useCallback(() => {
+    emit('final_details_open', {})
+    emit('phase_leave', { phase: 'ending', next_phase: 'final_detail' }, { source: 'system' })
+    setLogContext({ phase: 'final_detail', cycle: gameState.cycle, year: gameState.year, gameView: 'detail' })
+    emit('phase_enter', { phase: 'final_detail' }, { source: 'system' })
+    setGameState(s => ({ ...s, phase: 'final_detail' }))
+  }, [gameState.cycle, gameState.year])
+
+  const backFromFinalDetails = useCallback(() => {
+    emit('final_details_back', {})
+    emit('phase_leave', { phase: 'final_detail', next_phase: 'ending' }, { source: 'system' })
+    setLogContext({ phase: 'ending', cycle: gameState.cycle, year: gameState.year })
+    emit('phase_enter', { phase: 'ending' }, { source: 'system' })
+    setGameState(s => ({ ...s, phase: 'ending' }))
+  }, [gameState.cycle, gameState.year])
+
   const backToEnding = useCallback(() => {
     emit('comparison_back', {})
     emit('phase_leave', { phase: 'comparison', next_phase: 'ending' }, { source: 'system' })
@@ -1066,6 +1082,8 @@ export function useSimulation() {
     dismissIntroduction,
     requestResidentInterview,
     showComparison,
+    openFinalDetails,
+    backFromFinalDetails,
     backToEnding,
     openSurvey,
     submitSurvey,

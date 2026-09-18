@@ -51,7 +51,7 @@ function MetricSection({ metric, player, rcp, scenarioLabel }) {
   </section>
 }
 
-export default function EndingPage({ sim, onCompare, onOpenSurvey, onRetryExport }) {
+export default function EndingPage({ sim, onCompare, onOpenDetails, onOpenSurvey, onRetryExport }) {
   const { t } = useTranslation()
   const { history = [], baselineHistory = [], currentClimateHistory = [], userName, mode, rcpValue, policyHistory = [], exportDone, exportError, exportFilename, surveySubmitted } = sim.gameState
   const scenarioLabel = rcpValue === 'composite' ? 'RCP4.5（複合）' : `RCP${rcpValue}`
@@ -69,7 +69,11 @@ export default function EndingPage({ sim, onCompare, onOpenSurvey, onRetryExport
     <p className={s.methodNote}>各指標は「現在気候・無対策」を100点とした相対評価です。洪水被害は期間累計、農作物生産高と生態系は期間平均で評価します。100点を上限にはしていません。</p>
     <div className={s.metricsLayout}>{METRICS.map(metric => <MetricSection key={metric.key} metric={metric} player={player} rcp={rcp} scenarioLabel={scenarioLabel} />)}</div>
     <section className={s.policySummary}><div className={s.policyTitle}>政策履歴</div>{policies.map(x => <div className={s.policyRow} key={x.turn}><strong>{x.turn}</strong><span>{x.text}</span></div>)}</section>
-    <button className={s.compareBtn} onClick={onCompare}>参加者結果を見る</button><button className={s.surveyBtn} onClick={onOpenSurvey} type="button">{surveySubmitted ? t('ending.survey.done') : t('ending.survey')}</button>
+    <div className={s.endingActions}>
+      <button className={s.detailBtn} onClick={onOpenDetails} type="button">詳細グラフを見る</button>
+      <button className={s.compareBtn} onClick={onCompare}>参加者結果を見る</button>
+      <button className={s.surveyBtn} onClick={onOpenSurvey} type="button">{surveySubmitted ? t('ending.survey.done') : t('ending.survey')}</button>
+    </div>
     {exportError && <button type="button" className={s.saveLogBtn} onClick={() => onRetryExport?.()}>{t('ending.export.retry')}</button>}{exportDone && !exportError && exportFilename && <p className={s.exportNote}>{t('ending.export.done')} ({exportFilename})</p>}
     <p className={s.exportNote}>{t('ending.export.hint')}</p>
   </div></div>

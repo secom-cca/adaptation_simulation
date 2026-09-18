@@ -6,6 +6,7 @@ import ConsequencePage from './pages/ConsequencePage.jsx'
 import EndingPage from './pages/EndingPage.jsx'
 import ResultComparisonPage from './pages/ResultComparisonPage.jsx'
 import SurveyPage from './pages/SurveyPage.jsx'
+import FinalDetailPage from './pages/FinalDetailPage.jsx'
 
 export default function App() {
   const sim = useSimulation()
@@ -41,11 +42,13 @@ export default function App() {
       <EndingPage
         sim={sim}
         onCompare={sim.showComparison}
+        onOpenDetails={sim.openFinalDetails}
         onOpenSurvey={sim.openSurvey}
         onRetryExport={sim.retryExportLog}
       />
     )
   }
+  if (phase === 'final_detail') return <FinalDetailPage sim={sim} onBack={sim.backFromFinalDetails} />
   if (phase === 'comparison')  return <ResultComparisonPage sim={sim} onBack={sim.backToEnding} />
   return null
 }
