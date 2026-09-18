@@ -56,20 +56,12 @@
 
 .sceneShade {
   position: absolute;
-  inset: 0;
-  background: rgba(20, 25, 23, 0.48);
-  -webkit-mask-image: radial-gradient(
-    ellipse var(--spot-rx) var(--spot-ry) at var(--spot-x) var(--spot-y),
-    transparent 0 91%,
-    rgba(0, 0, 0, 0.45) 96%,
-    #000 100%
-  );
-  mask-image: radial-gradient(
-    ellipse var(--spot-rx) var(--spot-ry) at var(--spot-x) var(--spot-y),
-    transparent 0 91%,
-    rgba(0, 0, 0, 0.45) 96%,
-    #000 100%
-  );
+  left: calc(var(--spot-x) - var(--spot-rx));
+  top: calc(var(--spot-y) - var(--spot-ry));
+  width: calc(var(--spot-rx) + var(--spot-rx));
+  height: calc(var(--spot-ry) + var(--spot-ry));
+  border-radius: 3px;
+  box-shadow: 0 0 0 9999px rgba(20, 25, 23, 0.48);
   animation: sceneHighlightIn 180ms ease-out;
 }
 
@@ -80,7 +72,7 @@
   width: calc(var(--spot-rx) + var(--spot-rx));
   height: calc(var(--spot-ry) + var(--spot-ry));
   border: 3px solid rgba(255, 187, 61, 0.98);
-  border-radius: 50%;
+  border-radius: 3px;
   box-shadow:
     inset 0 0 24px rgba(255, 209, 112, 0.16),
     0 0 0 6px rgba(255, 191, 73, 0.17),

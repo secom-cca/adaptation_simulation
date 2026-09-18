@@ -5,12 +5,9 @@ from typing import Any, Dict, List
 
 from intermediate_evaluation import (
     INTERMEDIATE_EVALUATION_MODEL,
-    _build_event_highlights,
-    _build_metric_summary,
     _build_phase_summaries,
     _build_policy_effect_snapshots,
     _build_policy_summary,
-    _build_turning_point_highlights,
     _chat_ollama,
     _extract_json_object,
     _extract_message_content,
@@ -33,70 +30,38 @@ RESIDENT_COUNCIL_MODEL = INTERMEDIATE_EVALUATION_MODEL
 RESIDENT_COUNCIL_MODEL_ATTEMPTS = (
     (
         RESIDENT_COUNCIL_MODEL,
-        {"temperature": 0.35, "num_predict": 1200},
-        45.0,
-    ),
-    (
-        "gemma2:2b",
-        {"temperature": 0.35, "num_predict": 700},
-        30.0,
+        {"temperature": 0.3, "num_predict": 320},
+        20.0,
     ),
 )
 RESIDENT_INTERVIEW_MODEL_ATTEMPTS = (
     (
         RESIDENT_COUNCIL_MODEL,
-        {"temperature": 0.85, "top_p": 0.9, "num_predict": 900},
-        45.0,
-    ),
-    (
-        "gemma2:2b",
-        {"temperature": 0.85, "top_p": 0.9, "num_predict": 360},
-        30.0,
-    ),
-)
-RESIDENT_SHORT_VOICE_MODEL_ATTEMPTS = (
-    (
-        "gemma2:2b",
-        {"temperature": 0.8, "top_p": 0.9, "num_predict": 120},
-        20.0,
-    ),
-)
-RESIDENT_PERSONA_EVALUATION_MODEL_ATTEMPTS = (
-    (
-        "gemma2:2b",
-        {"temperature": 0.45, "top_p": 0.9, "num_predict": 220},
+        {"temperature": 0.7, "top_p": 0.9, "num_predict": 360},
         25.0,
     ),
 )
-
 PERSONAS: Dict[str, Dict[str, str]] = {
-    "child_future": {
-        "display_name": "未来を見つめる小学生",
-        "handle": "@future_child",
-        "avatar": "🧒",
-        "role": "小学生",
-        "focus": "未来、生態系、暑さ、安心して遊べる川や森",
-    },
-    "entrepreneur": {
-        "display_name": "若手起業家",
-        "handle": "@local_founder",
-        "avatar": "👩‍💼",
-        "role": "若手起業家",
-        "focus": "都市の利便性、事業継続、持続可能性、生活コスト",
-    },
-    "council_member": {
-        "display_name": "市議会議員",
-        "handle": "@city_council",
-        "avatar": "🏛",
-        "role": "市議会議員",
-        "focus": "予算効率、防災インフラ、住民負担、説明責任",
+    "riverside_resident": {
+        "display_name": "河川付近の住民",
+        "handle": "@riverside_voice",
+        "avatar": "🏠",
+        "role": "川の近くで暮らす住民",
+        "focus": "洪水被害、避難、防災能力、堤防、高リスク住宅",
     },
     "farmer": {
-        "display_name": "元農家",
-        "handle": "@old_farmer",
+        "display_name": "農家",
+        "handle": "@local_farmer",
         "avatar": "🧑‍🌾",
-        "role": "隠居中の元農家",
-        "focus": "収穫量、水、田畑、日々の平穏、次世代の農業",
+        "role": "地域で農業を営む農家",
+        "focus": "収穫量、水、猛暑、田んぼダム、農業の継続",
+    },
+    "environmentalist": {
+        "display_name": "環境活動家",
+        "handle": "@river_ecology",
+        "avatar": "🌿",
+        "role": "流域の自然を守る環境活動家",
+        "focus": "生態系、森林、水環境、構造物対策の環境影響",
     },
 }
 
@@ -104,19 +69,19 @@ PERSONA_KEYS = tuple(PERSONAS.keys())
 
 SYSTEM_PROMPT_JA = """
 あなたは地域のAI住民評議会です。
-25年分の結果を読み、4人の固定ペルソナごとに満足度スコアと短い市民の声を生成してください。
+25年分の結果を読み、3人の固定ペルソナごとに満足度スコアと短い市民の声を生成してください。
 
 必須ルール:
 - 出力は JSON オブジェクトだけにしてください。説明、Markdown、コードフェンスは禁止です。
 - JSON は {"residents": [...]} の形にしてください。
 - residents の各要素は persona_key, score, short_voice だけを持ってください。
-- persona_key は child_future, entrepreneur, council_member, farmer の4つを必ず1回ずつ使ってください。
+- persona_key は riverside_resident, farmer, environmentalist の3つを必ず1回ずつ使ってください。
 - score は必ず 1 から 10 の整数にしてください。5は中立、6以上は満足寄り、4以下は不満寄りです。
 - short_voice は各ペルソナの一人称の短い一言にしてください。
 - short_voice は25年データの実感に結びつけ、一般論だけにしないでください。
 - short_voice は、重大イベントを振り返る一言、またはこの先の暮らしへの見通しがにじむ一言にしてください。
 - short_voice は「満足しています」「心配です」だけの定型文にせず、ペルソナの口から出る熱のある一文にしてください。
-- 4人の short_voice は同じ文型にせず、怒り、不安、希望、納得、悔しさなどをスコアに合わせて出し分けてください。
+- 3人の short_voice は同じ文型にせず、怒り、不安、希望、納得、悔しさなどをスコアに合わせて出し分けてください。
 - 可能なら具体的なイベント年、政策の手応え、被害、収穫、負担、猛暑、防災能力などを1つ入れてください。
 - 対象期間外の具体年、実在しない出来事、固定されていない年齢設定は作らないでください。
 - 市民の声は、満足、怒り、不安、悲痛な叫び、具体的な経験の吐露など、データとペルソナに合う自然な反応にしてください。
@@ -130,13 +95,13 @@ Required rules:
 - Output only one JSON object. No explanation, no markdown, no code fences.
 - Use the shape {"residents": [...]}.
 - Each resident object must include only persona_key, score, and short_voice.
-- Use each persona_key exactly once: child_future, entrepreneur, council_member, farmer.
+- Use each persona_key exactly once: riverside_resident, farmer, environmentalist.
 - score must be an integer from 1 to 10. 5 means neutral, 6-10 satisfied, 1-4 dissatisfied.
 - short_voice must sound like that persona's immediate first-person reaction.
 - Ground short_voice in the 25-year data, not generic commentary.
 - Make short_voice either look back at a major event or reveal that persona's outlook for life ahead.
 - Do not use bland stock phrases. Make each short_voice one vivid sentence with persona-specific emotion.
-- Do not give all four residents the same sentence structure.
+- Do not give all three residents the same sentence structure.
 - Include one concrete event year, policy effect, damage, harvest, burden, heat, or preparedness detail where possible.
 - Do not invent specific years outside the target period, fictional events, or exact ages not provided.
 """.strip()
@@ -172,38 +137,20 @@ def _build_fallback_scores(req: IntermediateEvaluationRequest) -> Dict[str, int]
     flood_avg = _average_metric(rows, "Flood Damage")
     crop_avg = _average_metric(rows, "Crop Yield")
     water_avg = _average_metric(rows, "available_water")
-    hot_days_avg = _average_metric(rows, "Hot Days")
-    cost_avg = _average_metric(rows, "Municipal Cost")
-    burden_avg = _average_metric(rows, "Resident Burden")
-
     ecosystem_last = _to_float(last_row.get("Ecosystem Level"))
-    urban_last = _to_float(last_row.get("Urban Level"))
+    forest_last = _to_float(last_row.get("Forest Area"))
     levee_last = _to_float(last_row.get("Levee Level"))
     capacity_last = _to_float(last_row.get("Resident capacity"))
+    risky_houses_last = _to_float(last_row.get("risky_house_total"))
 
-    child_future = round(
-        (
-            _scale_score(ecosystem_last, 0, 100)
-            + _scale_score(hot_days_avg, 20, 120, lower_is_better=True)
-            + _scale_score(flood_avg, 0, 200000, lower_is_better=True)
-        )
-        / 3
-    )
-    entrepreneur = round(
-        (
-            _scale_score(urban_last, 0, 100)
-            + _scale_score(cost_avg, 0, 4_000_000, lower_is_better=True)
-            + _scale_score(burden_avg, 0, 120_000, lower_is_better=True)
-        )
-        / 3
-    )
-    council_member = round(
+    riverside_resident = round(
         (
             _scale_score(flood_avg, 0, 200000, lower_is_better=True)
             + _scale_score(levee_last, 100, 400)
             + _scale_score(capacity_last, 0, 1)
+            + _scale_score(risky_houses_last, 0, 10000, lower_is_better=True)
         )
-        / 3
+        / 4
     )
     farmer = round(
         (
@@ -213,12 +160,19 @@ def _build_fallback_scores(req: IntermediateEvaluationRequest) -> Dict[str, int]
         )
         / 3
     )
+    environmentalist = round(
+        (
+            _scale_score(ecosystem_last, 0, 100)
+            + _scale_score(forest_last, 3000, 7000)
+            + _scale_score(water_avg, 0, 3000)
+        )
+        / 3
+    )
 
     return {
-        "child_future": max(1, min(10, child_future)),
-        "entrepreneur": max(1, min(10, entrepreneur)),
-        "council_member": max(1, min(10, council_member)),
+        "riverside_resident": max(1, min(10, riverside_resident)),
         "farmer": max(1, min(10, farmer)),
+        "environmentalist": max(1, min(10, environmentalist)),
     }
 
 
@@ -368,12 +322,6 @@ def _policy_effect_fragments(req: IntermediateEvaluationRequest, persona_key: st
     if active("planting_trees_amount"):
         fragments.append("植林・森林保全は長期の約束だが、この期間だけでは暑さや生態系への効きが見えにくい")
 
-    if persona_key == "entrepreneur" and active("transportation_invest"):
-        if _metric_moved(rows, "Urban Level"):
-            fragments.append("交通投資は、人と商売の動きを支える材料になっている")
-        else:
-            fragments.append("交通投資はあるが、商売のしやすさとしてはまだ実感が弱い")
-
     return fragments
 
 
@@ -387,14 +335,12 @@ def _persona_policy_read(req: IntermediateEvaluationRequest, persona_key: str) -
 
 
 def _select_persona_policy_fragments(fragments: List[str], persona_key: str) -> List[str]:
-    if persona_key == "child_future":
-        priority = ("植林", "防災", "田んぼ", "住宅", "堤防")
-    elif persona_key == "entrepreneur":
-        priority = ("交通", "住宅", "堤防", "防災")
-    elif persona_key == "council_member":
+    if persona_key == "riverside_resident":
         priority = ("堤防", "防災", "住宅", "田んぼ")
-    else:
+    elif persona_key == "farmer":
         priority = ("高温", "田んぼ", "植林")
+    else:
+        priority = ("植林", "田んぼ", "住宅", "堤防")
 
     relevant = [fragment for fragment in fragments if any(word in fragment for word in priority)]
     if not relevant:
@@ -413,49 +359,7 @@ def _persona_event_briefs(req: IntermediateEvaluationRequest, persona_key: str) 
     rows = req.simulation_rows
     briefs: List[str] = []
 
-    if persona_key == "child_future":
-        for row in _top_middle_rows_by_metric(rows, "Hot Days", count=1, reverse=True):
-            line = _focused_event_line(
-                row,
-                [("Hot Days", "猛暑日", None), ("Ecosystem Level", "生態系", None)],
-                "外で遊ぶ安心と、将来の自然への不安に直結する。",
-            )
-            if line:
-                briefs.append(f"- 猛暑の記憶: {line}")
-        for row in _top_middle_rows_by_metric(rows, "Flood Damage", count=1, reverse=True):
-            line = _focused_event_line(
-                row,
-                [("Flood Damage", "洪水被害", None), ("Resident capacity", "防災能力", 2)],
-                "子どもにとっては、数字よりも町で安全に過ごせるかの記憶になる。",
-            )
-            if line:
-                briefs.append(f"- 水害への不安: {line}")
-        briefs.append(f"- 先行き: {_intuitive_trend_line(rows, 'Ecosystem Level', '生態系')}")
-        briefs.append(_persona_policy_read(req, persona_key))
-        return briefs
-
-    if persona_key == "entrepreneur":
-        for row in _top_middle_rows_by_metric(rows, "Resident Burden", count=1, reverse=True):
-            line = _focused_event_line(
-                row,
-                [("Resident Burden", "住民負担", None), ("Municipal Cost", "自治体コスト", None)],
-                "生活費と事業コストが読みにくくなり、投資や雇用の判断を重くする。",
-            )
-            if line:
-                briefs.append(f"- 生活コスト・事業コストの重い年: {line}")
-        for row in _top_middle_rows_by_metric(rows, "Flood Damage", count=1, reverse=True):
-            line = _focused_event_line(
-                row,
-                [("Flood Damage", "洪水被害", None), ("Urban Level", "都市機能", None)],
-                "店や人の動きが止まる不安として受け止める。",
-            )
-            if line:
-                briefs.append(f"- 事業継続を揺らす水害年: {line}")
-        briefs.append(f"- 先行き: {_intuitive_trend_line(rows, 'Resident Burden', '住民負担', lower_is_better=True)}")
-        briefs.append(_persona_policy_read(req, persona_key))
-        return briefs
-
-    if persona_key == "council_member":
+    if persona_key == "riverside_resident":
         for row in _top_middle_rows_by_metric(rows, "Flood Damage", count=1, reverse=True):
             line = _focused_event_line(
                 row,
@@ -465,19 +369,24 @@ def _persona_event_briefs(req: IntermediateEvaluationRequest, persona_key: str) 
                     ("Resident capacity", "防災能力", 2),
                     ("risky_house_total", "高リスク住宅", None),
                 ],
-                "住民に『備えは十分だったのか』を説明しなければならない年。",
+                "自宅から安全に避難できるかという切実な不安に直結する。",
             )
             if line:
-                briefs.append(f"- 説明責任が重くなる水害年: {line}")
-        for row in _top_middle_rows_by_metric(rows, "Resident Burden", count=1, reverse=True):
+                briefs.append(f"- 水害への不安: {line}")
+        briefs.append(f"- 先行き: {_intuitive_trend_line(rows, 'Flood Damage', '洪水被害', lower_is_better=True)}")
+        briefs.append(_persona_policy_read(req, persona_key))
+        return briefs
+
+    if persona_key == "environmentalist":
+        for row in _top_middle_rows_by_metric(rows, "Ecosystem Level", count=1, reverse=False):
             line = _focused_event_line(
                 row,
-                [("Resident Burden", "住民負担", None), ("Municipal Cost", "自治体コスト", None)],
-                "政策の痛みを住民にどう説明するかが問われる。",
+                [("Ecosystem Level", "生態系", None), ("Forest Area", "森林面積", None), ("available_water", "水量", None)],
+                "治水だけでなく、流域の自然が回復しているかを問う材料になる。",
             )
             if line:
-                briefs.append(f"- 住民負担が問われる年: {line}")
-        briefs.append(f"- 先行き: {_intuitive_trend_line(rows, 'Flood Damage', '洪水被害', lower_is_better=True)}")
+                briefs.append(f"- 生態系が弱った年: {line}")
+        briefs.append(f"- 先行き: {_intuitive_trend_line(rows, 'Ecosystem Level', '生態系')}")
         briefs.append(_persona_policy_read(req, persona_key))
         return briefs
 
@@ -573,25 +482,20 @@ def _build_fallback_short_voice(persona_key: str, score: int, req: IntermediateE
     rows = req.simulation_rows
     flood_year = _main_event_year(rows, "Flood Damage", reverse=True) or "水害が大きかった年"
     crop_year = _main_event_year(rows, "Crop Yield", reverse=False) or "収穫が落ちた年"
-    burden_year = _main_event_year(rows, "Resident Burden", reverse=True) or "負担が重かった年"
-    hot_year = _main_event_year(rows, "Hot Days", reverse=True) or "暑さがきつかった年"
+    ecosystem_year = _main_event_year(rows, "Ecosystem Level", reverse=False) or "生態系が弱った年"
     policy_clause = _short_policy_clause(req, persona_key, score)
 
-    if persona_key == "child_future":
+    if persona_key == "riverside_resident":
         if score >= 7:
-            return f"{hot_year}は怖かったけど、{policy_clause}と感じられるなら、僕はまだ川で遊べる未来を信じたい。"
-        return f"{hot_year}みたいな暑さが続くなら、外で笑って遊ぶ未来まで削られている気がして悔しい。"
-    if persona_key == "entrepreneur":
-        if score >= 7:
-            return f"{burden_year}の重さはある。それでも{policy_clause}と感じられるなら、この町で事業を伸ばす覚悟は残る。"
-        return f"{burden_year}の負担と災害リスクを見たら、人を雇う計画まで冷える。夢だけでは店は守れない。"
-    if persona_key == "council_member":
-        if score >= 7:
-            return f"{flood_year}の教訓は重いが、{policy_clause}と説明できるなら、住民に向き合う材料はある。"
-        return f"{flood_year}の被害を前に、この負担で納得してくださいとは議会で言えません。"
-    if score >= 7:
+            return f"{flood_year}の怖さは残るが、{policy_clause}なら、川のそばで暮らし続ける安心につながる。"
+        return f"{flood_year}の被害を見れば、次の雨で家から安全に逃げられるのか不安が消えない。"
+    if persona_key == "farmer" and score >= 7:
         return f"{crop_year}の落ち込みを越えて{policy_clause}と感じられるなら、田畑を次に渡す言葉がまだ残る。"
-    return f"{crop_year}の収穫の落ち込みは忘れられん。これでは若い者に『残れ』とはよう言えん。"
+    if persona_key == "farmer":
+        return f"{crop_year}の収穫の落ち込みは忘れられない。このままでは農業を続ける判断が揺らぐ。"
+    if score >= 7:
+        return f"{ecosystem_year}を底に、{policy_clause}と読めるなら、流域の自然を戻す道は残っている。"
+    return f"{ecosystem_year}の生態系を見過ごして治水だけ進めても、川と森を守ったことにはならない。"
 
 
 def _normalize_interview_focus(req: ResidentInterviewRequest) -> str:
@@ -624,82 +528,26 @@ def _build_fallback_detailed_voice(persona_key: str, score: int, req: ResidentIn
     rows = req.simulation_rows
     flood_year = _main_event_year(rows, "Flood Damage", reverse=True) or "水害が大きかった年"
     crop_year = _main_event_year(rows, "Crop Yield", reverse=False) or "収穫が落ちた年"
-    burden_year = _main_event_year(rows, "Resident Burden", reverse=True) or "負担が重かった年"
-    hot_year = _main_event_year(rows, "Hot Days", reverse=True) or "暑さがきつかった年"
+    ecosystem_year = _main_event_year(rows, "Ecosystem Level", reverse=False) or "生態系が弱った年"
     policy_clause = _voice_policy_clause(req, persona_key, score)
     period = f"{req.period_start_year}年から{req.period_end_year}年"
-    focus = _normalize_interview_focus(req)
 
-    if persona_key == "child_future":
-        if focus == "policy_effect":
-            return (
-                f"僕は{persona['role']}として、{period}の政策を自分の遊び場に置き換えて考えました。"
-                f"{policy_clause}。でも{hot_year}のような暑さを覚えると、数字が少し良くても、外に出る気持ちまで戻るかは別です。"
-                "未来が守られているなら、川や森で安心して遊べる実感として見えてほしいです。"
-            )
-        if focus == "future_outlook":
-            return (
-                f"僕は{persona['role']}として、{period}の先を{tone}に想像しています。{hot_year}の暑さが心に残って、"
-                "この町で大人になるころも同じように外へ出られるのか不安です。"
-                f"政策については、{policy_clause}。未来への約束としては、まだ生活の安心に届いたかを見ています。"
-            )
+    if persona_key == "riverside_resident":
         return (
-            f"僕は{persona['role']}として、{period}を{tone}に見ています。いちばん残るのは{hot_year}の暑さで、"
-            f"外で遊ぶ場所がだんだん細っていく感じがしました。政策については、{policy_clause}。"
-            "それが毎日の安心まで届かないなら、未来を守ったとは言い切れません。"
+            f"私は{persona['role']}として、{period}を{tone}に受け止めています。{flood_year}の被害は、"
+            f"次の雨で家族と安全に逃げられるかという不安そのものです。政策は{policy_clause}。"
+            "堤防の数字だけでなく、避難できて家に戻れるという暮らしの安心まで届いてほしいです。"
         )
-    if persona_key == "entrepreneur":
-        if focus == "policy_effect":
-            return (
-                f"私は{persona['role']}として、政策が商売の継続にどう効いたかを見ています。{policy_clause}。"
-                f"ただ、{burden_year}のように負担が重く見える年があると、採用や投資の判断は鈍ります。"
-                "事業者にとっては、理念よりも災害後に店を開け続けられるかが評価の分かれ目です。"
-            )
-        if focus == "future_outlook":
-            return (
-                f"私は{persona['role']}として、{period}の先にこの町で挑戦できるかを考えています。"
-                f"{burden_year}の負担を見ると慎重になりますが、{policy_clause}。"
-                "暮らしと事業の土台が揺れ続けるなら、若い会社ほどこの町に賭けにくくなります。"
-            )
+    if persona_key == "farmer":
         return (
-            f"私は{persona['role']}として、{period}の評価は{tone}です。{burden_year}のように負担が跳ねると、"
-            f"採用も設備投資も一気に慎重になります。政策については、{policy_clause}。"
-            "災害やコストで街が止まる不安が残る限り、起業家は強気に賭けきれません。"
-        )
-    if persona_key == "council_member":
-        if focus == "policy_effect":
-            return (
-                f"私は{persona['role']}として、政策効果を住民に説明できるかを重く見ます。{flood_year}の記憶がある人には、"
-                f"{policy_clause}と具体的に言えるかが問われます。負担だけが見えると合意は崩れるので、"
-                "守れた部分と守れなかった部分を同じ重さで語る必要があります。"
-            )
-        if focus == "future_outlook":
-            return (
-                f"私は{persona['role']}として、{period}の先に説明責任が積み残されていないかを見ています。"
-                f"{flood_year}のような年を経験した住民に、{policy_clause}と言える材料はあります。"
-                "ただし、負担の痛みが残るなら、政策への信頼は次の災害まで持ちません。"
-            )
-        return (
-            f"私は{persona['role']}として、{period}の結果を住民説明の場で考えます。{flood_year}を覚えている住民には、"
-            f"{policy_clause}と正面から言えるかが重要です。一方で負担の痛みも残るので、"
-            "政策を選んだ理由と、守れなかった部分の説明から逃げてはいけません。"
-        )
-    if focus == "policy_effect":
-        return (
-            f"わしは{persona['role']}として、政策が田畑にどう届いたかを見とる。{policy_clause}。"
-            f"けれど{crop_year}のような年があると、机の上の評価より、収穫が減る怖さのほうが先に来る。"
-            "農家にとっては、効果があると言われるだけでは足りん。畑で安心できるかがすべてじゃ。"
-        )
-    if focus == "future_outlook":
-        return (
-            f"わしは{persona['role']}として、{period}の先に田畑を渡せるかを考えとる。"
-            f"{crop_year}の落ち込みは重いが、{policy_clause}。"
-            "若い者に残れと言うには、気候が荒れても暮らしが続くという腹の底の安心が要るんじゃ。"
+            f"私は{persona['role']}として、{period}を{tone}に見ています。{crop_year}の収穫の落ち込みは、"
+            f"一年の暮らしと次の作付けを直撃します。政策は{policy_clause}。"
+            "効果があるという説明だけでなく、猛暑や水不足の年にも収穫をつなげる実感が必要です。"
         )
     return (
-        f"わしは{persona['role']}として、{period}を{tone}に受け止めとる。忘れられんのは{crop_year}の収穫の落ち込みじゃ。"
-        f"政策については、{policy_clause}。それでも田畑は一年悪ければ暮らしが傾く。"
-        "若い者に継げと言うには、政策が畑の安心として腹に落ちるところまで必要じゃ。"
+        f"私は{persona['role']}として、{period}を{tone}に評価しています。{ecosystem_year}の状態を見ると、"
+        f"政策は{policy_clause}。洪水を抑えることと、川・森・水のつながりを守ることは両立させなければなりません。"
+        "生態系の回復が確認できない限り、将来へ十分な流域を渡せたとは言えません。"
     )
 
 
@@ -723,239 +571,6 @@ def _build_fallback_residents(
             )
         )
     return residents
-
-
-def _build_resident_short_voice_prompt(
-    req: IntermediateEvaluationRequest,
-    persona_key: str,
-    score: int,
-) -> str:
-    persona = PERSONAS[persona_key]
-    decision_var = req.decision_var.model_dump()
-    policy_summary = _build_policy_summary(decision_var)
-    phase_summaries = _build_phase_summaries(req.simulation_rows)
-    persona_evidence = _persona_event_briefs(req, persona_key)
-
-    if req.language.lower().startswith("en"):
-        return f"""
-You are this resident:
-- Name: {persona['display_name']}
-- Role: {persona['role']}
-- Main concerns: {persona['focus']}
-- Satisfaction score: {score}/10
-
-Period: {req.period_start_year}-{req.period_end_year}
-Policies:
-{chr(10).join(policy_summary)}
-
-Trend evidence:
-{chr(10).join(phase_summaries)}
-
-Evidence this resident would remember:
-{chr(10).join(persona_evidence)}
-
-Write one short first-person resident reaction.
-Use only the simulation evidence above. Do not write a policy memo.
-Include one concrete event, policy effect, burden, harvest, heat, or preparedness point if possible.
-No markdown, no JSON, no heading. Keep it one sentence, under 35 words.
-""".strip()
-
-    return f"""
-あなたは次の住民です。
-- 名前: {persona['display_name']}
-- 立場: {persona['role']}
-- 重視すること: {persona['focus']}
-- 満足度: {score}/10
-
-対象期間: {req.period_start_year}年-{req.period_end_year}年
-政策一覧:
-{chr(10).join(policy_summary)}
-
-前半・中盤・後半の比較:
-{chr(10).join(phase_summaries)}
-
-この住民が記憶しやすい材料:
-{chr(10).join(persona_evidence)}
-
-この住民本人として、短い一言を1文だけ書いてください。
-分析レポートではなく、生活者としての反応にしてください。
-可能なら、出来事の年、政策効果、負担、収穫、暑さ、防災能力のどれか1つを具体的に入れてください。
-JSON、Markdown、見出しは禁止です。対象期間外の年や実在しない出来事は禁止です。
-45〜90文字程度にしてください。
-""".strip()
-
-
-def _clean_short_voice(text: str) -> str:
-    cleaned = _clean_interview_text(text)
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    if cleaned.startswith("{") or cleaned.startswith("["):
-        return ""
-    return cleaned
-
-
-def _generate_resident_short_voice_with_llm(
-    req: IntermediateEvaluationRequest,
-    persona_key: str,
-    score: int,
-) -> tuple[str, str]:
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "あなたは指定された住民ペルソナです。"
-                "対象期間内のシミュレーション結果だけを根拠に、生活者として短く率直に反応してください。"
-                "政策解説ではなく、その住民なら何を感じるかを一人称で答えてください。"
-            ),
-        },
-        {"role": "user", "content": _build_resident_short_voice_prompt(req, persona_key, score)},
-    ]
-
-    for model_name, options, timeout in RESIDENT_SHORT_VOICE_MODEL_ATTEMPTS:
-        try:
-            response = _chat_ollama(
-                model=model_name,
-                messages=messages,
-                options=options,
-                timeout=timeout,
-            )
-            short_voice = _clean_short_voice(_extract_message_content(response))
-        except Exception:
-            short_voice = ""
-
-        if short_voice and not _short_voice_is_weak(short_voice, req):
-            return short_voice, model_name
-
-    return "", ""
-
-
-def _payload_score_keys(payload: Dict[str, Any] | None) -> set[str]:
-    keys: set[str] = set()
-    if not isinstance(payload, dict):
-        return keys
-
-    scores = payload.get("scores")
-    if isinstance(scores, dict):
-        for key in PERSONA_KEYS:
-            if _coerce_score(scores.get(key)) is not None:
-                keys.add(key)
-
-    residents = payload.get("residents")
-    if isinstance(residents, list):
-        for item in residents:
-            if not isinstance(item, dict):
-                continue
-            key = item.get("persona_key")
-            if key in PERSONA_KEYS and _coerce_score(item.get("score")) is not None:
-                keys.add(key)
-
-    return keys
-
-
-def _build_persona_evaluation_prompt(req: IntermediateEvaluationRequest, persona_key: str) -> str:
-    persona = PERSONAS[persona_key]
-    decision_var = req.decision_var.model_dump()
-    policy_summary = _build_policy_summary(decision_var)
-    metric_summary = _build_metric_summary(req.simulation_rows)
-    snapshots = _build_policy_effect_snapshots(req.simulation_rows, decision_var)
-    phase_summaries = _build_phase_summaries(req.simulation_rows)
-    persona_evidence = _persona_event_briefs(req, persona_key)
-
-    if req.language.lower().startswith("en"):
-        return f"""
-You are this resident:
-- Name: {persona['display_name']}
-- Role: {persona['role']}
-- Main concerns: {persona['focus']}
-
-Period: {req.period_start_year}-{req.period_end_year}
-Policies:
-{chr(10).join(policy_summary)}
-
-Observed policy evidence:
-{chr(10).join(snapshots)}
-
-Early/mid/late phase comparison:
-{chr(10).join(phase_summaries)}
-
-Metric summary:
-{chr(10).join(metric_summary)}
-
-Evidence this resident would remember:
-{chr(10).join(persona_evidence)}
-
-Decide this resident's satisfaction score.
-Score scale: 1-10 integer only. 5 is neutral, 1-4 means dissatisfied, 6-10 means satisfied.
-Judge from this persona's values, not from the overall average.
-Return only JSON: {{"score":5,"short_voice":"one vivid first-person sentence"}}
-""".strip()
-
-    return f"""
-あなたは次の住民です。
-- 名前: {persona['display_name']}
-- 立場: {persona['role']}
-- 重視すること: {persona['focus']}
-
-対象期間: {req.period_start_year}年-{req.period_end_year}年
-政策一覧:
-{chr(10).join(policy_summary)}
-
-政策ごとの観測証拠:
-{chr(10).join(snapshots)}
-
-前半・中盤・後半の比較:
-{chr(10).join(phase_summaries)}
-
-実績サマリー:
-{chr(10).join(metric_summary)}
-
-この住民が記憶しやすい材料:
-{chr(10).join(persona_evidence)}
-
-この住民の満足度を採点してください。
-点数ルール: 1〜10の整数のみ。5は中立、1〜4は不満寄り、6〜10は満足寄りです。
-全体平均ではなく、このペルソナが重視する価値から判断してください。
-JSONのみを返してください: {{"score":5,"short_voice":"住民本人の一人称の短い一言"}}
-""".strip()
-
-
-def _generate_persona_evaluation_with_llm(
-    req: IntermediateEvaluationRequest,
-    persona_key: str,
-) -> tuple[int | None, str, str]:
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "あなたは指定された住民ペルソナです。"
-                "対象期間内のシミュレーション結果だけを根拠に、その住民の満足度を1〜10で判断してください。"
-                "5は中立、低いほど不満、高いほど満足です。出力はJSONだけにしてください。"
-            ),
-        },
-        {"role": "user", "content": _build_persona_evaluation_prompt(req, persona_key)},
-    ]
-
-    for model_name, options, timeout in RESIDENT_PERSONA_EVALUATION_MODEL_ATTEMPTS:
-        try:
-            response = _chat_ollama(
-                model=model_name,
-                messages=messages,
-                options=options,
-                response_format="json",
-                timeout=timeout,
-            )
-            payload = _extract_json_object(_extract_message_content(response))
-        except Exception:
-            payload = None
-
-        if not isinstance(payload, dict):
-            continue
-
-        score = _coerce_score(payload.get("score"))
-        short_voice = _clean_short_voice(str(payload.get("short_voice") or ""))
-        if score is not None:
-            return score, short_voice, model_name
-
-    return None, "", ""
 
 
 def _mentions_outside_period(text: str, start_year: int, end_year: int) -> bool:
@@ -1039,93 +654,33 @@ def _persona_evidence_lines(req: IntermediateEvaluationRequest) -> List[str]:
 def _build_resident_council_prompt(req: IntermediateEvaluationRequest) -> str:
     decision_var = req.decision_var.model_dump()
     policy_summary = _build_policy_summary(decision_var)
-    metric_summary = _build_metric_summary(req.simulation_rows)
-    event_highlights = _build_event_highlights(req.simulation_rows)
-    snapshots = _build_policy_effect_snapshots(req.simulation_rows, decision_var)
-    phase_summaries = _build_phase_summaries(req.simulation_rows)
-    turning_points = _build_turning_point_highlights(req.simulation_rows)
     persona_evidence = _persona_evidence_lines(req)
 
     if req.language.lower().startswith("en"):
         return f"""
-Checkpoint year: {req.checkpoint_year}
 Period: {req.period_start_year}-{req.period_end_year}
-Stage: {req.stage_index}
-
 Personas:
 {chr(10).join(_persona_lines())}
-
 Policies:
 {chr(10).join(policy_summary)}
-
-Observed policy evidence:
-{chr(10).join(snapshots)}
-
-Early/mid/late phase comparison:
-{chr(10).join(phase_summaries)}
-
-Metric summary:
-{chr(10).join(metric_summary)}
-
-Key events:
-{chr(10).join(f"- {item}" for item in event_highlights)}
-
-Sharp changes and turning points:
-{chr(10).join(turning_points)}
-
-Persona-specific evidence to use:
+Evidence:
 {chr(10).join(persona_evidence)}
 
-Output priority:
-- Score from the persona's values, not from an overall average.
-- short_voice must be one vivid first-person sentence, not a policy report.
-- Prefer persona-specific evidence above the general metric summary.
-- Mention only years inside {req.period_start_year}-{req.period_end_year}.
-
-Each short_voice must either remember a concrete event year, name a policy effect or failure, or express an outlook based on the late-period trend.
-Return JSON only:
-{{"residents":[{{"persona_key":"child_future","score":1,"short_voice":"..."}}]}}
+Score each persona from their own priorities. Write one brief first-person sentence using the evidence.
+Return all three residents as JSON only.
 """.strip()
 
     return f"""
-評価時点: {req.checkpoint_year}年
 対象期間: {req.period_start_year}年-{req.period_end_year}年
-評価対象段階: 第{req.stage_index}段階
-
 ペルソナ:
 {chr(10).join(_persona_lines())}
-
 政策一覧:
 {chr(10).join(policy_summary)}
-
-政策ごとの観測証拠:
-{chr(10).join(snapshots)}
-
-前半・中盤・後半の比較:
-{chr(10).join(phase_summaries)}
-
-実績サマリー:
-{chr(10).join(metric_summary)}
-
-重要イベント:
-{chr(10).join(f"- {item}" for item in event_highlights)}
-
-急変・転換点:
-{chr(10).join(turning_points)}
-
-ペルソナ別に反応しやすい材料:
+判断材料:
 {chr(10).join(persona_evidence)}
 
-この25年の結果に対して、各ペルソナがどれだけ納得するかを採点し、一言の市民の声を返してください。
-重要視して出力する内容:
-- スコアは全体平均ではなく、各ペルソナが重視する価値から決めてください。
-- short_voice は政策レポートではなく、住民本人の口から出る熱のある一文にしてください。
-- 実績サマリーよりも、ペルソナ別に反応しやすい材料を優先してください。
-- {req.period_start_year}年-{req.period_end_year}年の対象期間外の具体年や、固定されていない年齢設定は作らないでください。
-
-各 short_voice は、具体的なイベント年、政策が効いた/足りなかった点、または終盤の傾向から見た今後の暮らしへの見通しを含めてください。
-JSONのみを返してください:
-{{"residents":[{{"persona_key":"child_future","score":1,"short_voice":"..."}}]}}
+各自の重視点から1〜10で採点し、根拠を反映した一人称の短い一文を書いてください。
+3名全員をJSONだけで返してください。
 """.strip()
 
 
@@ -1308,57 +863,8 @@ def generate_resident_council(req: IntermediateEvaluationRequest) -> ResidentCou
 
     scores = _normalize_scores(payload, fallback_scores)
     residents = _normalize_residents(payload, req, scores)
-    llm_score_keys = _payload_score_keys(payload)
-    score_models: List[str] = []
-    score_fallback_keys: List[str] = []
-    residents_by_key = {resident.persona_key: resident for resident in residents}
-
-    for key in PERSONA_KEYS:
-        if key in llm_score_keys:
-            continue
-
-        llm_score, llm_short_voice, score_model = _generate_persona_evaluation_with_llm(req, key)
-        if llm_score is None:
-            score_fallback_keys.append(key)
-            continue
-
-        scores[key] = llm_score
-        residents_by_key[key].score = llm_score
-        if llm_short_voice and not _short_voice_is_weak(llm_short_voice, req):
-            residents_by_key[key].short_voice = llm_short_voice
-        score_models.append(score_model)
-
-    residents = [residents_by_key[key] for key in PERSONA_KEYS]
-    fallback_voices = {
-        resident.persona_key: resident.short_voice
-        for resident in _build_fallback_residents(req, scores)
-    }
-    short_voice_models: List[str] = []
-
-    for resident in residents:
-        should_regenerate = (
-            resident.short_voice == fallback_voices.get(resident.persona_key)
-            or _short_voice_is_weak(resident.short_voice, req)
-        )
-        if not should_regenerate:
-            continue
-
-        short_voice, short_voice_model = _generate_resident_short_voice_with_llm(
-            req,
-            resident.persona_key,
-            scores[resident.persona_key],
-        )
-        if short_voice:
-            resident.short_voice = short_voice
-            short_voice_models.append(short_voice_model)
-
-    model_parts = [model for model in [model_name, *score_models, *short_voice_models] if model]
-    if model_parts:
-        model_name = " + ".join(dict.fromkeys(model_parts))
-    else:
+    if not model_name:
         model_name = f"{RESIDENT_COUNCIL_MODEL} (fallback)"
-    if score_fallback_keys:
-        model_name = f"{model_name}; score fallback: {', '.join(score_fallback_keys)}"
 
     return ResidentCouncilResponse(
         stage_index=req.stage_index,

@@ -38,12 +38,9 @@ export default function DecisionPanel({
     }
   }, [activePolicyKey, policies])
 
-  useEffect(() => {
-    if (activePolicy?.key) onPolicySelect?.(activePolicy.key)
-  }, [activePolicy?.key, onPolicySelect])
-
   const selectPolicy = (key) => {
     setActivePolicyKey(key)
+    onPolicySelect?.(key)
   }
 
   return (
