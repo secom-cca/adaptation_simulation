@@ -1,6 +1,6 @@
 /** Post-play survey (~3 min). */
 
-export const SURVEY_VERSION = 2
+export const SURVEY_VERSION = 3
 
 /**
  * Question keys become answers object keys.
@@ -55,6 +55,20 @@ export const SURVEY_QUESTIONS = [
     },
   },
   {
+    id: 'understood_policy_effects',
+    type: 'likert5',
+    required: true,
+    research_tags: ['learning', 'comprehension'],
+    label: {
+      ja: 'どの政策・施策がどのような影響を与えるかが理解できましたか？',
+      en: 'Did you understand which policies/measures cause which effects?',
+    },
+    likertLabels: {
+      ja: { low: 'まったく理解できなかった', high: 'よく理解できた' },
+      en: { low: 'Not at all', high: 'Very well' },
+    },
+  },
+  {
     id: 'what_learned',
     type: 'multi',
     required: true,
@@ -90,6 +104,44 @@ export const SURVEY_QUESTIONS = [
       {
         value: 'other_none',
         label: { ja: '特に学んだことはない／その他', en: 'Nothing in particular / other' },
+      },
+    ],
+  },
+  {
+    id: 'priority_indicators',
+    type: 'multi',
+    required: true,
+    research_tags: ['priorities', 'objectives'],
+    label: {
+      ja: 'どの指標を重要視していましたか？（複数選択可）',
+      en: 'Which indicators did you prioritize? (Select all that apply)',
+    },
+    options: [
+      {
+        value: 'flood_score',
+        label: {
+          ja: '洪水被害スコア（被害を減らすこと）',
+          en: 'Flood-damage score (reducing damage)',
+        },
+      },
+      {
+        value: 'crop_score',
+        label: { ja: '農作物生産スコア', en: 'Crop-production score' },
+      },
+      {
+        value: 'ecosystem_score',
+        label: { ja: '生態系スコア', en: 'Ecosystem score' },
+      },
+      {
+        value: 'balance',
+        label: {
+          ja: '複数の指標をバランスよく',
+          en: 'Balancing multiple indicators',
+        },
+      },
+      {
+        value: 'unsure',
+        label: { ja: '特に決めていない／わからない', en: 'Not sure / no particular priority' },
       },
     ],
   },
@@ -156,7 +208,9 @@ export function buildSurveyPayload(answers) {
     research_focus: [
       'prior_adaptation_knowledge',
       'municipal_adaptation_and_disaster_prevention',
+      'understood_policy_effects',
       'what_participants_learned',
+      'priority_indicators',
       'open_feedback',
     ],
   }

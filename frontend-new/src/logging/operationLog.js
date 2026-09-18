@@ -12,6 +12,8 @@ let seq = 0
 let exportDone = false
 let exportError = null
 let surveyRecord = null
+let intentSurveyRecords = []
+let policyAllocationRecords = []
 let contextRef = {
   phase: 'entry',
   cycle: null,
@@ -53,6 +55,8 @@ export function resetOperationLog() {
   exportDone = false
   exportError = null
   surveyRecord = null
+  intentSurveyRecords = []
+  policyAllocationRecords = []
   contextRef = { phase: 'entry', cycle: null, year: null, gameView: null }
 }
 
@@ -118,6 +122,98 @@ export function recordSurveySubmission(surveyPayload) {
     research_focus: surveyRecord.research_focus,
   })
   return getSurveyRecord()
+}
+
+export function getIntentSurveyRecords() {
+  return intentSurveyRecords.map(r => ({
+    ...r,
+    answers: { ...(r.answers || {}) },
+    sliders: r.sliders ? { ...r.sliders } : null,
+  }))
+}
+
+/** Record one per-cycle intent survey (after Advance) and emit intent_survey_submitted. */
+export function recordIntentSurveySubmission(intentPayload) {
+  const record = {
+    version: intentPayload.version,
+    submitted_at: intentPayload.submitted_at || nowIso(),
+    cycle: intentPayload.cycle ?? null,
+    year_range: intentPayload.year_range || null,
+    answers: {
+      target_objectives: [...(intentPayload.answers?.target_objectives || [])],
+      free_text: String(intentPayload.answers?.free_text || ''),
+    },
+    sliders: intentPayload.sliders ? { ...intentPayload.sliders } : null,
+  }
+  intentSurveyRecords.push(record)
+  emit('intent_survey_submitted', {
+    version: record.version,
+    submitted_at: record.submitted_at,
+    cycle: record.cycle,
+    year_range: record.year_range,
+    answers: record.answers,
+  }, {
+    context: {
+      phase: 'intent_survey',
+      cycle: record.cycle,
+      year: record.year_range?.start_year ?? null,
+    },
+  })
+  return { ...record, answers: { ...record.answers } }
+}
+
+export function getPolicyAllocationRecords() {
+  return policyAllocationRecords.map(r => ({
+    ...r,
+    policy_points: { ...(r.policy_points || {}) },
+    year_range: r.year_range ? { ...r.year_range } : null,
+  }))
+}
+
+/**
+ * Record the policy-point allocation confirmed when the player presses Advance.
+ * Stored both as an event and in the top-level policy_allocations array.
+ */
+export function recordPolicyAllocation({
+  cycle,
+  year,
+  policyPoints,
+  availableBudgetPoints = null,
+  usedPolicyPoints = null,
+  period = null,
+} = {}) {
+  const yearRange = period || {
+    start_year: year,
+    end_year: typeof year === 'number' ? year + 24 : null,
+  }
+  const points = { ...(policyPoints || {}) }
+  const record = {
+    recorded_at: nowIso(),
+    cycle: cycle ?? null,
+    year_range: yearRange,
+    policy_points: points,
+    available_budget_points: availableBudgetPoints,
+    used_policy_points: usedPolicyPoints,
+  }
+  policyAllocationRecords.push(record)
+  emit('policy_allocation', {
+    cycle: record.cycle,
+    year_range: record.year_range,
+    policy_points: record.policy_points,
+    available_budget_points: record.available_budget_points,
+    used_policy_points: record.used_policy_points,
+  }, {
+    context: {
+      phase: contextRef.phase || 'game',
+      cycle: record.cycle,
+      year: record.year_range?.start_year ?? year ?? null,
+    },
+  })
+  return {
+    ...record,
+    policy_points: { ...record.policy_points },
+    year_range: record.year_range ? { ...record.year_range } : null,
+  }
 }
 
 export function emit(eventType, payload = {}, options = {}) {
@@ -217,6 +313,8 @@ export function buildExportObject({
     session: getSessionMeta(),
     events: getEvents(),
     survey: getSurveyRecord(),
+    intent_surveys: getIntentSurveyRecords(),
+    policy_allocations: getPolicyAllocationRecords(),
     results: {
       policy_history: policyHistory,
       history_summary: buildHistorySummary(history, currentClimateHistory),
