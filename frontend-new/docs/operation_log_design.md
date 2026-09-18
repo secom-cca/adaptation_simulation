@@ -155,6 +155,8 @@ flowchart LR
 | event_type | 発火タイミング | payload 概要 |
 |---|---|---|
 | `game_view_change` | TopBar のビュー切替 | `{ "from": "...", "to": "..." }` |
+| `diagram_expand_open` | 図の拡大表示を開く | `{ "diagram": "system_dynamics"\|"policy_effects_table"\|"policy_impact_map", "policy_key"?: "...", "src": "..." }` |
+| `diagram_expand_close` | 図の拡大表示を閉じる | 同上 |
 | `analysis_axis_change` | 散布図軸変更 | `{ "axis": "x"\|"y", "key": "..." }` |
 | `detail_indicator_select` | DetailPanel 指標選択 | `{ "indicator_key": "..." }` |
 | `resident_interview_request` | 住民インタビュー要求 | `{ "persona_key": "...", "score": ... }` |
