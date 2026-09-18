@@ -253,11 +253,14 @@ DEFAULT_PARAMS = {
 rcp_climate_params = {
     # Current-climate counterfactual used only for result comparison.
     0.0: {"temp_trend": 0, "precip_trend": 0, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0, "extreme_precip_intensity_trend": 0, "extreme_precip_uncertainty_trend": 0},
+    # Extreme-rain frequency trends deliberately fan out by emissions scenario.
+    # With base frequency 0.1/year, the expected annual rates in 2100 are about
+    # 0.17 (RCP1.9), 0.23 (2.6), 0.32 (4.5), 0.47 (6.0), and 0.66 (8.5).
     1.9: {"temp_trend": 0.02, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.01, "extreme_precip_intensity_trend": 0.02, "extreme_precip_uncertainty_trend": 0.05},
-    2.6: {"temp_trend": 0.025, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.015, "extreme_precip_intensity_trend": 0.025, "extreme_precip_uncertainty_trend": 0.07},
-    4.5: {"temp_trend": 0.035, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.02, "extreme_precip_intensity_trend": 0.035, "extreme_precip_uncertainty_trend": 0.1},
-    6.0: {"temp_trend": 0.045, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.03, "extreme_precip_intensity_trend": 0.045, "extreme_precip_uncertainty_trend": 0.13},
-    8.5: {"temp_trend": 0.06, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.04, "extreme_precip_intensity_trend": 0.06, "extreme_precip_uncertainty_trend": 0.15},
+    2.6: {"temp_trend": 0.025, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.018, "extreme_precip_intensity_trend": 0.025, "extreme_precip_uncertainty_trend": 0.07},
+    4.5: {"temp_trend": 0.035, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.03, "extreme_precip_intensity_trend": 0.035, "extreme_precip_uncertainty_trend": 0.1},
+    6.0: {"temp_trend": 0.045, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.05, "extreme_precip_intensity_trend": 0.045, "extreme_precip_uncertainty_trend": 0.13},
+    8.5: {"temp_trend": 0.06, "precip_uncertainty_trend": 0, "extreme_precip_freq_trend": 0.075, "extreme_precip_intensity_trend": 0.06, "extreme_precip_uncertainty_trend": 0.15},
 }
 
 __all__ = [
@@ -267,6 +270,4 @@ __all__ = [
     "TURN_YEARS", "FLOOD_RECOVERY_COST_COEF", "INFRA_COST_PER_MIGRATED_HOUSE_PER_YEAR",
     "POLICY_MANA_RULES", "POLICY_EFFECT_METADATA", "EVENT_THRESHOLDS",
 ]
-
-
 
