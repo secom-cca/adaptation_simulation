@@ -1,6 +1,6 @@
 /** Post-play survey (~3 min). */
 
-export const SURVEY_VERSION = 3
+export const SURVEY_VERSION = 7
 
 /**
  * Question keys become answers object keys.
@@ -27,13 +27,27 @@ export const SURVEY_QUESTIONS = [
     ],
   },
   {
-    id: 'prior_adaptation_knowledge',
+    id: 'prior_climate_adaptation_knowledge',
     type: 'likert5',
     required: true,
     research_tags: ['participant', 'learning'],
     label: {
-      ja: 'この体験の前から、「気候変動適応策」について知っていましたか？',
-      en: 'Before this experience, how familiar were you with climate adaptation measures?',
+      ja: 'この体験の前から、「気候変動適応」について知っていましたか？',
+      en: 'Before this experience, how familiar were you with climate adaptation?',
+    },
+    likertLabels: {
+      ja: { low: 'まったく知らなかった', high: 'よく知っていた' },
+      en: { low: 'Not at all', high: 'Very familiar' },
+    },
+  },
+  {
+    id: 'prior_basin_flood_management_knowledge',
+    type: 'likert5',
+    required: true,
+    research_tags: ['participant', 'learning'],
+    label: {
+      ja: 'この体験の前から、「流域治水」について知っていましたか？',
+      en: 'Before this experience, how familiar were you with basin-based flood management?',
     },
     likertLabels: {
       ja: { low: 'まったく知らなかった', high: 'よく知っていた' },
@@ -58,14 +72,14 @@ export const SURVEY_QUESTIONS = [
     id: 'understood_policy_effects',
     type: 'likert5',
     required: true,
-    research_tags: ['learning', 'comprehension'],
+    research_tags: ['efficacy', 'learning'],
     label: {
-      ja: 'どの政策・施策がどのような影響を与えるかが理解できましたか？',
-      en: 'Did you understand which policies/measures cause which effects?',
+      ja: '施策を適切に実施することで、よい将来が実現できると思いましたか？',
+      en: 'Did you feel that appropriately implementing measures could lead to a better future?',
     },
     likertLabels: {
-      ja: { low: 'まったく理解できなかった', high: 'よく理解できた' },
-      en: { low: 'Not at all', high: 'Very well' },
+      ja: { low: 'まったくそう思わない', high: '強くそう思う' },
+      en: { low: 'Strongly disagree', high: 'Strongly agree' },
     },
   },
   {
@@ -79,31 +93,46 @@ export const SURVEY_QUESTIONS = [
     },
     options: [
       {
-        value: 'tradeoffs',
+        value: 'climate_impacts',
         label: {
-          ja: 'ある対策を進めると、別の面でよくない影響が出ることがあるためバランスが重要',
-          en: 'Advancing one measure can have downsides elsewhere, so balance matters',
+          ja: '気候変動による様々な影響（洪水，農業など）',
+          en: 'Various impacts of climate change (floods, agriculture, etc.)',
         },
       },
       {
-        value: 'time_lag',
-        label: { ja: '効果が現れるまでに時間がかかることがある', en: 'Some effects take time' },
+        value: 'climate_uncertainty',
+        label: {
+          ja: '気候変動による将来の不確実性',
+          en: 'Future uncertainty due to climate change',
+        },
       },
       {
-        value: 'budget_limits',
-        label: { ja: '予算や制約のもとで優先順位が重要', en: 'Priorities matter under constraints' },
+        value: 'basin_flood_measures',
+        label: {
+          ja: '様々な流域治水対策（住宅移転，田んぼダムなど）',
+          en: 'Various basin-based flood measures (relocation, paddy dams, etc.)',
+        },
       },
       {
-        value: 'uncertainty',
-        label: { ja: '将来には不確実性がある', en: 'The future is uncertain' },
+        value: 'time_to_effect',
+        label: {
+          ja: '効果がかかるまでの時間への留意（森林保全，など）',
+          en: 'Attention to time lags before effects appear (e.g. forest conservation)',
+        },
       },
       {
-        value: 'multi_objective',
-        label: { ja: '洪水・農業・生態系など複数の目標がある', en: 'Multiple goals (flood, crops, ecosystems)' },
+        value: 'multi_goal_balance',
+        label: {
+          ja: '複数の目標のバランスを取ることの難しさ（治水と農業，生態系など）',
+          en: 'Difficulty of balancing multiple goals (flood control, agriculture, ecosystems, etc.)',
+        },
       },
       {
-        value: 'other_none',
-        label: { ja: '特に学んだことはない／その他', en: 'Nothing in particular / other' },
+        value: 'budget_decision',
+        label: {
+          ja: '予算や制約のもとでの意思決定の難しさ',
+          en: 'Difficulty of decision-making under budget and other constraints',
+        },
       },
     ],
   },
@@ -131,13 +160,6 @@ export const SURVEY_QUESTIONS = [
       {
         value: 'ecosystem_score',
         label: { ja: '生態系スコア', en: 'Ecosystem score' },
-      },
-      {
-        value: 'balance',
-        label: {
-          ja: '複数の指標をバランスよく',
-          en: 'Balancing multiple indicators',
-        },
       },
       {
         value: 'unsure',
@@ -206,7 +228,8 @@ export function buildSurveyPayload(answers) {
     submitted_at: new Date().toISOString(),
     answers: { ...answers },
     research_focus: [
-      'prior_adaptation_knowledge',
+      'prior_climate_adaptation_knowledge',
+      'prior_basin_flood_management_knowledge',
       'municipal_adaptation_and_disaster_prevention',
       'understood_policy_effects',
       'what_participants_learned',

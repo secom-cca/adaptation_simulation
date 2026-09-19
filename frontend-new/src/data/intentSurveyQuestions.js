@@ -1,6 +1,6 @@
 /** Short intent survey shown right after 「25年進める」 (~30 sec). */
 
-export const INTENT_SURVEY_VERSION = 1
+export const INTENT_SURVEY_VERSION = 2
 
 export const INTENT_OBJECTIVE_OPTIONS = [
   {
@@ -22,13 +22,6 @@ export const INTENT_OBJECTIVE_OPTIONS = [
     label: {
       ja: '生態系スコアを上げたい',
       en: 'Improve the ecosystem score',
-    },
-  },
-  {
-    value: 'balance',
-    label: {
-      ja: '複数の指標をバランスよく上げたい',
-      en: 'Improve multiple indicators in balance',
     },
   },
   {
