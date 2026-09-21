@@ -1016,7 +1016,7 @@ export function useSimulation() {
     })
   }, [])
 
-  const restart = useCallback(async (trigger = 'on_restart') => {
+  const restart = useCallback(async (trigger = 'on_restart', { nextPhase = 'entry' } = {}) => {
     emit('restart', { trigger })
     // Save operation log (including bundled survey if any) before resetting.
     const result = await runExport(trigger, false)
@@ -1033,7 +1033,7 @@ export function useSimulation() {
     beginEntryLogging()
     setGameState(s => ({
       ...s,
-      phase: 'entry',
+      phase: nextPhase,
       year: 2026,
       cycle: 1,
       history: [],
@@ -1076,7 +1076,7 @@ export function useSimulation() {
 
   const skipSurveyAndRestart = useCallback(async () => {
     emit('survey_skipped', {})
-    return restart('survey_skipped')
+    return restart('survey_skipped', { nextPhase: 'finished' })
   }, [restart])
 
   const submitSurveyAndRestart = useCallback(async (answers) => {
@@ -1087,8 +1087,17 @@ export function useSimulation() {
       surveyAnswers: answers,
       surveySubmitted: true,
     }))
-    return restart('survey_submitted')
+    return restart('survey_submitted', { nextPhase: 'finished' })
   }, [restart])
+
+  const returnToEntry = useCallback(() => {
+    setLogContext({ phase: 'entry', cycle: null, year: null, gameView: null })
+    setGameState(s => ({
+      ...s,
+      phase: 'entry',
+      entryMountId: (s.entryMountId ?? 0) + 1,
+    }))
+  }, [])
 
   return {
     gameState,
@@ -1101,6 +1110,7 @@ export function useSimulation() {
     restart,
     skipSurveyAndRestart,
     submitSurveyAndRestart,
+    returnToEntry,
     setGameView,
     dismissIntroduction,
     requestResidentInterview,

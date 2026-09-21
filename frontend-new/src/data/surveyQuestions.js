@@ -1,6 +1,6 @@
 /** Post-play survey (~3 min). */
 
-export const SURVEY_VERSION = 7
+export const SURVEY_VERSION = 8
 
 /**
  * Question keys become answers object keys.
@@ -17,6 +17,7 @@ export const SURVEY_QUESTIONS = [
       en: 'Which age group are you in?',
     },
     options: [
+      { value: 'under_10', label: { ja: '10歳未満', en: 'Under 10' } },
       { value: '10s', label: { ja: '10代', en: 'Teens' } },
       { value: '20s', label: { ja: '20代', en: '20s' } },
       { value: '30s', label: { ja: '30代', en: '30s' } },

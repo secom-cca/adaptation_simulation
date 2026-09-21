@@ -6,6 +6,7 @@ import ConsequencePage from './pages/ConsequencePage.jsx'
 import EndingPage from './pages/EndingPage.jsx'
 import ResultComparisonPage from './pages/ResultComparisonPage.jsx'
 import SurveyPage from './pages/SurveyPage.jsx'
+import FinishedPage from './pages/FinishedPage.jsx'
 import FinalDetailPage from './pages/FinalDetailPage.jsx'
 import ScenarioExplorationPage from './pages/ScenarioExplorationPage.jsx'
 
@@ -37,6 +38,9 @@ export default function App() {
         onSkipAndRestart={sim.skipSurveyAndRestart}
       />
     )
+  }
+  if (phase === 'finished') {
+    return <FinishedPage onReturnToEntry={sim.returnToEntry} />
   }
   if (phase === 'ending') {
     return (

@@ -78,8 +78,8 @@ export default function SurveyPage({
           </h1>
           <p className={s.lede}>
             {lang === 'ja'
-              ? '研究のための短いアンケートです。回答送信時に操作ログと一緒に保存され、初期画面に戻ります。'
-              : 'A short research survey. Submitting saves the operation log and returns to the start screen.'}
+              ? '研究のための短いアンケートです。回答送信時に操作ログと一緒に保存されます。'
+              : 'A short research survey. Submitting saves the operation log.'}
           </p>
         </header>
 
@@ -183,8 +183,8 @@ export default function SurveyPage({
           </button>
           <p className={s.restartHint}>
             {lang === 'ja'
-              ? '必須項目をすべて回答すると送信できます。送信後、操作ログを保存して初期画面に戻ります。'
-              : 'Enabled once all required items are answered. Submitting saves the log and returns to the start screen.'}
+              ? '必須項目をすべて回答すると送信できます。送信後、操作ログを保存して終了画面へ進みます。'
+              : 'Enabled once all required items are answered. Submitting saves the log and shows the completion screen.'}
           </p>
         </div>
       </form>
@@ -197,8 +197,8 @@ export default function SurveyPage({
             </h2>
             <p className={s.modalText}>
               {lang === 'ja'
-                ? 'アンケートをスキップして初期画面に戻ります。操作ログは保存されます。'
-                : 'You will return to the start screen. The operation log will still be saved.'}
+                ? 'アンケートをスキップして終了画面へ進みます。操作ログは保存されます。'
+                : 'You will proceed to the completion screen. The operation log will still be saved.'}
             </p>
             <div className={s.modalActions}>
               <button type="button" className={s.secondary} onClick={() => setSkipConfirmOpen(false)}>
