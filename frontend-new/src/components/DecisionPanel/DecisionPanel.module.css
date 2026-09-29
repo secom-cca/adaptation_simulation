@@ -302,13 +302,27 @@
 }
 .advanceBtn:not(:disabled):active { transform: translateY(0); }
 
-@media (max-width: 900px) {
+.finalAdvanceBtn {
+  background: #315846;
+  box-shadow: 0 4px 14px rgba(37, 78, 61, 0.3);
+}
+.finalAdvanceBtn:not(:disabled):hover { background: #254c3b; }
+
+@media (max-width: 1100px), (max-height: 720px) {
   .panel,
   .teamPanel {
-    width: 100vw;
-    height: min(62vh, 560px);
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: clamp(390px, 55dvh, 560px);
+    border-left: 0;
+    border-right: 0;
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
   }
+}
+
+@media (max-width: 900px) {
 
   .policyDetail { grid-template-columns: 1fr 1fr; }
 
@@ -329,4 +343,15 @@
   .advanceBtn {
     padding: 9px 18px;
   }
+}
+
+@media (max-width: 600px) {
+  .panel,
+  .teamPanel { height: 680px; }
+  .inner { padding-inline: 10px; }
+  .heading { align-items: flex-start; flex-direction: column; gap: 1px; }
+  .headerActions { align-items: stretch; flex-direction: column; }
+  .budgetStrip { width: 100%; }
+  .policyDetail { grid-template-columns: 1fr; grid-template-rows: minmax(190px, auto) 240px; }
+  .advanceBtn { width: 100%; }
 }

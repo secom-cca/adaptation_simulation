@@ -15,6 +15,7 @@ export default function DecisionPanel({
   onAdvance,
   loading,
   year,
+  cycle,
   policyHistory = [],
   budgetRow,
 }) {
@@ -115,8 +116,8 @@ export default function DecisionPanel({
                 <span className={s.legendRemaining}>{lang === 'ja' ? `使用可能 ${remainingPoints}` : `Available ${remainingPoints}`}</span>
               </div>
             </div>
-            <button className={s.advanceBtn} onClick={onAdvance} disabled={loading}>
-              {loading ? t('decision.loading') : t('decision.advance')}
+            <button className={`${s.advanceBtn} ${cycle === 3 ? s.finalAdvanceBtn : ''}`} onClick={onAdvance} disabled={loading}>
+              {loading ? t('decision.loading') : (cycle === 3 ? '最終ターンを完了' : t('decision.advance'))}
             </button>
           </div>
         </div>

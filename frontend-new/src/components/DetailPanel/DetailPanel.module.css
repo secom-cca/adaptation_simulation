@@ -477,3 +477,20 @@
   cursor: wait;
   opacity: 0.65;
 }
+
+@media (max-width: 1100px), (max-height: 720px) {
+  .grid {
+    height: auto;
+    min-height: 650px;
+  }
+
+  .withRightInset .cell:nth-child(2) { margin-bottom: 0; }
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(520px, auto) minmax(420px, auto);
+    min-height: 980px;
+  }
+}

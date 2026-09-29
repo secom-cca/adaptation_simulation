@@ -279,7 +279,7 @@ function buildAdvancePackage({
   // イベントがある場合は consequence。ない場合は report を挟まず次ターン or ending。
   const nextPhase = queuedEvents.length > 0
     ? 'consequence'
-    : (nextYear > 2100 ? 'ending' : 'game')
+    : (nextYear > 2100 ? 'completion' : 'game')
   const nextGameView = nextPhase === 'game' ? 'detail' : s.gameView
   const evalDecisionVar = buildDecisionVar({ year: s.year, sliders, rcpValue: s.rcpValue })
   const evaluationRequest = {
@@ -408,7 +408,7 @@ function commitAdvancePackage(setGameState, pkg) {
 
 export function useSimulation() {
   const [gameState, setGameState] = useState({
-    phase: 'entry',       // 'entry' | 'game' | 'consequence' | 'ending'
+    phase: 'entry',       // 'entry' | 'game' | 'consequence' | 'completion' | 'ending'
     year: 2026,
     cycle: 1,
     userName: '',
@@ -905,7 +905,7 @@ export function useSimulation() {
         year: gameState.year,
       },
     })
-    const nextPhase = gameState.year > 2100 ? 'ending' : 'game'
+    const nextPhase = gameState.year > 2100 ? 'completion' : 'game'
     emit('phase_leave', { phase: 'report', next_phase: nextPhase }, { source: 'system' })
     setLogContext({
       phase: nextPhase,
@@ -1006,7 +1006,7 @@ export function useSimulation() {
         },
       })
       const remaining = s.pendingEvents.slice(1)
-      const nextPhase = remaining.length > 0 ? 'consequence' : (s.year > 2100 ? 'ending' : 'game')
+      const nextPhase = remaining.length > 0 ? 'consequence' : (s.year > 2100 ? 'completion' : 'game')
       if (nextPhase !== 'consequence') {
         emit('phase_leave', { phase: 'consequence', next_phase: nextPhase }, { source: 'system' })
         setLogContext({ phase: nextPhase, cycle: s.cycle, year: s.year })
@@ -1015,6 +1015,14 @@ export function useSimulation() {
       return { ...s, pendingEvents: remaining, phase: nextPhase, gameView: nextPhase === 'game' ? 'detail' : s.gameView }
     })
   }, [])
+
+  const showFinalResults = useCallback(() => {
+    emit('game_completion_continue', { year: gameState.year, cycles_completed: 3 })
+    emit('phase_leave', { phase: 'completion', next_phase: 'ending' }, { source: 'system' })
+    setLogContext({ phase: 'ending', cycle: gameState.cycle, year: gameState.year })
+    emit('phase_enter', { phase: 'ending' }, { source: 'system' })
+    setGameState(s => ({ ...s, phase: 'ending' }))
+  }, [gameState.cycle, gameState.year])
 
   const restart = useCallback(async (trigger = 'on_restart', { nextPhase = 'entry' } = {}) => {
     emit('restart', { trigger })
@@ -1107,6 +1115,7 @@ export function useSimulation() {
     cancelIntentSurvey,
     dismissReport,
     dismissConsequence,
+    showFinalResults,
     restart,
     skipSurveyAndRestart,
     submitSurveyAndRestart,

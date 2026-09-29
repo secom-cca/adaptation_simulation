@@ -1,5 +1,5 @@
 .bar {
-  height: 48px;
+  min-height: 48px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   display: flex;
@@ -124,4 +124,15 @@
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(224, 82, 82, 0.5); }
   50%       { box-shadow: 0 0 0 4px rgba(224, 82, 82, 0); }
+}
+
+@media (max-width: 640px) {
+  .bar { padding: 7px 10px; gap: 8px; flex-wrap: wrap; }
+  .left { flex: 1 1 auto; gap: 7px; }
+  .center { display: none; }
+  .right { flex: 1 1 100%; justify-content: space-between; }
+  .tabs { flex: 1; }
+  .tab { flex: 1; padding-inline: 7px; }
+  .separator,
+  .mode { display: none; }
 }

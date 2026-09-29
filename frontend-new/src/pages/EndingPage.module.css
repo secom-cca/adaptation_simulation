@@ -1,6 +1,6 @@
 .page {
-  min-height: 100vh;
-  height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   overflow-y: auto;
   display: flex;
   justify-content: center;

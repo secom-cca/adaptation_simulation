@@ -9,6 +9,7 @@ import SurveyPage from './pages/SurveyPage.jsx'
 import FinishedPage from './pages/FinishedPage.jsx'
 import FinalDetailPage from './pages/FinalDetailPage.jsx'
 import ScenarioExplorationPage from './pages/ScenarioExplorationPage.jsx'
+import CompletionPage from './pages/CompletionPage.jsx'
 
 export default function App() {
   const sim = useSimulation()
@@ -28,6 +29,7 @@ export default function App() {
   }
   if (phase === 'game')        return <GamePage sim={sim} />
   if (phase === 'consequence') return <ConsequencePage sim={sim} onDismiss={sim.dismissConsequence} />
+  if (phase === 'completion') return <CompletionPage onContinue={sim.showFinalResults} />
   if (phase === 'survey') {
     return (
       <SurveyPage

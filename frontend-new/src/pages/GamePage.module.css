@@ -1,6 +1,6 @@
 .page {
   --decision-panel-height: min(45vh, 430px);
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -439,10 +439,49 @@
   word-break: break-all;
 }
 
+/* On narrow or low displays, stack the controls in the document flow. This
+   keeps every panel reachable instead of shrinking/cropping the play area. */
+@media (max-width: 1100px), (max-height: 720px) {
+  .page {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .mainArea {
+    flex: 0 0 auto;
+    min-height: clamp(420px, 58dvh, 680px);
+    overflow: visible;
+  }
+
+  .mainArea.detailMode { min-height: 660px; }
+  .overviewGrid { min-height: inherit; }
+  .rightStack { margin-bottom: 0; }
+
+  .introOverlay {
+    position: fixed;
+    overflow-y: auto;
+  }
+}
+
 @media (max-width: 900px) {
-  .page { --decision-panel-height: min(52vh, 520px); }
+  .mainArea { min-height: auto; }
+  .mainArea.detailMode { min-height: 980px; }
   .overviewGrid { grid-template-columns: 1fr; }
-  .sceneCard { display: none; }
-  .rightStack { margin-bottom: var(--decision-panel-height); }
+  .sceneCard { min-height: 260px; aspect-ratio: 16 / 9; }
+  .rightStack { min-height: 360px; }
+  .systemCard { min-height: 360px; }
   .introPriorities { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .sceneCard { min-height: 210px; }
+  .rightStack,
+  .systemCard { min-height: 300px; }
+  .systemActions { top: 8px; right: 8px; gap: 5px; }
+  .policyComparisonButton,
+  .modelDetailsButton { min-height: 31px; padding: 6px 10px; font-size: 11px; }
+  .introOverlay { padding: 10px; }
+  .introPanel { width: 100%; padding-inline: 18px; }
 }

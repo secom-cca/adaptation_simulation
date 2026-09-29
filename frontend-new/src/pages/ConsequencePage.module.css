@@ -1,5 +1,6 @@
 .page {
-  height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -248,4 +249,12 @@
     padding-top: 20px;
     padding-bottom: 20px;
   }
+}
+
+@media (max-width: 680px) {
+  .page { height: 100dvh; padding: 12px; overflow-y: auto; }
+  .card { width: 100%; height: auto; min-height: calc(100dvh - 24px); }
+  .eventImage { height: clamp(190px, 34dvh, 300px); }
+  .content { padding: 20px; }
+  .summaryCard { width: 100%; height: auto; min-height: calc(100dvh - 24px); padding: 24px 18px; }
 }

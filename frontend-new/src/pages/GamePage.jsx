@@ -430,6 +430,7 @@ export default function GamePage({ sim }) {
           onAdvance={handleAdvance}
           loading={loading}
           year={year}
+          cycle={cycle}
           policyHistory={policyHistory}
           budgetRow={currentBudgetRow}
         />
