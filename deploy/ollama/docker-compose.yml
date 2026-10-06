@@ -1,0 +1,48 @@
+# Run on the GPU EC2 host (NVIDIA Container Toolkit required for GPU).
+# Usage on the instance:
+#   cd /opt/adaptation-ollama   # or copy this folder
+#   docker compose up -d
+#   docker compose run --rm ollama-pull
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma4:e2b}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        i=0
+        while [ "$$i" -lt 90 ]; do
+          if ollama list >/dev/null 2>&1; then
+            break
+          fi
+          i=$$((i+1))
+          sleep 2
+        done
+        ollama pull "$$OLLAMA_MODEL"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: "no"
+
+volumes:
+  ollama_models:

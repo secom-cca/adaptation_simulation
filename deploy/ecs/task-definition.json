@@ -1,0 +1,65 @@
+{
+  "family": "adaptation-web",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/adaptationEcsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "web",
+      "image": "ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/adaptation-web:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "OLLAMA_HOST", "value": "http://GPU_PRIVATE_IP:11434" },
+        { "name": "OLLAMA_MODEL", "value": "gemma4:e2b" },
+        { "name": "LLM_MAX_CONCURRENCY", "value": "3" },
+        { "name": "UVICORN_WORKERS", "value": "2" },
+        { "name": "ADMIN_EXPORT_TOKEN", "value": "REPLACE_WITH_LONG_RANDOM_SECRET" }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "app-data",
+          "containerPath": "/app/backend/data",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/adaptation-web",
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "web"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ping')\" || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "app-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-xxxxxxxx",
+        "rootDirectory": "/",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "fsap-xxxxxxxx",
+          "iam": "ENABLED"
+        }
+      }
+    }
+  ]
+}

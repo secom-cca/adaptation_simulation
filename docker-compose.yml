@@ -1,0 +1,65 @@
+# Local verification: web (nginx + FastAPI) + Ollama
+# Usage:
+#   docker compose up --build
+#   open http://localhost:8080
+#
+# GPU hosts can set: docker compose -f docker-compose.yml -f deploy/ollama/docker-compose.gpu.yml up
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma4:e2b}
+      LLM_MAX_CONCURRENCY: ${LLM_MAX_CONCURRENCY:-3}
+      ADMIN_EXPORT_TOKEN: ${ADMIN_EXPORT_TOKEN:-dev-admin-token-change-me}
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
+    volumes:
+      - app_data:/app/backend/data
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+
+  # One-shot model pull after ollama is up (safe to re-run)
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma4:e2b}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        echo "Waiting for Ollama at $$OLLAMA_HOST ..."
+        i=0
+        while [ "$$i" -lt 90 ]; do
+          if ollama list >/dev/null 2>&1; then
+            break
+          fi
+          i=$$((i+1))
+          sleep 2
+        done
+        echo "Pulling model $$OLLAMA_MODEL ..."
+        ollama pull "$$OLLAMA_MODEL"
+        echo "Model ready."
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: "no"
+
+volumes:
+  app_data:
+  ollama_models:

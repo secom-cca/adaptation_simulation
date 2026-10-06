@@ -4,15 +4,11 @@ import json
 import re
 from typing import Any, Dict, Iterable, List
 
-try:
-    import ollama
-except ModuleNotFoundError:
-    ollama = None
-
 from models import IntermediateEvaluationRequest, IntermediateEvaluationResponse
+from ollama_client import chat_ollama, get_ollama_model
 
 
-INTERMEDIATE_EVALUATION_MODEL = "gemma4:e2b" # "gemma4:e4b" # "gemma2:2b"
+INTERMEDIATE_EVALUATION_MODEL = get_ollama_model("gemma4:e2b")  # "gemma4:e4b" # "gemma2:2b"
 OLLAMA_TIMEOUT_SECONDS = 30.0
 
 POLICY_LABELS = {
@@ -1076,20 +1072,13 @@ def _chat_ollama(
     timeout: float = OLLAMA_TIMEOUT_SECONDS,
     response_format: str | None = None,
 ) -> Any:
-    if ollama is None:
-        raise RuntimeError(
-            "Python package 'ollama' is not installed. "
-            "Run: pip install ollama"
-        )
-    client = ollama.Client(timeout=timeout)
-    kwargs: Dict[str, Any] = {
-        "model": model,
-        "messages": messages,
-        "options": options,
-    }
-    if response_format:
-        kwargs["format"] = response_format
-    return client.chat(**kwargs)
+    return chat_ollama(
+        model=model,
+        messages=messages,
+        options=options,
+        timeout=timeout,
+        response_format=response_format,
+    )
 
 
 def _describe_change_ja(label: str, start: float | None, end: float | None, lower_is_better: bool = False) -> str:

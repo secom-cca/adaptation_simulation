@@ -49,3 +49,7 @@ desktop.ini
 # Local logs / analysis workspace (do not push)
 backend/data/operation_logs/
 backend/data/analysis/
+
+# AWS deploy secrets (copy from deploy/.env.aws.example)
+deploy/.env.aws
+

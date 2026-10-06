@@ -3,13 +3,10 @@
 import random
 import numpy as np
 import pandas as pd
-try:
-    import ollama
-except ModuleNotFoundError:
-    ollama = None
 from scipy.stats import gumbel_r
 from config import SIMULATION_RANDOM_SEED
 from src.utils import estimate_rice_yield_loss
+from ollama_client import chat_ollama, get_ollama_model
 
 POLICY_KEYS = [
     "planting_trees_amount",
@@ -1341,11 +1338,28 @@ def generate_ai_commentary(results):
     """
 
     try:
-        response = ollama.chat(model='gemma4:e2b', messages=[
-            {'role': 'system', 'content': f'あなたは{agent["role"]}です。{agent["focus_point"]}を重視して話してください。'},
-            {'role': 'user', 'content': prompt},
-        ])
-        comment = response['message']['content']
+        response = chat_ollama(
+            model=get_ollama_model("gemma4:e2b"),
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        f'あなたは{agent["role"]}です。'
+                        f'{agent["focus_point"]}を重視して話してください。'
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            options={},
+        )
+        message = response.get("message") if isinstance(response, dict) else getattr(response, "message", None)
+        if isinstance(message, dict):
+            comment = message.get("content", "")
+        else:
+            comment = getattr(message, "content", "") if message is not None else ""
+        comment = str(comment).strip()
+        if not comment:
+            raise RuntimeError("empty ollama response")
     except Exception:
         comment = build_fallback_persona_commentary(agent, target_results, duration)
 

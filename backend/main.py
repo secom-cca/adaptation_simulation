@@ -1,12 +1,16 @@
+import io
+import os
 import sys
+import zipfile
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent / "src"))
 
-from fastapi import FastAPI, HTTPException, WebSocket, Body
+from fastapi import FastAPI, HTTPException, WebSocket, Body, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 import pandas as pd
 import numpy as np
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from config import (
     DEFAULT_PARAMS, rcp_climate_params, RANK_FILE, ACTION_LOG_FILE, YOUR_NAME_FILE,
@@ -442,6 +446,42 @@ def save_operation_log(payload: Dict[str, Any] = Body(...)):
         "path": str(out_path.relative_to(Path(__file__).parent)),
         "session_id": session_id,
     }
+
+
+def _check_admin_export_token(authorization: Optional[str]) -> None:
+    expected = (os.environ.get("ADMIN_EXPORT_TOKEN") or "").strip()
+    if not expected:
+        raise HTTPException(
+            status_code=503,
+            detail="ADMIN_EXPORT_TOKEN is not configured on the server",
+        )
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Authorization Bearer token required")
+    provided = authorization.split(" ", 1)[1].strip()
+    if provided != expected:
+        raise HTTPException(status_code=403, detail="Invalid admin token")
+
+
+@app.get("/admin/operation-logs.zip")
+def download_operation_logs_zip(authorization: Optional[str] = Header(default=None)):
+    """Zip all operation log JSON files for operator download (shared secret required)."""
+    _check_admin_export_token(authorization)
+    OPERATION_LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    files = sorted(OPERATION_LOGS_DIR.glob("*.json"))
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        if not files:
+            zf.writestr("README.txt", "No operation log JSON files found yet.\n")
+        for path in files:
+            zf.write(path, arcname=path.name)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": 'attachment; filename="operation_logs.zip"',
+        },
+    )
 
 
 @app.get("/baseline-simulation")

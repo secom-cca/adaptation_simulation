@@ -229,8 +229,23 @@ export default function GamePage({ sim }) {
   }, [advanceCycle, history, policyHistory, sliders, year])
 
   // WebSocket 受信設定（カメラからのスライダー値反映）
+  // 本番（ALB 等）では接続しない。ローカル展示は localhost、または VITE_ENABLE_CAMERA_WS=true。
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:3001')
+    const host = window.location.hostname
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1'
+    const forceEnable = import.meta.env.VITE_ENABLE_CAMERA_WS === 'true'
+    const forceDisable = import.meta.env.VITE_ENABLE_CAMERA_WS === 'false'
+    if (forceDisable || (!forceEnable && !isLocalHost)) {
+      return undefined
+    }
+
+    let ws
+    try {
+      ws = new WebSocket('ws://localhost:3001')
+    } catch (e) {
+      console.warn('Camera WebSocket unavailable:', e)
+      return undefined
+    }
 
     ws.onopen = () => {
       console.log('✅ WebSocket connected (frontend-new)')
@@ -280,15 +295,19 @@ export default function GamePage({ sim }) {
       }
     }
 
-    ws.onerror = (err) => {
-      console.error('❌ WebSocket error', err)
+    ws.onerror = () => {
+      // カメラ未使用時は接続失敗が普通なので騒がない
     }
 
-    ws.onclose = () => {
-      console.warn('⚠️ WebSocket closed')
-    }
+    ws.onclose = () => {}
 
-    return () => ws.close()
+    return () => {
+      try {
+        ws.close()
+      } catch (_) {
+        /* ignore */
+      }
+    }
   }, [cycle, handleSliderChange, view, year])
 
   return (
