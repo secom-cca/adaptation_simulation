@@ -80,7 +80,7 @@ REFERENCE_PATH_COUNT = 60
 SEED = int(SIMULATION_RANDOM_SEED)
 
 OUTPUT_DIR = BACKEND_DIR / "data"
-FRONTEND_DATA_DIR = PROJECT_DIR / "frontend-new" / "src" / "data"
+FRONTEND_DATA_DIR = PROJECT_DIR / "frontend" / "src" / "data"
 PADDY_DAM_MAX_PER_TURN = 6
 POLICY_MAX_PER_TURN = {
     "paddy_dam_construction_cost": 6,
@@ -1499,8 +1499,8 @@ def main() -> None:
     print(" - backend/data/score_bounds.json", flush=True)
     print(" - backend/data/best_agent_result.json", flush=True)
     print(" - backend/data/best_agent_summary.csv", flush=True)
-    print(" - frontend-new/src/data/benchmark_series.json", flush=True)
-    print(" - frontend-new/src/data/score_bounds.json", flush=True)
+    print(" - frontend/src/data/benchmark_series.json", flush=True)
+    print(" - frontend/src/data/score_bounds.json", flush=True)
 
 
 if __name__ == "__main__":

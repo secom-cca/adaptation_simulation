@@ -1,24 +1,33 @@
-const WebSocket = require('ws');
+import { WebSocketServer, WebSocket } from 'ws'
 
-const wss = new WebSocket.Server({ port: 3001 }, () => {
-  console.log("✅ WebSocket サーバーがポート 3001 で起動しました");
-});
+const wss = new WebSocketServer({ port: 3001 })
+
+wss.on('listening', () => {
+  console.log('WebSocket server is running on ws://localhost:3001')
+})
 
 wss.on('connection', (ws) => {
-  console.log('🔌 クライアントが接続しました');
+  console.log('Client connected')
 
   ws.on('message', (message) => {
-    console.log('📨 受信:', message.toString());
+    const text = message.toString()
+    console.log('Received:', text)
 
-    // 全クライアントにブロードキャスト（必要なら）
-    wss.clients.forEach((client) => {
+    try {
+      JSON.parse(text)
+    } catch {
+      console.warn('Ignored non-JSON WebSocket message:', text)
+      return
+    }
+
+    for (const client of wss.clients) {
       if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send(message.toString());
+        client.send(text)
       }
-    });
-  });
+    }
+  })
 
   ws.on('close', () => {
-    console.log('❌ クライアントが切断しました');
-  });
-});
+    console.log('Client disconnected')
+  })
+})

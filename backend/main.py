@@ -5,7 +5,7 @@ import zipfile
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent / "src"))
 
-from fastapi import FastAPI, HTTPException, WebSocket, Body, Header
+from fastapi import FastAPI, HTTPException, Body, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import pandas as pd
@@ -245,18 +245,6 @@ def run_simulation(req: SimulationRequest):
         all_df = pd.DataFrame(seq_result)
         block_scores = []
 
-    elif mode == "Record Results Mode":
-        import shutil
-        import glob
-        from pathlib import Path
-
-        src_dir = Path(__file__).parent / "data"
-        dst_dir = Path(__file__).parent.parent / "frontend" / "public" / "results" / "data"
-        dst_dir.mkdir(parents=True, exist_ok=True)
-
-        for filepath in glob.glob(str(src_dir / "*.csv")) + glob.glob(str(src_dir / "*.tsv")):
-            shutil.copy(filepath, dst_dir)
-
     else:
         raise HTTPException(status_code=400, detail=f"Unknown mode: {mode}")
 
@@ -395,7 +383,7 @@ def save_comparison_result(result: Dict[str, Any] = Body(...)):
 
 @app.post("/operation-logs")
 def save_operation_log(payload: Dict[str, Any] = Body(...)):
-    """Persist a frontend-new session operation log as JSON under data/operation_logs/."""
+    """Persist a frontend session operation log as JSON under data/operation_logs/."""
     import json
     import re
 
@@ -567,44 +555,11 @@ def create_resident_interview(req: ResidentInterviewRequest):
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-# サーバに送信されているログをWebSocketで受信。現在はbackendに保存中
 @app.post("/final-commentary")
 def create_final_commentary(results: List[Dict[str, Any]] = Body(...)):
     if not results:
         raise HTTPException(status_code=400, detail="No simulation results provided.")
     return generate_ai_commentary(results)
-
-
-@app.websocket("/ws/log")
-async def websocket_log_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    log_path = Path(__file__).parent / "data" / "user_log.json"
-    import json
-
-    # 既存のログファイルを読み込む（なければ空リスト）
-    if log_path.exists():
-        with open(log_path, "r", encoding="utf-8") as f:
-            try:
-                logs = json.load(f)
-            except Exception:
-                logs = []
-    else:
-        logs = []
-
-    while True:
-        try:
-            data = await websocket.receive_text()
-            # 受信データをJSONとしてパース
-            try:
-                log_obj = json.loads(data)
-            except Exception:
-                log_obj = {"raw": data}
-            logs.append(log_obj)
-            # ファイルに全件書き込み
-            with open(log_path, "w", encoding="utf-8") as f:
-                json.dump(logs, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            break
 
 if __name__ == "__main__":
     import uvicorn

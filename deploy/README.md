@@ -137,10 +137,14 @@ aws ecs register-task-definition \
 
 ### A8. GPU EC2（Ollama）— 既定は停止
 
-1. インスタンス例: `g4dn.xlarge`、GPU 対応 AMI  
-2. `deploy/ollama/` をインスタンスへ配置（例: `/opt/adaptation-ollama`）  
-3. NVIDIA Container Toolkit + Docker を入れ、`docker compose up -d` → `docker compose run --rm ollama-pull`  
-4. 起動時に compose が上がるよう systemd または user-data（[`ollama/user-data.sh`](ollama/user-data.sh) 参考）  
+1. インスタンス例: `g4dn.xlarge`、AMI は **Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 24.04)**（ドライバ・Docker・NVIDIA Container Toolkit 入り）  
+   - 東京リージョンは G インスタンス枠（Service Quotas `L-DB2E81BA`）が既定 0。4 以上に引き上げ申請が必要  
+2. [`ollama/user-data.sh`](ollama/user-data.sh) のプレースホルダ `__COMPOSE_YML__` を [`ollama/docker-compose.yml`](ollama/docker-compose.yml) の中身で置換し、起動テンプレート（`adaptation-gpu-ollama`）の UserData に設定  
+   - 初回起動時に `/opt/adaptation-ollama` へ compose を配置 → Ollama 起動 → モデル pull。以降は Docker の `restart: unless-stopped` で自動起動  
+   - タグ `Project=adaptation-gpu` を付ける（自動停止ロールはこのタグのインスタンスのみ停止可）  
+   - SSH は開けず、必要なら Session Manager（`AmazonSSMManagedInstanceCore` のインスタンスプロファイル）で入る  
+3. `aws ec2 run-instances --launch-template LaunchTemplateName=adaptation-gpu-ollama` で起動し、モデル pull 完了を待つ  
+4. プライベート IP は停止/起動で変わらないので、ECS タスク定義の `OLLAMA_HOST` を一度だけ書き換えて再デプロイ  
 5. **作り終わったら停止:**
 
 ```bash

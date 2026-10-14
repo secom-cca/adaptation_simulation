@@ -1,14 +1,13 @@
 .git
+.claude
+.env
 .venv
 **/__pycache__
 **/*.pyc
 **/.DS_Store
 **/node_modules
-frontend/node_modules
-frontend/build
 frontend/dist
-frontend-new/node_modules
-frontend-new/dist
+camera
 backend/.venv
 backend/venv
 backend/data/operation_logs
@@ -16,7 +15,7 @@ backend/data/analysis
 backend/data/*.tsv
 backend/data/*.csv
 deploy/.env.aws
+deploy/ecs/task-definition.aws.json
 *.md
-!frontend-new/README.md
 agent-transcripts
 .cursor

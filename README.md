@@ -1,337 +1,123 @@
-# README
+# Climate Adaptation Simulation
 
-## OpenLab-version: frontend-new ワークショップ版
+本リポジトリでサポートする実行構成は、次の2つです。
 
-`OpenLab-version` ブランチでは、既存の `frontend` とは別に `frontend-new` を追加しています。明日のワークショップではこのブランチを使い、結果が問題なければ後から `main` へマージする想定です。
+- **Option 2:** React + FastAPI
+- **Option 3:** React + FastAPI + Intel RealSense（任意）
 
-### 起動方法
+旧Streamlit UI、旧React UI、Render構成、過去の解析・生成結果はサポート対象外です。
 
-1. バックエンドを起動します。
-
-```bash
-cd backend
-python main.py
-```
-
-2. 別ターミナルで `frontend-new` を起動します。
-
-```bash
-cd frontend-new
-npm install
-npm run dev
-```
-
-`frontend-new` は Vite 版の UI で、既存の React UI とは別ルートとして管理しています。
-
-### 予算制約ルール
-
-政策スライダーの見た目は常に `0` から `10` のままです。ただし、使える政策ポイントを超える入力は内部で自動的に切り詰めます。
-
-* 弱 = `0`
-* 標準 = `5`
-* 強 = `10`
-
-25 年ごとの政策ポイントは、直前 25 年間の結果に応じて減少します。
-
-* 洪水被害額が `2,000,000 USD` 増えるごとに、使える政策ポイントが `1` 減少します。
-* 25 年間で住宅移転を累計 `5` ポイント実行するごとに、使える政策ポイントが `1` 減少します。
-* `Advance 25 Years` 後は、政策スライダーをすべて `0` に戻します。
-* 予算ポイントの減少は累計ではなく、各 25 年ごとに判定します。
-
-### 結果比較
-
-最終結果画面から、政策なしのベースラインおよび保存済みの他グループ結果と比較できます。ベースラインは常に次の固定値として表示します。
-
-* 累計洪水被害額: `43.6億円`
-* 最終収穫量: `1628`
-* 最終生態系レベル: `71.6`
-* 平均住宅負担: `6055`
-
-他グループの結果は、最終評価画面に到達した時点で `backend/data/comparison_results.tsv` に保存されます。このファイルはローカル実行時の生成データなので Git 管理対象外です。
-
-### ランダム性
-
-シミュレーション本体、政策影響、予測に関わる乱数は固定シードで再現可能にしています。ただし、生成 AI ペルソナの年齢・役割選択だけはランダムのままにしています。
-
----
-
-This simulation platform allows you to explore future climate adaptation scenarios using either a **Streamlit-based interface** or a **React-based frontend**. It supports policy simulation, Monte Carlo analysis, and optional integration with **Intel RealSense** sensors for gesture-based control.
-
----
-
-## 🔧 Project Structure
-
-```
-.
-├── main.py                          ← Run each by streamlit 
-├── dapp_app.py                      ← Run DAPP by streamlit 
-entry point
-├── backend/
-│   ├── main.py                      ← FastAPI backend entry point
-│   └── src/
-│       └── simulation.py            ← Core simulation logic
-├── frontend/
-│   ├── src/
-│   │   └── App.js                   ← React frontend app
-│   ├── realsense.py                 ← RealSense input processing (Python)
-│   └── ws_server.js                 ← WebSocket server (Node.js)
-```
-
----
-
-## 🛠 Prerequisites (AI Agent Setup)
-
-This project uses **gemma4:e2b** via **Ollama** for AI-agent features (住民の反応・中間評価など). Please set up the following before running the simulation:
-
-1. **Install Ollama**: Download and install from [ollama.com](https://ollama.com).
-2. **Download Gemma Model**:
-   ```bash
-   ollama pull gemma4:e2b
-   ```
-3. **Install the Python `ollama` client** in the backend environment (Ollama 本体だけでは不十分です):
-   ```bash
-   cd backend
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
-4. **Start the API with that environment**:
-   ```bash
-   cd backend
-   source .venv/bin/activate
-   uvicorn main:app --reload --port 8000
-   ```
-
-確認:
-```bash
-ollama list                 # gemma4:e2b があること
-curl http://127.0.0.1:11434/api/tags
-```
----
-
-## 🚀 Usage Options
-
-### Option 1: Streamlit-based UI
-
-#### ▶ How to Run
-
-1. Install dependencies:
-
-```bash
-poetry install
-```
-
-2. Start Streamlit app:
-
-```bash
-poetry run streamlit run main.py
-```
-
-> Access at: `http://localhost:8501`
-
-#### 💡 Features
-
-* Fully self-contained (no backend server required)
-* Supports Monte Carlo and Sequential Decision-Making modes
-* Interactive sliders and tables
-* Graphical result visualization
-* Scenario saving, comparison, and export
-
----
-
-### Option 2: React + FastAPI Interface
-
-#### ▶ How to Run (without RealSense)
-
-1. **Start the backend server** in one terminal:
-
-```bash
-cd backend
-python main.py
-```
-
-> Runs FastAPI at `http://localhost:8000`
-
-2. **Start the frontend app** in another terminal:
-
-```bash
-cd frontend-new
-npm install       # only once
-npm run dev
-```
-
-> Runs React at `http://localhost:3000`
-
-#### 💡 Features
-
-* Modern web UI
-* Uses REST API to communicate with backend
-* Suitable for advanced browser interactions and extensibility
-
----
-
-### Option 3: React + FastAPI + RealSense (Optional)
-
-You can enhance the React UI with **gesture or motion input** via Intel RealSense.
-
-#### ▶ Additional Setup
-
-In addition to the above (React + FastAPI), run the following in **two more terminals**:
-
-3. **Start RealSense input handler** (Python):
-
-```bash
-cd camera
-python realsense_bridge.py
-```
-
-4. **Start WebSocket relay server** (Node.js):
-
-```bash
-cd frontend-new
-cd src
-node ws_server.js
-```
-
-#### 💡 How It Works
+## 構成
 
 ```text
-Intel RealSense Camera
-        ↓
-  realsense_bridge.py (Python)
-        ↓
-  ws_server.js (WebSocket relay)
-        ↓
-  React App (subscribes via WebSocket)
+.
+├── backend/       FastAPI API・シミュレーション
+├── frontend/  Vite + React UI
+├── camera/        RealSense入力（任意）
+├── deploy/        AWS ECS/Fargate・GPU Ollama運用
+├── Dockerfile
+└── docker-compose.yml
 ```
 
-This setup enables real-time control (e.g., simulation execution, parameter tuning) through physical gestures.
+## Option 2: React + FastAPI
 
----
+前提: Python 3.12、Node.js 20以降。
 
-## 📦 Dependencies
-
-### Python (Backend + Streamlit)
-
-* `streamlit`
-* `fastapi`
-* `uvicorn`
-* `numpy`
-* `pandas`
-* `plotly`
-* (optional) `pyrealsense2` — for RealSense integration
-
-Install via:
+### 1. FastAPI
 
 ```bash
-poetry install
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
 ```
 
-### JavaScript (Frontend)
+API確認:
 
-* Node.js v16+
-* npm or yarn
-* `react`, `axios`, etc.
+```bash
+curl http://127.0.0.1:8000/ping
+```
 
-Install via:
+### 2. React
+
+別ターミナルで起動します。
 
 ```bash
 cd frontend
-npm install
+npm ci
+npm run dev
 ```
 
----
+ブラウザで <http://localhost:3000> を開きます。Viteが `/api` を
+`http://localhost:8000` に転送します。
 
-## 📁 Data Flow Overview
-
-```
-[Decision Input] → [Backend: simulation.py] → [Result JSON]
-                                   ↑
-         Streamlit or React        |
-                    ←── Visualization & Export
-```
-
----
-
-## 📝 Notes
-
-* Use **Streamlit** for fast prototyping or local analysis.
-* Use **React + FastAPI** for more interactive, customizable deployments.
-* RealSense is entirely **optional**, and not required for core simulations.
-* Make sure to keep the backend server running when using React.
-
----
-
-## 🚀 DAPP Pathway Builder Simulator
-
-This project implements a Dynamic Adaptive Policy Pathways (DAPP) tool for climate adaptation planning, based on a long-term simulation of socio-environmental systems. It uses:
-+ backend/src/simulation.py: simulation engine (yearly climate, agriculture, flood, ecosystem, migration, R&D, etc.)
-+ backend/config.py: configuration of parameters, default values, RCP climate scenarios
-+ backend/src/utils.py: utilities for indicators, scaling, plots
-+ dapp_app.py: Streamlit front-end for interactively constructing and visualizing adaptive pathways
-
-### Features
-
-* Monte Carlo simulation of policies under uncertainty (temperature, precipitation, flood events, demand, etc.)
-* Adaptive pathway detection using threshold exceedance (ATP: Adaptation Tipping Points)
-* Policy switching modes:
-  * `Reactive`: uses `Escalation ladder` and `Trigger → policy mapping`
-  * `Anticipatory`: chooses from all policy primitives via lookahead optimization
-* Two-layer regime mode:
-  * Regime shift toggles only the `Crop Yield` constraint ON/OFF
-  * toggle probability is `1 / X` per year (`metric_toggle_interval_years`)
-  * optional cooldown after each exercise (`cooldown_years`)
-* Multi-scenario evaluation with scorecards (robustness, NPV/cumulative costs, ecosystem levels, yields, etc.)
-* Visualization suite:
-> * Pathway composition (stacked policy share over time)
-> * Regime composition (stacked regime share over time)
-> * Threshold satisfaction share over time + final-year score table
-> * Cost time series (mean across scenarios) + period total summary
-> * Metro map: policy/regime sequences across time buckets, showing transitions as subway-like lines
->> * Export of per-scenario and aggregated scorecards to CSV
->> * Session persistence: simulation results survive UI changes until recomputed with `Run DAPP`
-
-### Usage
+AI住民機能にはOllamaを使います。Ollamaが停止中でもシミュレーション本体は動作し、
+AI応答はフォールバックします。利用する場合は、バックエンド起動前に次を実行します。
 
 ```bash
-streamlit run dapp_app.py
+ollama pull gemma4:e2b
+ollama serve
 ```
 
-In the web UI:
-1. Configure thresholds for evaluation metrics
-2. Select policy switching mode (`Reactive` or `Anticipatory`)
-3. Edit policy primitives
-4. If `Reactive`, configure escalation ladder and trigger mapping
-5. Select RCP and simulation settings
-6. Run ▶️ Run DAPP (Monte Carlo)
-7. Explore results in visualizations (composition, thresholds, costs, metro maps)
-8. Export results to CSV if needed
+## Option 3: RealSense（任意）
 
-Note: Results are stored in `st.session_state` and remain visible until you rerun the simulation.
+Option 2を起動したうえで、さらに2つのプロセスを起動します。
 
----
+```bash
+# ターミナル3: WebSocketリレー
+cd frontend
+npm run camera:relay
 
-### Next to do
-#### High-priority
-* Highlight ATP (Adaptation Tipping Point) years in pathway visualizations (e.g., markers in Metro map)
-* Scenario grouping & filtering in the UI (e.g., by RCP, by cost level)
-* Improve Metro map readability: allow Sankey/alluvial diagrams for policy flows
-* User-defined candidates via UI (currently defined in code as CANDIDATES list)
+# ターミナル4: RealSense入力
+cd camera
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python realsense_bridge.py
+```
 
-#### Medium-term
+```text
+Intel RealSense → camera/realsense_bridge.py → ws://localhost:3001 → React
+```
 
-* Add Monte Carlo distribution visualizations (uncertainty bands in radar, violin plots)
-* Incorporate multi-criteria decision analysis (MCDA) scoring schemes
-* Add export to PDF/LaTeX with pathway diagrams and scorecards
+RealSense入力はローカル表示時だけ既定で有効です。明示的に切り替える場合は
+`VITE_ENABLE_CAMERA_WS=true|false` を指定します。
 
-#### Long-term
+## Dockerでのローカル確認
 
-* Integrate with external databases (JMA, Suimon DB, etc.) for real hydrological data
-* Support interactive workshops with multiple participants selecting strategies live
-* Link with Bayesian causal models for uncertainty propagation
+```bash
+export ADMIN_EXPORT_TOKEN=dev-admin-token-change-me
+docker compose up --build
+```
 
----
+ブラウザで <http://localhost:8080> を開きます。初回はOllamaモデルの取得に時間がかかります。
 
-## 🪪 License
+## AWS
 
-This project is licensed under the MIT License.
+本番構成は、ALB → ECS Fargate（nginx + FastAPI）、EFS、ECR、任意のGPU EC2
+（Ollama）です。手順は [deploy/README.md](deploy/README.md) を参照してください。
+
+2026-10-13 JSTの確認時点では、AWSアカウント `082780092186` の
+`ap-northeast-1` に以下がデプロイ済みです。
+
+- ECSクラスター/サービス: `adaptation/adaptation-web`
+- 稼働タスク: `1 / 1`、デプロイ状態 `COMPLETED`
+- ALB: `adaptation-alb`、ターゲット `healthy`
+- ECR: `adaptation-web:latest`（2026-10-06 push）
+
+状態確認:
+
+```bash
+aws ecs describe-services \
+  --region ap-northeast-1 \
+  --cluster adaptation \
+  --services adaptation-web
+```
+
+## テスト
+
+```bash
+cd frontend && npm run build
+cd ../backend && python -m compileall .
+```

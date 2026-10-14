@@ -1,16 +1,24 @@
 #!/bin/bash
-# Optional EC2 user-data snippet: install Docker + NVIDIA toolkit + start Ollama compose.
-# Review before use; adjust for your AMI.
+# EC2 user-data for the GPU Ollama host.
+# Target AMI: "Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 24.04)"
+#   (NVIDIA driver, Docker and NVIDIA Container Toolkit are preinstalled).
+# The placeholder in the heredoc below is replaced with deploy/ollama/docker-compose.yml when the
+# launch template is created (see README A8). Runs on first boot only; after
+# that Docker restarts the ollama container (restart: unless-stopped).
 set -euxo pipefail
 
-apt-get update
-apt-get install -y docker.io docker-compose-v2 curl
 systemctl enable --now docker
 
-# Place compose files (operator should scp deploy/ollama into /opt/adaptation-ollama)
-mkdir -p /opt/adaptation-ollama
-if [[ -f /opt/adaptation-ollama/docker-compose.yml ]]; then
-  cd /opt/adaptation-ollama
-  docker compose up -d
-  docker compose run --rm ollama-pull || true
+if ! docker compose version >/dev/null 2>&1; then
+  apt-get update
+  apt-get install -y docker-compose-plugin || apt-get install -y docker-compose-v2
 fi
+
+mkdir -p /opt/adaptation-ollama
+cat > /opt/adaptation-ollama/docker-compose.yml <<'COMPOSE_EOF'
+__COMPOSE_YML__
+COMPOSE_EOF
+
+cd /opt/adaptation-ollama
+docker compose up -d ollama
+docker compose run --rm ollama-pull

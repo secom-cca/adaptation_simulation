@@ -1,5 +1,3 @@
-old
-result
 __pycache__
 .env
 logs/
@@ -20,6 +18,7 @@ venv/
 env/
 backend/.venv/
 backend/venv/
+camera/.venv/
 
 # Local simulation artifacts / logs
 backend/data/block_scores.tsv
@@ -27,17 +26,13 @@ backend/data/decision_log.csv
 backend/data/your_name.csv
 backend/data/comparison_results.tsv
 backend/data/user_log.json
-frontend/public/results/data/
 
 # Node / frontend builds
 node_modules/
 frontend/node_modules/
-frontend/build/
 frontend/dist/
-frontend-new/node_modules/
-frontend-new/dist/
-frontend-new/causal_explorer_backups/
-frontend-new/server.*.log
+frontend/causal_explorer_backups/
+frontend/server.*.log
 
 # OS / editor
 .DS_Store
@@ -52,4 +47,4 @@ backend/data/analysis/
 
 # AWS deploy secrets (copy from deploy/.env.aws.example)
 deploy/.env.aws
-
+deploy/ecs/task-definition.aws.json

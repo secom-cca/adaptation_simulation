@@ -2,20 +2,16 @@
 """
 RealSense 軽量ブリッジ
 
-`frontend/realsense.py` の送信フォーマット／送信先を維持しつつ、
-`camera/main_test.py` の軽量同期 WebSocket 送信（再接続）と定期更新ロジックを取り入れた
-軽量実行用モジュール。
+検出したオブジェクトを政策値へ変換し、ローカルのWebSocketリレー経由で
+React UIへ送信する。
 """
 
-import socket
 import json
 import time
-import datetime
 import csv
 import os
 import cv2
 import numpy as np
-import pyrealsense2 as rs
 try:
     from .config import (
         TIME_INTERVAL,
@@ -43,11 +39,7 @@ except ImportError:
     from coordinate import compute_base_depth_map, compute_perspective_transform
     from overlay import draw_detected_objects
 
-# --- TCP (既存フロントエンド互換) ---
-BACKEND_HOST = '127.0.0.1'
-BACKEND_PORT = 5000
-
-# --- 軽量同期 WebSocket（main_test の方式） ---
+# --- React UI向けWebSocketリレー ---
 WS_URI = "ws://localhost:3001"
 
 #高さの閾値と単位
@@ -180,19 +172,7 @@ def run_realsense_bridge():
     last_trigger_count = 0
     last_sent_counts = {}
 
-    # TCP ソケット（既存の frontend/realsense.py と同じ送信先）
-    backend_sock = None
-    try:
-        backend_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        backend_sock.settimeout(0.5)
-        backend_sock.connect((BACKEND_HOST, BACKEND_PORT))
-        backend_sock.settimeout(None)
-        print(f"[INFO] バックエンドに接続しました: {BACKEND_HOST}:{BACKEND_PORT}")
-    except Exception as e:
-        print(f"[WARN] バックエンド接続失敗、送信はスキップします: {e}")
-        backend_sock = None
-
-    # 同期 WebSocket クライアント（軽量データ送信用）
+    # 同期WebSocketクライアント（制御データ送信用）
     ws_client = connect_ws_client()
 
     last_update_time = time.time()
@@ -235,28 +215,8 @@ def run_realsense_bridge():
             if current_time - last_update_time >= TIME_INTERVAL:
                 objects, mask = detect_objects_2d(depth_frame, color_image, roi_points, base_depth_map, perspective_matrix)
 
-                # フロントエンド互換フォーマット: list of {id, x, y}
-                object_positions_2d = []
                 object_positions_normalized = []
-                intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
                 for obj in objects:
-                    cx = int(obj.get('cx_pixel'))
-                    cy = int(obj.get('cy_pixel'))
-                    # 深度取得とデプロジェクト
-                    try:
-                        depth_m = depth_frame.get_distance(cx, cy)
-                        xyz = rs.rs2_deproject_pixel_to_point(intrinsics, [cx, cy], depth_m)
-                        x_world, y_world, z_world = float(xyz[0]), float(xyz[1]), float(xyz[2])
-                    except Exception:
-                        # フォールバック: 正規化座標を使う（互換性のため）
-                        x_world = float(obj.get('x', 0.0))
-                        y_world = float(obj.get('y', 0.0))
-
-                    object_positions_2d.append({
-                        'id': int(obj.get('id', 0)),
-                        'x': x_world,
-                        'y': y_world,
-                    })
                     object_positions_normalized.append({
                         'id': int(obj.get('id', 0)),
                         'x_norm': float(obj.get('x', 0.0)),
@@ -264,20 +224,6 @@ def run_realsense_bridge():
                         'height': float(obj.get('height', 0.0)),
                     })
 
-                # --- TCP送信（既存形式維持） ---
-                if backend_sock and object_positions_2d:
-                    try:
-                        payload = json.dumps({"objects": object_positions_2d}, default=lambda o: float(o) if isinstance(o, (np.floating, np.integer)) else o)
-                        backend_sock.sendall(payload.encode('utf-8'))
-                    except Exception as e:
-                        print(f"[WARN] バックエンド送信失敗: {e}")
-                        try:
-                            backend_sock.close()
-                        except:
-                            pass
-                        backend_sock = None
-
-                # 軽量サマリ送信は廃止（制御系メッセージのみ送信）
                 if not ws_client:
                     ws_client = connect_ws_client()
 
@@ -323,11 +269,6 @@ def run_realsense_bridge():
         if ws_client:
             try:
                 ws_client.close()
-            except:
-                pass
-        if backend_sock:
-            try:
-                backend_sock.close()
             except:
                 pass
         pipeline.stop()
