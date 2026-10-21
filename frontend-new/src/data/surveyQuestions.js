@@ -1,6 +1,6 @@
 /** Post-play survey (~3 min). */
 
-export const SURVEY_VERSION = 8
+export const SURVEY_VERSION = 9
 
 /**
  * Question keys become answers object keys.
@@ -25,6 +25,22 @@ export const SURVEY_QUESTIONS = [
       { value: '50s', label: { ja: '50代', en: '50s' } },
       { value: '60s_plus', label: { ja: '60代以上', en: '60+' } },
       { value: 'prefer_not', label: { ja: '答えたくない', en: 'Prefer not to say' } },
+    ],
+  },
+  {
+    id: 'play_count',
+    type: 'single',
+    required: true,
+    research_tags: ['participant'],
+    label: {
+      ja: 'このゲームは何回目のプレイですか？',
+      en: 'How many times have you played this game (including this session)?',
+    },
+    options: [
+      { value: '1', label: { ja: '1回目', en: '1st time' } },
+      { value: '2', label: { ja: '2回目', en: '2nd time' } },
+      { value: '3', label: { ja: '3回目', en: '3rd time' } },
+      { value: '4_plus', label: { ja: '4回目以上', en: '4th time or more' } },
     ],
   },
   {
@@ -229,6 +245,7 @@ export function buildSurveyPayload(answers) {
     submitted_at: new Date().toISOString(),
     answers: { ...answers },
     research_focus: [
+      'participant_age_and_play_count',
       'prior_climate_adaptation_knowledge',
       'prior_basin_flood_management_knowledge',
       'municipal_adaptation_and_disaster_prevention',
