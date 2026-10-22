@@ -1,0 +1,115 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches:
+      - develop/aws
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: adaptation-production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-northeast-1
+  AWS_ACCOUNT_ID: "082780092186"
+  ECR_REPOSITORY: adaptation-web
+  ECS_CLUSTER: adaptation
+  ECS_SERVICE: adaptation-web
+  ECS_TASK_DEFINITION: adaptation-web
+  CONTAINER_NAME: web
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Configure short-lived AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::082780092186:role/GitHubActions-adaptation-deploy
+          role-session-name: github-adaptation-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        shell: bash
+        run: |
+          aws ecr get-login-password --region "$AWS_REGION" \
+            | docker login --username AWS --password-stdin \
+                "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+      - name: Build and push image
+        id: image
+        shell: bash
+        run: |
+          image_base="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"
+          image_uri="$image_base:${GITHUB_SHA}"
+          docker build --platform linux/amd64 \
+            --tag "$image_uri" \
+            --tag "$image_base:latest" \
+            .
+          docker push "$image_uri"
+          docker push "$image_base:latest"
+          echo "uri=$image_uri" >> "$GITHUB_OUTPUT"
+
+      - name: Register task definition with the immutable image
+        id: task
+        shell: bash
+        env:
+          IMAGE_URI: ${{ steps.image.outputs.uri }}
+        run: |
+          aws ecs describe-task-definition \
+            --region "$AWS_REGION" \
+            --task-definition "$ECS_TASK_DEFINITION" \
+            --query taskDefinition \
+            > "$RUNNER_TEMP/current-task-definition.json"
+
+          jq --arg container "$CONTAINER_NAME" --arg image "$IMAGE_URI" '
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )
+            | .containerDefinitions |= map(
+                if .name == $container then .image = $image else . end
+              )
+          ' "$RUNNER_TEMP/current-task-definition.json" \
+            > "$RUNNER_TEMP/next-task-definition.json"
+
+          task_definition_arn="$(aws ecs register-task-definition \
+            --region "$AWS_REGION" \
+            --cli-input-json "file://$RUNNER_TEMP/next-task-definition.json" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)"
+          echo "arn=$task_definition_arn" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy and wait for ECS stability
+        shell: bash
+        env:
+          TASK_DEFINITION_ARN: ${{ steps.task.outputs.arn }}
+        run: |
+          aws ecs update-service \
+            --region "$AWS_REGION" \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --task-definition "$TASK_DEFINITION_ARN" \
+            > /dev/null
+          aws ecs wait services-stable \
+            --region "$AWS_REGION" \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE"
+
+      - name: Verify public endpoint
+        shell: bash
+        run: curl --fail --silent --show-error https://play.adaptation-game.com/api/ping

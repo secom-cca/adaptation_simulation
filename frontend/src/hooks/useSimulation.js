@@ -28,6 +28,22 @@ import { buildIntentSurveyPayload } from '../data/intentSurveyQuestions.js'
 
 const API = import.meta.env.VITE_API_BASE || '/api'
 
+async function wakeGpu(attempt = 0) {
+  try {
+    const response = await fetch(`${API}/gpu/wake`, { method: 'POST' })
+    if (!response.ok) throw new Error(`GPU wake failed: HTTP ${response.status}`)
+    const result = await response.json()
+    if (result.retry_after_seconds && attempt < 3) {
+      window.setTimeout(
+        () => { void wakeGpu(attempt + 1) },
+        Number(result.retry_after_seconds) * 1000,
+      )
+    }
+  } catch (error) {
+    console.warn('GPU wake request failed; the game will use its fallback response.', error)
+  }
+}
+
 const INITIAL_VALUES = {
   temp: 15.5,
   precip: 1700.0,
@@ -463,6 +479,7 @@ export function useSimulation() {
 
   const startGame = useCallback(({ userName, teamName, mode, rcpValue, ethicsConsentAt }) => {
     const order = []
+    void wakeGpu()
     confirmSessionStart({
       userName,
       teamName,

@@ -48,3 +48,6 @@ backend/data/analysis/
 # AWS deploy secrets (copy from deploy/.env.aws.example)
 deploy/.env.aws
 deploy/ecs/task-definition.aws.json
+
+# Downloaded production exports may contain names and survey free text
+exports/

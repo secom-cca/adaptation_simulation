@@ -1,4 +1,5 @@
 import io
+import logging
 import os
 import sys
 import zipfile
@@ -8,6 +9,7 @@ sys.path.append(str(Path(__file__).parent / "src"))
 from fastapi import FastAPI, HTTPException, Body, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from botocore.exceptions import ClientError
 import pandas as pd
 import numpy as np
 from typing import Dict, Any, List, Optional
@@ -17,6 +19,7 @@ from config import (
     MANA_JPY_PER_YEAR, BASE_POLICY_BUDGET_MANA, BASE_POLICY_BUDGET_JPY_PER_YEAR,
     TURN_YEARS, POLICY_MANA_RULES, POLICY_EFFECT_METADATA, EVENT_THRESHOLDS,
 )
+from gpu_lifecycle import GpuLifecycleError, wake_gpu
 from models import (
     SimulationRequest, SimulationResponse, CompareRequest, CompareResponse,
     DecisionVar, CurrentValues, BlockRaw,
@@ -31,6 +34,7 @@ from simulation import generate_ai_commentary, simulate_simulation, simulate_yea
 from utils import calculate_scenario_indicators, aggregate_blocks
 
 app = FastAPI()
+logger = logging.getLogger(__name__)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -69,6 +73,17 @@ OPERATION_LOGS_DIR = Path(__file__).parent / "data" / "operation_logs"
 @app.get("/ping")
 def ping():
     return {"message": "pong"}
+
+
+@app.post("/gpu/wake", status_code=202)
+def start_gpu_for_game():
+    try:
+        return wake_gpu()
+    except GpuLifecycleError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ClientError as exc:
+        logger.exception("AWS rejected the GPU wake request")
+        raise HTTPException(status_code=502, detail="GPU startup could not be requested") from exc
 
 @app.get("/policy-config")
 def get_policy_config():

@@ -28,6 +28,8 @@ Browser → ALB → Fargate (nginx:/ + /api→uvicorn)
 | [`deploy/entrypoint.sh`](entrypoint.sh) | コンテナ起動 |
 | [`deploy/scripts/start-gpu-ollama.sh`](scripts/start-gpu-ollama.sh) | GPU 起動 + 既定 3h 自動停止予約 |
 | [`deploy/scripts/stop-gpu-ollama.sh`](scripts/stop-gpu-ollama.sh) | 予約取消 + GPU 停止 |
+| [`deploy/scripts/set-gpu-mode.sh`](scripts/set-gpu-mode.sh) | GPU 自動起動モードとフォールバック専用モードを切り替え |
+| [`deploy/ecs/gpu-lifecycle-policy.json`](ecs/gpu-lifecycle-policy.json) | ゲーム開始時のGPU起動と3時間後の停止予約に必要なECSタスク権限 |
 | [`deploy/scripts/push-web-image.sh`](scripts/push-web-image.sh) | ビルド → ECR → ECS 再デプロイ |
 | [`deploy/ollama/`](ollama/) | GPU EC2 上の Ollama compose |
 | [`deploy/ecs/task-definition.json`](ecs/task-definition.json) | Fargate タスク定義サンプル |
@@ -100,6 +102,9 @@ Access Point を切って `deploy/ecs/task-definition.json` の `fs-` / `fsap-` 
 
 ### A6. ALB + 証明書
 
+2026-10-15 JST 現在、デプロイ済み環境は <https://play.adaptation-game.com> で公開しています。
+ACM 証明書を ALB の 443 リスナーに設定し、80 リスナーはこの HTTPS URL へ 301 リダイレクトします。
+
 1. ACM で証明書（DNS 検証）  
 2. ターゲットグループ（IP モード、ポート 80、ヘルスチェック `/api/ping` または `/`）  
 3. ALB リスナー 443 → ターゲットグループ  
@@ -132,6 +137,10 @@ aws ecs register-task-definition \
 | `OLLAMA_HOST` | `http://10.0.1.23:11434`（GPU のプライベート IP） |
 | `OLLAMA_MODEL` | `gemma4:e2b` |
 | `LLM_MAX_CONCURRENCY` | `3` |
+| `GPU_AUTO_WAKE_ENABLED` | `true` でゲーム開始時にGPUを起動、`false` で無効 |
+| `GPU_INSTANCE_ID` | 起動対象の GPU EC2 インスタンス ID |
+| `GPU_SCHEDULER_ROLE_ARN` | `adaptation-scheduler-ec2-stop` の ARN |
+| `GPU_AUTO_STOP_HOURS` | `3`（最後にゲームを開始してから停止するまでの時間） |
 | `ADMIN_EXPORT_TOKEN` | 長いランダム文字列 |
 | `UVICORN_WORKERS` | `2` |
 
@@ -185,6 +194,30 @@ chmod +x deploy/scripts/*.sh deploy/scripts/lib.sh
 
 ## B. イベント・検証ごと（GPU）
 
+### GPU モードの ON / OFF
+
+```bash
+# 現在の設定、EC2状態、停止予約を表示
+./deploy/scripts/set-gpu-mode.sh status
+
+# ON: 次のゲーム開始時にGPUを自動起動
+./deploy/scripts/set-gpu-mode.sh on
+
+# OFF: ECSを高速フォールバックへ切り替え、予約を削除し、GPUを停止
+./deploy/scripts/set-gpu-mode.sh off
+```
+
+`off` では GPU EC2 は停止状態で残るため、後から `on` で再利用できます。
+`on` は即時にGPUを起動せず、次に参加者が「ゲームを開始」を押したときに起動します。
+
+### 自動起動モードの動作
+
+公開画面で「ゲームを開始」を押すと、バックエンドがGPU EC2を起動し、
+最後にゲームを開始した時刻から3時間後の自動停止予約を作成または更新します。
+起動とモデルの読み込み中もゲームは続行でき、AIが未準備の間はフォールバック応答を使います。
+
+以下のスクリプトは手動運用やトラブル対応用に引き続き使用できます。
+
 ```bash
 # 開始（既定 3 時間後に自動停止）
 ./deploy/scripts/start-gpu-ollama.sh
@@ -223,6 +256,19 @@ unzip operation_logs.zip -d ./operation_logs_downloaded
 ---
 
 ## D. アプリ更新
+
+`develop/aws` ブランチへ push すると、GitHub Actions がDockerイメージをECRへpushし、
+現在のECSタスク定義の設定（GPU ON/OFF、EFS、秘密値など）を維持したまま、
+新しいイメージだけを使うタスク定義を登録して `adaptation-web` を更新します。
+
+ワークフロー: `.github/workflows/deploy-aws.yml`
+
+認証には長期アクセスキーではなくGitHub OIDCを使います。AWS側の権限は
+`deploy/iam/github-actions-*.json` にあり、`secom-cca/adaptation_simulation` の
+`develop/aws` ブランチだけが本番デプロイロールを引き受けられます。
+
+手動で再実行する場合はGitHubの Actions → Deploy to AWS ECS → Run workflow を使います。
+従来どおりローカルから直接更新する場合は次を使えます。
 
 ```bash
 ./deploy/scripts/push-web-image.sh

@@ -98,12 +98,13 @@ docker compose up --build
 本番構成は、ALB → ECS Fargate（nginx + FastAPI）、EFS、ECR、任意のGPU EC2
 （Ollama）です。手順は [deploy/README.md](deploy/README.md) を参照してください。
 
-2026-10-13 JSTの確認時点では、AWSアカウント `082780092186` の
+2026-10-15 JSTの確認時点では、AWSアカウント `082780092186` の
 `ap-northeast-1` に以下がデプロイ済みです。
 
+- 公開 URL: <https://play.adaptation-game.com>
 - ECSクラスター/サービス: `adaptation/adaptation-web`
 - 稼働タスク: `1 / 1`、デプロイ状態 `COMPLETED`
-- ALB: `adaptation-alb`、ターゲット `healthy`
+- ALB: `adaptation-alb`、HTTPS (TLS 1.2/1.3)、HTTP は HTTPS へリダイレクト、ターゲット `healthy`
 - ECR: `adaptation-web:latest`（2026-10-06 push）
 
 状態確認:

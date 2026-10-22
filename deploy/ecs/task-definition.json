@@ -21,6 +21,10 @@
         { "name": "OLLAMA_HOST", "value": "http://GPU_PRIVATE_IP:11434" },
         { "name": "OLLAMA_MODEL", "value": "gemma4:e2b" },
         { "name": "LLM_MAX_CONCURRENCY", "value": "3" },
+        { "name": "GPU_AUTO_WAKE_ENABLED", "value": "true" },
+        { "name": "GPU_INSTANCE_ID", "value": "i-xxxxxxxxxxxxxxxxx" },
+        { "name": "GPU_SCHEDULER_ROLE_ARN", "value": "arn:aws:iam::ACCOUNT_ID:role/adaptation-scheduler-ec2-stop" },
+        { "name": "GPU_AUTO_STOP_HOURS", "value": "3" },
         { "name": "UVICORN_WORKERS", "value": "2" },
         { "name": "ADMIN_EXPORT_TOKEN", "value": "REPLACE_WITH_LONG_RANDOM_SECRET" }
       ],
