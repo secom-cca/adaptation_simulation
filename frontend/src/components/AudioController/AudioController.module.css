@@ -1,0 +1,59 @@
+.control {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 3000;
+  pointer-events: none;
+}
+
+.button {
+  pointer-events: auto;
+  min-width: 92px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(26, 24, 20, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-secondary);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.13);
+  backdrop-filter: blur(10px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.button:hover { transform: translateY(-1px); background: white; }
+.button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  outline-offset: 2px;
+}
+.enabled { color: #315f7f; border-color: rgba(61, 107, 143, 0.28); }
+.icon { width: 18px; font: 800 18px/1 var(--font-sans); }
+.label { font-size: 11px; font-weight: 800; letter-spacing: 0.04em; }
+.meter { height: 14px; display: flex; align-items: flex-end; gap: 2px; opacity: 0.28; }
+.meter i {
+  display: block;
+  width: 2px;
+  height: 4px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.enabled .meter { opacity: 0.85; }
+.enabled .meter i:nth-child(1) { animation: audioMeter 0.8s ease-in-out infinite alternate; }
+.enabled .meter i:nth-child(2) { animation: audioMeter 0.55s ease-in-out 0.12s infinite alternate; }
+.enabled .meter i:nth-child(3) { animation: audioMeter 0.72s ease-in-out 0.24s infinite alternate; }
+
+@keyframes audioMeter { from { height: 3px; } to { height: 13px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .enabled .meter i { animation: none; height: 7px; }
+  .button { transition: none; }
+}
+
+@media (max-width: 640px) {
+  .control { right: 10px; bottom: 10px; }
+  .button { min-width: 42px; width: 42px; padding: 0; }
+  .label, .meter { display: none; }
+}

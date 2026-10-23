@@ -139,6 +139,10 @@ const T = {
     'comparison.scenario': 'Scenario',
     'comparison.yourResult': 'Your result',
     'comparison.noGroups': 'No saved group score data yet.',
+    'audio.on': 'Sound on',
+    'audio.off': 'Sound off',
+    'audio.mute': 'Mute music and sound effects',
+    'audio.unmute': 'Play music and sound effects',
   },
   ja: {
     'entry.subtitle': '2026年から2100年までの気候適応政策を選んでください。',
@@ -260,5 +264,9 @@ const T = {
     'comparison.scenario': 'シナリオ',
     'comparison.yourResult': 'あなたの結果',
     'comparison.noGroups': '保存済みのスコアはまだありません。',
+    'audio.on': 'サウンド ON',
+    'audio.off': 'サウンド OFF',
+    'audio.mute': '音楽と効果音をミュート',
+    'audio.unmute': '音楽と効果音を再生',
   },
 }

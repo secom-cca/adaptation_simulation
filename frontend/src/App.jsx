@@ -10,6 +10,7 @@ import FinishedPage from './pages/FinishedPage.jsx'
 import FinalDetailPage from './pages/FinalDetailPage.jsx'
 import ScenarioExplorationPage from './pages/ScenarioExplorationPage.jsx'
 import CompletionPage from './pages/CompletionPage.jsx'
+import AudioController from './components/AudioController/AudioController.jsx'
 
 export default function App() {
   const sim = useSimulation()
@@ -24,14 +25,15 @@ export default function App() {
     surveyAnswers,
   } = sim.gameState
 
+  let page = null
   if (phase === 'entry') {
-    return <EntryPage key={sim.gameState.entryMountId ?? 0} onStart={sim.startGame} />
+    page = <EntryPage key={sim.gameState.entryMountId ?? 0} onStart={sim.startGame} />
   }
-  if (phase === 'game')        return <GamePage sim={sim} />
-  if (phase === 'consequence') return <ConsequencePage sim={sim} onDismiss={sim.dismissConsequence} />
-  if (phase === 'completion') return <CompletionPage onContinue={sim.showFinalResults} />
+  if (phase === 'game')        page = <GamePage sim={sim} />
+  if (phase === 'consequence') page = <ConsequencePage sim={sim} onDismiss={sim.dismissConsequence} />
+  if (phase === 'completion') page = <CompletionPage onContinue={sim.showFinalResults} />
   if (phase === 'survey') {
-    return (
+    page = (
       <SurveyPage
         initialAnswers={surveyAnswers}
         exportSaving={sim.gameState.exportSaving}
@@ -42,10 +44,10 @@ export default function App() {
     )
   }
   if (phase === 'finished') {
-    return <FinishedPage onReturnToEntry={sim.returnToEntry} />
+    page = <FinishedPage onReturnToEntry={sim.returnToEntry} />
   }
   if (phase === 'ending') {
-    return (
+    page = (
       <EndingPage
         sim={sim}
         onCompare={sim.showComparison}
@@ -56,8 +58,14 @@ export default function App() {
       />
     )
   }
-  if (phase === 'final_detail') return <FinalDetailPage sim={sim} onBack={sim.backFromFinalDetails} />
-  if (phase === 'scenario_exploration') return <ScenarioExplorationPage sim={sim} onBack={sim.backFromScenarioExploration} />
-  if (phase === 'comparison')  return <ResultComparisonPage sim={sim} onBack={sim.backToEnding} />
-  return null
+  if (phase === 'final_detail') page = <FinalDetailPage sim={sim} onBack={sim.backFromFinalDetails} />
+  if (phase === 'scenario_exploration') page = <ScenarioExplorationPage sim={sim} onBack={sim.backFromScenarioExploration} />
+  if (phase === 'comparison')  page = <ResultComparisonPage sim={sim} onBack={sim.backToEnding} />
+
+  return (
+    <>
+      {page}
+      <AudioController phase={phase} event={sim.gameState.pendingEvents?.[0]} />
+    </>
+  )
 }
