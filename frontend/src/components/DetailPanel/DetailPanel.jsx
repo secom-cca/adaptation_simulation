@@ -97,7 +97,7 @@ export default function DetailPanel({
         <div className={s.chartStack}>
           <section className={s.chartSection}>
             <div className={s.chipRow}>
-              <span className={s.chipGroupLabel}>{lang === 'ja' ? '結果・状態' : 'OUTCOME & STATE'}</span>
+              <span className={s.chipGroupLabel}>{lang === 'ja' ? '結果・状態' : 'OUTCOMES & CONDITIONS'}</span>
               {outcomeIndicators.map(indicator => renderIndicatorChip(indicator, activeOutcomeKey, setActiveOutcomeKey))}
             </div>
             <div className={s.chartWrap}>

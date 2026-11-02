@@ -40,9 +40,9 @@ export default function EntryPage({ onStart, onEthicsEvent }) {
   ]
   const scenarios = [
     { value: 1.9, label: 'RCP1.9', desc: lang === 'ja' ? '強い緩和' : 'Strong mitigation' },
-    { value: 4.5, label: 'RCP4.5', desc: lang === 'ja' ? '中間' : 'Intermediate' },
+    { value: 4.5, label: 'RCP4.5', desc: lang === 'ja' ? '中間' : 'Intermediate emissions' },
     { value: 8.5, label: 'RCP8.5', desc: lang === 'ja' ? '非常に高い排出' : 'Very high emissions' },
-    { value: 'composite', label: lang === 'ja' ? '複合シナリオ' : 'Composite', desc: lang === 'ja' ? '3つのRCPを比較表示' : 'Compare three RCPs' },
+    { value: 'composite', label: lang === 'ja' ? '複合シナリオ' : 'Combined scenario', desc: lang === 'ja' ? '3つのRCPを比較表示' : 'Compare all three RCPs' },
   ]
 
   function handleConsentChange(checked) {

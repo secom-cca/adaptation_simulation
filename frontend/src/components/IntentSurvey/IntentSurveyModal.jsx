@@ -37,7 +37,7 @@ export default function IntentSurveyModal({
   function handleSubmit(e) {
     e.preventDefault()
     if (!complete) {
-      setError(lang === 'ja' ? '当てはまるものを1つ以上選んでください。' : 'Please select at least one option.')
+      setError(lang === 'ja' ? '当てはまるものを1つ以上選んでください。' : 'Select at least one option.')
       return
     }
     onSubmit?.(answers)
@@ -49,15 +49,15 @@ export default function IntentSurveyModal({
         <div className={s.card}>
           <div className={s.waiting}>
             {!simulationReady && <div className={s.spinner} aria-hidden="true" />}
-            <p className={s.eyebrow}>{lang === 'ja' ? '約30秒' : 'About 30 sec'}</p>
+            <p className={s.eyebrow}>{lang === 'ja' ? '約30秒' : 'About 30 seconds'}</p>
             <h2 id="intent-survey-waiting-title" className={s.waitingTitle}>
               {simulationReady
-                ? (lang === 'ja' ? '結果を表示します…' : 'Showing results…')
-                : (lang === 'ja' ? '回答を受け付けました' : 'Thanks — answers received')}
+                ? (lang === 'ja' ? '結果を表示します…' : 'Preparing your results…')
+                : (lang === 'ja' ? '回答を受け付けました' : 'Thank you—your responses have been recorded')}
             </h2>
             <p className={s.waitingText}>
               {simulationReady
-                ? (lang === 'ja' ? '次の画面へ進みます。' : 'Moving to the next screen.')
+                ? (lang === 'ja' ? '次の画面へ進みます。' : 'The next screen will open shortly.')
                 : (lang === 'ja'
                   ? '裏でシミュレーションを計算しています。しばらくお待ちください。'
                   : 'The simulation is still running in the background. Please wait a moment.')}
@@ -72,9 +72,9 @@ export default function IntentSurveyModal({
     <div className={s.overlay} role="dialog" aria-modal="true" aria-labelledby="intent-survey-title">
       <form className={s.card} onSubmit={handleSubmit}>
         <header>
-          <p className={s.eyebrow}>{lang === 'ja' ? '約30秒' : 'About 30 sec'}</p>
+          <p className={s.eyebrow}>{lang === 'ja' ? '約30秒' : 'About 30 seconds'}</p>
           <h2 id="intent-survey-title" className={s.title}>
-            {lang === 'ja' ? '今回の選択の意図' : 'Intent of this decision'}
+            {lang === 'ja' ? '今回の選択の意図' : 'Your Goals for This Decision'}
           </h2>
           <p className={s.lede}>
             {lang === 'ja'
@@ -85,7 +85,7 @@ export default function IntentSurveyModal({
 
         <fieldset className={s.block}>
           <legend className={s.legend}>
-            {lang === 'ja' ? '上げたいと思った指標（目的）' : 'Objectives you wanted to improve'}
+            {lang === 'ja' ? '上げたいと思った指標（目的）' : 'Indicators you wanted to improve'}
             <span className={s.req}>*</span>
           </legend>
           <div className={s.options}>
@@ -106,14 +106,14 @@ export default function IntentSurveyModal({
 
         <fieldset className={s.block}>
           <legend className={s.legend}>
-            {lang === 'ja' ? '補足（任意）' : 'Anything else? (optional)'}
+            {lang === 'ja' ? '補足（任意）' : 'Additional comments (optional)'}
           </legend>
           <textarea
             className={s.textarea}
             value={answers.free_text}
             maxLength={400}
             rows={3}
-            placeholder={lang === 'ja' ? 'なぜそう選んだかなど、自由に書いてください' : 'Optional: why you chose this way'}
+            placeholder={lang === 'ja' ? 'なぜそう選んだかなど、自由に書いてください' : 'Tell us why you made these choices'}
             onChange={e => setAnswers(prev => ({ ...prev, free_text: e.target.value }))}
           />
         </fieldset>

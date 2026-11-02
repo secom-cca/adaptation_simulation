@@ -7,14 +7,14 @@ export const INTENT_OBJECTIVE_OPTIONS = [
     value: 'flood_score',
     label: {
       ja: '洪水被害スコアを上げたい（被害を減らしたい）',
-      en: 'Improve the flood-damage score (reduce damage)',
+      en: 'Improve the flood damage score (reduce damage)',
     },
   },
   {
     value: 'crop_score',
     label: {
       ja: '農作物生産スコアを上げたい',
-      en: 'Improve the crop-production score',
+      en: 'Improve the crop production score',
     },
   },
   {
@@ -28,7 +28,7 @@ export const INTENT_OBJECTIVE_OPTIONS = [
     value: 'unsure',
     label: {
       ja: '特に決めていない／わからない',
-      en: 'Not sure / no particular goal',
+      en: 'No specific goal / not sure',
     },
   },
 ]

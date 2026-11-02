@@ -28,7 +28,7 @@ export const POLICY_POINT_KEYS = [
 export const POLICY_MANA_RULES = {
   planting_trees_amount: {
     labelJa: '植林・森林保全',
-    labelEn: 'Forest restoration',
+    labelEn: 'Forest restoration and conservation',
     min: 1,
     maxPerTurn: null,
     cumulativeCap: null,
@@ -37,7 +37,7 @@ export const POLICY_MANA_RULES = {
   },
   house_migration_amount: {
     labelJa: '住宅移転',
-    labelEn: 'Relocation support',
+    labelEn: 'Home relocation',
     min: 1,
     maxPerTurn: null,
     cumulativeCap: 20,
@@ -46,7 +46,7 @@ export const POLICY_MANA_RULES = {
   },
   dam_levee_construction_cost: {
     labelJa: '堤防・河川改修',
-    labelEn: 'Levee / river works',
+    labelEn: 'Levees and river improvements',
     min: 5,
     maxPerTurn: null,
     cumulativeCap: null,
@@ -55,7 +55,7 @@ export const POLICY_MANA_RULES = {
   },
   paddy_dam_construction_cost: {
     labelJa: '田んぼダム',
-    labelEn: 'Paddy dam',
+    labelEn: 'Paddy-field dams',
     min: 1,
     maxPerTurn: 6,
     cumulativeCap: 6,
@@ -64,7 +64,7 @@ export const POLICY_MANA_RULES = {
   },
   agricultural_RnD_cost: {
     labelJa: '農業R&D',
-    labelEn: 'Agricultural adaptation R&D',
+    labelEn: 'Agricultural R&D',
     min: 1,
     maxPerTurn: 2,
     cumulativeCap: null,
@@ -73,7 +73,7 @@ export const POLICY_MANA_RULES = {
   },
   capacity_building_cost: {
     labelJa: '防災訓練',
-    labelEn: 'Disaster preparedness',
+    labelEn: 'Disaster preparedness training',
     min: 1,
     maxPerTurn: 1,
     cumulativeCap: null,

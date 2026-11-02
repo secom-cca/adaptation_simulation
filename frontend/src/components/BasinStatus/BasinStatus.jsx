@@ -116,18 +116,18 @@ export default function BasinStatus({ currentValues, history, budgetRow }) {
             <strong>{`${formatPoints(budgetRow.availableBudgetPoints)} / 10`}</strong>
           </div>
           <div className={s.budgetLine}>
-            <span>{lang === 'ja' ? '前25年平均洪水被害' : 'Average flood damage in previous 25 years'}</span>
+            <span>{lang === 'ja' ? '前25年平均洪水被害' : 'Average annual flood damage over the previous 25 years'}</span>
             <strong>{formatYen(budgetRow.appliedFloodDamage)}</strong>
           </div>
           <div className={s.penaltyGrid}>
-            <div><span>{lang === 'ja' ? '人口減少' : 'Population'}</span><strong>{formatPoints(budgetRow.populationPenaltyMana)}</strong></div>
+            <div><span>{lang === 'ja' ? '人口減少' : 'Population decline'}</span><strong>{formatPoints(budgetRow.populationPenaltyMana)}</strong></div>
             <div><span>{lang === 'ja' ? '洪水復旧' : 'Flood recovery'}</span><strong>{formatPoints(budgetRow.floodReduction)}</strong></div>
-            <div><span>{lang === 'ja' ? '移住後インフラ' : 'Relocation infra'}</span><strong>{formatPoints(budgetRow.migrationReduction)}</strong></div>
+            <div><span>{lang === 'ja' ? '移住後インフラ' : 'Post-relocation infrastructure'}</span><strong>{formatPoints(budgetRow.migrationReduction)}</strong></div>
           </div>
           <p className={s.budgetHint}>
             {lang === 'ja'
               ? '1ポイントは2,000万円/年を25年間継続する政策費です。洪水復旧ペナルティは、前ターン平均被害額をもとに次ターンの予算制約へ反映します。'
-              : '1 point means JPY 20M/year sustained for 25 years. The flood recovery penalty uses average damage in the previous turn.'}
+              : 'Each point represents an annual policy investment of JPY 20 million for 25 years. The flood-recovery penalty reduces the next turn’s budget based on average flood damage during the previous turn.'}
           </p>
         </div>
       )}

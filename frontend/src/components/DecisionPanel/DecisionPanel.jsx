@@ -64,7 +64,7 @@ export default function DecisionPanel({
   const policyMapAlt = activePolicy
     ? (lang === 'ja'
       ? `${activePolicy.label.ja}が流域に与える影響`
-      : `${activePolicy.label.en} impact map`)
+      : `Impact map for ${activePolicy.label.en}`)
     : ''
 
   useEffect(() => {
@@ -89,7 +89,7 @@ export default function DecisionPanel({
           <div className={s.headerActions}>
             <div className={s.budgetStrip}>
               <div className={s.budgetTextRow}>
-                <span>{lang === 'ja' ? '配分後の残り' : 'Remaining'}</span>
+                <span>{lang === 'ja' ? '配分後の残り' : 'Points remaining'}</span>
                 <strong>{remainingPoints} / 10 {lang === 'ja' ? 'ポイント' : 'points'}</strong>
               </div>
               <div
@@ -112,8 +112,8 @@ export default function DecisionPanel({
                 />
               </div>
               <div className={s.budgetLegend}>
-                <span className={s.legendUsed}>{lang === 'ja' ? `配分済み ${usedPoints}` : `Used ${usedPoints}`}</span>
-                <span className={s.legendRemaining}>{lang === 'ja' ? `使用可能 ${remainingPoints}` : `Available ${remainingPoints}`}</span>
+                <span className={s.legendUsed}>{lang === 'ja' ? `配分済み ${usedPoints}` : `Allocated: ${usedPoints}`}</span>
+                <span className={s.legendRemaining}>{lang === 'ja' ? `使用可能 ${remainingPoints}` : `Available: ${remainingPoints}`}</span>
               </div>
             </div>
             <button className={`${s.advanceBtn} ${cycle === 3 ? s.finalAdvanceBtn : ''}`} onClick={onAdvance} disabled={loading}>
@@ -169,7 +169,7 @@ export default function DecisionPanel({
         <div className={s.footer}>
           {cumulativeStats.length > 0 && (
             <div className={s.cumulativeBox}>
-              <span className={s.cumulativeTitle}>{lang === 'ja' ? '累積上限' : 'Cumulative caps'}</span>
+              <span className={s.cumulativeTitle}>{lang === 'ja' ? '累積上限' : 'Total investment limits'}</span>
               <div className={s.cumulativeItems}>
                 {cumulativeStats.map(item => (
                   <span key={item.key} className={s.cumulativeChip}>

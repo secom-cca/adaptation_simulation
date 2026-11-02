@@ -40,40 +40,40 @@ export const RESEARCH_ETHICS = {
     ],
   },
   en: {
-    consentLabel: 'I agree to data collection for this research',
+    consentLabel: 'I consent to the collection of data for this research',
     detailLink: 'View details',
-    modalTitle: 'Research ethics information',
+    modalTitle: 'Research Participation and Data Use',
     close: 'Close',
     sections: [
       {
         heading: 'Purpose',
         body:
-          'This simulation is part of research and education on climate adaptation decision-making in river basins. Operation logs and outcomes may be used for academic analysis, teaching improvement, and workshop evaluation.',
+          'This simulation is part of a research and educational initiative examining how people understand and make decisions about climate adaptation in river basins. Activity logs and simulation results may be used for academic research, educational improvements, and workshop evaluation.',
       },
       {
         heading: 'Data collected',
         body:
-          'We collect display names (user/team), selected climate scenario and mode, policy slider actions, screen navigation, analysis interactions, event acknowledgements, and summary scores. Camera video and biometric data are not collected.',
+          'We collect display names (user or team name), the selected climate scenario and mode, policy slider adjustments, screen navigation, analysis interactions, event confirmations, activity logs, and result summaries. We do not collect camera footage or biometric data.',
       },
       {
         heading: 'Handling, storage, and anonymization',
         body:
-          'Data are stored and analysed for research purposes. Publications use aggregated or de-identified descriptions where feasible. Operation logs are saved automatically to the server when a session ends.',
+          'The data will be stored and analyzed for research purposes. Any published findings will be aggregated or de-identified to reduce the likelihood that individuals can be identified. Activity logs are saved automatically to the server at the end of the session.',
       },
       {
         heading: 'Voluntary participation and withdrawal',
         body:
-          'Participation is voluntary. Without consent you cannot start the simulation. To withdraw after starting, tell the facilitator; we will stop further use of your data where practicable.',
+          'Participation is voluntary. You cannot begin the simulation without providing consent. If you wish to withdraw after starting, please inform the facilitator. We will stop using your data from that point onward wherever practicable.',
       },
       {
         heading: 'Risks and benefits',
         body:
-          'There is no physical risk beyond possible mild fatigue from screen use. Benefits include experiential learning about adaptation trade-offs.',
+          'This activity involves no anticipated physical risks, although using the screen may cause mild fatigue. A potential benefit is gaining a practical understanding of the trade-offs involved in river basin adaptation policies.',
       },
       {
         heading: 'Contact',
         body:
-          'For questions, contact the workshop organizer listed in the session materials or briefing slides.',
+          'If you have any questions about this research or workshop, please contact the organizer listed in the handout or introductory slides.',
       },
     ],
   },

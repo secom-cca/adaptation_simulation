@@ -51,20 +51,20 @@ export default function PolicySlider({ policy, value, onChange, cumulativeStats 
         />
         <div className={s.tickLabels}>
           <span>0</span>
-          {isLevee && <span className={s.hardCap}>{lang === 'ja' ? '最低5' : 'min 5'}</span>}
+          {isLevee && <span className={s.hardCap}>{lang === 'ja' ? '最低5' : 'minimum 5'}</span>}
           <span className={hasStrictCap ? s.hardCap : ''}>
             {hasStrictCap
               ? (rule.cumulativeCap != null
-                  ? (lang === 'ja' ? `${max} (累積上限 ${rule.cumulativeCap})` : `${max} (cap ${rule.cumulativeCap})`)
-                  : (lang === 'ja' ? `${max} (1ターン上限 ${rule.maxPerTurn})` : `${max} (turn cap ${rule.maxPerTurn})`))
-              : (lang === 'ja' ? '予算内' : 'within budget')}
+                  ? (lang === 'ja' ? `${max} (累積上限 ${rule.cumulativeCap})` : `${max} (total limit: ${rule.cumulativeCap})`)
+                  : (lang === 'ja' ? `${max} (1ターン上限 ${rule.maxPerTurn})` : `${max} (per-turn limit: ${rule.maxPerTurn})`))
+              : (lang === 'ja' ? '予算内' : 'up to your available budget')}
           </span>
         </div>
       </div>
 
       {stat?.cap != null && (
         <div className={s.ruleLine}>
-          <strong>{lang === 'ja' ? `累積 ${stat.used}/${stat.cap}` : `cum. ${stat.used}/${stat.cap}`}</strong>
+          <strong>{lang === 'ja' ? `累積 ${stat.used}/${stat.cap}` : `Total: ${stat.used}/${stat.cap}`}</strong>
         </div>
       )}
 

@@ -14,7 +14,7 @@ export const SURVEY_QUESTIONS = [
     research_tags: ['participant'],
     label: {
       ja: 'あなたの年代を教えてください',
-      en: 'Which age group are you in?',
+      en: 'What is your age group?',
     },
     options: [
       { value: 'under_10', label: { ja: '10歳未満', en: 'Under 10' } },
@@ -34,7 +34,7 @@ export const SURVEY_QUESTIONS = [
     research_tags: ['participant', 'learning'],
     label: {
       ja: 'この体験の前から、「気候変動適応」について知っていましたか？',
-      en: 'Before this experience, how familiar were you with climate adaptation?',
+      en: 'Before this experience, how familiar were you with climate change adaptation?',
     },
     likertLabels: {
       ja: { low: 'まったく知らなかった', high: 'よく知っていた' },
@@ -48,7 +48,7 @@ export const SURVEY_QUESTIONS = [
     research_tags: ['participant', 'learning'],
     label: {
       ja: 'この体験の前から、「流域治水」について知っていましたか？',
-      en: 'Before this experience, how familiar were you with basin-based flood management?',
+      en: 'Before this experience, how familiar were you with river basin flood management?',
     },
     likertLabels: {
       ja: { low: 'まったく知らなかった', high: 'よく知っていた' },
@@ -62,7 +62,7 @@ export const SURVEY_QUESTIONS = [
     research_tags: ['efficacy', 'learning'],
     label: {
       ja: '自治体の気候変動適応策によって、防災はできそうだと感じましたか？',
-      en: 'Did you feel that municipal climate adaptation measures could help with disaster prevention?',
+      en: 'Did this experience make you feel that local climate adaptation measures can help reduce disaster risk?',
     },
     likertLabels: {
       ja: { low: 'まったくそう思わない', high: '強くそう思う' },
@@ -76,7 +76,7 @@ export const SURVEY_QUESTIONS = [
     research_tags: ['efficacy', 'learning'],
     label: {
       ja: '施策を適切に実施することで、よい将来が実現できると思いましたか？',
-      en: 'Did you feel that appropriately implementing measures could lead to a better future?',
+      en: 'Did you feel that choosing and implementing the right measures could lead to a better future?',
     },
     likertLabels: {
       ja: { low: 'まったくそう思わない', high: '強くそう思う' },
@@ -90,49 +90,49 @@ export const SURVEY_QUESTIONS = [
     research_tags: ['learning'],
     label: {
       ja: 'この体験で学んだことは何ですか？（複数選択可）',
-      en: 'What did you learn from this experience? (Select all that apply)',
+      en: 'What did you learn from this experience? (Select all that apply.)',
     },
     options: [
       {
         value: 'climate_impacts',
         label: {
           ja: '気候変動による様々な影響（洪水，農業など）',
-          en: 'Various impacts of climate change (floods, agriculture, etc.)',
+          en: 'The wide-ranging impacts of climate change, including floods and effects on agriculture',
         },
       },
       {
         value: 'climate_uncertainty',
         label: {
           ja: '気候変動による将来の不確実性',
-          en: 'Future uncertainty due to climate change',
+          en: 'Uncertainty about the future due to climate change',
         },
       },
       {
         value: 'basin_flood_measures',
         label: {
           ja: '様々な流域治水対策（住宅移転，田んぼダムなど）',
-          en: 'Various basin-based flood measures (relocation, paddy dams, etc.)',
+          en: 'Different river basin flood management measures, such as relocation and paddy-field dams',
         },
       },
       {
         value: 'time_to_effect',
         label: {
           ja: '効果がかかるまでの時間への留意（森林保全，など）',
-          en: 'Attention to time lags before effects appear (e.g. forest conservation)',
+          en: 'The time it can take for measures such as forest conservation to have an effect',
         },
       },
       {
         value: 'multi_goal_balance',
         label: {
           ja: '複数の目標のバランスを取ることの難しさ（治水と農業，生態系など）',
-          en: 'Difficulty of balancing multiple goals (flood control, agriculture, ecosystems, etc.)',
+          en: 'The difficulty of balancing goals such as flood control, agriculture, and ecosystem health',
         },
       },
       {
         value: 'budget_decision',
         label: {
           ja: '予算や制約のもとでの意思決定の難しさ',
-          en: 'Difficulty of decision-making under budget and other constraints',
+          en: 'The difficulty of making decisions under budget and other constraints',
         },
       },
     ],
@@ -144,19 +144,19 @@ export const SURVEY_QUESTIONS = [
     research_tags: ['priorities', 'objectives'],
     label: {
       ja: 'どの指標を重要視していましたか？（複数選択可）',
-      en: 'Which indicators did you prioritize? (Select all that apply)',
+      en: 'Which indicators did you prioritize? (Select all that apply.)',
     },
     options: [
       {
         value: 'flood_score',
         label: {
           ja: '洪水被害スコア（被害を減らすこと）',
-          en: 'Flood-damage score (reducing damage)',
+          en: 'Flood damage score (reducing damage)',
         },
       },
       {
         value: 'crop_score',
-        label: { ja: '農作物生産スコア', en: 'Crop-production score' },
+        label: { ja: '農作物生産スコア', en: 'Crop production score' },
       },
       {
         value: 'ecosystem_score',
@@ -164,7 +164,7 @@ export const SURVEY_QUESTIONS = [
       },
       {
         value: 'unsure',
-        label: { ja: '特に決めていない／わからない', en: 'Not sure / no particular priority' },
+        label: { ja: '特に決めていない／わからない', en: 'No particular priority / not sure' },
       },
     ],
   },
@@ -175,7 +175,7 @@ export const SURVEY_QUESTIONS = [
     research_tags: ['learning'],
     label: {
       ja: '学んだことや気づきがあれば、書いてください（任意）',
-      en: 'If you learned anything or noticed something, please write it here (optional)',
+      en: 'Please share anything you learned or noticed. (Optional)',
     },
     maxLength: 500,
   },
@@ -186,7 +186,7 @@ export const SURVEY_QUESTIONS = [
     research_tags: ['feedback'],
     label: {
       ja: 'このゲームに対する感想（任意）',
-      en: 'Your impressions of this game (optional)',
+      en: 'What did you think of this game? (Optional)',
     },
     maxLength: 500,
   },
@@ -197,7 +197,7 @@ export const SURVEY_QUESTIONS = [
     research_tags: ['feedback'],
     label: {
       ja: 'その他・何かあれば（任意）',
-      en: 'Anything else you would like to add (optional)',
+      en: 'Is there anything else you would like to add? (Optional)',
     },
     maxLength: 500,
   },

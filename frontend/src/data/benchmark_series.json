@@ -1,7 +1,7 @@
 {
   "baseline": {
     "labelJa": "ベースライン（対策なし）",
-    "labelEn": "Baseline",
+    "labelEn": "No-Action Baseline",
     "years": {
       "2050": {
         "floodDamageJpy": 225133701,
@@ -22,7 +22,7 @@
   },
   "aiOptimal": {
     "labelJa": "AIエージェント最適解",
-    "labelEn": "AI optimal",
+    "labelEn": "AI-Optimized Scenario",
     "policiesJa": [
       "T1: 植林5 / 田んぼダム2 / 防災訓練1 / 農業R&D2",
       "T2: 植林1 / 堤防1 / 田んぼダム3 / 防災訓練1 / 農業R&D2",

@@ -74,12 +74,12 @@ export default function SurveyPage({
         <header className={s.header}>
           <p className={s.eyebrow}>{lang === 'ja' ? '約3分' : 'About 3 minutes'}</p>
           <h1 className={s.title}>
-            {lang === 'ja' ? '体験後アンケート' : 'Post-experience survey'}
+            {lang === 'ja' ? '体験後アンケート' : 'Post-Experience Survey'}
           </h1>
           <p className={s.lede}>
             {lang === 'ja'
               ? '研究のための短いアンケートです。回答送信時に操作ログと一緒に保存されます。'
-              : 'A short research survey. Submitting saves the operation log.'}
+              : 'This short survey is part of our research. Your responses will be saved together with your activity log when you submit them.'}
           </p>
         </header>
 
@@ -155,7 +155,7 @@ export default function SurveyPage({
                   value={answers[q.id] || ''}
                   maxLength={q.maxLength || 280}
                   rows={3}
-                  placeholder={lang === 'ja' ? '任意入力' : 'Optional'}
+                  placeholder={lang === 'ja' ? '任意入力' : 'Optional response'}
                   onChange={e => setSingle(q.id, e.target.value)}
                 />
               )}
@@ -184,7 +184,7 @@ export default function SurveyPage({
           <p className={s.restartHint}>
             {lang === 'ja'
               ? '必須項目をすべて回答すると送信できます。送信後、操作ログを保存して終了画面へ進みます。'
-              : 'Enabled once all required items are answered. Submitting saves the log and shows the completion screen.'}
+              : 'You can submit after answering all required questions. Your activity log will be saved before the completion screen appears.'}
           </p>
         </div>
       </form>
@@ -198,7 +198,7 @@ export default function SurveyPage({
             <p className={s.modalText}>
               {lang === 'ja'
                 ? 'アンケートをスキップして終了画面へ進みます。操作ログは保存されます。'
-                : 'You will proceed to the completion screen. The operation log will still be saved.'}
+                : 'You will continue to the completion screen without submitting the survey. Your activity log will still be saved.'}
             </p>
             <div className={s.modalActions}>
               <button type="button" className={s.secondary} onClick={() => setSkipConfirmOpen(false)}>

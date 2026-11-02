@@ -47,7 +47,7 @@ export const FALLBACK_SCORE_BOUNDS = {
 export const FALLBACK_BENCHMARK_SERIES = {
   baseline: {
     labelJa: 'ベースライン（対策なし）',
-    labelEn: 'Baseline',
+    labelEn: 'No-Action Baseline',
     years: {
       2050: {
         floodDamageJpy: 225_133_701,
@@ -68,7 +68,7 @@ export const FALLBACK_BENCHMARK_SERIES = {
   },
   aiOptimal: {
     labelJa: 'AIエージェント最適解',
-    labelEn: 'AI optimal',
+    labelEn: 'AI-Optimized Scenario',
     policiesJa: [
       'T1: 植林5 / 田んぼダム2 / 防災訓練1 / 農業R&D2',
       'T2: 植林1 / 田んぼダム4 / 農業R&D3',

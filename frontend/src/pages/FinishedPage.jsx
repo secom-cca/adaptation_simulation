@@ -12,7 +12,7 @@ export default function FinishedPage({ onReturnToEntry }) {
         <h1 className={s.title}>
           {lang === 'ja'
             ? 'これにてゲームプレイは終了です。'
-            : 'This concludes the gameplay session.'}
+            : 'You have completed the simulation.'}
         </h1>
         <p className={s.lede}>
           {lang === 'ja'
@@ -20,7 +20,7 @@ export default function FinishedPage({ onReturnToEntry }) {
             : 'Thank you for playing!'}
         </p>
         <button type="button" className={s.primary} onClick={onReturnToEntry}>
-          {lang === 'ja' ? '初期画面に戻る' : 'Return to start'}
+          {lang === 'ja' ? '初期画面に戻る' : 'Return to Start'}
         </button>
       </div>
     </div>
