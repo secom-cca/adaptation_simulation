@@ -26,9 +26,11 @@ export default function EntryPage({ onStart, onEthicsEvent }) {
   const [detailOpen, setDetailOpen] = useState(false)
 
   useEffect(() => {
-    setRcpValue(pickRandomRcp())
     beginEntryLogging()
     setLogContext({ phase: 'entry', cycle: null, year: null, gameView: null })
+    emit('rcp_assigned', { rcp: rcpValue }, { source: 'system' })
+    // 初期割り当てだけ記録する。ボタン操作の rcp_change とは分ける。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const canStart = userName.trim().length > 0 && ethicsConsent
@@ -67,6 +69,12 @@ export default function EntryPage({ onStart, onEthicsEvent }) {
   function closeDetail(via) {
     setDetailOpen(false)
     emit('ethics_detail_closed', { via })
+  }
+
+  function handleRcpSelect(next) {
+    if (next === rcpValue) return
+    emit('rcp_change', { from: rcpValue, to: next })
+    setRcpValue(next)
   }
 
   function handleStart() {
@@ -143,7 +151,7 @@ export default function EntryPage({ onStart, onEthicsEvent }) {
             <legend className={s.legend}>{t('entry.rcp.label')}</legend>
             <div className={s.rcpRow}>
               {scenarios.map(item => (
-                <button key={item.value} type="button" className={`${s.rcpBtn} ${rcpValue === item.value ? s.selected : ''}`} onClick={() => setRcpValue(item.value)}>
+                <button key={item.value} type="button" className={`${s.rcpBtn} ${rcpValue === item.value ? s.selected : ''}`} onClick={() => handleRcpSelect(item.value)}>
                   <span className={s.rcpLabel}>{item.label}</span>
                   <span className={s.rcpDesc}>{item.desc}</span>
                 </button>
