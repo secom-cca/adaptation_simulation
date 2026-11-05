@@ -133,6 +133,8 @@ flowchart LR
 | `ethics_consent_unchecked` | 同意チェック OFF | `{ "label_key": "..." }` |
 | `ethics_detail_opened` | 「詳細を見る」でモーダル表示 | `{}` |
 | `ethics_detail_closed` | モーダルを閉じた | `{ "via": "close_button" \| "overlay" }` |
+| `rcp_assigned` | 開始画面表示時に RCP を自動割り当て | `{ "rcp": 4.5 \| "composite" \| ... }` |
+| `rcp_change` | 開始画面で別の RCP を選んだとき | `{ "from": ..., "to": ... }` |
 | `session_start` | シミュレーション開始成功時 | mode, rcp, user, ethics 等 |
 | `session_end` | `ending` 到達時 | `{ "reason": "completed" }` 等 |
 | `session_export` | ローカル JSON 保存を実行した時点 | ファイル名・成功可否 |
