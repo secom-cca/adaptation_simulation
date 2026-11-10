@@ -1,0 +1,32 @@
+.embedded { display: grid; gap: 16px; min-width: 0; }
+
+.mapCard { overflow: hidden; border: 1px solid rgba(84,103,120,.14); border-radius: 26px; background: rgba(255,255,255,.94); box-shadow: 0 16px 38px rgba(42,56,70,.11); }
+.mapHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 20px 24px 12px; }
+.mapHeading span { color: var(--color-accent); font-size: 10px; font-weight: 900; letter-spacing: .13em; }
+.mapHeading h2 { margin: 3px 0 0; color: var(--color-text-primary); font-size: 20px; }
+.mapScroller { overflow-x: auto; overscroll-behavior-inline: contain; }
+.mapScroller:focus-visible { outline: 3px solid rgba(61,107,143,.28); outline-offset: -3px; }
+.map { display: block; width: 100%; min-width: 960px; height: auto; font-family: inherit; }
+.svgCaption { fill: #788591; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.timeline { stroke: #b8c2ca; stroke-width: 4; stroke-linecap: round; }
+.timelineStation { fill: white; stroke: #617989; stroke-width: 3; }
+.turnGuide { stroke: #a9b5be; stroke-width: 1; stroke-dasharray: 4 8; opacity: .5; }
+.yearLabel { fill: #283944; font-size: 14px; font-weight: 900; }
+.periodTitle { fill: #5e6e79; font-size: 11px; font-weight: 800; }
+.turnTotalPill { fill: #eef2f4; stroke: #dce3e7; }
+.turnTotalText { fill: #40525e; font-size: 12px; font-weight: 900; }
+.routeBase { stroke: #e8ecef; stroke-width: 3; stroke-linecap: round; }
+.policyLabel { fill: #283944; font-size: 14px; font-weight: 900; }
+.policyDescription { fill: #84909a; font-size: 8.5px; font-weight: 600; }
+.policyTotalPill { opacity: .95; }
+.policyTotalText { fill: white; font-size: 12px; font-weight: 900; }
+.investmentEdge { stroke-linecap: round; opacity: .86; filter: drop-shadow(0 2px 2px rgba(42,56,70,.14)); }
+.emptyEdge { stroke-linecap: round; stroke-dasharray: 5 7; }
+.fixedStation { stroke-width: 3; }
+.edgeLabelPill { stroke-width: 1.5; }
+.edgeLabel { font-size: 9px; font-weight: 900; }
+
+@media (max-width: 800px) {
+  .mapHeading { align-items: flex-start; flex-direction: column; gap: 8px; }
+}
+

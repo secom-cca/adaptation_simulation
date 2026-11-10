@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '../contexts/LanguageContext.jsx'
 import { buildYearSnapshots, round1 } from '../data/resultScores.js'
+import DecisionPathwayMap from './DecisionPathwayPage.jsx'
 import s from './ResultComparisonPage.module.css'
 
 const API = import.meta.env.VITE_API_BASE || '/api'
@@ -20,20 +21,34 @@ function displayValue(metric, value) {
 
 export default function ResultComparisonPage({ sim, onBack }) {
   const { t } = useTranslation()
-  const { history = [], currentClimateHistory = [], userName, rcpValue } = sim.gameState
+  const { history = [], currentClimateHistory = [], policyHistory = [], userName, rcpValue } = sim.gameState
   const [sort, setSort] = useState({ key: 'flood', direction: 'asc' })
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [selectedParticipant, setSelectedParticipant] = useState(null)
   const scenarioId = String(rcpValue)
   const scenarioLabel = rcpValue === 'composite' ? '複合シナリオ' : `RCP${rcpValue}`
   const snapshots = useMemo(() => buildYearSnapshots(history, currentClimateHistory), [history, currentClimateHistory])
-  const own = { name: userName || 'Guest', metrics: snapshots.find(x => Number(x.year) === 2100)?.metrics ?? {}, isPlayer: true }
+  const own = {
+    name: userName || 'Guest',
+    metrics: snapshots.find(x => Number(x.year) === 2100)?.metrics ?? {},
+    policyHistory,
+    isPlayer: true,
+  }
 
   useEffect(() => {
     let cancelled = false
     fetch(`${API}/comparison-results`).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(rows => {
-      if (!cancelled) setGroups(rows.filter(row => String(row.rcp_scenario ?? '4.5') === scenarioId).map(row => ({ name: row.user_name || 'Group', metrics: objectValue(row.metrics_2100) })))
+      if (!cancelled) setGroups(rows.filter(row => String(row.rcp_scenario ?? '4.5') === scenarioId).map(row => ({
+        name: row.user_name || 'Group',
+        metrics: objectValue(row.metrics_2100),
+        policyHistory: [
+          { year: 2026, sliders: objectValue(row.turn_1_policy_points) },
+          { year: 2051, sliders: objectValue(row.turn_2_policy_points) },
+          { year: 2076, sliders: objectValue(row.turn_3_policy_points) },
+        ],
+      })))
     }).catch(() => !cancelled && setError(true)).finally(() => !cancelled && setLoading(false))
     return () => { cancelled = true }
   }, [scenarioId])
@@ -61,11 +76,16 @@ export default function ResultComparisonPage({ sim, onBack }) {
   }
 
   return <div className={s.page}><div className={s.content}>
-    <div className={s.header}><div><div className={s.kicker}>RESULTS</div><h1>参加者結果</h1><p>{scenarioLabel}を選んだ参加者だけを対象に、2100年の3項目を一覧表示します。項目名を押すと、その項目の順位に並び替わります。</p></div><button className={s.backBtn} onClick={onBack}>{t('comparison.back')}</button></div>
+    <div className={s.header}><div><div className={s.kicker}>RESULTS</div><h1>参加者結果</h1><p>{scenarioLabel}を選んだ参加者だけを対象に、2100年の3項目を一覧表示します。項目名で並び替え、参加者の行を押すと意思決定メトロマップを確認できます。</p></div><button className={s.backBtn} onClick={onBack}>{t('comparison.back')}</button></div>
     {loading && <div className={s.notice}>{t('comparison.loading')}</div>}{error && <div className={s.notice}>{t('comparison.error')}</div>}
     <div className={s.groupCard}><div className={s.sectionTitle}>2100年の結果</div><div className={s.participantTable}>
       <div className={s.participantHeader}><span>参加者</span><span>順位</span>{METRICS.map(metric => <button key={metric.key} type="button" className={sort.key === metric.key ? s.sortActive : s.sortButton} onClick={() => changeSort(metric)}>{metric.label}<small>{metric.unit}</small><b>{sortMark(metric)}</b></button>)}</div>
-      {participants.map(row => <div className={`${s.participantRow} ${row.isPlayer ? s.player : ''}`} key={row.name}><strong>{row.name} <small>（{row.rank}位）</small></strong><span>{row.rank}位</span>{METRICS.map(metric => <span key={metric.key}>{displayValue(metric, row.metrics?.[metric.value])}</span>)}</div>)}
-    </div></div>
+      {participants.map(row => <button type="button" className={`${s.participantRow} ${row.isPlayer ? s.player : ''}`} key={row.name} onClick={() => setSelectedParticipant(row)} aria-expanded={selectedParticipant?.name === row.name}><strong>{row.name} <small>（{row.rank}位）</small><em>メトロマップを見る</em></strong><span>{row.rank}位</span>{METRICS.map(metric => <span key={metric.key}>{displayValue(metric, row.metrics?.[metric.value])}</span>)}</button>)}
+    </div>
+    {selectedParticipant && <section className={s.pathwayPanel} aria-live="polite">
+      <div className={s.pathwayPanelHeader}><div><div className={s.kicker}>SELECTED PARTICIPANT</div><h2>{selectedParticipant.name}さんの政策経路</h2></div><button type="button" onClick={() => setSelectedParticipant(null)}>閉じる</button></div>
+      <DecisionPathwayMap policyHistory={selectedParticipant.policyHistory} userName={selectedParticipant.name} />
+    </section>}
+    </div>
   </div></div>
 }

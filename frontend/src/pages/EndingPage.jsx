@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useTranslation } from '../contexts/LanguageContext.jsx'
-import { POLICY_MANA_RULES } from '../data/budget.js'
 import { buildYearSnapshots, finalScores, round1 } from '../data/resultScores.js'
+import DecisionPathwayMap from './DecisionPathwayPage.jsx'
 import s from './EndingPage.module.css'
 
 const API = import.meta.env.VITE_API_BASE || '/api'
-const POLICY_ORDER = ['planting_trees_amount', 'house_migration_amount', 'dam_levee_construction_cost', 'paddy_dam_construction_cost', 'capacity_building_cost', 'agricultural_RnD_cost']
 const METRICS = [
   { key: 'flood', title: '洪水被害', score: 'floodScore', value: 'floodDamageJpy', unit: '円（期間累計）' },
   { key: 'crop', title: '農作物生産高', score: 'cropScore', value: 'cropYield', unit: '期間平均' },
@@ -16,13 +15,6 @@ const METRICS = [
 function fmtValue(metric, value) {
   const n = Number(value) || 0
   return metric.key === 'flood' ? `${Math.round(n).toLocaleString()} 円` : round1(n).toLocaleString()
-}
-function policiesForDisplay(history = []) {
-  return history.slice(0, 3).map((entry, index) => ({
-    turn: `第${index + 1}ターン`,
-    text: POLICY_ORDER.map(key => ({ label: POLICY_MANA_RULES[key]?.labelJa || key, points: Math.round(Number(entry?.sliders?.[key]) || 0) }))
-      .filter(item => item.points > 0).map(item => `${item.label} ${item.points}点`).join(' / ') || '投資なし',
-  }))
 }
 function comparisonPayload({ userName, mode, rcpValue, history, currentClimateHistory, policyHistory }) {
   const snapshots = buildYearSnapshots(history, currentClimateHistory)
@@ -58,7 +50,6 @@ export default function EndingPage({ sim, onCompare, onExplore, onOpenDetails, o
   const saved = useRef(false)
   const player = useMemo(() => buildYearSnapshots(history, currentClimateHistory), [history, currentClimateHistory])
   const rcp = useMemo(() => buildYearSnapshots(baselineHistory, currentClimateHistory), [baselineHistory, currentClimateHistory])
-  const policies = useMemo(() => policiesForDisplay(policyHistory), [policyHistory])
   useEffect(() => {
     if (!history.length || saved.current) return
     saved.current = true
@@ -68,7 +59,7 @@ export default function EndingPage({ sim, onCompare, onExplore, onOpenDetails, o
     <div className={s.yearTag}>2026–2100 最終結果</div><h1 className={s.headline}>{userName || 'Guest'}さんの適応結果</h1>
     <p className={s.methodNote}>各指標は「現在気候・無対策」を100点とした相対評価です。洪水被害は期間累計、農作物生産高と生態系は期間平均で評価します。100点を上限にはしていません。</p>
     <div className={s.metricsLayout}>{METRICS.map(metric => <MetricSection key={metric.key} metric={metric} player={player} rcp={rcp} scenarioLabel={scenarioLabel} />)}</div>
-    <section className={s.policySummary}><div className={s.policyTitle}>政策履歴</div>{policies.map(x => <div className={s.policyRow} key={x.turn}><strong>{x.turn}</strong><span>{x.text}</span></div>)}</section>
+    <DecisionPathwayMap policyHistory={policyHistory} userName={userName || 'Guest'} />
     <div className={s.endingActions}>
       <button className={s.detailBtn} onClick={onOpenDetails} type="button">詳細グラフを見る</button>
       <button className={s.exploreBtn} onClick={onExplore} type="button">シナリオ探索</button>

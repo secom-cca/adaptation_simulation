@@ -207,14 +207,29 @@
 
 .participantRow {
   border-top: 1px solid rgba(31,44,60,0.08);
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
   background: #fff;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
   font-size: 14px;
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .15s ease;
 }
 
 .participantRow.player { background: rgba(61,107,143,0.08); }
+.participantRow:hover, .participantRow:focus-visible { background: rgba(61,107,143,0.13); box-shadow: inset 4px 0 var(--color-accent); outline: none; }
 .participantRow strong { color: var(--color-text-primary); }
 .participantRow small { color: var(--color-accent); font-size: 12px; }
 .participantRow span { font-variant-numeric: tabular-nums; color: var(--color-text-primary); }
+.participantRow em { display: block; margin-top: 4px; color: var(--color-accent); font-size: 10px; font-style: normal; font-weight: 800; }
+
+.pathwayPanel { margin-top: 18px; padding-top: 20px; border-top: 1px solid rgba(31,44,60,.12); }
+.pathwayPanelHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.pathwayPanelHeader h2 { margin: 5px 0 0; color: var(--color-text-primary); font-size: 21px; }
+.pathwayPanelHeader button { padding: 8px 13px; border: 1px solid rgba(61,107,143,.28); border-radius: 6px; background: white; color: var(--color-accent); font-weight: 900; cursor: pointer; }
 
 .sectionTitle {
   display: flex;
